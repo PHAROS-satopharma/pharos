@@ -1,6 +1,8 @@
 """FetchContext: the only way a parser reaches the network.
 
 * polite: one request at a time per host, at least 1 s apart, a real browser User-Agent, 40 s timeout;
+  a 429 or 503 ("slow down") is waited out (its Retry-After, else 30 s, then 60 s) and retried twice,
+  and that host's gap is doubled for the rest of the run (up to 8 s);
 * conditional GET (ETag / Last-Modified) for URLs already fetched in this run — a repeat returns
   status 304 with empty content. Validators are kept in memory per run only: across runs, the
   ``(source_id, external_id)`` dedupe makes a re-read cheap and safe;
@@ -33,6 +35,13 @@ DEFAULT_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.
 TIMEOUT_S = 40.0
 HOST_GAP_S = 1.0
 MAX_BYTES = 80 * 1024 * 1024  # a single original larger than this is refused
+SLOW_DOWN = (429, 503)
+RETRY_WAITS_S = (30.0, 60.0)    # without Retry-After; one entry per retry
+MAX_RETRY_WAIT_S = 120.0
+MAX_HOST_GAP_S = 8.0
+# A refusal that is not a challenge page but means the same: the site will not serve this network.
+_REFUSAL_URLS = ("/apology_objects/abuse-detection",)        # www.fda.gov bot management
+_REFUSAL_BROWSER_ERRORS = ("net::ERR_HTTP2_PROTOCOL_ERROR",)  # Akamai reset (www.tga.gov.au)
 
 
 class SourceBlocked(Exception):
@@ -101,6 +110,8 @@ class FetchContext:
             transport=transport, http2=False,
         )
         self._last_hit: dict[str, float] = {}
+        self._host_gap: dict[str, float] = {}
+        self._sleep = time.sleep
         self._validators: dict[str, tuple[str | None, str | None]] = {}
         self.archived: dict[str, tuple[str | None, str | None, str, int]] = {}
         self._playwright = None
@@ -127,10 +138,20 @@ class FetchContext:
         host = urlsplit(url).hostname or ""
         last = self._last_hit.get(host)
         if last is not None:
-            wait = self.host_gap_s - (time.monotonic() - last)
+            wait = self._host_gap.get(host, self.host_gap_s) - (time.monotonic() - last)
             if wait > 0:
-                time.sleep(wait)
+                self._sleep(wait)
         self._last_hit[host] = time.monotonic()
+
+    def _slow_down(self, url: str, attempt: int, retry_after: str | None) -> float:
+        """The host asked us to slow down: double its gap, and say how long to wait before retrying."""
+        host = urlsplit(url).hostname or ""
+        gap = self._host_gap.get(host, self.host_gap_s)
+        self._host_gap[host] = min(MAX_HOST_GAP_S, max(1.0, gap * 2))
+        wait = RETRY_WAITS_S[min(attempt, len(RETRY_WAITS_S) - 1)]
+        if retry_after and retry_after.strip().isdigit():
+            wait = float(retry_after.strip())
+        return min(wait, MAX_RETRY_WAIT_S)
 
     # ───────────────────────────── archive ─────────────────────────────
     def archive(self, content: bytes, mime: str) -> tuple[str, str]:
@@ -171,26 +192,35 @@ class FetchContext:
                 hdrs["If-None-Match"] = etag
             if modified:
                 hdrs["If-Modified-Since"] = modified
-        self._polite(url)
-        with self._client.stream(method, url, headers=hdrs, data=data, json=json) as resp:
-            chunks: list[bytes] = []
-            total = 0
-            for chunk in resp.iter_bytes():
-                total += len(chunk)
-                if total > MAX_BYTES:
-                    raise FetchError(resp.status_code, url, f"response over {MAX_BYTES} bytes")
-                chunks.append(chunk)
-            content = b"".join(chunks)
-        status = resp.status_code
+        for attempt in range(len(RETRY_WAITS_S) + 1):
+            self._polite(url)
+            with self._client.stream(method, url, headers=hdrs, data=data, json=json) as resp:
+                chunks: list[bytes] = []
+                total = 0
+                for chunk in resp.iter_bytes():
+                    total += len(chunk)
+                    if total > MAX_BYTES:
+                        raise FetchError(resp.status_code, url, f"response over {MAX_BYTES} bytes")
+                    chunks.append(chunk)
+                content = b"".join(chunks)
+            status = resp.status_code
+            ctype = resp.headers.get("content-type", "")
+            final_url = str(resp.url)
+            fetched = Fetched(status, final_url, content, ctype)
+            if "html" in ctype.lower() or (status in (403, 429, 503) and content[:1] == b"<"):
+                if looks_like_challenge(fetched.text, status, resp.headers):
+                    self._note_status(status)
+                    raise SourceBlocked(f"bot check at {final_url} (HTTP {status})")
+            if status not in SLOW_DOWN or attempt == len(RETRY_WAITS_S):
+                break
+            wait = self._slow_down(url, attempt, resp.headers.get("retry-after"))
+            log.info("HTTP %s from %s: waiting %.0f s, then retrying", status, final_url, wait)
+            self._sleep(wait)
         self._note_status(status)
-        ctype = resp.headers.get("content-type", "")
-        final_url = str(resp.url)
+        if any(marker in final_url for marker in _REFUSAL_URLS):
+            raise SourceBlocked(f"the site refused this network: redirected to {final_url}")
         if status == 304:
             return Fetched(304, final_url, b"", ctype)
-        fetched = Fetched(status, final_url, content, ctype)
-        if "html" in ctype.lower() or (status in (403, 429, 503) and content[:1] == b"<"):
-            if looks_like_challenge(fetched.text, status, resp.headers):
-                raise SourceBlocked(f"bot check at {final_url} (HTTP {status})")
         if status == 200:
             if method == "GET":
                 self._validators[url] = (resp.headers.get("etag"), resp.headers.get("last-modified"))
@@ -215,7 +245,13 @@ class FetchContext:
         self._polite(url)
         page = browser.new_page(user_agent=USER_AGENT, locale="en-GB")
         try:
-            response = page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+            try:
+                response = page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+            except Exception as exc:  # noqa: BLE001 - Playwright raises its own Error type
+                if any(marker in str(exc) for marker in _REFUSAL_BROWSER_ERRORS):
+                    raise SourceBlocked(f"the site refused this network at {url} "
+                                        f"({str(exc).splitlines()[0][:200]})") from None
+                raise
             status = response.status if response is not None else 0
             if wait_selector:
                 try:
