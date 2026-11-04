@@ -140,7 +140,7 @@ def test_normalise_offsets_are_monotonic():
     text = "Ångström ß Ｆｕｌｌ ｶﾞ ﬁne"
     nt = normalise(text)
     assert nt.text.startswith("angstrom ss full ガ fine")
-    assert all(a <= b for a, b in zip(nt.starts, nt.starts[1:]))
+    assert all(a <= b for a, b in zip(nt.starts, nt.starts[1:], strict=False))
     assert norm("Anti-inflammatoires NON stéroïdiens") == "anti-inflammatoires non steroidiens"
 
 

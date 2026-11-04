@@ -143,7 +143,7 @@ def split_japanese(text: str) -> dict[str, str]:
         for m in _JA_OLD.finditer(text):
             marks.append((m.start(), m.end(), old_map[m.group(1)]))
     out: dict[str, str] = {}
-    for i, (s, e, key) in enumerate(marks):
+    for i, (_s, e, key) in enumerate(marks):
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
         body = text[e:end].strip()
         if key in out:

@@ -141,7 +141,7 @@ def test_three_failures_mark_down_and_alert_once(tmp_path):
     server = Server()
     server.reply = (503, b"Service Unavailable", "text/plain")
     store, ctx, runner, _ = setup(tmp_path, server)
-    for k in range(DOWN_AFTER + 1):
+    for _ in range(DOWN_AFTER + 1):
         stats = runner.run_source(SRC)
         assert stats.failed
     assert store.source["ema-psusa"]["health"] == "down"

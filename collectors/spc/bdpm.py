@@ -26,7 +26,6 @@ Source ``spc-bdpm``; country FR; French.
 from __future__ import annotations
 
 import os
-import re
 
 from collectors.parsers._html_util import block_text
 from collectors.parsers.base import soup

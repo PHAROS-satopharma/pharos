@@ -165,7 +165,7 @@ class Runner:
             stats.matched += 1
             if item.body_text:
                 self.store.insert_document_text(doc_id, None, item.body_text)
-            for att, att_id in zip(attachments, att_ids):
+            for att, att_id in zip(attachments, att_ids, strict=True):
                 if att["text"]:
                     self.store.insert_document_text(doc_id, att_id, att["text"])
             for h in hits:
