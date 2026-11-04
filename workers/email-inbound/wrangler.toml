@@ -1,0 +1,19 @@
+# Cloudflare Email Worker for the PV mailbox newsletter aliases.
+# Deployed by .github/workflows/deploy-worker.yml; secrets are uploaded by that workflow from GitHub secrets:
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, FORWARD_TO (optional)
+name = "pharos-email-inbound"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+[vars]
+# recipient alias (the part before @) = source id in collectors/sources.yaml
+ALIAS_SOURCES = "fimea=fimea-email,tga=tga-email"
+
+[[r2_buckets]]
+binding = "ARCHIVE"
+# Must equal the R2_BUCKET secret (docs/setup.md, step 5).
+bucket_name = "pharos-archive"
+
+[observability]
+enabled = true

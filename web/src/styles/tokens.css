@@ -1,0 +1,109 @@
+/* PHAROS identity tokens, taken from the logo: navy #02224C, gold beacon. Flat colour only: no gradients, glows or shadows anywhere.
+   The beacon amber is the ONE accent (the beam, "new" markers, the active-nav underline, the focus ring)
+   and is never used as text on a light ground; accent text uses --beacon-deep. */
+
+:root {
+  color-scheme: light;
+
+  --ink: #02224c;
+  --paper: #f6f4ef;
+  --surface: #ffffff;
+  --surface-2: #efece4;
+  --rule: #d9d5cc;
+  --text: #02224c;
+  --muted: #5b6670;
+  --sea: #1f4e5f;
+  --sea-hover: #163b48;
+  --beacon: #e3a336;
+  --beacon-deep: #8a5a0b;
+  --danger: #a8322d;
+
+  --sea-tint: #e7eef0;
+  --danger-tint: #f7e9e7;
+  --beacon-tint: #fbf1de;
+  --mark-bg: #f6dc9f;
+  --mark-text: #02224c;
+  --del-bg: #f7e9e7;
+  --ins-bg: #e7eef0;
+
+  /* The top bar and the sign-in panel carry the logo, so they stay light in BOTH themes. */
+  --bar-bg: #ffffff;
+  --bar-text: #02224c;
+  --bar-muted: #4f5d69;
+  --bar-rule: #d9d5cc;
+
+  --btn-primary-bg: #02224c;
+  --btn-primary-hover: #1f4e5f;
+  --btn-primary-text: #ffffff;
+
+  --font-sans: 'IBM Plex Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Arabic', system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  --radius: 0;
+  --max: 1280px;
+  --gutter: 24px;
+  --bar-h: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --ink: #0b151c;
+    --paper: #0b151c;
+    --surface: #101d26;
+    --surface-2: #152430;
+    --rule: #22313b;
+    --text: #ece9e2;
+    --muted: #9aa5ad;
+    --sea: #8dbccb;
+    --sea-hover: #b2d3de;
+    --beacon: #e3a336;
+    --beacon-deep: #e3a336;
+    --danger: #e58a83;
+    --sea-tint: #13303a;
+    --danger-tint: #3a1f1d;
+    --beacon-tint: #33290f;
+    --mark-bg: #5c4710;
+    --mark-text: #ece9e2;
+    --del-bg: #3a1f1d;
+    --ins-bg: #13303a;
+    --bar-bg: #f6f4ef;
+    --bar-text: #02224c;
+    --bar-muted: #4f5d69;
+    --bar-rule: #d9d5cc;
+    --btn-primary-bg: #ece9e2;
+    --btn-primary-hover: #ffffff;
+    --btn-primary-text: #0b151c;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #0b151c;
+  --paper: #0b151c;
+  --surface: #101d26;
+  --surface-2: #152430;
+  --rule: #22313b;
+  --text: #ece9e2;
+  --muted: #9aa5ad;
+  --sea: #8dbccb;
+  --sea-hover: #b2d3de;
+  --beacon: #e3a336;
+  --beacon-deep: #e3a336;
+  --danger: #e58a83;
+  --sea-tint: #13303a;
+  --danger-tint: #3a1f1d;
+  --beacon-tint: #33290f;
+  --mark-bg: #5c4710;
+  --mark-text: #ece9e2;
+  --del-bg: #3a1f1d;
+  --ins-bg: #13303a;
+  --bar-bg: #f6f4ef;
+  --bar-text: #02224c;
+  --bar-muted: #4f5d69;
+  --bar-rule: #d9d5cc;
+  --btn-primary-bg: #ece9e2;
+  --btn-primary-hover: #ffffff;
+  --btn-primary-text: #0b151c;
+}

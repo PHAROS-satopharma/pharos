@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="fr" data-fr-theme>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+  <title>Base de Données Publique des Médicaments</title>
+  <meta name="theme-color" content="#000091">  <link rel="apple-touch-icon" href="/build/dsfr/favicon/apple-touch-icon.png">  <link rel="icon" href="/build/dsfr/favicon/favicon.svg" type="image/svg+xml">
+    <link rel="shortcut icon" href="/build/dsfr/favicon/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/build/dsfr/favicon/manifest.webmanifest"
+        crossorigin="use-credentials">
+    
+              <link rel="stylesheet" href="/build/dsfr/931.fd9f074b.css"><link rel="stylesheet" href="/build/dsfr/app.7e25ea17.css">
+  
+              <script src="/build/dsfr/runtime.c33b929f.js"></script><script src="/build/dsfr/27.23722826.js"></script><script src="/build/dsfr/306.ae8f0ef3.js"></script><script src="/build/dsfr/910.74b480b6.js"></script><script src="/build/dsfr/931.0eab88af.js"></script><script src="/build/dsfr/app.ebf2a1f2.js"></script>
+  </head>
+<body id="top" class="fr-mb-12w">
+  <script type="text/javascript" nonce="t0Yp6uGZOhE190ISXWFceQ==">
+    var _paq = window._paq = window._paq || [];
+    /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+    _paq.push(["trackPageView"]);
+    _paq.push(["enableLinkTracking"]);
+    (function () {
+      var u = "https://stats.integra.fr/";
+      _paq.push(["setTrackerUrl", u + "matomo.php"]);
+      _paq.push(["setSiteId", '79']);
+      _paq.push(['setCookieSameSite', 'Lax']);
+      _paq.push(['setSecureCookie', true]);
+      var d = document, g = d.createElement("script"), s = d.getElementsByTagName("script")[0];
+      g.type = "text/javascript";
+      g.async = true;
+      g.src = u + "matomo.js";
+      s.parentNode.insertBefore(g, s);
+    })();
+  </script>
+<script type="module" nonce="t0Yp6uGZOhE190ISXWFceQ==">
+  const e = "system", t = "dark", c = "dark", o = "data-fr-theme", a = "data-fr-scheme", r = `:root[${o}], :root[${a}]`,
+    m = () => {
+      document.documentElement.setAttribute(o, c), document.documentElement.style.colorScheme = "dark"
+    }, n = () => {
+      window.matchMedia("(prefers-color-scheme: dark)").matches && m()
+    };
+  (() => {
+    if (document.documentElement.matches(r)) {
+      const c = (() => {
+        try {
+          return "localStorage" in window && null !== window.localStorage
+        } catch (e) {
+          return !1
+        }
+      })() ? localStorage.getItem("scheme") : "", o = document.documentElement.getAttribute(a);
+      switch (!0) {
+        case c === t:
+          m();
+          break;
+        case c === e:
+          n();
+          break;
+        case o === t:
+          m();
+          break;
+        case o === e:
+          n()
+      }
+    }
+  })();
+
+</script>
+<div class="fr-mb-12w">
+  <div class="fr-mb-6v">
+    <header role="banner" class="fr-header" aria-label="Bannière du site Base de Données Publique des Médicaments" id="section-container-header">
+  <div class="fr-header__body">
+    <div class="fr-container" aria-labelledby="section-container-header">
+      <div class="fr-header__body-row">
+        <div class="fr-header__brand fr-enlarge-link">
+          <div class="fr-header__brand-top">
+            <div class="fr-header__logo" role="img">
+              <p
+                class="fr-logo"
+                aria-describedby="tooltip-logo"
+                aria-label="Logo du MINISTÈRE DU TRAVAIL, DE LA SANTÉ, DES SOLIDARITÉS">
+                MINISTÈRE
+                <br>DU TRAVAIL, DE LA SANTÉ,
+                <br>DES SOLIDARITÉS
+                <br>ET DES FAMILLES
+              </p>
+              <span id="tooltip-logo" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">Logo - Base de Données Publique des Médicaments - ministère</span>
+            </div>
+            <div class="fr-header__navbar">
+              <button class="fr-btn--menu fr-btn" data-fr-opened="false" aria-controls="modal-header__menu" id="button-8446"
+                      aria-label="Bouton de menu mode mobile"
+              </button>
+            </div>
+          </div>
+          <div class="fr-header__service">
+            <a href="/" role="link"
+              aria-describedby="tooltip-website-name"
+               aria-label="Accueil - Base de Données Publique des Médicaments"
+            >
+              <p class="fr-header__service-title homepage-header-website-name">
+                Base de Données Publique des Médicaments
+              </p>
+            </a>
+            <span id="tooltip-website-name" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+              Accueil - Base de Données Publique des Médicaments
+            </span>
+          </div>
+        </div>
+        <div class="fr-header__tools">
+          <div class="fr-header__tools-links">
+            <ul class="fr-btns-group">
+              <li>
+                <a class="fr-icon-arrow-left-line fr-btn" href="https://sante.gouv.fr/soins-et-maladies/medicaments"
+                   role="link"
+                   aria-label="Lien de redirection vers le site internet medicaments.gouv.fr"
+                   aria-describedby="tooltip-medicament-gouv-link"
+                >
+                  Visiter medicaments.gouv.fr
+                </a>
+                <span id="tooltip-medicament-gouv-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                  Lien de redirection vers le site internet medicaments.gouv.fr
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="modal-header__menu" class="fr-header__menu fr-modal" aria-labelledby="button-8446">
+      <div class="fr-container">
+        <button aria-controls="modal-header__menu" class="fr-btn fr-btn--close" aria-label="Fermer le menu mobile">
+          Fermer
+        </button>
+        <div class="fr-header__menu-links fr-hidden"></div>
+        <nav class="fr-nav" id="header-navigation" role="navigation"
+     aria-label="Menu Principal">
+        <ul class="fr-nav__list" role="list">
+          <li class="fr-nav__item" role="listitem">
+            <a class="fr-nav__link"
+               href="/" role="link"
+               id="navigation-menu-principal-accueil"
+               aria-label="Lien de redirection vers la page d'accueil (lien de redirection)"
+                           >
+              Accueil
+            </a>
+          </li>
+          <li class="fr-nav__item" role="listitem">
+            <a class="fr-nav__link" href="/glossaire" role="link"
+               id="navigation-menu-principal-glossaire"
+               aria-label="Lien de redirection vers la page Glossaire (lien de redirection)"
+                          >Glossaire</a>
+          </li>
+          <li class="fr-nav__item" role="listitem">
+            <a class="fr-nav__link" href="/telechargement"
+               id="navigation-menu-principal-telechargement" role="link"
+               aria-label="Lien de redirection vers la page de telechargement (lien de redirection)"
+               aria-current="page"             >Téléchargement</a>
+          </li>
+          <li class="fr-nav__item" role="listitem">
+            <a class="fr-nav__link" href="/contact" role="link"
+               id="navigation-menu-principal-contact"
+               aria-label="Lien de redirection vers la page de contact (lien de redirection)"
+                          >Contact</a>
+          </li>
+          <li class="fr-nav__item" role="listitem">
+            <a class="fr-nav__link" href="/aide" id="navigation-menu-principal-aide" role="link"
+               aria-label="Lien de redirection vers la page d'aide (lien de redirection)"
+                          >Aide</a>
+          </li>
+        </ul>
+</nav>
+      </div>
+  </div>
+  <div class="fr-notice fr-notice--info fr-no-print">
+    <div class="fr-container">
+        <div class="fr-notice__body">
+            <p>
+              <span class="fr-icon-info-fill fr-mr-2v" aria-hidden="true"></span>
+              <a target="_blank" rel="noopener external" aria-describedby="tooltip-notice-link" aria-label="Redirection vers la plateforme d'avis utilisateur - Lien de redirection" href="https://tally.so/r/3xpq1J" class="fr-notice__link" style="text-decoration: underline;">Quel est votre avis sur E-notice ?</a>
+              <span class="fr-tooltip fr-placement" id="tooltip-notice-link" role="tooltip" aria-hidden="true">Redirection vers la plateforme d'avis utilisateur - Lien de redirection</span>
+            </p>
+            <button aria-describedby="tooltip-notice-close-btn" aria-label="Masquer le message" id="button-1299" class="fr-btn--close fr-btn">Masquer le message</button>
+            <span class="fr-tooltip fr-placement" id="tooltip-notice-close-btn" role="tooltip" aria-hidden="true">Masquer le message</span>
+        </div>
+    </div>
+</div>
+</header>
+    <main role="main" id="content">
+      <div class="fr-container">
+        <div class="fr-mb-md-10w fr-grid-row fr-grid-row--gutters fr-grid-row--middle fr-grid-row--center">
+            <div id="contenu section-telechargement-container__page" class="fr-col-12 fr-col-md-10 fr-py-12v">
+     <div class="fr-header__tools">
+        <p>
+          Dernière mise à jour le 03/11/2026
+        </p>
+      </div>
+    <div class="display-full">
+      <h1 role="heading"
+          aria-labelledby="section-telechargement-container__page"
+          aria-label="Page : Téléchargement"
+          aria-level="1"
+      >Téléchargement</h1>
+      <div class="section-telechargement-container__description">
+        <div class="fr-grid-row">
+          <div class="fr-col">
+            <h5
+              role="heading"
+              id="section-termes-du-contrat-de-licence"
+              aria-label="Termes du contrat de licence"
+              aria-level="2"
+            >Termes du contrat de licence</h5>
+            <p aria-labelledby="section-termes-du-contrat-de-licence">
+              Conformément à l'article L. 161-40-1 du code de la sécurité sociale dans sa rédaction issue de l'article
+              8 de la loi n° 2011-2012 du 29/12/2011, l'information contenue dans la base de données publique des
+              médicaments (BDPM) est mise à disposition des usagers au moyen des fichiers offerts au téléchargement
+              libre et gratuit.
+            </p>
+          </div>
+        </div>
+        <div class="fr-grid-row">
+          <div class="fr-col">
+            <h5 role="heading"
+                id="section-vous-etes-libre-de"
+                aria-label="Vous êtes libres de : termes du contrat de licence"
+                aria-level="2"
+            >Vous êtes libres de :</h5>
+            <ul role="list">
+              <li role="listitem" aria-labelledby="section-vous-etes-libre-de">
+                Reproduire, diffuser, redistribuer et exploiter les données
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="fr-grid-row">
+          <div class="fr-col">
+            <h5 role="heading"
+                id="section-a-condition-de"
+                aria-label="A condition de : condition du contrat de licence"
+                aria-level="2"
+            >
+              A condition de :
+            </h5>
+            <ul role="list" aria-labelledby="section-a-condition-de">
+              <li role="listitem" id="section-a-condition-de__paragraphe_1">
+                <p aria-labelledby="section-a-condition-de__paragraphe_1">Ne pas altérer les données, ne pas en
+                  dénaturer leur sens, mentionner impérativement la source de
+                  ces données (base de données publique des médicaments
+                  <a
+                    href="http://base-donnees-publique.medicaments.gouv.fr/" role="link"
+                    aria-label="Lien de redirection vers la plateforme http://base-donnees-publique.medicaments.gouv.fr"
+                    aria-describedby="tooltip-download-base-donnees-publique"
+                  > http://base-donnees-publique.medicaments.gouv.fr</a>
+                  ) et la date de leur mise à jour (Article 12 de la loi n°78-753 du 17 juillet 1978 - loi CADA).
+                  Toutefois, il est rappelé que cette mention ne confère aucun caractère officiel à la réutilisation
+                  de ces données, et ne doit pas suggérer une quelconque reconnaissance ou caution du "Réutilisateur"
+                  par l'ANSM, la HAS ou l'UNCAM.
+                </p>
+                <span id="tooltip-download-base-donnees-publique" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                  Lien de redirection vers la plateforme http://base-donnees-publique.medicaments.gouv.fr
+                </span>
+              </li>
+              <li role="listitem" id="section-a-condition-de__paragraphe_2">
+                <p aria-labelledby="section-a-condition-de__paragraphe_2">
+                  De vous assurer, de la mise à jour des données téléchargées non seulement par rapport à chaque mise
+                  à jour périodique de la BDPM, mais aussi et surtout par rapport à des modifications qui ont pu
+                  intervenir, entre deux mises à jour périodiques de la BDPM, sur les informations concernant un ou
+                  plusieurs médicaments. La responsabilité de l'ANSM, de la HAS et de la CNAMTS ne saurait être
+                  engagée en cas de mise à disposition d'informations n'ayant pas bénéficié de toutes les mises à jour
+                  à la date de leur utilisation que ce soit en simple consultation ou en intégration dans un système
+                  d'information.
+                </p>
+              </li>
+            </ul>
+
+            <p aria-labelledby="section-a-condition-de">
+              <strong>
+                En téléchargeant les données mises à disposition sur ce site, vous acceptez les conditions mentionnées
+                ci-dessus et le texte complet
+                <a href="/docs/telechargement/licence_bdpm.pdf"
+                   role="link"
+                   aria-label="Cliquez ici pour télécharger le document de licence ouverte. - Lien de téléchargement"
+                   aria-describedby="tooltip-download-document-licence"
+                   target="_blank">
+                  de la licence ouverte (pdf, 528 Ko).
+                </a>
+              </strong>
+            </p>
+            <span id="tooltip-download-document-licence" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+              Cliquez ici pour télécharger le document de licence ouverte. - Lien de téléchargement
+            </span>
+          </div>
+        </div>
+        <div class="fr-grid-row">
+          <div class="fr-col">
+            <h5 role="heading"
+                id="section-format-donnees-et-liens"
+                aria-label="Format de données et lien entre les différents fichiers"
+                aria-level="2"
+            >
+              Format de données et lien entre les différents fichiers
+            </h5>
+            <p>
+              Le lien suivant vous permettra d'accéder à un fichier décrivant le contenu, le format et les liens
+              existants entre les fichiers mis à disposition ci-dessous
+
+            <ul role="list" style="list-style-type: none;" aria-labelledby="section-format-donnees-et-liens">
+              <li role="listitem">
+                <a
+                  class="fr-download__link"
+                  href="/download/file/Contenu_et_format_des_fichiers_telechargeables_dans_la_BDM_v5.pdf"
+                  role="link"
+                  aria-label="Cliquez ici pour télécharger le fichier descriptif - Lien de téléchargement"
+                  aria-describedby="tooltip-download-document-format-donnees-et-liens"
+                  download='Contenu_et_format_des_fichiers_telechargeables_dans_la_BDM_v5.pdf'>
+                  <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                  Cliquez ici pour télécharger le fichier descriptif (pdf, 289 Ko)
+                </a>
+                <span id="tooltip-download-document-format-donnees-et-liens" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                  Cliquez ici pour télécharger le fichier descriptif - Lien de téléchargement
+                </span>
+              </li>
+            </ul>
+            </p>
+          </div>
+        </div>
+        <div class="fr-grid-row">
+          <div class="fr-col">
+            <h5 role="heading"
+                id="section-list-fichier-disponible-au-telechargement"
+                aria-label="Liste des fichiers disponibles au téléchargement"
+                aria-level="2"
+            >
+              Liste des fichiers disponibles au téléchargement
+            </h5>
+            <div class="fr-grid-row" aria-labelledby="section-list-fichier-disponible-au-telechargement">
+              <div class="fr-col">
+                <p>
+                  La base de données est actualisée tous les mois. La date de mise à jour de la base figure en haut et à
+                  droite dans le bandeau de navigation.
+                </p>
+                <p>
+                  <strong>Attention :</strong> le fichier des informations importantes est généré au moment où vous
+                  cliquez, contrairement
+                  aux autres fichiers qui sont mis à jour en même temps que l'ensemble des données de la base. Cela est
+                  dû
+                  au fait que les informations importantes sont sujettes à des mises à jour potentiellement plus
+                  fréquentes
+                </p>
+
+                <ul role="list" class="ul-no-style" style="list-style-type: none;">
+                                      <li role="listitem">
+                                          </li>
+                                      <li role="listitem">
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des spécialités - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-3"
+                            download='CIS_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des spécialités
+                                                          (Date de mise à jour : 03/11/2026, 3093 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-3" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des spécialités - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_CIP_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des présentations - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-4"
+                            download='CIS_CIP_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des présentations
+                                                          (Date de mise à jour : 04/11/2026, 4056 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-4" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des présentations - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_COMPO_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des compositions - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-5"
+                            download='CIS_COMPO_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des compositions
+                                                          (Date de mise à jour : 03/11/2026, 2656 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-5" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des compositions - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_HAS_SMR_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des avis SMR de la HAS - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-6"
+                            download='CIS_HAS_SMR_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des avis SMR de la HAS
+                                                          (Date de mise à jour : 03/11/2026, 4507 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-6" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des avis SMR de la HAS - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_HAS_ASMR_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des avis ASMR de la HAS - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-7"
+                            download='CIS_HAS_ASMR_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des avis ASMR de la HAS
+                                                          (Date de mise à jour : 03/11/2026, 4514 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-7" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des avis ASMR de la HAS - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/HAS_LiensPageCT_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des liens vers les avis de la commission de la transparence de la HAS - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-8"
+                            download='HAS_LiensPageCT_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des liens vers les avis de la commission de la transparence de la HAS
+                                                          (Date de mise à jour : 03/11/2026, 507 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-8" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des liens vers les avis de la commission de la transparence de la HAS - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_GENER_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des groupes génèriques - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-9"
+                            download='CIS_GENER_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des groupes génèriques
+                                                          (Date de mise à jour : 03/11/2026, 1192 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-9" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des groupes génèriques - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_CPD_bdpm.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des conditions de prescription et de délivrance - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-10"
+                            download='CIS_CPD_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des conditions de prescription et de délivrance
+                                                          (Date de mise à jour : 03/11/2026, 1304 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-10" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des conditions de prescription et de délivrance - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_CIP_Dispo_Spec.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des ruptures de stocks - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-11"
+                            download='CIS_CIP_Dispo_Spec.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des ruptures de stocks
+                                                          (Date de mise à jour : 03/11/2026, 154 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-11" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des ruptures de stocks - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/file/CIS_MITM.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des médicaments d&#039;intérêt thérapeutique majeur - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-12"
+                            download='CIS_MITM.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des médicaments d&#039;intérêt thérapeutique majeur
+                                                          (Date de mise à jour : 13/10/2026, 1581 Ko)
+                                                      </a>
+                                                <span id="tooltip-download-fichier-12" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des médicaments d&#039;intérêt thérapeutique majeur - Lien de téléchargement
+                        </span>
+                                          </li>
+                                      <li role="listitem">
+                                                                        <a
+                            class="fr-download__link"
+                            href="/download/CIS_InfoImportantes.txt"
+                            role="link"
+                            aria-label="Cliquez ici pour télécharger le  Fichier des Informations importantes (génération en direct) - Lien de téléchargement"
+                            aria-describedby="tooltip-download-fichier-13"
+                            download='CIS_InfoImportantes_*_bdpm.txt'>
+                            <span class="fr-icon-download-fill" aria-hidden="true"></span>
+                            Fichier des Informations importantes (génération en direct)
+                          </a>
+                                                <span id="tooltip-download-fichier-13" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                          Cliquez ici pour télécharger le Fichier des Informations importantes (génération en direct) - Lien de téléchargement
+                        </span>
+                                          </li>
+                                  </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+      </div>
+    </main>
+    <footer class="fr-footer" role="contentinfo" id="footer-8605">
+  <div class="fr-container">
+    <div class="fr-footer__body">
+      <div class="fr-footer__brand fr-enlarge-link">
+                <a id="footer-operator" href="/"
+           role="link"
+           aria-describedby="tooltip-footer-home"
+           aria-label="Retour à la page d'accueil de la plateforme Base de Données Publique des Médicaments du MINISTÈRE DU TRAVAIL, DE LA SANTÉ, DES SOLIDARITÉS"
+        >
+          <p class="fr-logo" aria-label="Logo du MINISTÈRE DU TRAVAIL, DE LA SANTÉ, DES SOLIDARITÉS">
+            MINISTÈRE
+            <br>DU TRAVAIL, DE LA SANTÉ,
+            <br>DES SOLIDARITÉS
+            <br>ET DES FAMILLES
+          </p>
+        </a>
+        <span id="tooltip-footer-home" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+          Retour à la page d'accueil de la plateforme Base de Données Publique des Médicaments du MINISTÈRE DU TRAVAIL, DE LA SANTÉ, DES SOLIDARITÉS
+        </span>
+      </div>
+      <div class="fr-footer__content">
+        <ul class="fr-footer__content-list">
+          <li class="fr-footer__content-item">
+            <a target="_blank"
+               role="link"
+               rel="noopener external"
+               aria-describedby="tooltip-footer-legifrance"
+               aria-label="Lien de redirection vers la plateforme legifrance.gouv.fr – nouvelle fenêtre"
+               id="footer__content-link-8606"
+               class="fr-footer__content-link"
+               href="https://legifrance.gouv.fr"
+            >legifrance.gouv.fr</a>
+            <span id="tooltip-footer-legifrance" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+              Lien de redirection vers la plateforme legifrance.gouv.fr – nouvelle fenêtre
+            </span>
+          </li>
+          <li class="fr-footer__content-item">
+            <a target="_blank" rel="noopener external"
+               aria-describedby="tooltip-footer-gouvernement"
+               aria-label="Lien de redirection vers la plateforme gouvernement.fr – nouvelle fenêtre"
+               id="footer__content-link-8607"
+               class="fr-footer__content-link" href="https://gouvernement.fr">gouvernement.fr</a>
+            <span id="tooltip-footer-gouvernement" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+              Lien de redirection vers la plateforme gouvernement.fr – nouvelle fenêtre
+            </span>
+          </li>
+          <li class="fr-footer__content-item">
+            <a target="_blank" rel="noopener external"
+               role="link"
+               aria-describedby="tooltip-footer-service-public"
+               aria-label="Lien de redirection vers la plateforme service-public.fr – nouvelle fenêtre"
+               id="footer__content-link-8608"
+               class="fr-footer__content-link" href="https://service-public.fr">service-public.fr</a>
+            <span id="tooltip-footer-service-public" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+              Lien de redirection vers la plateforme service-public – nouvelle fenêtre
+            </span>
+          </li>
+          <li class="fr-footer__content-item">
+            <a target="_blank" rel="noopener external"
+               role="link"
+               aria-describedby="tooltip-footer-data-gouv"
+               aria-label="Lien de redirection vers la plateforme data.gouv.fr – nouvelle fenêtre"
+               id="footer__content-link-8609" class="fr-footer__content-link"
+               href="https://data.gouv.fr">data.gouv.fr</a>
+            <span id="tooltip-footer-data-gouv" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+              Lien de redirection vers la plateforme data.gouv.fr – nouvelle fenêtre
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="fr-footer__partners">
+      <p>Nos partenaires</p>
+      <div class="fr-footer__partners-logos">
+        <div class="fr-footer__partners-sub">
+          <ul aria-labelledby="navigation-footer-parteners">
+            <li>
+              <a class="fr-footer__partners-link" href="https://ansm.sante.fr/"
+                 role="link" target="_blank" rel="noopener external"
+                 aria-label="Lien de redirection vers la plateforme de l'Agence nationale de sécurité du médicament et des produits de santé (ANSM)- nouvelle fenêtre"
+                 aria-describedby="tooltip-footer-partener-ansm"
+              >
+                <img src="/build/dsfr/images_site/logo/ANSM_logo.svg"
+                     id="navigation-footer-parteners-logo-ansm"
+                     class="fr-footer__partners__logo-size fr-responsive-img"
+                     alt="Logo de l'Agence Nationale de Sécurité du Médicament et des Produits de Santé (ANSM)"
+                     aria-label="Lien de redirection vers le site internet de l'Agence Nationale de Sécurité du Médicament et des Produits de Santé - ansm.sante.fr"
+                     role="img" aria-hidden="true"
+                     style="box-shadow: none !important;  width: 160px !important; height: 90px !important;"
+                />
+              </a>
+              <span id="tooltip-footer-ansm" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                Lien de redirection vers la plateforme de l'Agence nationale de sécurité du médicament et des produits de santé (ANSM)- nouvelle fenêtre
+              </span>
+            </li>
+            <li>
+              <a class="fr-footer__partners-link" href="https://www.has-sante.fr/"
+                 role="link" target="_blank" rel="noopener external"
+                 aria-label="Lien de redirection vers la plateforme de la Haute Autorité de santé (HAS)- nouvelle fenêtre"
+                 aria-describedby="tooltip-footer-has"
+              >
+                <img
+                  src="/build/dsfr/images_site/logo/Haute_Autorite_de_Sante_Logo.svg"
+                  id="navigation-footer-parteners-logo-haute-autorite-de-sante"
+                  class="fr-footer__partners__logo-size"
+                  alt="Logo Haute Autorité de Santé"
+                  aria-label="Lien de redirection vers le site internet d'Haute Autorité de Sante - has-sante.fr"
+                  aria-hidden="true"
+                  style="box-shadow: none !important;  width: 160px !important; height: 90px !important;"
+                />
+              </a>
+              <span id="tooltip-footer-has" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                Lien de redirection vers la plateforme de la Haute Autorité de santé (HAS)- nouvelle fenêtre
+              </span>
+            </li>
+            <li>
+              <a class="fr-footer__partners-link" href="https://www.ameli.fr/"
+                 role="link" target="_blank" rel="noopener external"
+                 aria-label="Lien de redirection vers la plateforme de l'Assurance Maladie (AMELI)- nouvelle fenêtre"
+                 aria-describedby="tooltip-footer-ameli"
+              >
+                <img src="/build/dsfr/images_site/logo/assurance-maladie-logo.svg"
+                     id="navigation-footer-parteners-logo-assurance-maladie"
+                     class="fr-footer__partners__logo-size fr-responsive-img"
+                     alt="Logo de l'assurance Maladie"
+                     aria-label="Lien de redirection vers le site internet d'Assurance Maladie - ameli.fr"
+                     role="img" aria-hidden="true"
+                     style="box-shadow: none !important;  width: 160px !important; height: 90px !important;"
+                />
+              </a>
+              <span id="tooltip-footer-ameli" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+                Lien de redirection vers la plateforme de l'Assurance Maladie (AMELI)- nouvelle fenêtre
+              </span>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="fr-footer__bottom">
+      <ul class="fr-footer__bottom-list" aria-labelledby="navigation-footer-bottom-link">
+        <li class="fr-footer__bottom-item">
+          <a class="fr-footer__bottom-link" id="navigation-footer-bottom-link-Accessibilite"
+             role="link"
+             aria-label="Lien de redirection vers la page Accessibilité"
+             aria-describedby="tooltip-footer-accessibility-link"
+             href="/accessibilite">Accessibilité : partiellement conforme</a>
+          <span id="tooltip-footer-accessibility-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+            Lien de redirection vers la page Accessibilité
+          </span>
+        </li>
+        <li class="fr-footer__bottom-item">
+          <a class="fr-footer__bottom-link" id="navigation-footer-bottom-link-mentions-legales"
+             href="/mentions-legales"
+             role="link"
+             aria-label="Lien de redirection vers la page des Mentions Légales"
+             aria-describedby="tooltip-footer-mentions-legales-link"
+          >Mentions légales</a>
+          <span id="tooltip-footer-mentions-legales-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+            Lien de redirection vers la page des Mentions Légales
+          </span>
+        </li>
+        <li class="fr-footer__bottom-item">
+          <a class="fr-footer__bottom-link" id="navigation-footer-bottom-link-donnee-personnelles"
+             href="/donnees-personnelles"
+             role="link"
+             aria-label="Lien de redirection vers la page des Données personnelles"
+             aria-describedby="tooltip-footer-donnee-personnelles-link"
+          >Données personnelles</a>
+          <span id="tooltip-footer-donnee-personnelles-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+            Lien de redirection vers la page des Données personnelles
+          </span>
+        </li>
+        <li class="fr-footer__bottom-item">
+          <a class="fr-footer__bottom-link" id="navigation-footer-bottom-link-plan-du-site"
+             href="/plan"
+             role="link"
+             aria-label="Lien de redirection vers la page Plan du site"
+             aria-describedby="tooltip-footer-plan-du-site-link"
+          >Plan du site</a>
+          <span id="tooltip-footer-plan-du-site-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+            Lien de redirection vers la page Plan du site
+          </span>
+        </li>
+        <li class="fr-footer__bottom-item">
+          <a class="fr-footer__bottom-link fr-icon-theme-fill" id="navigation-footer-bottom-link-parametres-affichage" href="#"
+             aria-controls="fr-theme-modal"
+             data-fr-opened="false"
+             style="z-index: 1600"
+             aria-label="Paramètres d'affichage"
+             aria-describedby="tooltip-footer-parametres-affichage-link"
+             id="button-8615">Paramètres d&#039;affichage</a>
+          <span id="tooltip-footer-parametres-affichage-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+            Paramètres d'affichage
+          </span>
+        </li>
+      </ul>
+      <div class="fr-footer__bottom-copy">
+        <p>
+          Sauf mention contraire, tous les contenus de ce site sont sous <a
+            href="https://github.com/etalab/licence-ouverte/blob/master/LO.md" role="link" target="_blank"
+            rel="noopener external"
+            aria-describedby="tooltip-footer-licence-link"
+            aria-label="Lien de redirection vers les mentions de la licence Etalab - nouvelle fenêtre"
+          >licence etalab-2.0</a>
+          <span id="tooltip-footer-licence-link" class="fr-tooltip fr-placement" role="tooltip" aria-hidden="true">
+            Lien de redirection vers les mentions de la licence Etalab - nouvelle fenêtre
+          </span>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  </div>
+</div>
+<dialog id="fr-theme-modal" class="fr-modal" aria-labelledby="fr-theme-modal-title">
+  <div class="fr-container fr-container--fluid fr-container-md">
+    <div class="fr-grid-row fr-grid-row--center">
+      <div class="fr-col-12 fr-col-md-6 fr-col-lg-4">
+        <div class="fr-modal__body">
+          <div class="fr-modal__header">
+            <button class="fr-btn--close fr-btn" aria-controls="fr-theme-modal">
+              Fermer
+            </button>
+          </div>
+          <div class="fr-modal__content">
+            <h1 id="fr-theme-modal-title" class="fr-modal__title">
+              Paramètres d’affichage
+            </h1>
+            <div id="fr-display" class="fr-display">
+              <fieldset class="fr-fieldset" id="display-fieldset">
+                <legend class="fr-fieldset__legend--regular fr-fieldset__legend" id="display-fieldset-legend">
+                  Choisissez un thème pour personnaliser l’apparence du site.
+                </legend>
+                <div class="fr-fieldset__element">
+                  <div class="fr-radio-group fr-radio-rich">
+                    <input value="light" type="radio" id="fr-radios-theme-light" name="fr-radios-theme" tabindex="1">
+                    <label class="fr-label" for="fr-radios-theme-light">
+                      Thème clair
+                    </label>
+                    <div class="fr-radio-rich__pictogram">
+                      <svg aria-hidden="true" class="fr-artwork fr-svg-modal" viewBox="0 0 80 80">
+                        <use class="fr-artwork-decorative"
+                             href="/build/dsfr/artwork/pictograms/environment/sun.svg#artwork-decorative"></use>
+                        <use class="fr-artwork-minor"
+                             href="/build/dsfr/artwork/pictograms/environment/sun.svg#artwork-minor"></use>
+                        <use class="fr-artwork-major"
+                             href="/build/dsfr/artwork/pictograms/environment/sun.svg#artwork-major"></use>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="fr-fieldset__element">
+                  <div class="fr-radio-group fr-radio-rich">
+                    <input value="dark" type="radio" id="fr-radios-theme-dark" name="fr-radios-theme">
+                    <label class="fr-label" for="fr-radios-theme-dark">
+                      Thème sombre
+                    </label>
+                    <div class="fr-radio-rich__pictogram">
+                      <svg aria-hidden="true" class="fr-artwork fr-svg-modal" viewBox="0 0 80 80">
+                        <use class="fr-artwork-decorative"
+                             href="/build/dsfr/artwork/pictograms/environment/moon.svg#artwork-decorative"></use>
+                        <use class="fr-artwork-minor"
+                             href="/build/dsfr/artwork/pictograms/environment/moon.svg#artwork-minor"></use>
+                        <use class="fr-artwork-major"
+                             href="/build/dsfr/artwork/pictograms/environment/moon.svg#artwork-major"></use>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="fr-fieldset__element">
+                  <div class="fr-radio-group fr-radio-rich">
+                    <input value="system" type="radio" id="fr-radios-theme-system" name="fr-radios-theme">
+                    <label class="fr-label" for="fr-radios-theme-system">
+                      Système
+                      <span
+                        class="fr-hint-text">Utilise les paramètres système</span>
+                    </label>
+                    <div class="fr-radio-rich__pictogram">
+                      <svg aria-hidden="true" class="fr-artwork fr-svg-modal" viewBox="0 0 80 80">
+                        <use class="fr-artwork-decorative"
+                             href="/build/dsfr/artwork/pictograms/system/system.svg#artwork-decorative"></use>
+                        <use class="fr-artwork-minor"
+                             href="/build/dsfr/artwork/pictograms/system/system.svg#artwork-minor"></use>
+                        <use class="fr-artwork-major"
+                             href="/build/dsfr/artwork/pictograms/system/system.svg#artwork-major"></use>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# PHAROS — "test link" probe. Fired by the probe-source Edge Function (repository_dispatch 'probe') with
+# only {probe_id}; the URL is read from probe_result by the collectors, so nothing from the request is ever
+# placed in a shell command. Runs the same Python parsers as the scheduled collection.
+name: PHAROS probe
+
+on:
+  repository_dispatch:
+    types: [probe]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - name: Check the probe id
+        env:
+          PROBE_ID: ${{ github.event.client_payload.probe_id }}
+        run: |
+          [[ "$PROBE_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || { echo "not a probe id"; exit 1; }
+
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: poppler-utils tesseract-ocr
+          version: "1"
+
+      - run: pip install -r collectors/requirements.txt
+
+      - id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('collectors/requirements.txt') }}
+      - name: Playwright install
+        env:
+          HIT: ${{ steps.pw-cache.outputs.cache-hit }}
+        run: |
+          if [ "$HIT" != "true" ]; then python -m playwright install --with-deps chromium
+          else python -m playwright install-deps chromium; fi
+
+      - name: Probe
+        env:
+          PROBE_ID: ${{ github.event.client_payload.probe_id }}
+        run: python -m collectors.run --probe-id "$PROBE_ID"

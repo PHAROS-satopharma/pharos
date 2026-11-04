@@ -1,0 +1,1 @@
+export { StatusPill } from './Tag';

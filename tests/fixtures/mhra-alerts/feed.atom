@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xml:lang="en-US" xmlns="http://www.w3.org/2005/Atom">
+  <id>tag:www.gov.uk,2005:/drug-device-alerts</id>
+  <link rel="alternate" type="text/html" href="https://www.gov.uk"/>
+  <link rel="self" type="application/atom+xml" href="https://www.gov.uk/drug-device-alerts.atom"/>
+  <title>Alerts, recalls and safety information: medicines and medical devices</title>
+  <updated>2026-11-04T12:22:28+00:00</updated>
+  <author>
+    <name>HM Government</name>
+  </author>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-26-to-30-october-2026</id>
+    <updated>2026-11-04T12:22:28+00:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-26-to-30-october-2026"/>
+    <title>Field Safety Notices: 26 to 30 October 2026</title>
+    <summary type="html">List of Field Safety Notices from 26 to 30 October 2026.</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/mhra-safety-roundup-october-2026</id>
+    <updated>2026-10-30T10:59:20+00:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/mhra-safety-roundup-october-2026"/>
+    <title>MHRA Safety Roundup: October 2026</title>
+    <summary type="html">Summary of the latest safety advice for medicines and medical device users</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/class-2-medicines-recall-accord-uk-ltd-lercanidipine-hydrochloride-10mg-film-coated-tablets-el-26-a-slash-45</id>
+    <updated>2026-10-29T13:59:33+00:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/class-2-medicines-recall-accord-uk-ltd-lercanidipine-hydrochloride-10mg-film-coated-tablets-el-26-a-slash-45"/>
+    <title>Class 2 Medicines Recall: Accord-UK Ltd, Lercanidipine Hydrochloride 10mg Film-Coated Tablets, EL(26)A/45</title>
+    <summary type="html">Accord-UK Ltd is recalling one batch of Lercanidipine Hydrochloride 10mg Tablets due to a packaging mix-up involving the incorrect strength. </summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/class-2-medicines-recall-advanz-pharma-limited-mynzepli-40-mg-slash-ml-solution-for-injection-in-pre-filled-syringe-el-26-a-slash-44</id>
+    <updated>2026-10-29T10:00:21+00:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/class-2-medicines-recall-advanz-pharma-limited-mynzepli-40-mg-slash-ml-solution-for-injection-in-pre-filled-syringe-el-26-a-slash-44"/>
+    <title>Class 2 Medicines Recall: Advanz Pharma Limited, Mynzepli 40 mg/mL solution for injection in pre-filled syringe, EL(26)A/44</title>
+    <summary type="html">Advanz Pharma Limited are recalling specified batches of Mynzepli 40 mg/mL solution for injection in pre-filled syringe as a precautionary measure. </summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-19-to-23-october-2026</id>
+    <updated>2026-10-28T13:23:46+00:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-19-to-23-october-2026"/>
+    <title>Field Safety Notices: 19 to 23 October 2026</title>
+    <summary type="html">List of Field Safety Notices from 19 to 23 October 2026.</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/class-2-medicines-recall-xeal-pharma-clopidogrel-oral-liquids-all-strengths-el-26-a-slash-43</id>
+    <updated>2026-10-26T11:00:01+00:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/class-2-medicines-recall-xeal-pharma-clopidogrel-oral-liquids-all-strengths-el-26-a-slash-43"/>
+    <title>Class 2 Medicines Recall: Xeal Pharma, Clopidogrel Oral Liquids (all strengths), EL(26)A/43</title>
+    <summary type="html">Xeal Pharma have informed MHRA that all strengths of their Clopidogrel Oral Suspension and Clopidogrel Oral Solution products contain less than the labelled amount of clopidogrel. </summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-5-to-9-october-2026</id>
+    <updated>2026-10-19T15:44:24+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-5-to-9-october-2026"/>
+    <title>Field Safety Notices: 5 to 9 October 2026</title>
+    <summary type="html">List of Field Safety Notices from 5 to 9 October 2026.</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-12-october-2026-to-16-october-2026</id>
+    <updated>2026-10-19T12:07:29+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-12-october-2026-to-16-october-2026"/>
+    <title>Field Safety Notices: 12 to 16 October 2026</title>
+    <summary type="html">List of Field Safety Notices from 12 to 16 October 2026.</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/nova-biomedical-statstrip-ketone-test-strips-risk-of-disruption-to-blood-ketone-testing-due-to-quality-control-failures-and-supply-interruption-dsi-slash-2026-slash-013</id>
+    <updated>2026-10-16T16:29:11+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/nova-biomedical-statstrip-ketone-test-strips-risk-of-disruption-to-blood-ketone-testing-due-to-quality-control-failures-and-supply-interruption-dsi-slash-2026-slash-013"/>
+    <title>Nova Biomedical StatStrip ketone test strips: risk of disruption to blood ketone testing due to quality-control failures and supply interruption DSI/2026/013</title>
+    <summary type="html">Nova Biomedical has identified quality issues affecting specified lots of StatStrip ketone test strips. The affected lots have been associated with quality-control (QC) failures and Nova Biomedical has initiated a recall, ad…</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-27-to-31-january-2025</id>
+    <updated>2026-10-16T15:55:27+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-27-to-31-january-2025"/>
+    <title>Field Safety Notices: 27 to 31 January 2025</title>
+    <summary type="html">List of Field Safety Notices from 27 to 31 January 2025.</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/continuous-renal-replacement-therapy-crrt-consider-delayed-administration-of-concurrent-echinocandins-such-as-caspofungin-to-reduce-the-risk-of-adsorption-onto-new-polyacrylonitrile-pan-based-filter-membranes-dsi-slash-2026-slash-</id>
+    <updated>2026-10-13T12:38:03+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/continuous-renal-replacement-therapy-crrt-consider-delayed-administration-of-concurrent-echinocandins-such-as-caspofungin-to-reduce-the-risk-of-adsorption-onto-new-polyacrylonitrile-pan-based-filter-membranes-dsi-slash-2026-slash-"/>
+    <title>Continuous renal replacement therapy (CRRT): Consider delayed administration of concurrent echinocandins, such as caspofungin, to reduce the risk of adsorption onto new polyacrylonitrile (PAN)-based filter membranes DSI/2026/014</title>
+    <summary type="html">Continuous renal replacement therapy (CRRT) is used for managing severe acute kidney injury and fluid overload. Published evidence has shown that caspofungin can bind to polyacrylonitrile (PAN)-based membranes used in CRRT w…</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/class-2-medicines-recall-norgine-pharmaceuticals-limited-pedmarqsi-80-mg-slash-ml-solution-for-infusion-el-26-a-slash-42</id>
+    <updated>2026-10-12T11:00:23+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/class-2-medicines-recall-norgine-pharmaceuticals-limited-pedmarqsi-80-mg-slash-ml-solution-for-infusion-el-26-a-slash-42"/>
+    <title>Class 2 Medicines Recall: Norgine Pharmaceuticals Limited, Pedmarqsi 80 mg/mL solution for infusion, EL(26)A/42</title>
+    <summary type="html">Norgine Pharmaceuticals Limited is recalling the batches listed in the table due to risk of particulate matter being present in the product identified during routine stability investigations.</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-for-october-2026</id>
+    <updated>2026-10-09T16:34:40+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-for-october-2026"/>
+    <title>Field Safety Notices for October 2026</title>
+    <summary type="html">Field Safety Notices for October 2026</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-8-12-june-2026</id>
+    <updated>2026-10-09T15:38:29+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-8-12-june-2026"/>
+    <title> Field Safety Notices: 8 -12 June 2026</title>
+    <summary type="html">List of Field Safety Notices for 8-12 June 2026</summary>
+  </entry>
+  <entry>
+    <id>tag:www.gov.uk,2005:/drug-device-alerts/field-safety-notices-28-september-2026-to-2-october-2026</id>
+    <updated>2026-10-09T11:36:22+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://www.gov.uk/drug-device-alerts/field-safety-notices-28-september-2026-to-2-october-2026"/>
+    <title>Field Safety Notices: 28 September 2026 to 2 October 2026</title>
+    <summary type="html">List of Field Safety Notices:  28 September 2026 to 2 October 2026</summary>
+  </entry>
+</feed>

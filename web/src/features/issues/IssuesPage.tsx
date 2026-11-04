@@ -1,0 +1,348 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { describeFilters, fetchAllIssues, useIngredientNames, useIssues, type IssueFilters } from './queries';
+import { useCountryIndex } from '../../lib/regulators';
+import { useDebounced } from '../../lib/useDebounced';
+import { exportIssues } from '../../lib/excel';
+import { errorMessage } from '../../lib/api';
+import { formatDate, formatNumber } from '../../lib/format';
+import { DOC_TYPE_LABEL, STATUS_LABEL } from '../../lib/labels';
+import { DOC_TYPES, ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatus } from '../../lib/types';
+import { Button } from '../../ui/Button';
+import { Field, Input, Toggle } from '../../ui/Input';
+import { Select } from '../../ui/Select';
+import { StatusPill } from '../../ui/Tag';
+import { Country } from '../../ui/Flag';
+import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
+import { PageHead } from '../../ui/Text';
+import { cx } from '../../ui/cx';
+
+const PAGE = 200;
+
+function readFilters(p: URLSearchParams): IssueFilters {
+  const status = p.get('status') ?? '';
+  const type = p.get('type') ?? '';
+  return {
+    country: p.get('country') ?? '',
+    ingredient: p.get('ingredient') ?? '',
+    status: (ISSUE_STATUSES as string[]).includes(status) ? (status as IssueStatus) : '',
+    type: (DOC_TYPES as string[]).includes(type) ? (type as DocType) : '',
+    q: p.get('q') ?? '',
+    history: p.get('history') === '1',
+    classWide: p.get('classwide') === '1',
+  };
+}
+
+function isFiltered(f: IssueFilters): boolean {
+  return Boolean(f.country || f.ingredient || f.status || f.type || f.q.trim() || f.history || f.classWide);
+}
+
+function otherCountries(r: IssueRow): string[] {
+  const anchor = r.anchor_country ?? r.countries?.[0] ?? null;
+  return (r.countries ?? []).filter((c) => c !== anchor);
+}
+
+export function IssuesPage() {
+  const [params, setParams] = useSearchParams();
+  const filters = useMemo(() => readFilters(params), [params]);
+  const [limit, setLimit] = useState(PAGE);
+  const [search, setSearch] = useState(filters.q);
+  const debouncedSearch = useDebounced(search, 350);
+  const [active, setActive] = useState(-1);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const countries = useCountryIndex();
+  const ingredients = useIngredientNames();
+  const issues = useIssues(filters, limit);
+  const rows = useMemo(() => issues.data?.rows ?? [], [issues.data]);
+  const total = issues.data?.total ?? 0;
+  const tableRef = useRef<HTMLTableSectionElement>(null);
+
+  function setParam(key: string, value: string) {
+    const next = new URLSearchParams(params);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setParams(next, { replace: true });
+    setLimit(PAGE);
+    setActive(-1);
+  }
+
+  useEffect(() => {
+    if (debouncedSearch !== filters.q) setParam('q', debouncedSearch);
+    // setParam is recreated each render; the search text is the only trigger here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // j / k move through the rows, Enter opens the one marked.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (e.key === 'j') {
+        e.preventDefault();
+        setActive((i) => Math.min(rows.length - 1, i + 1));
+      } else if (e.key === 'k') {
+        e.preventDefault();
+        setActive((i) => Math.max(0, i - 1));
+      } else if (e.key === 'Enter' && active >= 0 && active < rows.length) {
+        if (target?.closest('a, button')) return;
+        e.preventDefault();
+        navigate(`/issue/${rows[active].id}`);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [rows, active, navigate]);
+
+  useEffect(() => {
+    if (active < 0 || active >= rows.length) return;
+    const el = tableRef.current?.querySelector<HTMLElement>(`[data-row="${active}"]`);
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [active, rows.length]);
+
+  async function onExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const all = await fetchAllIssues(filters);
+      await exportIssues(all, describeFilters(filters));
+    } catch (e) {
+      setExportError(errorMessage(e));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function clearFilters() {
+    setSearch('');
+    setParams(new URLSearchParams(), { replace: true });
+    setLimit(PAGE);
+  }
+
+  const filtered = isFiltered(filters);
+
+  return (
+    <div className="page">
+      <PageHead
+        eyebrow="Safety notifications"
+        title="What the regulators published"
+        lede="Newest first. Titles are the originals, exactly as each regulator published them."
+        actions={
+          <Button onClick={() => void onExport()} busy={exporting} disabled={!rows.length}>
+            {exporting ? 'Preparing the file' : 'Export to Excel'}
+          </Button>
+        }
+      />
+
+      <div className="filters" role="search">
+        <Field label="Search titles" className="filters-search">
+          <Input
+            type="search"
+            value={search}
+            placeholder="Words from the original title"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </Field>
+        <Field label="Country">
+          <Select
+            value={filters.country}
+            onChange={(e) => setParam('country', e.target.value)}
+            placeholder="Every country"
+            options={countries.names.map((n) => ({ value: n, label: n }))}
+          />
+        </Field>
+        <Field label="Ingredient">
+          <Select
+            value={filters.ingredient}
+            onChange={(e) => setParam('ingredient', e.target.value)}
+            placeholder="Every ingredient"
+            options={(ingredients.data ?? []).map((n) => ({ value: n, label: n }))}
+          />
+        </Field>
+        <Field label="Status">
+          <Select
+            value={filters.status}
+            onChange={(e) => setParam('status', e.target.value)}
+            placeholder="Any status"
+            options={ISSUE_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+          />
+        </Field>
+        <Field label="Type">
+          <Select
+            value={filters.type}
+            onChange={(e) => setParam('type', e.target.value)}
+            placeholder="Any type"
+            options={DOC_TYPES.map((t) => ({ value: t, label: DOC_TYPE_LABEL[t] }))}
+          />
+        </Field>
+        <div className="filters-toggles">
+          <Toggle
+            checked={filters.history}
+            onChange={(v) => setParam('history', v ? '1' : '')}
+            label="Include history (backfill)"
+          />
+          <Toggle
+            checked={filters.classWide}
+            onChange={(v) => setParam('classwide', v ? '1' : '')}
+            label="Include class-wide notices"
+          />
+        </div>
+      </div>
+
+      <div className="toolbar">
+        <span className="toolbar-count">
+          {issues.isPending
+            ? ' '
+            : total === rows.length
+              ? `${formatNumber(total)} ${total === 1 ? 'notification' : 'notifications'}`
+              : `Showing ${formatNumber(rows.length)} of ${formatNumber(total)}`}
+          {issues.isFetching && !issues.isPending ? <span className="soft"> · updating</span> : null}
+        </span>
+        <span className="toolbar-hint soft">
+          <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>Enter</kbd> to open
+        </span>
+        {filtered ? (
+          <button type="button" className="link-button" onClick={clearFilters}>
+            Clear filters
+          </button>
+        ) : null}
+      </div>
+
+      {exportError ? <Notice tone="error">The export did not finish: {exportError}</Notice> : null}
+
+      {issues.isPending ? (
+        <Loading label="Reading the notifications" />
+      ) : issues.isError ? (
+        <ErrorNote
+          title="The notifications could not be loaded."
+          error={issues.error}
+          onRetry={() => void issues.refetch()}
+        />
+      ) : rows.length === 0 ? (
+        filtered ? (
+          <Empty
+            title="Nothing matches these filters."
+            action={
+              <Button onClick={clearFilters} variant="secondary">
+                Clear filters
+              </Button>
+            }
+          >
+            <p>Try fewer filters, or include the history from before the watch started.</p>
+          </Empty>
+        ) : (
+          <Empty title="Nothing has been found yet.">
+            <p>
+              When a regulator publishes a notice that names an ingredient on the watchlist, it appears here within a
+              few hours, with a link to the original.
+            </p>
+          </Empty>
+        )
+      ) : (
+        <>
+          <div className="issues-wrap">
+            <table className="table issues">
+              <thead>
+                <tr>
+                  <th scope="col" className="col-date">
+                    Date
+                  </th>
+                  <th scope="col" className="col-country">
+                    Country
+                  </th>
+                  <th scope="col" className="col-regulator">
+                    Regulator
+                  </th>
+                  <th scope="col" className="col-ingredient">
+                    Ingredient
+                  </th>
+                  <th scope="col">Safety notification</th>
+                  <th scope="col" className="col-status">
+                    Status
+                  </th>
+                  <th scope="col" className="col-link">
+                    Link
+                  </th>
+                </tr>
+              </thead>
+              <tbody ref={tableRef}>
+                {rows.map((r, i) => {
+                  const others = otherCountries(r);
+                  const anchor = r.anchor_country ?? r.countries?.[0] ?? null;
+                  return (
+                    <tr
+                      key={r.id}
+                      data-row={i}
+                      className={cx('issue-row', i === active && 'is-active')}
+                      onClick={() => navigate(`/issue/${r.id}`)}
+                    >
+                      <td data-label="Date" className="col-date nowrap">
+                        {formatDate(r.first_date)}
+                      </td>
+                      <td data-label="Country" className="col-country">
+                        <Country name={anchor} />
+                        {others.length > 0 ? (
+                          <span className="more" title={`Also published in ${others.join(', ')}`}>
+                            +{others.length}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td data-label="Regulator" className="col-regulator">
+                        {r.anchor_regulator ?? '—'}
+                      </td>
+                      <td data-label="Ingredient" className="col-ingredient">
+                        {(r.ingredients ?? []).join(', ') || (r.class_only ? 'Class-wide' : '—')}
+                      </td>
+                      <td data-label="Safety notification" className="col-title">
+                        <Link
+                          to={`/issue/${r.id}`}
+                          className="title-link"
+                          dir="auto"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {r.title}
+                        </Link>
+                        <span className="title-meta">
+                          {DOC_TYPE_LABEL[r.doc_type]}
+                          {r.is_backfill ? ' · history' : ''}
+                        </span>
+                      </td>
+                      <td data-label="Status" className="col-status">
+                        <StatusPill status={r.status} />
+                      </td>
+                      <td data-label="Link" className="col-link">
+                        {r.link ? (
+                          <a
+                            href={r.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ext-link"
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Open on the regulator’s site: ${r.title}`}
+                          >
+                            Open <span aria-hidden>↗</span>
+                          </a>
+                        ) : (
+                          <span className="soft">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {rows.length < total ? (
+            <div className="more-row">
+              <Button onClick={() => setLimit((l) => l + PAGE)} busy={issues.isFetching}>
+                Show {formatNumber(Math.min(PAGE, total - rows.length))} more
+              </Button>
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}

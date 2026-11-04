@@ -1,0 +1,765 @@
+# PHAROS source catalogue. Synced into regulator + source on every run (origin = catalogue).
+# Built from links verified live on 2026-11-04 — never from the Word file, whose links are partly
+# broken or misdirected. Sources a person adds in the app (origin = user) are never touched.
+#
+# Per source:
+#   kind      safety | recall | spc | literature
+#   channel   rss | atom | json | api | html | browser | email
+#   schedule  4h | 12h | daily | weekly | monthly
+#   parser    module under collectors/parsers (spc: collectors/spc)
+#   expected_max_gap_days   quiet longer than this → health 'degraded'
+#   options   parser options (documented at the top of each parser); runner-level keys:
+#             detail: always | matched_only | never   (when to call fetch_detail)
+#             backfill_all: true                       (backfill keeps the whole history)
+#   enabled   only applied when the row is first created; afterwards an admin decides in the app.
+
+regulators:
+  - id: EMA
+    country_code: EU
+    country_name: European Union
+    name: European Medicines Agency
+    languages: [en]
+    homepage: https://www.ema.europa.eu/en/homepage
+  - id: TGA
+    country_code: AU
+    country_name: Australia
+    name: Therapeutic Goods Administration
+    languages: [en]
+    homepage: https://www.tga.gov.au/
+  - id: BASG
+    country_code: AT
+    country_name: Austria
+    name: Bundesamt für Sicherheit im Gesundheitswesen
+    languages: [de]
+    homepage: https://www.basg.gv.at/
+  - id: FAMHP
+    country_code: BE
+    country_name: Belgium
+    name: Agence fédérale des médicaments et des produits de santé / Federaal agentschap voor geneesmiddelen en gezondheidsproducten
+    languages: [fr, nl]
+    homepage: https://www.famhp.be/
+  - id: HC
+    country_code: CA
+    country_name: Canada
+    name: Health Canada / Santé Canada
+    languages: [en, fr]
+    homepage: https://www.canada.ca/en/health-canada.html
+  - id: DKMA
+    country_code: DK
+    country_name: Denmark
+    name: Lægemiddelstyrelsen
+    languages: [da]
+    homepage: https://laegemiddelstyrelsen.dk/da/
+  - id: FIMEA
+    country_code: FI
+    country_name: Finland
+    name: Lääkealan turvallisuus- ja kehittämiskeskus Fimea
+    languages: [fi, sv]
+    homepage: https://fimea.fi/
+  - id: ANSM
+    country_code: FR
+    country_name: France
+    name: Agence nationale de sécurité du médicament et des produits de santé
+    languages: [fr]
+    homepage: https://ansm.sante.fr/
+  - id: BFARM
+    country_code: DE
+    country_name: Germany
+    name: Bundesinstitut für Arzneimittel und Medizinprodukte
+    languages: [de]
+    homepage: https://www.bfarm.de/
+  - id: IMA
+    country_code: IS
+    country_name: Iceland
+    name: Lyfjastofnun
+    languages: [is]
+    homepage: https://www.lyfjastofnun.is/
+  - id: HPRA
+    country_code: IE
+    country_name: Ireland
+    name: Health Products Regulatory Authority
+    languages: [en]
+    homepage: https://www.hpra.ie/
+  - id: AIFA
+    country_code: IT
+    country_name: Italy
+    name: Agenzia Italiana del Farmaco
+    languages: [it]
+    homepage: https://www.aifa.gov.it/
+  - id: PMDA
+    country_code: JP
+    country_name: Japan
+    name: 独立行政法人 医薬品医療機器総合機構
+    languages: [ja]
+    homepage: https://www.pmda.go.jp/
+  - id: LU_DPM
+    country_code: LU
+    country_name: Luxembourg
+    name: Direction de la santé – Division de la pharmacie et des médicaments
+    languages: [fr]
+    homepage: https://santesecu.public.lu/fr.html
+  - id: CBG
+    country_code: NL
+    country_name: Netherlands
+    name: College ter Beoordeling van Geneesmiddelen
+    languages: [nl]
+    homepage: https://www.cbg-meb.nl/
+  - id: MEDSAFE
+    country_code: NZ
+    country_name: New Zealand
+    name: New Zealand Medicines and Medical Devices Safety Authority (Medsafe)
+    languages: [en]
+    homepage: https://www.medsafe.govt.nz/
+  - id: DMP
+    country_code: "NO"
+    country_name: Norway
+    name: Direktoratet for medisinske produkter
+    languages: [nb]
+    homepage: https://www.dmp.no/
+  - id: INFARMED
+    country_code: PT
+    country_name: Portugal
+    name: INFARMED – Autoridade Nacional do Medicamento e Produtos de Saúde, I.P.
+    languages: [pt]
+    homepage: https://www.infarmed.pt/
+  - id: HSA
+    country_code: SG
+    country_name: Singapore
+    name: Health Sciences Authority
+    languages: [en]
+    homepage: https://www.hsa.gov.sg/
+  - id: MFDS
+    country_code: KR
+    country_name: South Korea
+    name: 식품의약품안전처
+    languages: [ko]
+    homepage: https://www.mfds.go.kr/
+  - id: AEMPS
+    country_code: ES
+    country_name: Spain
+    name: Agencia Española de Medicamentos y Productos Sanitarios
+    languages: [es]
+    homepage: https://www.aemps.gob.es/
+  - id: MPA
+    country_code: SE
+    country_name: Sweden
+    name: Läkemedelsverket
+    languages: [sv]
+    homepage: https://www.lakemedelsverket.se/sv
+  - id: SWISSMEDIC
+    country_code: CH
+    country_name: Switzerland
+    name: Swissmedic, Schweizerisches Heilmittelinstitut
+    languages: [de, fr, it]
+    homepage: https://www.swissmedic.ch/
+  - id: MHRA
+    country_code: GB
+    country_name: United Kingdom
+    name: Medicines and Healthcare products Regulatory Agency
+    languages: [en]
+    homepage: https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency
+  - id: FDA
+    country_code: US
+    country_name: United States
+    name: U.S. Food and Drug Administration
+    languages: [en]
+    homepage: https://www.fda.gov/
+  # ── phase 2 ──
+  - id: WHO
+    country_code: INT
+    country_name: International
+    name: World Health Organization
+    languages: [en, fr, es, ar]
+    homepage: https://www.who.int/
+  - id: EDA
+    country_code: EG
+    country_name: Egypt
+    name: هيئة الدواء المصرية
+    languages: [ar, en]
+    homepage: https://www.edaegypt.gov.eg/
+  - id: SFDA
+    country_code: SA
+    country_name: Saudi Arabia
+    name: الهيئة العامة للغذاء والدواء
+    languages: [ar, en]
+    homepage: https://www.sfda.gov.sa/
+  - id: JFDA
+    country_code: JO
+    country_name: Jordan
+    name: المؤسسة العامة للغذاء والدواء
+    languages: [ar, en]
+    homepage: https://www.jfda.jo/
+  - id: UAE_MOHAP
+    country_code: AE
+    country_name: United Arab Emirates
+    name: وزارة الصحة ووقاية المجتمع
+    languages: [ar, en]
+    homepage: https://mohap.gov.ae/
+  # ── literature ──
+  - id: NLM
+    country_code: INT
+    country_name: International (literature)
+    name: National Library of Medicine — PubMed
+    languages: [en]
+    homepage: https://pubmed.ncbi.nlm.nih.gov/
+
+sources:
+  # ───────────── EMA (anchors) ─────────────
+  - id: ema-dhpc
+    regulator: EMA
+    kind: safety
+    channel: json
+    url: https://www.ema.europa.eu/en/documents/report/dhpc-output-json-report_en.json
+    parser: ema_dhpc
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 45
+    options: {backfill_all: true, categories: [Human]}
+
+  - id: ema-psusa
+    regulator: EMA
+    kind: safety
+    channel: json
+    url: https://www.ema.europa.eu/en/documents/report/medicines-output-periodic_safety_update_report_single_assessments-output-json-report_en.json
+    parser: ema_psusa
+    languages: [en]
+    schedule: daily
+    expected_max_gap_days: 45
+    options: {backfill_all: true, detail: matched_only, categories: [Human]}
+
+  # ───────────── United States ─────────────
+  - id: fda-medwatch
+    regulator: FDA
+    kind: safety
+    channel: rss
+    url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml
+    parser: feed
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 21
+    options:
+      doc_type: safety_alert
+      doc_type_rules:
+        - {keyword: recall, doc_type: recall}
+        - {keyword: "drug safety communication", doc_type: safety_update}
+      exclude_url_patterns: [/medical-devices/]
+      body_selector: "article"
+
+  - id: fda-enforcement
+    regulator: FDA
+    kind: recall
+    channel: api
+    url: https://api.fda.gov/drug/enforcement.json
+    parser: openfda_enforcement
+    languages: [en]
+    schedule: daily
+    expected_max_gap_days: 21
+    options: {lookback_days: 45, page_size: 100}
+
+  # ───────────── United Kingdom ─────────────
+  - id: mhra-dsu
+    regulator: MHRA
+    kind: safety
+    channel: atom
+    url: https://www.gov.uk/drug-safety-update.atom
+    parser: govuk
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 60
+    options: {doc_type: safety_update}
+
+  - id: mhra-alerts
+    regulator: MHRA
+    kind: safety
+    channel: atom
+    url: https://www.gov.uk/drug-device-alerts.atom
+    parser: govuk
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 30
+    options:
+      doc_type: safety_alert
+      doc_type_rules:
+        - {keyword: "medicines recall", doc_type: recall}
+        - {keyword: "field safety notices", doc_type: other}
+
+  # ───────────── Germany ─────────────
+  - id: bfarm-rhb
+    regulator: BFARM
+    kind: safety
+    channel: rss
+    url: https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/Pharmakovigilanz/Rote-Hand-Briefe/RSSNewsfeed.xml?nn=591002
+    parser: feed
+    languages: [de]
+    schedule: 4h
+    expected_max_gap_days: 45
+    notes: German feed (the English one is …/RSSFeed/EN/Rote-Hand-Briefe/RSSNewsfeed.xml?nn=702260).
+    options:
+      doc_type: dhpc
+      doc_type_rules:
+        - {keyword: Informationsbrief, doc_type: safety_alert}
+      body_selector: "#content"
+      attachment_patterns: ["blob=publicationfile", ".pdf"]
+
+  - id: bfarm-risk
+    regulator: BFARM
+    kind: safety
+    channel: html
+    url: https://www.bfarm.de/EN/Medicinal-products/Pharmacovigilance/Risk-information/SucheRisikoinfos/_node.html
+    parser: bfarm_risk
+    languages: [de, en]
+    schedule: 4h
+    expected_max_gap_days: 30
+
+  # ───────────── Austria ─────────────
+  - id: basg-whatsnew
+    regulator: BASG
+    kind: safety
+    channel: rss
+    url: https://www.basg.gv.at/whatsnew/rss
+    parser: feed
+    languages: [de]
+    schedule: 4h
+    expected_max_gap_days: 30
+    options:
+      doc_type: safety_alert
+      include_url_patterns: [/marktbeobachtung/amtliche-nachrichten/, /gesundheitsberufe/]
+      exclude_keywords: ["West Nil", "Dengue", "Chikungunya", "Malaria", "Medizinprodukte"]
+      doc_type_rules:
+        - {keyword: Rückruf, doc_type: recall}
+        - {keyword: Chargenrückruf, doc_type: recall}
+        - {keyword: DHPC, doc_type: dhpc}
+        - {keyword: "Meeting Highlights", doc_type: newsletter}
+        - {keyword: "RMS NEWS", doc_type: newsletter}
+
+  # ───────────── Spain ─────────────
+  - id: aemps-feed
+    regulator: AEMPS
+    kind: safety
+    channel: rss
+    url: https://www.aemps.gob.es/feed/
+    parser: feed
+    languages: [es]
+    schedule: 4h
+    expected_max_gap_days: 30
+    notes: Connection is slow from some networks; the 40 s timeout is usually enough.
+    options:
+      doc_type: safety_alert
+      include_categories: [Seguridad, Medicamentos Uso Humano, Defectos de calidad, Medicamentos ilegales, Boletín Mensual FV]
+      exclude_keywords: [veterinari, cosmétic]
+      doc_type_rules:
+        - {category: Defectos de calidad, doc_type: recall}
+        - {category: Boletín Mensual FV, doc_type: newsletter}
+      body_selector: "article"
+
+  # ───────────── Singapore ─────────────
+  - id: hsa-announcements
+    regulator: HSA
+    kind: safety
+    channel: rss
+    url: https://www.hsa.gov.sg/announcements/rss.xml
+    parser: feed
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 30
+    options:
+      include_categories: [Dear Healthcare Professional Letters, Product Recalls, Safety Alerts, Adverse Drug Reaction News Bulletins]
+      doc_type_rules:
+        - {category: Dear Healthcare Professional Letters, doc_type: dhpc}
+        - {category: Product Recalls, doc_type: recall}
+        - {category: Adverse Drug Reaction News Bulletins, doc_type: newsletter}
+      doc_type: safety_alert
+
+  # ───────────── Canada ─────────────
+  - id: hc-recalls
+    regulator: HC
+    kind: recall
+    channel: json
+    url: https://recalls-rappels.canada.ca/sites/default/files/opendata-donneesouvertes/HCRSAMOpenData.json
+    parser: hc_recalls
+    languages: [en, fr]
+    schedule: daily
+    expected_max_gap_days: 21
+    options:
+      include_organizations: [Drugs and health products, Marketed health products]
+      exclude_categories: [Veterinary drugs]
+
+  # ───────────── HTML lists (parsers by A2) ─────────────
+  - id: ansm-securite
+    regulator: ANSM
+    kind: safety
+    channel: html
+    url: https://ansm.sante.fr/informations-de-securite/
+    parser: ansm
+    languages: [fr]
+    schedule: 4h
+    expected_max_gap_days: 30
+
+  - id: aifa-sicurezza
+    regulator: AIFA
+    kind: safety
+    channel: html
+    url: https://www.aifa.gov.it/sicurezza-dei-farmaci
+    parser: aifa
+    languages: [it]
+    schedule: 4h
+    expected_max_gap_days: 45
+
+  - id: hpra-notices
+    regulator: HPRA
+    kind: safety
+    channel: html
+    url: https://www.hpra.ie/safety-information/safety-notices
+    parser: hpra
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 45
+
+  - id: dkma-dhpc
+    regulator: DKMA
+    kind: safety
+    channel: html
+    url: https://laegemiddelstyrelsen.dk/da/bivirkninger/direkte-sikkerhedsinformation/udsendte-meddelelser/
+    parser: dkma
+    languages: [da]
+    schedule: 4h
+    expected_max_gap_days: 60
+
+  - id: noma-dhpc
+    regulator: DMP
+    kind: safety
+    channel: html
+    url: https://www.dmp.no/bivirkninger-og-sikkerhet/tiltak-for-a-forebygge-bivirkninger/sikkerhetsinformasjon-til-helsepersonell-og-pasient/kjere-helsepersonell-brev
+    parser: noma
+    languages: [nb]
+    schedule: 4h
+    expected_max_gap_days: 60
+
+  - id: ima-dhpc
+    regulator: IMA
+    kind: safety
+    channel: html
+    url: https://www.lyfjastofnun.is/lyf/lyfjagat/bref-til-heilbrigdisstarfsmanna-dhpc/
+    parser: ima_is
+    languages: [is]
+    schedule: 4h
+    expected_max_gap_days: 90
+
+  - id: infarmed-circulares
+    regulator: INFARMED
+    kind: safety
+    channel: html
+    url: https://www.infarmed.pt/web/infarmed/circulares
+    parser: infarmed
+    languages: [pt]
+    schedule: 4h
+    expected_max_gap_days: 30
+
+  - id: lu-dhpc
+    regulator: LU_DPM
+    kind: safety
+    channel: html
+    url: https://santesecu.public.lu/fr/espace-professionnel/departement-sante/pharmacies-et-medicaments/pharmacovigilance/gestion-riques/dhcp.html
+    parser: lu_sante
+    languages: [fr]
+    schedule: 4h
+    expected_max_gap_days: 90
+
+  - id: swissmedic-hpc
+    regulator: SWISSMEDIC
+    kind: safety
+    channel: html
+    url: https://www.swissmedic.ch/swissmedic/en/home/humanarzneimittel/market-surveillance/health-professional-communication--hpc-.html
+    parser: swissmedic
+    languages: [de, fr, it]
+    schedule: 4h
+    expected_max_gap_days: 45
+    notes: The listing is read in the national languages (de/fr/it); A2 sets the per-language URLs in options.
+
+  - id: medsafe-dhcp
+    regulator: MEDSAFE
+    kind: safety
+    channel: html
+    url: https://www.medsafe.govt.nz/safety/DHCPLetters.asp
+    parser: medsafe
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 90
+
+  - id: medsafe-comms
+    regulator: MEDSAFE
+    kind: safety
+    channel: html
+    url: https://www.medsafe.govt.nz/safety/SafetyCommunications.asp
+    parser: medsafe
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 60
+
+  # ───────────── Japan (Japanese pages; parser and final URLs by A2) ─────────────
+  - id: pmda-revisions
+    regulator: PMDA
+    kind: safety
+    channel: html
+    url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/revision-of-precautions/0001.html
+    parser: pmda
+    languages: [ja]
+    schedule: 4h
+    expected_max_gap_days: 60
+    notes: 使用上の注意の改訂指示 — A2 confirms the URL.
+
+  - id: pmda-urgent
+    regulator: PMDA
+    kind: safety
+    channel: html
+    url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/esc-rsc/0001.html
+    parser: pmda
+    languages: [ja]
+    schedule: 4h
+    expected_max_gap_days: 400
+    notes: 安全性速報（ブルーレター・イエローレター） — A2 confirms the URL.
+
+  - id: pmda-msi
+    regulator: PMDA
+    kind: safety
+    channel: html
+    url: https://www.pmda.go.jp/safety/info-services/medical-safety-info/0001.html
+    parser: pmda
+    languages: [ja]
+    schedule: 4h
+    expected_max_gap_days: 90
+    notes: PMDA医療安全情報 — A2 confirms the URL.
+
+  # ───────────── South Korea ─────────────
+  - id: mfds-letters
+    regulator: MFDS
+    kind: safety
+    channel: html
+    url: https://nedrug.mfds.go.kr/pbp/CCBAC01
+    parser: mfds
+    languages: [ko]
+    schedule: 4h
+    expected_max_gap_days: 45
+    notes: 의약품 안전성 서한 — A2 confirms the board URL.
+
+  # ───────────── Browser-engine sources ─────────────
+  - id: famhp-news
+    regulator: FAMHP
+    kind: safety
+    channel: browser
+    url: https://www.famhp.be/en/news
+    parser: famhp
+    languages: [fr, nl, en]
+    schedule: 12h
+    expected_max_gap_days: 30
+
+  - id: cbg-news
+    regulator: CBG
+    kind: safety
+    channel: browser
+    url: https://www.cbg-meb.nl/actueel/nieuws
+    parser: cbg
+    languages: [nl]
+    schedule: 12h
+    expected_max_gap_days: 30
+
+  - id: mpa-news
+    regulator: MPA
+    kind: safety
+    channel: browser
+    url: https://www.lakemedelsverket.se/sv/nyheter?c=225
+    parser: lakemedelsverket
+    languages: [sv]
+    schedule: 12h
+    expected_max_gap_days: 45
+
+  - id: tga-alerts
+    regulator: TGA
+    kind: safety
+    channel: browser
+    url: https://www.tga.gov.au/news/safety-alerts
+    parser: tga
+    languages: [en]
+    schedule: 12h
+    expected_max_gap_days: 30
+
+  - id: tga-updates
+    regulator: TGA
+    kind: safety
+    channel: browser
+    url: https://www.tga.gov.au/news/safety-updates
+    parser: tga
+    languages: [en]
+    schedule: 12h
+    expected_max_gap_days: 60
+
+  # ───────────── Email ingestion (pharos@satopharma.com) ─────────────
+  - id: fimea-email
+    regulator: FIMEA
+    kind: safety
+    channel: email
+    url: https://fimea.fi/ajankohtaista/laaketurvallisuustiedotteet
+    parser: email_inbox
+    languages: [fi, sv]
+    schedule: 4h
+    expected_max_gap_days: 60
+    notes: Fimea's web pages sit behind a Cloudflare check that is never bypassed; its newsletter is read from the mailbox instead.
+    options: {from_domains: [fimea.fi]}
+
+  - id: tga-email
+    regulator: TGA
+    kind: safety
+    channel: email
+    url: https://www.tga.gov.au/news/safety-alerts
+    parser: email_inbox
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 60
+    notes: Fallback while TGA blocks datacenter addresses.
+    options: {from_domains: [tga.gov.au]}
+
+  # ───────────── Literature ─────────────
+  - id: pubmed
+    regulator: NLM
+    kind: literature
+    channel: api
+    url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi
+    parser: pubmed
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: 120
+    options: {lookback_days: 10, field: tiab, retmax: 200}
+
+  # ───────────── Phase 2 (disabled until a live probe confirms them) ─────────────
+  - id: ema-prac
+    regulator: EMA
+    kind: safety
+    channel: html
+    url: https://www.ema.europa.eu/en/committees/prac/prac-agendas-minutes-highlights
+    parser: prac
+    languages: [en, bg, cs, da, de, el, es, et, fi, fr, ga, hr, hu, it, lt, lv, mt, nl, pl, pt, ro, sk, sl, sv]
+    schedule: 4h
+    expected_max_gap_days: 45
+    enabled: false
+    notes: needs live probe — PRAC signal recommendations come in every EU language.
+
+  - id: who-alerts
+    regulator: WHO
+    kind: safety
+    channel: html
+    url: https://www.who.int/teams/regulation-prequalification/incidents-and-SF/full-list-of-who-medical-product-alerts
+    parser: who_alerts
+    languages: [en]
+    schedule: 12h
+    expected_max_gap_days: 60
+    enabled: false
+    notes: needs live probe
+
+  - id: eda-eg
+    regulator: EDA
+    kind: safety
+    channel: html
+    url: https://www.edaegypt.gov.eg/ar/
+    parser: generic_html
+    languages: [ar, en]
+    schedule: 12h
+    expected_max_gap_days: 60
+    enabled: false
+    notes: needs live probe
+
+  - id: sfda-sa
+    regulator: SFDA
+    kind: safety
+    channel: html
+    url: https://www.sfda.gov.sa/ar/news
+    parser: generic_html
+    languages: [ar, en]
+    schedule: 12h
+    expected_max_gap_days: 60
+    enabled: false
+    notes: needs live probe
+
+  - id: jfda-jo
+    regulator: JFDA
+    kind: safety
+    channel: html
+    url: https://www.jfda.jo/
+    parser: generic_html
+    languages: [ar, en]
+    schedule: 12h
+    expected_max_gap_days: 60
+    enabled: false
+    notes: needs live probe
+
+  - id: uae-mohap
+    regulator: UAE_MOHAP
+    kind: safety
+    channel: html
+    url: https://mohap.gov.ae/en/media-center/news
+    parser: generic_html
+    languages: [ar, en]
+    schedule: 12h
+    expected_max_gap_days: 60
+    enabled: false
+    notes: needs live probe
+
+  # ───────────── SPC / label watch (modules under collectors/spc, by A2) ─────────────
+  - id: spc-cima
+    regulator: AEMPS
+    kind: spc
+    channel: api
+    url: https://cima.aemps.es/cima/rest/medicamentos
+    parser: spc_cima
+    languages: [es]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-bdpm
+    regulator: ANSM
+    kind: spc
+    channel: html
+    url: https://base-donnees-publique.medicaments.gouv.fr/telechargement.php
+    parser: spc_bdpm
+    languages: [fr]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-ema-epar
+    regulator: EMA
+    kind: spc
+    channel: json
+    url: https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.json
+    parser: spc_ema_epar
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-dailymed
+    regulator: FDA
+    kind: spc
+    channel: api
+    url: https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json
+    parser: spc_dailymed
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-mhra
+    regulator: MHRA
+    kind: spc
+    channel: html
+    url: https://products.mhra.gov.uk/
+    parser: spc_mhra
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-pmda
+    regulator: PMDA
+    kind: spc
+    channel: html
+    url: https://www.pmda.go.jp/PmdaSearch/iyakuSearch/
+    parser: spc_pmda_pi
+    languages: [ja]
+    schedule: weekly
+    expected_max_gap_days: null

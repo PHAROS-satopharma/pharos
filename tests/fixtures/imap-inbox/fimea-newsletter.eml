@@ -1,0 +1,28 @@
+Return-Path: <uutiskirje@fimea.fi>
+From: Fimea <uutiskirje@fimea.fi>
+To: PHAROS <pharos@satopharma.com>
+Subject: =?utf-8?q?L=C3=A4=C3=A4keturvallisuustiedote=3A_lornoksikaami?=
+Date: Tue, 03 Nov 2026 09:15:00 +0200
+Message-ID: <constructed-test-0001@pharos.test>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="pharos-test-boundary"
+
+--pharos-test-boundary
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+CONSTRUCTED TEST MESSAGE - not sent by Fimea.
+
+Lornoksikaamia sisältävien valmisteiden valmisteyhteenvetoa päivitetään.
+https://fimea.fi/ajankohtaista/laaketurvallisuustiedotteet
+
+--pharos-test-boundary
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+<html><body><p>CONSTRUCTED TEST MESSAGE - not sent by Fimea.</p>
+<p>Lornoksikaamia sisältävien valmisteiden valmisteyhteenvetoa päivitetään.</p>
+<p><a href="https://fimea.fi/ajankohtaista/laaketurvallisuustiedotteet">Lääketurvallisuustiedotteet</a></p>
+</body></html>
+
+--pharos-test-boundary--
