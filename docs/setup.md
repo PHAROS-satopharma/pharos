@@ -94,7 +94,7 @@ Telegram webhook, so you never paste a secret anywhere else.
 
 | GitHub secret | Where you find it | Copied automatically to |
 |---|---|---|
-| `SUPABASE_URL` | Supabase *Project Settings → Data API*: Project URL | website build |
+| `SUPABASE_URL` | Supabase *Project Settings → Data API*: Project URL, only `https://<ref>.supabase.co` (no `/rest/v1/`) | website build |
 | `SUPABASE_ANON_KEY` | Supabase *Project Settings → API Keys*: `anon` public key | website build |
 | `SUPABASE_SERVICE_ROLE_KEY` | Same page: `service_role` key (secret) | (optional email Worker only) |
 | `SUPABASE_DB_URL` | Supabase *Connect → Session pooler* URI, with your database password filled in | collectors, backups |
