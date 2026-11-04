@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+node_modules/
+web/dist/
+.wrangler/
+supabase/.temp/
+*.log
+# The reference Word file is the team's own document and stays out of the repository.
+*.docx
+~$*
+.archive/
+# The Sato Pharma logo files kept aside when PHAROS took its own identity.
+web/_unused_brand/
