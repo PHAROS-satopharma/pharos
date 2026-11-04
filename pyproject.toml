@@ -1,0 +1,25 @@
+[project]
+name = "pharos-collectors"
+version = "0.1.0"
+description = "PHAROS (Pharmaceutical Alerts & Regulatory Observation System) by Sato Pharma: collectors"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q -ra"
+markers = [
+  "live: reaches a real website (skipped in CI unless PHAROS_LIVE_TESTS=1)",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = ["web", "workers", "supabase", "tests/fixtures", ".archive"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]

@@ -1,0 +1,50 @@
+"""PHAROS — shared types for the SPC / label watch country modules.
+
+Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi) defines:
+
+* ``SOURCE_ID`` — its ``source`` row (``spc-cima`` …, ``kind: spc``), ``COUNTRY`` and ``LANG``;
+* ``discover(ctx, ingredient) -> list[Product]`` — the products authorised for one active
+  ingredient (``ingredient`` = ``{"id", "inn_en", "atc_code", "terms": {lang: [term, …]}}``);
+* ``snapshot(ctx, product) -> Snapshot | None`` — the product's current label split into sections
+  (``product`` = the ``spc_product`` row as a dict); ``None`` when no label is published.
+
+``collectors/spc/run.py`` does the rest (rows, hashes, diffs, issues).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import date
+
+
+@dataclass
+class Product:
+    national_id: str              # nregistro, CIS, EMEA/H/C/…, setid, PL number, PMDA package id
+    product_name: str             # as published
+    mah: str | None = None
+    url: str | None = None        # the product's page on the regulator's site
+    country_code: str = ""
+    extra: dict = field(default_factory=dict)
+
+
+@dataclass
+class Snapshot:
+    sections: dict[str, str]      # {"4.4": text, …} in the label's own language
+    doc_date: date | None = None  # revision date of the label, when the source gives one
+    lang: str | None = None
+    source_url: str | None = None  # where the label text was read
+    original_sha256: str | None = None  # sha of the archived original (PDF/HTML/XML), if any
+
+
+def terms_for(ingredient: dict, lang: str, *, fallback_en: bool = True) -> list[str]:
+    """INN terms of ``ingredient`` in ``lang`` (kind inn first), else the English INN."""
+    terms = list((ingredient.get("terms") or {}).get(lang) or [])
+    if not terms and fallback_en and ingredient.get("inn_en"):
+        terms = [ingredient["inn_en"]]
+    seen: set[str] = set()
+    out = []
+    for t in terms:
+        if t and t.casefold() not in seen:
+            seen.add(t.casefold())
+            out.append(t)
+    return out

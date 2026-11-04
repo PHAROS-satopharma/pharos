@@ -1,0 +1,306 @@
+"""In-memory ``Store`` twin for fixture tests and ``--no-db`` local runs. Same methods, no SQL."""
+
+from __future__ import annotations
+
+import re
+import uuid
+from contextlib import contextmanager
+from datetime import date, datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable
+
+from collectors.core.models import SourceConfig
+from collectors.core.store import DEFAULT_SETTINGS
+from collectors.matching import Term
+
+SEED_SQL = Path(__file__).resolve().parents[2] / "supabase" / "migrations" / "0003_seed_watchlist.sql"
+_SEED_CLASS_ROW = re.compile(r"^\s*\('([a-z]{2})',\s*'([^']+)',\s*'(stem|exact|substring)'\)", re.M)
+_SEED_TERM_ROW = re.compile(
+    r"^\s*\('([a-z]{2})',\s*'([^']+)',\s*'(\w+)',\s*'(stem|exact|substring)',\s*'\{([^}]*)\}'\)", re.M)
+
+
+def _id() -> str:
+    return str(uuid.uuid4())
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class MemoryStore:
+    """Tables are plain lists/dicts so a test can seed and inspect them directly."""
+
+    db = None
+
+    def __init__(self) -> None:
+        self.app_setting: dict[str, Any] = dict(DEFAULT_SETTINGS)
+        self.regulator: dict[str, dict] = {}
+        self.source: dict[str, dict] = {}
+        self.run: dict[str, dict] = {}
+        self.source_run: dict[str, dict] = {}
+        self.document: dict[str, dict] = {}
+        self.attachment: dict[str, dict] = {}
+        self.document_text: list[dict] = []
+        self.match: list[dict] = []
+        self.ingredient: dict[str, dict] = {}
+        self.terms: list[Term] = []
+        self.ingredient_class: list[tuple[str, str]] = []  # (ingredient_id, class_id)
+        self.spc_mah: dict[str, list[str]] = {}
+        self.issue: dict[str, dict] = {}
+        self.issue_document: list[dict] = []
+        self.issue_ingredient: list[tuple[str, str]] = []
+        self.person: dict[str, dict] = {}
+        self.subscription: list[dict] = []
+        self.notification: list[dict] = []
+        self.probe_result: dict[str, dict] = {}
+
+    @contextmanager
+    def transaction(self):
+        yield self
+
+    # ───────────────────────────── seed ─────────────────────────────
+    def load_seed(self, path: str | Path = SEED_SQL) -> tuple[str, str]:
+        """Load the watchlist seed migration (lornoxicam + NSAID) so ``--no-db`` runs and tests use
+        the very terms production starts with. Returns (ingredient_id, class_id)."""
+        sql = Path(path).read_text(encoding="utf-8")
+        ing_id, cls_id = "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002"
+        self.ingredient[ing_id] = {"inn_en": "lornoxicam", "atc_code": "M01AC05", "active": True}
+        self.ingredient_class.append((ing_id, cls_id))
+        class_part, _, ing_part = sql.partition("insert into ingredient (")
+        n = 0
+        for m in _SEED_CLASS_ROW.finditer(class_part):
+            n += 1
+            self.terms.append(Term(id=f"ct-{n}", term=m.group(2), lang=m.group(1), mode=m.group(3),
+                                   class_id=cls_id, kind="class"))
+        for m in _SEED_TERM_ROW.finditer(ing_part):
+            n += 1
+            excl = tuple(x for x in m.group(5).split(",") if x)
+            self.terms.append(Term(id=f"t-{n}", term=m.group(2), lang=m.group(1), mode=m.group(4),
+                                   exclusions=excl, ingredient_id=ing_id, kind=m.group(3)))
+        return ing_id, cls_id
+
+    # ───────────────────────────── settings / catalogue ─────────────────────────────
+    def settings(self) -> dict[str, Any]:
+        return dict(self.app_setting)
+
+    def upsert_regulator(self, reg: dict) -> None:
+        self.regulator[reg["id"]] = dict(reg)
+
+    def upsert_catalogue_source(self, src: SourceConfig, notes: str | None) -> None:
+        row = self.source.get(src.id)
+        if row and row.get("origin") == "user":
+            return
+        base = row or {"enabled": src.enabled, "origin": "catalogue", "health": "unknown",
+                       "consecutive_failures": 0, "last_ok_at": None, "last_item_at": None}
+        base.update(id=src.id, regulator_id=src.regulator_id, kind=src.kind, channel=src.channel,
+                    url=src.url, parser=src.parser, languages=list(src.languages),
+                    schedule=src.schedule, expected_max_gap_days=src.expected_max_gap_days,
+                    notes=notes)
+        self.source[src.id] = base
+
+    def list_sources(self) -> list[dict]:
+        return [dict(v) for _, v in sorted(self.source.items())]
+
+    def get_source(self, source_id: str) -> dict | None:
+        return self.source.get(source_id)
+
+    def country_code(self, regulator_id: str) -> str | None:
+        return (self.regulator.get(regulator_id) or {}).get("country_code")
+
+    # ───────────────────────────── runs ─────────────────────────────
+    def create_run(self, trigger: str, git_sha: str | None) -> str:
+        rid = _id()
+        self.run[rid] = {"id": rid, "trigger": trigger, "git_sha": git_sha, "started_at": _now(),
+                         "finished_at": None, "ok": None}
+        return rid
+
+    def finish_run(self, run_id: str, ok: bool) -> None:
+        self.run[run_id].update(finished_at=_now(), ok=ok)
+
+    def start_source_run(self, run_id: str, source_id: str) -> str:
+        sid = _id()
+        self.source_run[sid] = {"id": sid, "run_id": run_id, "source_id": source_id,
+                                "started_at": _now(), "items_seen": 0, "items_new": 0,
+                                "items_matched": 0, "error": None}
+        return sid
+
+    def finish_source_run(self, source_run_id: str, **fields: Any) -> None:
+        self.source_run[source_run_id].update(finished_at=_now(), **fields)
+
+    def set_source_state(self, source_id: str, *, health: str, consecutive_failures: int,
+                         ok: bool = False, last_item_at: datetime | None = None) -> None:
+        row = self.source[source_id]
+        row["health"] = health
+        row["consecutive_failures"] = consecutive_failures
+        if ok:
+            row["last_ok_at"] = _now()
+        if last_item_at and (row.get("last_item_at") is None or last_item_at > row["last_item_at"]):
+            row["last_item_at"] = last_item_at
+
+    # ───────────────────────────── documents ─────────────────────────────
+    def known_external_ids(self, source_id: str) -> set[str]:
+        return {d["external_id"] for d in self.document.values() if d["source_id"] == source_id}
+
+    def insert_document(self, doc: dict) -> str | None:
+        if doc["external_id"] in self.known_external_ids(doc["source_id"]):
+            return None
+        did = _id()
+        self.document[did] = {**doc, "id": did, "first_seen_at": _now()}
+        return did
+
+    def insert_attachment(self, att: dict) -> str:
+        aid = _id()
+        self.attachment[aid] = {**att, "id": aid}
+        return aid
+
+    def insert_document_text(self, document_id: str, attachment_id: str | None, text: str) -> None:
+        self.document_text.append({"document_id": document_id, "attachment_id": attachment_id,
+                                   "text": text})
+
+    def insert_match(self, m: dict) -> None:
+        self.match.append(dict(m))
+
+    # ───────────────────────────── watchlist ─────────────────────────────
+    def load_terms(self) -> list[Term]:
+        active = {i for i, r in self.ingredient.items() if r.get("active", True)}
+        active_classes = {c for i, c in self.ingredient_class if i in active}
+        return [t for t in self.terms
+                if (t.ingredient_id and t.ingredient_id in active)
+                or (t.class_id and not t.ingredient_id and t.class_id in active_classes)]
+
+    def class_ingredients(self) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for ing, cls in self.ingredient_class:
+            if self.ingredient.get(ing, {}).get("active", True):
+                out.setdefault(cls, []).append(ing)
+        return out
+
+    def active_ingredients(self) -> list[dict]:
+        return [dict(r, id=i) for i, r in self.ingredient.items() if r.get("active", True)]
+
+    def ingredients_without_spc(self) -> list[str]:
+        return [i for i, r in self.ingredient.items() if r.get("active", True) and i not in self.spc_mah]
+
+    def mah_names(self, ingredient_ids: Iterable[str]) -> list[str]:
+        return sorted({m for i in ingredient_ids for m in self.spc_mah.get(i, [])})
+
+    # ───────────────────────────── issues ─────────────────────────────
+    def _country(self, source_id: str) -> str | None:
+        src = self.source.get(source_id) or {}
+        return (self.regulator.get(src.get("regulator_id")) or {}).get("country_code")
+
+    def candidate_issues(self, ingredient_ids: Iterable[str], date_from: date,
+                         date_to: date) -> list[dict]:
+        ids = set(ingredient_ids)
+        out = []
+        for iss in self.issue.values():
+            if iss["first_date"] is None or not (date_from <= iss["first_date"] <= date_to):
+                continue
+            if not ids & {g for i, g in self.issue_ingredient if i == iss["id"]}:
+                continue
+            docs = []
+            for link in self.issue_document:
+                if link["issue_id"] != iss["id"] or link["method"] == "suggested":
+                    continue
+                d = self.document[link["document_id"]]
+                text = "\n".join(t["text"] for t in self.document_text if t["document_id"] == d["id"])
+                docs.append({"id": d["id"], "source_id": d["source_id"], "url": d["url"],
+                             "title_orig": d["title_orig"], "doc_type": d["doc_type"],
+                             "published_date": d["published_date"], "structured": d.get("structured"),
+                             "country_code": self._country(d["source_id"]), "link": link["link"],
+                             "method": link["method"], "text": text})
+            out.append({"id": iss["id"], "doc_type": iss["doc_type"], "first_date": iss["first_date"],
+                        "class_only": iss["class_only"],
+                        "anchor_document_id": iss["anchor_document_id"], "documents": docs})
+        return out
+
+    def create_issue(self, *, doc_type: str, title: str, anchor_document_id: str,
+                     first_date: date | None, class_only: bool, is_backfill: bool) -> str:
+        iid = _id()
+        self.issue[iid] = {"id": iid, "doc_type": doc_type, "title": title,
+                           "anchor_document_id": anchor_document_id, "first_date": first_date,
+                           "status": "new", "class_only": class_only, "is_backfill": is_backfill,
+                           "created_at": _now()}
+        return iid
+
+    def link_document(self, issue_id: str, document_id: str, *, link: str, method: str,
+                      score: int | None) -> None:
+        if any(x["issue_id"] == issue_id and x["document_id"] == document_id
+               for x in self.issue_document):
+            return
+        self.issue_document.append({"issue_id": issue_id, "document_id": document_id,
+                                    "link": link, "method": method, "score": score})
+
+    def set_issue_anchor(self, issue_id: str, document_id: str, *, title: str, doc_type: str,
+                         first_date: date | None) -> None:
+        for x in self.issue_document:
+            if x["issue_id"] == issue_id and x["link"] == "anchor" and x["document_id"] != document_id:
+                x["link"] = "copy"
+        iss = self.issue[issue_id]
+        iss.update(anchor_document_id=document_id, title=title, doc_type=doc_type)
+        if first_date and (iss["first_date"] is None or first_date < iss["first_date"]):
+            iss["first_date"] = first_date
+
+    def add_issue_ingredients(self, issue_id: str, ingredient_ids: Iterable[str]) -> None:
+        for g in ingredient_ids:
+            if (issue_id, g) not in self.issue_ingredient:
+                self.issue_ingredient.append((issue_id, g))
+
+    def documents_of(self, issue_id: str) -> list[dict]:
+        return [x for x in self.issue_document if x["issue_id"] == issue_id]
+
+    # ───────────────────────────── alerts ─────────────────────────────
+    def issue_for_alert(self, issue_id: str) -> dict | None:
+        iss = self.issue.get(issue_id)
+        if not iss:
+            return None
+        d = self.document[iss["anchor_document_id"]]
+        src = self.source.get(d["source_id"]) or {}
+        reg = self.regulator.get(src.get("regulator_id")) or {}
+        ing_ids = [g for i, g in self.issue_ingredient if i == issue_id]
+        return {**iss, "document_id": d["id"], "url": d["url"], "title_orig": d["title_orig"],
+                "lang": d.get("lang"), "country_name": reg.get("country_name"),
+                "regulator_name": reg.get("name"), "ingredient_ids": ing_ids,
+                "ingredients": sorted(self.ingredient[g]["inn_en"] for g in ing_ids
+                                      if g in self.ingredient),
+                "attachments": [a for a in self.attachment.values() if a["document_id"] == d["id"]]}
+
+    def subscribers(self, kind: str, ingredient_ids: Iterable[str] | None = None) -> list[dict]:
+        ids = set(ingredient_ids or [])
+        seen, out = set(), []
+        for s in self.subscription:
+            p = self.person.get(s["person_id"])
+            if s["kind"] != kind or not p or not p.get("active", True) or not p.get("telegram_chat_id"):
+                continue
+            if kind == "ingredient" and s.get("ingredient_id") not in (None, *ids):
+                continue
+            if kind == "admin_health" and p.get("role") != "admin":
+                continue
+            if p["id"] in seen:
+                continue
+            seen.add(p["id"])
+            out.append({"person_id": p["id"], "full_name": p["full_name"],
+                        "telegram_chat_id": p["telegram_chat_id"], "role": p.get("role")})
+        return out
+
+    def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
+        return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind
+                   and n["error"] is None for n in self.notification)
+
+    def insert_notification(self, **fields: Any) -> None:
+        self.notification.append({**fields, "sent_at": _now()})
+
+    def last_notification_at(self, kind: str) -> datetime | None:
+        times = [n["sent_at"] for n in self.notification if n["kind"] == kind]
+        return max(times) if times else None
+
+    def class_only_issues_since(self, since: datetime) -> list[str]:
+        return [i for i, r in self.issue.items()
+                if r["class_only"] and not r["is_backfill"] and r["created_at"] > since]
+
+    # ───────────────────────────── probe ─────────────────────────────
+    def get_probe(self, probe_id: str) -> dict | None:
+        return self.probe_result.get(probe_id)
+
+    def update_probe(self, probe_id: str, **fields: Any) -> None:
+        self.probe_result.setdefault(probe_id, {"id": probe_id}).update(fields)

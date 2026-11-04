@@ -1,0 +1,138 @@
+# PHAROS — nightly database backup to R2, and the weekly archive integrity check.
+#
+# backup          every night 00:13 UTC (02:13 / 03:13 Cairo): pg_dump → gzip → R2 backups/<date>.sql.gz.
+#                 The R2 lifecycle rule on the backups/ prefix deletes copies after 90 days, so 90 are kept.
+# verify-archive  Sunday 00:43 UTC: re-downloads 50 random archived originals and recomputes their sha256
+#                 against the database, checks that an overwrite is refused (bucket lock), and records the
+#                 result in archive_check. Any failure fails the job, and GitHub emails the repository admins.
+name: PHAROS database backup and archive check
+
+on:
+  schedule:
+    - cron: "13 0 * * *"
+    - cron: "43 0 * * 0"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job
+        type: choice
+        options: ["backup", "verify-archive"]
+        default: "backup"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: auto
+  # R2 does not need the newer default checksums of the AWS CLI.
+  AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+  AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+  R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+  R2_BUCKET: ${{ secrets.R2_BUCKET }}
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+jobs:
+  backup:
+    if: github.event.schedule == '13 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.job == 'backup')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Postgres 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Dump, compress, upload
+        run: |
+          set -euo pipefail
+          PGD=/usr/lib/postgresql/17/bin/pg_dump
+          day="$(date -u +%F)"
+          out="$RUNNER_TEMP/$day.sql.gz"
+          {
+            echo "-- PHAROS backup $day (UTC). Restore: docs/operations.md, 'Restore'."
+            echo "-- Part 1: sign-in accounts (auth.users, auth.identities), data only."
+            "$PGD" "$SUPABASE_DB_URL" --data-only --no-owner --table=auth.users --table=auth.identities
+            echo "-- Part 2: the public schema, structure and data."
+            "$PGD" "$SUPABASE_DB_URL" --no-owner --schema=public
+          } | gzip -9 > "$out"
+          gzip -t "$out"
+          size=$(stat -c %s "$out")
+          echo "backup size: $size bytes"
+          [ "$size" -gt 2048 ] || { echo "backup is suspiciously small"; exit 1; }
+          aws s3 cp "$out" "s3://$R2_BUCKET/backups/$day.sql.gz" --endpoint-url "$R2_ENDPOINT" \
+            --content-type application/gzip --only-show-errors
+          echo "stored backups/$day.sql.gz"
+
+  verify-archive:
+    if: github.event.schedule == '43 0 * * 0' || (github.event_name == 'workflow_dispatch' && inputs.job == 'verify-archive')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - name: Sample 50 archived originals and re-hash them
+        run: |
+          set -uo pipefail
+          work="$RUNNER_TEMP/verify"; mkdir -p "$work"
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -At -F $'\t' -c "
+            select r2_key, sha256 from (
+              select r2_key, sha256 from document   where r2_key is not null and sha256 is not null
+              union all
+              select r2_key, sha256 from attachment where r2_key is not null and sha256 is not null
+              union all
+              select r2_key, sha256 from spc_snapshot where r2_key is not null
+            ) s order by random() limit 50" > "$work/sample.tsv" || exit 1
+
+          sampled=0; mismatched=0; missing=0; details="[]"; first=""
+          while IFS=$'\t' read -r key sha; do
+            [ -n "$key" ] || continue
+            sampled=$((sampled+1))
+            if ! aws s3 cp "s3://$R2_BUCKET/$key" "$work/obj" --endpoint-url "$R2_ENDPOINT" --only-show-errors; then
+              missing=$((missing+1))
+              details=$(jq -c --arg k "$key" --arg e "$sha" '. + [{r2_key:$k, expected:$e, actual:"missing"}]' <<< "$details")
+              continue
+            fi
+            actual=$(sha256sum "$work/obj" | cut -d' ' -f1)
+            # An object stored gzip-compressed is checked against the hash of the original bytes.
+            if [ "$actual" != "$sha" ] && gzip -t "$work/obj" 2>/dev/null; then
+              actual=$(gunzip -c "$work/obj" | sha256sum | cut -d' ' -f1)
+            fi
+            if [ "$actual" != "$sha" ]; then
+              mismatched=$((mismatched+1))
+              details=$(jq -c --arg k "$key" --arg e "$sha" --arg a "$actual" '. + [{r2_key:$k, expected:$e, actual:$a}]' <<< "$details")
+            fi
+            [ -z "$first" ] && first="$key" && cp "$work/obj" "$work/first"
+          done < "$work/sample.tsv"
+
+          # Bucket lock: re-uploading the identical bytes to an existing key must be refused.
+          lock="not tested (archive empty)"
+          if [ -n "$first" ]; then
+            if aws s3api put-object --bucket "$R2_BUCKET" --key "$first" --body "$work/first" \
+                 --endpoint-url "$R2_ENDPOINT" > /dev/null 2>&1; then
+              lock="MISSING: overwrite was accepted"
+              details=$(jq -c --arg k "$first" '. + [{r2_key:$k, expected:"overwrite refused", actual:"overwrite accepted"}]' <<< "$details")
+              mismatched=$((mismatched+1))
+            else
+              lock="ok: overwrite refused"
+            fi
+          fi
+
+          echo "sampled=$sampled mismatched=$mismatched missing=$missing lock=$lock"
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q \
+            -v sampled="$sampled" -v mismatched="$mismatched" -v missing="$missing" \
+            -v details="$details" -v sha="$GIT_SHA" <<'SQL'
+          insert into archive_check (sampled, mismatched, missing, details, git_sha)
+          values (:sampled, :mismatched, :missing, :'details'::jsonb, :'sha');
+          SQL
+          [ "$mismatched" -eq 0 ] && [ "$missing" -eq 0 ]

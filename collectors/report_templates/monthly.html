@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} · {{ month.label }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&family=Noto+Sans+Arabic:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #02224C;   /* the logo's navy */
+    --paper: #F6F4EF;
+    --rule: #D9D5CC;
+    --muted: #5B6670;
+    --sea: #1F4E5F;
+    --beacon: #E3A336;   /* markers only, never text */
+    --sans: "IBM Plex Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans Arabic", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  * { box-sizing: border-box; border-radius: 0; box-shadow: none; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { font: 9pt/1.45 var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .masthead { display: flex; justify-content: space-between; align-items: flex-end;
+              border-bottom: 1px solid var(--ink); padding-bottom: 6mm; margin-bottom: 7mm; }
+  /* The report has no cover and no running header, so the stacked logo opens page 1 (owner's rule:
+     stacked on cover/title positions, wide on one-line headers). Never recoloured, cropped or stretched. */
+  .logo { display: block; width: 45mm; height: auto; max-width: none; object-fit: contain; }
+  .meta { text-align: right; font: 400 8pt/1.5 var(--mono); color: var(--muted); }
+  .meta strong { display: block; font: 500 11pt/1.3 var(--sans); color: var(--ink); }
+
+  h1 { font: 600 15pt/1.2 var(--sans); margin: 0 0 2mm; }
+  h2 { font: 600 10.5pt/1.2 var(--sans); color: var(--sea); margin: 9mm 0 3mm;
+       padding-bottom: 2mm; border-bottom: 1px solid var(--rule); break-after: avoid; }
+  h2 .n { font: 500 8pt var(--mono); color: var(--muted); margin-right: 3mm; }
+  .micro { font: 500 6.5pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+           color: var(--muted); }
+
+  .figures { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink);
+             border-bottom: 1px solid var(--rule); }
+  .figure { padding: 3mm 3mm 3mm 0; border-right: 1px solid var(--rule); }
+  .figure:last-child { border-right: 0; }
+  .figure .v { font: 500 17pt/1.1 var(--mono); margin-top: 1.5mm; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font: 500 6.5pt/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+       color: var(--muted); border-bottom: 1px solid var(--ink); padding: 1.6mm 2mm 1.6mm 0; }
+  td { border-bottom: 1px solid var(--rule); padding: 1.6mm 2mm 1.6mm 0; vertical-align: top; }
+  tr { break-inside: avoid; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  td.code { font: 400 7.5pt var(--mono); color: var(--muted); }
+  .title-orig { font-weight: 500; unicode-bidi: plaintext; }
+  .health { white-space: nowrap; }
+  .dot { display: inline-block; width: 2mm; height: 2mm; margin-right: 1.5mm; vertical-align: 0;
+         border: 1px solid var(--ink); }
+  .dot.ok { background: var(--sea); border-color: var(--sea); }
+  .dot.warn { background: var(--beacon); border-color: var(--beacon); }
+  .dot.off { background: transparent; }
+  .empty { color: var(--muted); padding: 3mm 0; border-bottom: 1px solid var(--rule); }
+  .comment { color: var(--muted); }
+
+  footer { position: fixed; bottom: -12mm; left: 0; right: 0; display: flex; justify-content: space-between;
+           font: 400 7pt/1 var(--mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 2mm; }
+</style>
+</head>
+<body>
+<footer><span>PHAROS · {{ month.label }} · generated {{ generated }} (Cairo)</span><span>by Sato Pharma</span></footer>
+
+<header class="masthead">
+  <img class="logo" src="{{ logo_src }}" alt="PHAROS — Pharmaceutical Alerts &amp; Regulatory Observation System">
+  <div class="meta"><strong>Monthly screening report</strong>{{ month.label }}</div>
+</header>
+
+<h1>{{ title }}</h1>
+<p class="micro">Every source screened in its own language · titles shown exactly as published</p>
+
+{% set s = dict(summary) %}
+<div class="figures">
+  <div class="figure"><div class="micro">Sources screened</div><div class="v">{{ s["Sources screened"] }}</div></div>
+  <div class="figure"><div class="micro">Notices read</div><div class="v">{{ s["Notices read"] }}</div></div>
+  <div class="figure"><div class="micro">Matched the watchlist</div><div class="v">{{ s["Notices matching the watchlist"] }}</div></div>
+  <div class="figure"><div class="micro">Issues found</div><div class="v">{{ s["Issues found"] }}</div></div>
+</div>
+
+<h2><span class="n">01</span>Summary</h2>
+<table>
+  {% for k, v in summary %}{% if k not in ("Report",) %}
+  <tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
+  {% endif %}{% endfor %}
+</table>
+
+<h2><span class="n">02</span>Sources screened</h2>
+<table>
+  <thead><tr><th>Country</th><th>Regulator</th><th>Source</th><th class="num">Runs</th><th class="num">OK</th>
+    <th class="num">Failed</th><th class="num">Seen</th><th class="num">New</th><th class="num">Matched</th><th>Health</th></tr></thead>
+  <tbody>
+  {% for r in sources %}
+  <tr>
+    <td>{{ r.country_name }}</td><td>{{ r.regulator }}</td><td class="code">{{ r.id }}</td>
+    <td class="num">{{ r.runs }}</td><td class="num">{{ r.successes }}</td><td class="num">{{ r.failures }}</td>
+    <td class="num">{{ r.items_seen }}</td><td class="num">{{ r.items_new }}</td><td class="num">{{ r.items_matched }}</td>
+    <td class="health"><span class="dot {{ 'ok' if r.health == 'ok' else ('off' if r.health == 'unknown' else 'warn') }}"></span>{{ r.health | health }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2><span class="n">03</span>Issues found</h2>
+{% if issues %}
+<table>
+  <thead><tr><th>Date</th><th>Title (original)</th><th>Countries</th><th>Ingredient</th><th>Status</th><th>Decision</th></tr></thead>
+  <tbody>
+  {% for r in issues %}
+  <tr>
+    <td class="code">{{ r.first_date or "" }}</td>
+    <td class="title-orig" dir="auto">{{ r.title }}{% if r.class_only %} <span class="micro">class-wide</span>{% endif %}{% if r.is_backfill %} <span class="micro">backfill</span>{% endif %}</td>
+    <td>{{ (r.countries or []) | join(", ") }}</td>
+    <td>{{ (r.ingredients or []) | join(", ") }}</td>
+    <td>{{ r.status | status }}</td>
+    <td>{% if r.decision %}{{ r.decision.person }}<br><span class="comment">{{ r.decision.comment or "" }}</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No issue was found this month.</div>
+{% endif %}
+
+<h2><span class="n">04</span>Review log</h2>
+{% if reviews %}
+<table>
+  <thead><tr><th>When (Cairo)</th><th>Issue</th><th>From → to</th><th>Reviewer</th><th>Comment</th></tr></thead>
+  <tbody>
+  {% for r in reviews %}
+  <tr>
+    <td class="code">{{ r.created_at | cairo }}</td>
+    <td class="title-orig" dir="auto">{{ r.title }}</td>
+    <td>{{ r.from_status | status }} → {{ r.to_status | status }}</td>
+    <td>{{ r.person }}</td>
+    <td class="comment">{{ r.comment or "" }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No review decision was recorded this month.</div>
+{% endif %}
+</body>
+</html>

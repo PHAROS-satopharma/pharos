@@ -1,0 +1,98 @@
+# PHAROS — monthly report (XLSX + PDF) for the previous month, on the 1st at 05:00 Cairo.
+# GitHub cron is UTC only, and Cairo is UTC+2 in winter and UTC+3 in summer, so there are two triggers and
+# the job keeps the one that is 05:00 in Cairo today (decided by the UTC offset, so a late start never
+# produces a second report).
+name: PHAROS monthly report
+
+on:
+  schedule:
+    - cron: "0 2 1 * *"   # 05:00 Cairo in summer (UTC+3)
+    - cron: "0 3 1 * *"   # 05:00 Cairo in winter (UTC+2)
+  workflow_dispatch:
+    inputs:
+      month:
+        description: Month to report, YYYY-MM (empty = previous month)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collectors
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - name: Is it 05:00 in Cairo?
+        id: gate
+        env:
+          CRON: ${{ github.event.schedule }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          go=false
+          if [ "$EVENT" = "workflow_dispatch" ]; then go=true
+          else
+            offset="$(TZ=Africa/Cairo date +%z)"
+            { [ "$offset" = "+0300" ] && [ "$CRON" = "0 2 1 * *" ]; } && go=true
+            { [ "$offset" = "+0200" ] && [ "$CRON" = "0 3 1 * *" ]; } && go=true
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+          echo "Cairo offset $(TZ=Africa/Cairo date +%z), trigger '$CRON' → go=$go"
+
+      - if: steps.gate.outputs.go == 'true'
+        uses: actions/checkout@v6
+
+      - if: steps.gate.outputs.go == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - name: Fonts for originals in every script (PDF)
+        if: steps.gate.outputs.go == 'true'
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: fonts-noto-core fonts-noto-cjk fonts-noto-ui-core
+          version: "1"
+
+      - if: steps.gate.outputs.go == 'true'
+        run: pip install -r collectors/requirements.txt
+
+      - if: steps.gate.outputs.go == 'true'
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('collectors/requirements.txt') }}
+      - name: Playwright install
+        if: steps.gate.outputs.go == 'true'
+        env:
+          HIT: ${{ steps.pw-cache.outputs.cache-hit }}
+        run: |
+          if [ "$HIT" != "true" ]; then python -m playwright install --with-deps chromium
+          else python -m playwright install-deps chromium; fi
+
+      - name: Build and store the report
+        if: steps.gate.outputs.go == 'true'
+        env:
+          MONTH: ${{ inputs.month }}
+        run: |
+          if [ -n "$MONTH" ]; then
+            [[ "$MONTH" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]] || { echo "month must be YYYY-MM"; exit 1; }
+            python -m collectors.report --month "$MONTH"
+          else
+            python -m collectors.report
+          fi

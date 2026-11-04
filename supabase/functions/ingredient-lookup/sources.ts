@@ -1,0 +1,249 @@
+// Outside reference sources for ingredient lookup. Every call has a short timeout and fails soft: a source
+// that does not answer becomes a warning, never an error, and never an automatic choice.
+import { key } from "./text.ts";
+
+export const LANGS = ["en", "de", "fr", "it", "es", "pt", "nl", "da", "nb", "sv", "fi", "is", "ja", "ko", "ar"];
+/** EU/EEA languages in LANGS: an EU-wide (centrally authorised) brand name is proposed in each of them. */
+export const EEA_LANGS = ["en", "de", "fr", "it", "es", "pt", "nl", "da", "nb", "sv", "fi", "is"];
+
+const contact = Deno.env.get("CONTACT_EMAIL");
+const UA = `PHAROS/1.0 (pharmacovigilance screening aid${contact ? `; ${contact}` : ""})`;
+
+async function getJson<T>(url: string, timeoutMs = 8000, headers: Record<string, string> = {}): Promise<T> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA, Accept: "application/json", ...headers },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) throw new Error(`${new URL(url).host} answered ${res.status}`);
+  return (await res.json()) as T;
+}
+
+// ───────────────────────────── Wikidata ─────────────────────────────
+
+export interface WikidataItem {
+  qid: string;
+  atc: string[];
+  rxcui: string[];
+  cid: string[];
+  description: string | null;
+  labels: Record<string, string>;
+  alt: Record<string, string[]>;
+}
+
+interface SearchHit { id: string; label?: string; description?: string }
+
+export async function wikidataSearch(q: string, limit = 7): Promise<string[]> {
+  const lang = /[぀-ヿ㐀-鿿]/.test(q)
+    ? "ja"
+    : /[가-힯]/.test(q)
+    ? "ko"
+    : /[؀-ۿ]/.test(q)
+    ? "ar"
+    : "en";
+  const url = "https://www.wikidata.org/w/api.php?" + new URLSearchParams({
+    action: "wbsearchentities",
+    search: q,
+    language: lang,
+    uselang: "en",
+    type: "item",
+    limit: String(limit),
+    format: "json",
+  });
+  const data = await getJson<{ search?: SearchHit[] }>(url);
+  return (data.search ?? []).map((h) => h.id).filter((id) => /^Q\d+$/.test(id));
+}
+
+export async function wikidataByAtc(atc: string): Promise<string[]> {
+  const query = `SELECT ?item WHERE { ?item wdt:P267 "${atc.replace(/[^A-Z0-9]/gi, "")}" } LIMIT 5`;
+  const data = await sparql(query);
+  return data.map((b) => qidOf(b.item?.value)).filter((x): x is string => !!x);
+}
+
+type Binding = Record<string, { value: string; "xml:lang"?: string } | undefined>;
+
+async function sparql(query: string): Promise<Binding[]> {
+  const url = "https://query.wikidata.org/sparql?" + new URLSearchParams({ query, format: "json" });
+  const data = await getJson<{ results: { bindings: Binding[] } }>(url, 12000, {
+    Accept: "application/sparql-results+json",
+  });
+  return data.results?.bindings ?? [];
+}
+
+function qidOf(uri: string | undefined): string | null {
+  const m = uri?.match(/\/(Q\d+)$/);
+  return m ? m[1] : null;
+}
+
+/** Labels and alternative labels in LANGS, plus ATC (P267), RxNorm CUI (P3345) and PubChem CID (P662). */
+export async function wikidataDetails(qids: string[]): Promise<Map<string, WikidataItem>> {
+  const out = new Map<string, WikidataItem>();
+  const ids = [...new Set(qids)].filter((q) => /^Q\d+$/.test(q)).slice(0, 20);
+  if (!ids.length) return out;
+  const langs = LANGS.map((l) => `"${l}"`).join(",");
+  const query = `
+SELECT ?item ?kind ?val WHERE {
+  VALUES ?item { ${ids.map((q) => `wd:${q}`).join(" ")} }
+  { ?item wdt:P267 ?val . BIND("atc" AS ?kind) }
+  UNION { ?item wdt:P3345 ?val . BIND("rxcui" AS ?kind) }
+  UNION { ?item wdt:P662 ?val . BIND("cid" AS ?kind) }
+  UNION { ?item rdfs:label ?val . FILTER(LANG(?val) IN (${langs})) BIND("label" AS ?kind) }
+  UNION { ?item skos:altLabel ?val . FILTER(LANG(?val) IN (${langs})) BIND("alt" AS ?kind) }
+  UNION { ?item schema:description ?val . FILTER(LANG(?val) = "en") BIND("desc" AS ?kind) }
+}`;
+  for (const b of await sparql(query)) {
+    const qid = qidOf(b.item?.value);
+    const kind = b.kind?.value;
+    const val = b.val?.value;
+    if (!qid || !kind || !val) continue;
+    let it = out.get(qid);
+    if (!it) {
+      it = { qid, atc: [], rxcui: [], cid: [], description: null, labels: {}, alt: {} };
+      out.set(qid, it);
+    }
+    const lang = b.val?.["xml:lang"] ?? "";
+    if (kind === "atc" && !it.atc.includes(val)) it.atc.push(val);
+    else if (kind === "rxcui" && !it.rxcui.includes(val)) it.rxcui.push(val);
+    else if (kind === "cid" && !it.cid.includes(val)) it.cid.push(val);
+    else if (kind === "desc") it.description = val;
+    else if (kind === "label" && lang) it.labels[lang] = val;
+    else if (kind === "alt" && lang) (it.alt[lang] ??= []).push(val);
+  }
+  return out;
+}
+
+// ───────────────────────────── EMA substance lists (cached per instance) ─────────────────────────────
+
+export interface EmaSubstance {
+  name: string;                 // as EMA writes it, e.g. "lornoxicam"
+  atc: Set<string>;
+  lists: Set<string>;           // ema-psusa, ema-dhpc, ema-medicines
+  brands: Set<string>;          // centrally authorised medicine names (ema-medicines, ema-dhpc)
+}
+
+const EMA = "https://www.ema.europa.eu/en/documents/report/";
+const EMA_FILES = {
+  "ema-psusa": EMA + "medicines-output-periodic_safety_update_report_single_assessments-output-json-report_en.json",
+  "ema-dhpc": EMA + "dhpc-output-json-report_en.json",
+  "ema-medicines": EMA + "medicines-output-medicines_json-report_en.json",
+} as const;
+const EMA_TTL_MS = 12 * 3600 * 1000;
+
+let emaCache: { at: number; index: Map<string, EmaSubstance>; failed: string[] } | null = null;
+let emaLoading: Promise<{ index: Map<string, EmaSubstance>; failed: string[] }> | null = null;
+
+type Row = Record<string, string | undefined>;
+
+function splitSubstances(s: string | undefined): string[] {
+  return (s ?? "")
+    .split(/;|\s\/\s/)
+    .map((x) => x.trim())
+    .filter((x) => x.length >= 3 && x.length <= 80);
+}
+
+export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; failed: string[] }> {
+  if (emaCache && Date.now() - emaCache.at < EMA_TTL_MS) return emaCache;
+  if (emaLoading) return emaLoading;
+  emaLoading = (async () => {
+    const index = new Map<string, EmaSubstance>();
+    const failed: string[] = [];
+    const add = (name: string, list: string, atc?: string, brand?: string) => {
+      const k = key(name);
+      let s = index.get(k);
+      if (!s) {
+        s = { name, atc: new Set(), lists: new Set(), brands: new Set() };
+        index.set(k, s);
+      }
+      s.lists.add(list);
+      if (atc && /^[A-Z]\d{2}[A-Z]{2}\d{2}$/.test(atc.trim())) s.atc.add(atc.trim());
+      if (brand) s.brands.add(brand.trim());
+    };
+    const results = await Promise.allSettled(
+      Object.entries(EMA_FILES).map(async ([list, url]) => {
+        const data = await getJson<{ data?: Row[] }>(url, 20000);
+        return { list, rows: data.data ?? [] };
+      }),
+    );
+    results.forEach((r, i) => {
+      const list = Object.keys(EMA_FILES)[i];
+      if (r.status === "rejected") {
+        failed.push(list);
+        return;
+      }
+      for (const row of r.value.rows) {
+        if (row.category && row.category !== "Human") continue;
+        if (list === "ema-psusa") {
+          for (const n of splitSubstances(row.active_substance)) add(n, list);
+          for (const n of splitSubstances(row.active_substances_in_scope_of_procedure)) add(n, list);
+        } else if (list === "ema-dhpc") {
+          const subs = splitSubstances(row.active_substances);
+          for (const n of subs) {
+            add(n, list, subs.length === 1 ? row.atc_code_human : undefined, subs.length === 1 ? row.name_of_medicine : undefined);
+          }
+        } else {
+          const inns = splitSubstances(row.international_non_proprietary_name_common_name);
+          const single = inns.length === 1;
+          for (const n of inns) add(n, list, single ? row.atc_code_human : undefined, single ? row.name_of_medicine : undefined);
+          for (const n of splitSubstances(row.active_substance)) add(n, list, single ? row.atc_code_human : undefined);
+        }
+      }
+    });
+    // Keep a failed load out of the cache so the next call tries again.
+    if (failed.length < Object.keys(EMA_FILES).length) emaCache = { at: Date.now(), index, failed };
+    return { index, failed };
+  })();
+  try {
+    return await emaLoading;
+  } finally {
+    emaLoading = null;
+  }
+}
+
+// ───────────────────────────── RxNav (NLM) ─────────────────────────────
+
+export interface RxName { name: string; rxcui: string | null }
+
+/** Ingredient-level names RxNav suggests for a possibly misspelt query (approximate match + spelling). */
+export async function rxnavSuggest(q: string): Promise<RxName[]> {
+  const base = "https://rxnav.nlm.nih.gov/REST/";
+  const [approx, spell] = await Promise.allSettled([
+    getJson<{ approximateGroup?: { candidate?: { rxcui?: string; name?: string; source?: string }[] } }>(
+      base + "approximateTerm.json?" + new URLSearchParams({ term: q, maxEntries: "25", option: "1" }),
+    ),
+    getJson<{ suggestionGroup?: { suggestionList?: { suggestion?: string[] } } }>(
+      base + "spellingsuggestions.json?" + new URLSearchParams({ name: q }),
+    ),
+  ]);
+  const out = new Map<string, RxName>();
+  const ok = (n: string) => n.length <= 40 && !/\d|\//.test(n) && n.split(/\s+/).length <= 3 &&
+    !/\b(oral|tablet|pill|injectable|product|capsule|topical|solution)\b/i.test(n);
+  if (approx.status === "fulfilled") {
+    for (const c of approx.value.approximateGroup?.candidate ?? []) {
+      if (!c.name || !ok(c.name)) continue;
+      const k = key(c.name);
+      const prev = out.get(k);
+      const rxcui = c.source === "RXNORM" ? c.rxcui ?? null : prev?.rxcui ?? null;
+      out.set(k, { name: k, rxcui: rxcui ?? prev?.rxcui ?? null });
+    }
+  }
+  if (spell.status === "fulfilled") {
+    for (const s of spell.value.suggestionGroup?.suggestionList?.suggestion ?? []) {
+      if (ok(s) && !out.has(key(s))) out.set(key(s), { name: key(s), rxcui: null });
+    }
+  }
+  if (approx.status === "rejected" && spell.status === "rejected") throw approx.reason;
+  return [...out.values()].slice(0, 8);
+}
+
+// ───────────────────────────── PubChem ─────────────────────────────
+
+export async function pubchemAutocomplete(q: string): Promise<string[]> {
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/json?limit=6`;
+  const data = await getJson<{ dictionary_terms?: { compound?: string[] } }>(url, 6000);
+  return data.dictionary_terms?.compound ?? [];
+}
+
+export async function pubchemSynonyms(name: string): Promise<string[]> {
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/synonyms/JSON`;
+  const data = await getJson<{ InformationList?: { Information?: { Synonym?: string[] }[] } }>(url, 8000);
+  return data.InformationList?.Information?.[0]?.Synonym ?? [];
+}

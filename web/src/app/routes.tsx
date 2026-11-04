@@ -1,0 +1,89 @@
+import type { ReactNode } from 'react';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
+import { supabaseConfigured } from '../lib/supabase';
+import { Layout } from './Layout';
+import { SignIn } from '../features/signin/SignIn';
+import { IssuesPage } from '../features/issues/IssuesPage';
+import { DetailPage } from '../features/detail/DetailPage';
+import { IngredientsPage } from '../features/ingredients/IngredientsPage';
+import { SourcesPage } from '../features/sources/SourcesPage';
+import { PeoplePage } from '../features/people/PeoplePage';
+import { MePage } from '../features/me/MePage';
+import { ReportsPage } from '../features/reports/ReportsPage';
+import { Button } from '../ui/Button';
+import { Empty, Loading } from '../ui/States';
+import { PharosMark } from '../ui/PharosMark';
+
+function Bare({ children }: { children: ReactNode }) {
+  return (
+    <div className="bare">
+      <PharosMark className="bare-logo" height={72} />
+      {children}
+    </div>
+  );
+}
+
+function NotConfigured() {
+  return (
+    <Bare>
+      <Empty title="This copy of PHAROS is not connected to its database.">
+        <p>
+          The build was made without <span className="mono">VITE_SUPABASE_URL</span> and{' '}
+          <span className="mono">VITE_SUPABASE_ANON_KEY</span>. Set both in the Cloudflare Pages project and deploy again.
+        </p>
+      </Empty>
+    </Bare>
+  );
+}
+
+function NotInvited() {
+  const { session, signOut, personError } = useAuth();
+  return (
+    <Bare>
+      <Empty
+        title="Your account is not active in PHAROS."
+        action={<Button onClick={() => void signOut()}>Sign out</Button>}
+      >
+        <p>
+          You are signed in as {session?.user.email ?? 'an unknown address'}, but no active person is linked to it.
+          Access is by invitation only: ask an administrator to invite this address, or to switch your account back on.
+        </p>
+        {personError ? <p className="soft">Details: {personError}</p> : null}
+      </Empty>
+    </Bare>
+  );
+}
+
+function NotFound() {
+  return (
+    <Empty title="There is nothing at this address." action={<Link to="/">Back to the notifications</Link>}>
+      <p>The link may be old, or the page was moved.</p>
+    </Empty>
+  );
+}
+
+export function AppRoutes() {
+  const { ready, session, person, personLoading, isAdmin } = useAuth();
+
+  if (!supabaseConfigured) return <NotConfigured />;
+  if (!ready) return <Loading label="Opening PHAROS" />;
+  if (!session) return <SignIn />;
+  if (personLoading) return <Loading label="Opening PHAROS" />;
+  if (!person || !person.active) return <NotInvited />;
+
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<IssuesPage />} />
+        <Route path="issue/:id" element={<DetailPage />} />
+        <Route path="ingredients" element={<IngredientsPage />} />
+        <Route path="sources" element={<SourcesPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="people" element={isAdmin ? <PeoplePage /> : <Navigate to="/" replace />} />
+        <Route path="me" element={<MePage />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
+}

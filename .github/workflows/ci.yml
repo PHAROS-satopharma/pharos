@@ -1,0 +1,292 @@
+# PHAROS — checks on every pull request and every push to main.
+# One job (one billed minute-rounding instead of five), and each part runs only when its files changed
+# (everything runs when this file changes or on a manual run). Nothing here touches the live project.
+name: PHAROS CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: What changed
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          base="$PUSH_BEFORE"
+          [ "$EVENT" = "pull_request" ] && base="$PR_BASE"
+          if [ "$EVENT" = "workflow_dispatch" ] || [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            files="ALL"
+          else
+            files="$(git diff --name-only "$base" HEAD)"
+            echo "$files" | grep -q '^\.github/workflows/ci\.yml$' && files="ALL"
+          fi
+          has() { [ "$files" = "ALL" ] || echo "$files" | grep -qE "$1"; }
+          out() { if has "$2"; then echo "$1=true" >> "$GITHUB_OUTPUT"; else echo "$1=false" >> "$GITHUB_OUTPUT"; fi; }
+          out py    '^(collectors/|tests/|pyproject\.toml)'
+          out web   '^web/'
+          out sql   '^supabase/migrations/'
+          out deno  '^supabase/functions/'
+          out worker '^workers/'
+          cat "$GITHUB_OUTPUT"
+
+      # ───────────── collectors: ruff + pytest ─────────────
+      - name: Python 3.12
+        if: steps.changes.outputs.py == 'true' && hashFiles('collectors/requirements.txt') != ''
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+      - name: PDF and OCR tools
+        if: steps.changes.outputs.py == 'true' && hashFiles('collectors/requirements.txt') != ''
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: poppler-utils tesseract-ocr tesseract-ocr-jpn tesseract-ocr-kor tesseract-ocr-fin
+          version: "1"
+      - name: Ruff and pytest
+        if: steps.changes.outputs.py == 'true' && hashFiles('collectors/requirements.txt') != ''
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r collectors/requirements.txt ruff pytest
+          ruff check .
+          set +e
+          python -m pytest
+          code=$?
+          set -e
+          # 5 = no tests collected yet (allowed while the test folder is still empty)
+          if [ "$code" -ne 0 ] && [ "$code" -ne 5 ]; then exit "$code"; fi
+
+      # ───────────── web: npm ci, typecheck, build ─────────────
+      - name: Node 22
+        if: steps.changes.outputs.web == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          # npm cache returns once web/package-lock.json is committed (setup-node refuses a cache without it).
+      - name: Web typecheck and build
+        if: steps.changes.outputs.web == 'true'
+        working-directory: web
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
+        run: |
+          # Until web/package-lock.json is committed, resolve once here and keep the lockfile as an artifact.
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+          npm run --if-present typecheck
+          npm run --if-present test -- --run
+          npm run build
+
+      - name: Keep the generated web lockfile
+        if: steps.changes.outputs.web == 'true' && hashFiles('web/package-lock.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-package-lock
+          path: web/package-lock.json
+
+      # ───────────── migrations against Postgres 16 with a minimal auth stub ─────────────
+      - name: Apply migrations and run database acceptance checks
+        if: steps.changes.outputs.sql == 'true'
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: postgres
+        run: |
+          P="psql -v ON_ERROR_STOP=1 -q"
+          # What Supabase provides and the migrations rely on: the API roles, auth.users, auth.uid(),
+          # and default privileges (so that row-level security, not missing grants, is what is tested).
+          $P <<'SQL'
+          create role anon nologin;
+          create role authenticated nologin;
+          create role service_role nologin bypassrls;
+          create schema auth;
+          create table auth.users (id uuid primary key, email text);
+          create function auth.uid() returns uuid language sql stable as $$
+            select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
+                            nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid
+          $$;
+          grant usage on schema public, auth to anon, authenticated, service_role;
+          grant execute on function auth.uid() to anon, authenticated, service_role;
+          alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+          alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+          alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+          SQL
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            echo "::group::apply $f"
+            $P -f "$f"
+            echo "::endgroup::"
+          done
+
+          $P <<'SQL'
+          create function pg_temp.ci_assert(ok boolean, msg text) returns void language plpgsql as $$
+          begin
+            if not coalesce(ok, false) then raise exception 'FAIL: %', msg; end if;
+            raise notice 'ok: %', msg;
+          end $$;
+
+          insert into auth.users (id, email) values
+            ('00000000-0000-0000-0000-0000000000a1', 'admin@example.test'),
+            ('00000000-0000-0000-0000-0000000000b2', 'reader@example.test');
+          insert into person (auth_user_id, full_name, email, role) values
+            ('00000000-0000-0000-0000-0000000000a1', 'CI Admin', 'admin@example.test', 'admin'),
+            ('00000000-0000-0000-0000-0000000000b2', 'CI Reader', 'reader@example.test', 'reader');
+          insert into regulator (id, country_code, country_name, name, languages)
+            values ('CI-TEST', 'FI', 'Finland', 'CI test regulator', '{fi}');
+          insert into source (id, regulator_id, kind, channel, url, parser, languages)
+            values ('ci-test', 'CI-TEST', 'safety', 'html', 'https://example.test/', 'generic_html', '{fi}');
+          insert into document (id, source_id, external_id, url, title_orig, lang)
+            values ('00000000-0000-0000-0000-0000000000d1', 'ci-test', 'x1', 'https://example.test/1', 'CI', 'fi');
+          insert into document_text (document_id, text)
+            values ('00000000-0000-0000-0000-0000000000d1', 'Valmiste sisältää lornoksikaamia.');
+          insert into issue (id, doc_type, title) values ('00000000-0000-0000-0000-0000000000e1', 'dhpc', 'CI issue');
+
+          -- Test 10: the public key reads nothing and cannot call the RPCs.
+          set role anon;
+          select count(*) as anon_person from person \gset
+          select count(*) as anon_issue from issue \gset
+          do $$ declare denied boolean := false; begin
+            begin perform 1 from inbound_email; exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: anon can select inbound_email'; end if;
+            denied := false;
+            begin perform create_link_token(); exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: anon can call create_link_token'; end if;
+            denied := false;
+            begin perform archive_hit_count('lorno', null); exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: anon can call archive_hit_count'; end if;
+          end $$;
+          reset role;
+          select pg_temp.ci_assert(:anon_person = 0 and :anon_issue = 0, 'anon reads no rows');
+
+          -- Test 11 (database half): a one-time code, stored only as its sha256; a new code retires the old one.
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+          set role authenticated;
+          select create_link_token() as code1 \gset
+          select create_link_token() as code2 \gset
+          select count(*) as reader_tokens from link_token \gset
+          reset role;
+          select pg_temp.ci_assert(:'code1' ~ '^[A-Za-z0-9_-]{24}$', 'link code is 24 URL-safe characters');
+          select pg_temp.ci_assert(exists (select 1 from link_token
+            where token_hash = encode(sha256(convert_to(:'code2', 'UTF8')), 'hex') and used_at is null and expires_at > now()),
+            'only the hash of the code is stored and it is open');
+          select pg_temp.ci_assert(not exists (select 1 from link_token where token_hash in (:'code1', :'code2')),
+            'the plain code is never stored');
+          select pg_temp.ci_assert(exists (select 1 from link_token
+            where token_hash = encode(sha256(convert_to(:'code1', 'UTF8')), 'hex') and expires_at <= now()),
+            'creating a new code retires the older one');
+          select pg_temp.ci_assert(:reader_tokens = 0, 'nobody can read link_token through the API');
+
+          -- Test 10: a reader cannot change status or queue a probe; archive test counts per language.
+          set role authenticated;
+          update issue set status = 'reviewed' where id = '00000000-0000-0000-0000-0000000000e1';
+          do $$ declare denied boolean := false; begin
+            begin
+              insert into review_event (issue_id, from_status, to_status, person_id)
+              values ('00000000-0000-0000-0000-0000000000e1', 'new', 'reviewed', my_person_id());
+            exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: a reader recorded a review decision'; end if;
+            denied := false;
+            begin
+              insert into probe_result (url, requested_by) values ('https://example.test/', my_person_id());
+            exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: a reader queued a probe'; end if;
+          end $$;
+          select archive_hit_count('LORNOKSIKAAM', 'fi') as hits_fi \gset
+          select archive_hit_count('lornoksikaam', 'de') as hits_de \gset
+          select archive_hit_count('100%', null) as hits_wild \gset
+          reset role;
+          select pg_temp.ci_assert((select status from issue where id = '00000000-0000-0000-0000-0000000000e1') = 'new',
+            'a reader cannot change an issue status');
+          select pg_temp.ci_assert(:hits_fi = 1 and :hits_de = 0, 'archive_hit_count is case-insensitive and language-filtered');
+          select pg_temp.ci_assert(:hits_wild = 0, 'LIKE wildcards in the term are literal');
+
+          -- An admin can queue a probe as themselves.
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+          set role authenticated;
+          insert into probe_result (url, requested_by) values ('https://example.test/', my_person_id());
+          reset role;
+          select pg_temp.ci_assert((select count(*) from probe_result where status = 'queued') = 1, 'an admin queues a probe');
+
+          -- Test 10 and 6: "Not relevant" needs a comment; review_event is append-only.
+          do $$
+          declare
+            admin_id uuid := (select id from person where email = 'admin@example.test');
+            refused boolean := false;
+          begin
+            begin
+              insert into review_event (issue_id, from_status, to_status, person_id)
+              values ('00000000-0000-0000-0000-0000000000e1', 'new', 'not_relevant', admin_id);
+            exception when check_violation then refused := true; end;
+            if not refused then raise exception 'FAIL: not_relevant without a comment was accepted'; end if;
+
+            insert into review_event (issue_id, from_status, to_status, comment, person_id)
+            values ('00000000-0000-0000-0000-0000000000e1', 'new', 'reviewed', 'CI', admin_id);
+            refused := false;
+            begin
+              update review_event set comment = 'changed';
+            exception when others then refused := sqlerrm like '%append-only%'; end;
+            if not refused then raise exception 'FAIL: an UPDATE on review_event was not rejected'; end if;
+            refused := false;
+            begin
+              delete from review_event;
+            exception when others then refused := sqlerrm like '%append-only%'; end;
+            if not refused then raise exception 'FAIL: a DELETE on review_event was not rejected'; end if;
+          end $$;
+
+          -- Test 9 (database half): no run → one admin alert, logged only while dry run is on; then quiet for 6 h.
+          select ops_watchdog() as wd1 \gset
+          select ops_watchdog() as wd2 \gset
+          select pg_temp.ci_assert(:'wd1' = 'logged (dry run)' and :'wd2' = 'suppressed', 'watchdog alerts once, then waits');
+          select pg_temp.ci_assert((select count(*) from ops_alert_log where dry_run and not sent) = 1, 'dry-run alert is logged, not sent');
+          SQL
+
+      # ───────────── Edge Functions: deno check ─────────────
+      - name: Deno
+        if: steps.changes.outputs.deno == 'true'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Edge Functions
+        if: steps.changes.outputs.deno == 'true'
+        run: deno check supabase/functions/*/index.ts
+
+      # ───────────── email Worker: typecheck ─────────────
+      - name: Node 22 (Worker)
+        if: steps.changes.outputs.worker == 'true' && steps.changes.outputs.web != 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Type-check the email Worker
+        if: steps.changes.outputs.worker == 'true'
+        working-directory: workers/email-inbound
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck

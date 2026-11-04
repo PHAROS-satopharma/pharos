@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta property="og:site_name" content="ANSM">
+        <meta property="og:type" content="website">
+        <meta name="theme-color" content="#FFFFFF">
+        <meta name="application-name" content="ANSM">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="ANSM">
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/img/logo/57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/img/logo/60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/img/logo/72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/img/logo/76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/img/logo/114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/img/logo/120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/img/logo/144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/img/logo/152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/img/logo/180x180.png">
+
+        <title>Informations de sécurité - ANSM</title>
+<meta name="description" content="Liste des informations de sécurité de l&#039;Agence nationale de sécurité du médicament et des produits de santé">
+<meta name="og:title" content="Informations de sécurité - ANSM" />
+<meta name="og:type" content="website" />
+<meta name="og:url" content="https://ansm.sante.fr/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20" />
+
+                                <link rel="manifest" crossorigin="use-credentials" href="https://ansm.sante.fr/manifest.json">
+            <link rel="stylesheet" type="text/css" href="/dist/libraries.58c26cdb.css">
+
+            <link rel="stylesheet" type="text/css" href="/dist/app.9df77f64.css">
+            <link rel="stylesheet" type="text/css" href="/libraries/owlcarousel/dist/assets/owl.carousel.min.css">
+
+                            <script type="text/javascript" src="/dist/tarteaucitron/tarteaucitron.min.js" nonce="zp3IDYc8LQhVHNYIUj77pw=="></script>
+<script type="text/javascript" nonce="zp3IDYc8LQhVHNYIUj77pw==">
+    // Configuration service Dailymotion de tarteaucitron
+    const dailymotionKey = "dailymotionCustom";
+    tarteaucitron.services.dailymotionCustom = {
+        key: dailymotionKey,
+        type: "video",
+        name: "Dailymotion",
+        uri: "https://www.dailymotion.com/legal/privacy",
+        needConsent: true,
+        cookies: ["ts", "dmvk", "hist", "v1st", "s_vi"],
+        js: function () {
+            "use strict";
+            tarteaucitron.fallback(["dailymotion_player"], function (x) {
+                let frame_title =
+                        tarteaucitron.getElemAttr(x, "title") || "Dailymotion iframe",
+                    video_id = tarteaucitron.getElemAttr(x, "videoID"),
+                    video_width = tarteaucitron.getElemAttr(x, "width"),
+                    video_height = tarteaucitron.getElemAttr(x, "height"),
+                    styleAttr = "",
+                    video_frame,
+                    allowfullscreen = tarteaucitron.getElemAttr(x, "allowfullscreen"),
+                    params =
+                        "&autoplay=false&mute=false&queue-enable=false&queue-autoplay-enable=false";
+
+                if (video_id === "") {
+                    return "";
+                }
+                if (video_width !== "") {
+                    styleAttr += "width:" + tarteaucitron.getStyleSize(video_width) + ";";
+                }
+                if (video_height !== undefined) {
+                    styleAttr += "height:" + tarteaucitron.getStyleSize(video_height) + ";";
+                }
+
+                video_frame = `
+                <iframe title="${frame_title}" src="//geo.dailymotion.com/player/x1hvws.html?video=${video_id}${params}"
+                style="${styleAttr}" ${allowfullscreen === "0" ? "" : " webkitallowfullscreen mozallowfullscreen allowfullscreen"}>
+                </iframe>
+                `;
+                return video_frame;
+            });
+        },
+        fallback: function () {
+            "use strict";
+            tarteaucitron.fallback(["dailymotion_player"], function (elem) {
+                elem.style.width = tarteaucitron.getStyleSize(
+                    tarteaucitron.getElemAttr(elem, "width"),
+                );
+                elem.style.height = tarteaucitron.getStyleSize(
+                    tarteaucitron.getElemAttr(elem, "height"),
+                );
+                return tarteaucitron.engage(dailymotionKey);
+            });
+        },
+    };
+
+            tarteaucitron.user.matomoId = 69;
+        tarteaucitron.user.matomoHost = '//stats.integra.fr/';
+    
+    tarteaucitron.init({
+        "privacyUrl": "/page/protection-des-donnees-a-caractere-personnel-et-politique-de-confidentialite#cookies",
+        "hashtag": "#tarteaucitron",
+        "highPrivacy": true,
+        "orientation": "bottom",
+        "adblocker": false,
+        "showAlertSmall": false,
+        "DenyAllCta": true,
+        "cookieslist": true,
+        "removeCredit": true,
+        "moreInfoLink": true,
+        "readmoreLink": "/page/gestion-des-cookies",
+        "showIcon": true,
+        "useExternalCss": true,
+    });
+
+    tarteaucitron.job = tarteaucitron.job || [];
+    tarteaucitron.job.push('matomohightrack');
+    tarteaucitron.job.push('linkedin');
+    tarteaucitron.job.push('facebook');
+    tarteaucitron.job.push('twitter');
+    tarteaucitron.job.push('youtube');
+    tarteaucitron.job.push('dailymotionCustom');
+    tarteaucitron.job.push('vimeo');
+
+    tarteaucitron.events.load = function() {
+        let banner = document.getElementById("tarteaucitronAlertBig");
+
+        if (!banner) return;
+
+        let style = window.getComputedStyle(banner);
+
+        if (style.display !== 'none') {
+            // On force le style directement sur l'élément, on a besoin de flex pour inverser les boutons
+            banner.style.display = "flex";
+        }
+    };
+</script>
+            </head>
+    <body class="gray-bg security-infos">
+
+                                                    <header id="header">
+    <nav class="nav navbar-default main-nav" role="navigation">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/" title="Retour à l'accueil" role="link">
+                <img class="visible-md visible-lg" src="/img/logo-ansm.jpg" alt="ANSM">
+                <img class="logo-m hidden-md hidden-lg hidden-print" src="/img/logo-m.png" alt="ANSM">
+            </a>
+            
+<form name="global_search" method="get" action="/resultats-de-recherche" id="header_filter_result">
+<div class="header-container container">
+    <div class="h-wrapper">
+                    <div class="row">
+                <div class="col-md-4">
+                    <div class="h-search-form visible-md visible-lg">
+                                                    <div class="form-group">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13">
+    <path fill="#B3B2B2" fill-rule="evenodd" d="M9.3 6.907a4.83 4.83 0 0 0 .45-2.032A4.875 4.875 0 1 0 4.875 9.75a4.83 4.83 0 0 0 2.032-.45l3.208 3.205a1.69 1.69 0 1 0 2.39-2.39L9.299 6.907zM1.06 4.842a3.78 3.78 0 1 1 7.561 0 3.78 3.78 0 0 1-7.56 0zm10.263 7.097a.618.618 0 0 1-.437-.18l-3.06-3.062c.325-.253.617-.545.87-.87l3.062 3.06a.616.616 0 0 1-.435 1.052z"/>
+</svg>
+
+                                <div class="form-group">
+                        <input type="text" id="global_search_text" name="global_search[text]" class="form-control form-control" placeholder="" />
+    </div>
+                                <span id="length-error" class="error" style="display: none">Vous devez saisir un minimum de 3 caractères</span>
+                            </div>
+                                            </div>
+                </div>
+                <div class="hc-actions col-md-8">
+                    <div class="h-filters visible-md-inline-block visible-lg-inline-block">
+                        <div class="dropdown-select">
+                            <a class="btn h-f-btn" data-toggle="collapse" data-target="#h-filters1" aria-controls="h-filters1" href="#h-filters1" title="Domaine médical">
+                                Domaine médical
+                                <i class="fa fa-angle-down" aria-hidden="true"><!----></i>
+                            </a>
+                        </div>
+                        <div class="dropdown-select">
+                            <a class="btn h-f-btn" data-toggle="collapse" data-target="#h-filters2" aria-controls="h-filters2" href="#h-filters2" title="Produit de santé">
+                                Produit de santé
+                                <i class="fa fa-angle-down" aria-hidden="true"><!----></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="h-actions">
+                        <button type="button" id="btn-header-search" class="btn h-f-btn hab-search extend hab-search-m" title="Rechercher" role="button">
+                        </button>
+                        <button type="button" id="btn-header-icon" class="h-a-btn hab-search hab-search-m" title="Rechercher" role="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21">
+    <path fill="#FFF" fill-rule="evenodd" d="M15.022 11.157a7.801 7.801 0 0 0 .729-3.282 7.875 7.875 0 1 0-7.876 7.876 7.801 7.801 0 0 0 3.282-.729l5.182 5.178a2.73 2.73 0 1 0 3.861-3.86l-5.178-5.183zM1.714 7.82a6.107 6.107 0 1 1 12.215 0 6.107 6.107 0 0 1-12.215 0zm16.578 11.465a.998.998 0 0 1-.705-.29l-4.944-4.947a7.96 7.96 0 0 0 1.406-1.406l4.946 4.944a.996.996 0 0 1-.703 1.699z"/>
+</svg>
+
+                        </button>
+                        <a href="#" data-toggle="modal" data-target="#search-modal" class="h-a-btn hab-search hab-search-s hidden-md hidden-lg" title="Rechercher" role="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21">
+    <path fill="#FFF" fill-rule="evenodd" d="M15.022 11.157a7.801 7.801 0 0 0 .729-3.282 7.875 7.875 0 1 0-7.876 7.876 7.801 7.801 0 0 0 3.282-.729l5.182 5.178a2.73 2.73 0 1 0 3.861-3.86l-5.178-5.183zM1.714 7.82a6.107 6.107 0 1 1 12.215 0 6.107 6.107 0 0 1-12.215 0zm16.578 11.465a.998.998 0 0 1-.705-.29l-4.944-4.947a7.96 7.96 0 0 0 1.406-1.406l4.946 4.944a.996.996 0 0 1-.703 1.699z"/>
+</svg>
+
+                        </a>
+                        <a href="#" class="h-a-btn hab-close hidden-md hidden-lg" title="Fermer le menu" role="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15">
+    <path fill="#B3B2B2" fill-rule="evenodd" d="M2.75 1.734L7.5 6.485l4.75-4.75a.781.781 0 1 1 1.106 1.104L8.606 7.59l4.75 4.75a.781.781 0 0 1-1.105 1.106L7.5 8.695l-4.752 4.75a.781.781 0 1 1-1.105-1.104L6.395 7.59l-4.75-4.751a.781.781 0 0 1 1.104-1.105z"/>
+</svg>
+
+                        </a>
+                        <a href="#" class="h-a-btn hab-close extend hidden-xs hidden-sm" title="Fermer le menu" role="button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15">
+    <path fill="#B3B2B2" fill-rule="evenodd" d="M2.75 1.734L7.5 6.485l4.75-4.75a.781.781 0 1 1 1.106 1.104L8.606 7.59l4.75 4.75a.781.781 0 0 1-1.105 1.106L7.5 8.695l-4.752 4.75a.781.781 0 1 1-1.105-1.104L6.395 7.59l-4.75-4.751a.781.781 0 0 1 1.104-1.105z"/>
+</svg>
+
+                        </a>
+                        <a href="/newsletter/" class="h-a-btn hab-notification bc-cyan" title="Veille et newsletter" role="link">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <path fill="#FFF" fill-rule="evenodd" d="M10.063.71A3 3 0 0 1 12.5.041 3.082 3.082 0 0 1 15 3.099v.25c2.385 1.198 4 3.835 4 6.653v1.552a3 3 0 0 0 .695 1.92l1.668 2c.702.82.855 1.97.4 2.944a2.75 2.75 0 0 1-2.513 1.584H16a4 4 0 1 1-8 0H4.768a2.765 2.765 0 0 1-2.123-4.528l1.66-2A3 3 0 0 0 5 11.554v-1.552c0-2.808 1.645-5.5 4-6.66v-.34A3 3 0 0 1 10.063.709zM14 20.001h-4a2 2 0 1 0 4 0zm-2-18a1 1 0 0 0-1 1v1a1 1 0 0 1-.665.942C8.433 5.617 7 7.792 7 10.002v1.552a5 5 0 0 1-1.16 3.198l-1.66 2a.765.765 0 0 0 .588 1.25H19.25a.75.75 0 0 0 .68-.438.75.75 0 0 0-.105-.812l-1.667-2A5.02 5.02 0 0 1 17 11.554v-1.552c0-2.25-1.377-4.33-3.347-5.063A1 1 0 0 1 13 4.002v-.893a1.085 1.085 0 0 0-.825-1.092A1.032 1.032 0 0 0 12 2.002zM3.951 3.005l.118.001a1 1 0 0 1 .769 1.553l-.338.5A8.895 8.895 0 0 0 3 10.002a1 1 0 1 1-2 0 10.86 10.86 0 0 1 1.838-6.053l.335-.5a1 1 0 0 1 .896-.443zm15.494.17a1 1 0 0 1 1.388.277l.335.5A10.86 10.86 0 0 1 23 10.002a1 1 0 0 1-2 0c0-1.758-.52-3.477-1.495-4.94l-.337-.5a1 1 0 0 1 .277-1.388z"/>
+</svg>
+
+                        </a>
+                                                    <a href="https://ansm.sante.fr/documents/reference/declarer-un-effet-indesirable" class="h-a-btn hab-notification bc-yellow-dark" title="Déclarer un effet indésirable" role="link">
+                                <svg width="24" height="24" version="1.1" viewBox="0 0 6.35 6.35" xmlns="http://www.w3.org/2000/svg">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g transform="translate(-.12793 .086974)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width=".53179">
+  <path d="m0.60164 0.33696s1.7843 0.35808 1.4917 2.1139c-0.14784-0.028124 0.8926 1.1277-0.11818 1.064 0 0 0.29261 0.2983 0 0.59107-0.29261 0.29261 0.56817 0.87692-0.82743 0.7091-0.17197-0.016598-0.69204-0.27786-0.4486 1.1821m4.3594-0.67344c0.58554-0.60597 0.94577-1.4311 0.94577-2.3401 0-0.90889-0.36054-1.7331-0.94577-2.3392"/>
+  <path d="m4.4802 4.7765c0.43907-0.4546 0.70925-1.0733 0.70925-1.7552 0-0.68174-0.27048-1.2999-0.70925-1.7543m-0.61473 3.0737c0.28539-0.33841 0.46105-0.79916 0.46105-1.3066s-0.17581-0.96759-0.46105-1.306"/>
+  <path d="m3.24 3.8796c0.19026-0.19902 0.30737-0.46996 0.30737-0.76857 0-0.29845-0.11726-0.56924-0.30737-0.76826"/>
+ </g>
+</svg>
+
+                            </a>
+                                            </div>
+                    <button type="button" class="navbar-toggle">
+                        <span class="sr-only">Ouvrir le menu</span>
+                        <span class="icon-bar top-bar" aria-hidden="true"><!----></span>
+                        <span class="icon-bar middle-bar" aria-hidden="true"><!----></span>
+                        <span class="icon-bar bottom-bar" aria-hidden="true"><!----></span>
+                    </button>
+                </div>
+            </div>
+            </div>
+</div>
+<div class="header-filters-area classic-filters-row">
+    <div class="main-container container">
+        <div id="h-filters1" class="ckbox-green collapse">
+            <div class="row pt-25 pl-20">
+    <div class="form-group">
+                                            <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_26" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_26"   value="26"><span>Addictologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_7" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_7"   value="7"><span>Allergologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_8" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_8"   value="8"><span>Anesthésie/Réanimation/Soins intensifs</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_37" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_37"   value="37"><span>Angiologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_35" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_35"   value="35"><span>Biologie médicale</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_36" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_36"   value="36"><span>Cardiologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_32" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_32"   value="32"><span>Chirurgie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_10" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_10"   value="10"><span>Dermatologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_11" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_11"   value="11"><span>Endocrinologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_13" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_13"   value="13"><span>Gynécologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_12" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_12"   value="12"><span>Hématologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_14" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_14"   value="14"><span>Hépato-gastroentérologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_30" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_30"   value="30"><span>Imagerie/Radiologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_29" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_29"   value="29"><span>Immunologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_27" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_27"   value="27"><span>Infectiologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_41" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_41"   value="41"><span>Logiciel d&#039;aide à la prescription</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_34" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_34"   value="34"><span>Médecine esthétique</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_42" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_42"   value="42"><span>Médecine nucléaire</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_39" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_39"   value="39"><span>Néonatologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_15" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_15"   value="15"><span>Néphrologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_28" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_28"   value="28"><span>Neurologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_16" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_16"   value="16"><span>Oncologie/Radiothérapie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_17" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_17"   value="17"><span>Ophtalmologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_18" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_18"   value="18"><span>ORL</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_31" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_31"   value="31"><span>Orthopédie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_25" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_25"   value="25"><span>Pédiatrie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_43" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_43"   value="43"><span>Perfusion</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_19" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_19"   value="19"><span>Pneumologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_20" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_20"   value="20"><span>Psychiatrie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_21" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_21"   value="21"><span>Rhumatologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_22" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_22"   value="22"><span>Soins dentaires / Chirurgie dentaire</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_23" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_23"   value="23"><span>Traitement de la douleur</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_24" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_24"   value="24"><span>Urologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_medicalDomains_38" name="global_search[medicalDomains][]" name="global_search[medicalDomains][]" id="global_search_medicalDomains_38"   value="38"><span>Virologie</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                        
+    </div>
+</div>
+        </div>
+        <div id="h-filters2" class="ckbox-green collapse">
+            <div class="row pt-25 pl-20">
+    <div class="form-group">
+                                            <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_20" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_20"   value="20"><span>Médicaments</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_19" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_19"   value="19"><span>Dispositifs médicaux</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_26" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_26"   value="26"><span>Dispositifs médicaux de diagnostic in vitro</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_21" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_21"   value="21"><span>Produits biologiques</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_22" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_22"   value="22"><span>Vaccins</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_25" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_25"   value="25"><span>Stupéfiants &amp; psychotropes</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_18" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_18"   value="18"><span>Cosmétiques</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="global_search_healthProducts_23" name="global_search[healthProducts][]" name="global_search[healthProducts][]" id="global_search_healthProducts_23"   value="23"><span>Autres</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                        
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+                <input type="hidden" id="global_search_safetyNewsSearch" name="global_search[safetyNewsSearch]" placeholder="" value="1" /></form>
+<div class="modal mobile-panel fade" id="search-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+                    <div class="search-form-mobile-panel">
+            <form action="/resultats-de-recherche">
+                <div class="form-group">
+                    <div class="form-group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13">
+    <path fill="#B3B2B2" fill-rule="evenodd" d="M9.3 6.907a4.83 4.83 0 0 0 .45-2.032A4.875 4.875 0 1 0 4.875 9.75a4.83 4.83 0 0 0 2.032-.45l3.208 3.205a1.69 1.69 0 1 0 2.39-2.39L9.299 6.907zM1.06 4.842a3.78 3.78 0 1 1 7.561 0 3.78 3.78 0 0 1-7.56 0zm10.263 7.097a.618.618 0 0 1-.437-.18l-3.06-3.062c.325-.253.617-.545.87-.87l3.062 3.06a.616.616 0 0 1-.435 1.052z"/>
+</svg>
+
+                        <input type="text" class="form-control" name="filter[text]" placeholder="Recherche"
+                               value="">
+                    </div>
+                </div>
+
+                <button class="btn pt-filter-btn ptf-btn-slider-svg pt-green" aria-expanded="true" type="submit">
+                    Valider
+                </button>
+            </form>
+        </div>
+            </div>
+    </div>
+</div>
+
+        </div>
+    </nav>
+</header>
+
+
+                            
+            <div class="aside-menu" role="navigation">
+
+                                                    
+                                                <div                      class="first am-menu-item">                                                <a id="link-am-104" href="https://ansm.sante.fr/page/les-medicaments-et-moi"             title="Les médicaments et moi"         role="link"         target="_self"         class="purple-sub">Les médicaments et moi</a>
+                            
+        </div>
+    
+                
+                                                                                <div                      class="am-menu-item has-sub-menu">                                <style>
+            #link-am-1:after {
+                border-right-color: #5e2a7e !important;
+            }
+        </style>
+                <a id="link-am-1" href="#am-1"             title="Qui sommes-nous ? About us"         role="link"         target="_self"         class="purple-sub">Qui sommes-nous ? About us</a>
+                                                
+        </div>
+    
+                
+                                                <div                      class="am-menu-item">                                                <a id="link-am-2" href="https://ansm.sante.fr/actualites/a-la-une"             title="Actualités"         role="link"         target="_self"         class="purple-sub">Actualités</a>
+                            
+        </div>
+    
+                
+                                                                                <div                      class="am-menu-item has-sub-menu">                                    <a id="link-am-62" href="#am-62"             title="Bulletin officiel des actes, décisions et avis"         role="link"         target="_self"         class="purple-sub">Bulletin officiel des actes, décisions et avis</a>
+                                                
+        </div>
+    
+                
+                                                                                <div                      class="am-menu-item has-sub-menu">                                <style>
+            #link-am-5:after {
+                border-right-color: #a03189 !important;
+            }
+        </style>
+                <a id="link-am-5" href="#am-5"             title="Disponibilité des produits de santé"         role="link"         target="_self"         class="purple-sub">Disponibilité des produits de santé</a>
+                                                
+        </div>
+    
+                
+                                                                                <div                      class="am-menu-item has-sub-menu">                                <style>
+            #link-am-3:after {
+                border-right-color: #1275bb !important;
+            }
+        </style>
+                <a id="link-am-3" href="#am-3"             title="Vos démarches"         role="link"         target="_self"         class="purple-sub">Vos démarches</a>
+                                                
+        </div>
+    
+                
+                                                <div                      class="am-menu-item">                                                <a id="link-am-52" href="https://ansm.sante.fr/documents/reference/"             title="Documents de référence"         role="link"         target="_self"         class="purple-sub">Documents de référence</a>
+                            
+        </div>
+    
+                
+                                                                                <div                      class="am-menu-item has-sub-menu">                                <style>
+            #link-am-113:after {
+                border-right-color: #1275bb !important;
+            }
+        </style>
+                <a id="link-am-113" href="#am-113"             title="Expertises et publications scientifiques"         role="link"         target="_self"         class="purple-sub">Expertises et publications scientifiques</a>
+                                                
+        </div>
+    
+                
+                                                <div                      class="am-menu-item">                                                <a id="link-am-4" href="https://ansm.sante.fr/informations-de-securite"             title="Informations de sécurité"         role="link"         target="_self"         class="purple-sub">Informations de sécurité</a>
+                            
+        </div>
+    
+                
+                                                <div                      class="am-menu-item">                                                <a id="link-am-6" href="https://ansm.sante.fr/dossiers-thematiques"             title="Dossiers thématiques"         role="link"         target="_self"         class="purple-sub">Dossiers thématiques</a>
+                            
+        </div>
+    
+                
+                                                <div                      class="am-menu-item">                                                <a id="link-am-38" href="https://ansm.sante.fr/espace-presse"             title="Espace presse"         role="link"         target="_self"         class="purple-sub">Espace presse</a>
+                            
+        </div>
+    
+                
+                                                <div                      class="last am-menu-item">                                                <a id="link-am-7" href="https://ansm.sante.fr/contact"             title="Contactez-nous"         role="link"         target="_self"         class="purple-sub">Contactez-nous</a>
+                            
+        </div>
+    
+
+            
+
+    <a class="search-result-transform" href="/newsletter/" role="link">
+        <span class="srt-left" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <path fill="#FFF" fill-rule="evenodd" d="M10.063.71A3 3 0 0 1 12.5.041 3.082 3.082 0 0 1 15 3.099v.25c2.385 1.198 4 3.835 4 6.653v1.552a3 3 0 0 0 .695 1.92l1.668 2c.702.82.855 1.97.4 2.944a2.75 2.75 0 0 1-2.513 1.584H16a4 4 0 1 1-8 0H4.768a2.765 2.765 0 0 1-2.123-4.528l1.66-2A3 3 0 0 0 5 11.554v-1.552c0-2.808 1.645-5.5 4-6.66v-.34A3 3 0 0 1 10.063.709zM14 20.001h-4a2 2 0 1 0 4 0zm-2-18a1 1 0 0 0-1 1v1a1 1 0 0 1-.665.942C8.433 5.617 7 7.792 7 10.002v1.552a5 5 0 0 1-1.16 3.198l-1.66 2a.765.765 0 0 0 .588 1.25H19.25a.75.75 0 0 0 .68-.438.75.75 0 0 0-.105-.812l-1.667-2A5.02 5.02 0 0 1 17 11.554v-1.552c0-2.25-1.377-4.33-3.347-5.063A1 1 0 0 1 13 4.002v-.893a1.085 1.085 0 0 0-.825-1.092A1.032 1.032 0 0 0 12 2.002zM3.951 3.005l.118.001a1 1 0 0 1 .769 1.553l-.338.5A8.895 8.895 0 0 0 3 10.002a1 1 0 1 1-2 0 10.86 10.86 0 0 1 1.838-6.053l.335-.5a1 1 0 0 1 .896-.443zm15.494.17a1 1 0 0 1 1.388.277l.335.5A10.86 10.86 0 0 1 23 10.002a1 1 0 0 1-2 0c0-1.758-.52-3.477-1.495-4.94l-.337-.5a1 1 0 0 1 .277-1.388z"/>
+</svg>
+
+        </span>
+        <span class="srt-body">
+            Veille personnalisée
+        </span>
+    </a>
+
+    <div class="aside-menu-footer">
+                            <a href="https://twitter.com/ansm" target="_blank" title="Suivre l'ANSM sur Twitter" role="link">
+                <i class="fa fa-twitter" aria-hidden="true"><!----></i>
+                <span class="sr-only">Suivre l'ANSM sur Twitter</span>
+            </a>
+                            <a href="https://www.youtube.com/channel/UCLwzdfn_TDPGx7pv7nbDryQ" target="_blank" title="Suivre l'ANSM sur Youtube" role="link">
+                <i class="fa fa-youtube-play" aria-hidden="true"><!----></i>
+                <span class="sr-only">Suivre l'ANSM sur Youtube</span>
+            </a>
+                            <a href="https://fr.linkedin.com/company/ansm" target="_blank" title="Suivre l'ANSM sur Linkedin" role="link">
+                <i class="fa fa-linkedin" aria-hidden="true"><!----></i>
+                <span class="sr-only">Suivre l'ANSM sur Linkedin</span>
+            </a>
+            </div>
+</div>
+
+                                                
+                                                                        <div  id="am-104" class="first am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+                
+                                                                        <div  id="am-1" class="am-sub-menu purple-sub" style="background-color: #5e2a7e">
+                                                                                                <a class="amsm-back" href="#" title="Retour">&nbsp;</a>
+                <div class="am-sub-menu-title">Qui sommes-nous ? About us</div>
+                                
+                                                                        <div  class="first am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous"  title="L&#039;ANSM en bref" role="link" target="_self">
+        L&#039;ANSM en bref
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/who-are-we/ansm-in-brief"  title="About us" role="link" target="_self">
+        About us
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/nos-engagements/une-agence-au-service-des-patients"  title="Nos engagements" role="link" target="_self">
+        Nos engagements
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Nos missions" role="link" target="_self">
+        Nos missions
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/nos-missions/faciliter-lacces-a-linnovation-therapeutique/p"  title="Faciliter l&#039;accès à l&#039;innovation thérapeutique" role="link" target="_self">
+        Faciliter l&#039;accès à l&#039;innovation thérapeutique
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/nos-missions/assurer-la-securite-des-produits-de-sante/p"  title="Assurer la sécurité des produits de santé" role="link" target="_self">
+        Assurer la sécurité des produits de santé
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/nos-missions/informer-echanger-avec-notre-environnement/p"  title="Informer &amp; échanger avec notre environnement" role="link" target="_self">
+        Informer &amp; échanger avec notre environnement
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Notre périmètre" role="link" target="_self">
+        Notre périmètre
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-perimetre/les-medicaments/p"  title="Les médicaments" role="link">
+        Les médicaments
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-perimetre/les-vaccins/p/les-vaccins-2"  title="Les vaccins" role="link" target="_self">
+        Les vaccins
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-perimetre/les-produits-biologiques/p/les-produits-biologiques-1"  title="Les produits biologiques" role="link" target="_self">
+        Les produits biologiques
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-perimetre/les-dispositifs-medicaux-et-les-dispositifs-medicaux-de-diagnostic-in-vitro/p/les-dispositifs-medicaux-et-les-dispositifs-medicaux-de-diagnostic-in-vitro-dmdiv"  title="Les dispositifs médicaux et les dispositifs médicaux de diagnostic in vitro (DMDIV)" role="link" target="_self">
+        Les dispositifs médicaux et les dispositifs médicaux de diagnostic in vitro (DMDIV)
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Notre organisation" role="link" target="_self">
+        Notre organisation
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-organisation/nos-expertises"  title="Nos expertises" role="link">
+        Nos expertises
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-organisation/nos-directions-et-nos-services"  title="Nos directions et nos services" role="link" target="_self">
+        Nos directions et nos services
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/notre-organisation/nos-instances/p"  title="Nos instances" role="link" target="_self">
+        Nos instances
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Déontologie et transparence" role="link" target="_self">
+        Déontologie et transparence
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/deontologie-et-transparence/deontologie-et-transparence/p/nos-exigences-deontologiques#title"  title="Nos exigences déontologiques" role="link" target="_self">
+        Nos exigences déontologiques
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/deontologie-et-transparence/deontologie-et-transparence/p/notre-organisation-de-la-deontologie#title"  title="Notre organisation de la déontologie" role="link" target="_self">
+        Notre organisation de la déontologie
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/deontologie-et-transparence/deontologie-et-transparence/p/rapports-du-deontologue#title"  title="Rapports du déontologue" role="link" target="_self">
+        Rapports du déontologue
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Publications institutionnelles" role="link" target="_self">
+        Publications institutionnelles
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/rapport-dactivite-2025/rapport-dactivite-2025/p/edito-3"  title="Rapport d&#039;activité 2025" role="link" target="_self">
+        Rapport d&#039;activité 2025
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/publications-institutionnelles/contrat-dobjectifs-et-de-performance"  title="Contrat d’objectifs et de performance" role="link" target="_self">
+        Contrat d’objectifs et de performance
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/publications-institutionnelles/programmes-de-travail"  title="Programmes de travail" role="link" target="_self">
+        Programmes de travail
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/publications-institutionnelles/rapports-dactivite"  title="Rapports d&#039;activité" role="link" target="_self">
+        Rapports d&#039;activité
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Rejoignez-nous !" role="link" target="_self">
+        Rejoignez-nous !
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/rejoignez-nous/nos-metiers"  title="Nos métiers" role="link" target="_self">
+        Nos métiers
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/rejoignez-nous/notre-politique-rh"  title="Notre politique RH" role="link" target="_self">
+        Notre politique RH
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/qui-sommes-nous/rejoignez-nous/nos-offres-d-emploi"  title="Nos offres d&#039;emploi" role="link" target="_self">
+        Nos offres d&#039;emploi
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="last am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/evenements/"  title="Notre agenda" role="link" target="_self">
+        Notre agenda
+            </a>
+                                                    
+            </div>
+            
+
+                        
+            </div>
+            
+                
+                                                                        <div  id="am-2" class="am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+                
+                                                                        <div  id="am-62" class="am-sub-menu purple-sub" >
+                                                                                                <a class="amsm-back" href="#" title="Retour">&nbsp;</a>
+                <div class="am-sub-menu-title">Bulletin officiel des actes, décisions et avis</div>
+                                
+                                                                        <div  class="first am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Décisions institutionnelles" role="link" target="_self">
+        Décisions institutionnelles
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=103"  title="Décisions relatives à l&#039;organigramme" role="link" target="_self">
+        Décisions relatives à l&#039;organigramme
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=10#"  title="Désignations et habilitations des inspecteurs" role="link" target="_self">
+        Désignations et habilitations des inspecteurs
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=106#"  title="Expertise : nomination d&#039;experts ponctuels" role="link">
+        Expertise : nomination d&#039;experts ponctuels
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=81#"  title="GIS Epiphare" role="link" target="_self">
+        GIS Epiphare
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=105#"  title="Instances : créations et nominations" role="link">
+        Instances : créations et nominations
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=104#"  title="Nominations et délégations de signature" role="link" target="_self">
+        Nominations et délégations de signature
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Décisions liées aux médicaments" role="link" target="_self">
+        Décisions liées aux médicaments
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=127"  title="Arrêts de commercialisation" role="link" target="_self">
+        Arrêts de commercialisation
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=108"  title="Accès dérogatoire" role="link" target="_self">
+        Accès dérogatoire
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=70#"  title="Bonnes pratiques" role="link" target="_self">
+        Bonnes pratiques
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=93#"  title="Classement substances vénéneuses (Listes I et II - Psychotropes/Stupéfiants)" role="link" target="_self">
+        Classement substances vénéneuses (Listes I et II - Psychotropes/Stupéfiants)
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=96#"  title="Médicaments biosimilaires" role="link" target="_self">
+        Médicaments biosimilaires
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=99#"  title="Médicaments de médication officinale" role="link" target="_self">
+        Médicaments de médication officinale
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=98#"  title="Médicaments génériques" role="link" target="_self">
+        Médicaments génériques
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=126#"  title="Médicaments hybrides" role="link" target="_self">
+        Médicaments hybrides
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=125"  title="MTI et MTIPP" role="link" target="_self">
+        MTI et MTIPP
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=79#"  title="Pharmacopée" role="link" target="_self">
+        Pharmacopée
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=65#"  title="Programmes d&#039;apprentissage" role="link" target="_self">
+        Programmes d&#039;apprentissage
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=76#"  title="Publicité" role="link" target="_self">
+        Publicité
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=102#"  title="Rétrocession" role="link" target="_self">
+        Rétrocession
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=92#"  title="Stocks de sécurité / Décisions d&#039;interdictions d&#039;exportation" role="link" target="_self">
+        Stocks de sécurité / Décisions d&#039;interdictions d&#039;exportation
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Décisions liées aux produits sanguins et autres produits biologiques" role="link" target="_self">
+        Décisions liées aux produits sanguins et autres produits biologiques
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=85"  title="Agréments établissements de transfusion sanguine" role="link" target="_self">
+        Agréments établissements de transfusion sanguine
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=85"  title="Questionnaire pré-don" role="link" target="_self">
+        Questionnaire pré-don
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Décisions liées aux médicaments dérivés du plasma" role="link" target="_self">
+        Décisions liées aux médicaments dérivés du plasma
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=82#"  title="Produits exclus de l&#039;assiette de contribution" role="link" target="_self">
+        Produits exclus de l&#039;assiette de contribution
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Décisions liées aux dispositifs médicaux et dispositifs médicaux de diagnostic in vitro" role="link" target="_self">
+        Décisions liées aux dispositifs médicaux et dispositifs médicaux de diagnostic in vitro
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=112#"  title="Agréments" role="link" target="_self">
+        Agréments
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=76#"  title="Calendrier publicité" role="link" target="_self">
+        Calendrier publicité
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=101#"  title="Organismes notifiés" role="link" target="_self">
+        Organismes notifiés
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=19#"  title="Injonctions" role="link" target="_self">
+        Injonctions
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+        
+    <a href="#" class="has-sub-menu" target="_self" title="Décisions de police sanitaire" role="link" target="_self">
+        Décisions de police sanitaire
+                    <button class="am-sub-menu-toggle" href="#"><!----></button>
+            </a>
+                                                                                                <div class="am-sub-menu-collapse collapse">
+                    <div class="am-sub-menu-item-collapse">
+                                        
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=18#"  title="Médicaments" role="link" target="_self">
+        Médicaments
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=94#"  title="Dispositifs médicaux et dispositifs médicaux de diagnostic in vitro" role="link" target="_self">
+        Dispositifs médicaux et dispositifs médicaux de diagnostic in vitro
+            </a>
+
+            
+                
+                                                        
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=95#"  title="Autres produits" role="link" target="_self">
+        Autres produits
+            </a>
+
+            
+
+                    </div>
+                </div>
+                        
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=69#"  title="Sanctions financières" role="link" target="_self">
+        Sanctions financières
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="last am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=100#"  title="Avis" role="link" target="_self">
+        Avis
+            </a>
+                                                    
+            </div>
+            
+
+                        
+            </div>
+            
+                
+                                                                        <div  id="am-5" class="am-sub-menu purple-sub" style="background-color: #a03189">
+                                                                                                <a class="amsm-back" href="#" title="Retour">&nbsp;</a>
+                <div class="am-sub-menu-title">Disponibilité des produits de santé</div>
+                                
+                                                                        <div  class="first am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/disponibilites-des-produits-de-sante/medicaments"  title="Médicaments" role="link" target="_self">
+        Médicaments
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="last am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/disponibilites-des-produits-de-sante/dispositifs-medicaux"  title="Dispositifs médicaux et dispositifs médicaux de diagnostic in vitro" role="link" target="_self">
+        Dispositifs médicaux et dispositifs médicaux de diagnostic in vitro
+            </a>
+                                                    
+            </div>
+            
+
+                        
+            </div>
+            
+                
+                                                                        <div  id="am-3" class="am-sub-menu purple-sub" style="background-color: #1275bb">
+                                                                                                <a class="amsm-back" href="#" title="Retour">&nbsp;</a>
+                <div class="am-sub-menu-title">Vos démarches</div>
+                                
+                                                                        <div  class="first am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/vos-demarches/industriel"  title="Industriel" role="link" target="_self">
+        Industriel
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/vos-demarches/organismes-notifies"  title="Organismes notifiés" role="link" target="_self">
+        Organismes notifiés
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/vos-demarches/professionel-de-sante"  title="Professionnel de santé" role="link" target="_self">
+        Professionnel de santé
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/vos-demarches/patient"  title="Patient" role="link" target="_self">
+        Patient
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="last am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/vos-demarches/chercheur"  title="Chercheur" role="link" target="_self">
+        Chercheur
+            </a>
+                                                    
+            </div>
+            
+
+                        
+            </div>
+            
+                
+                                                                        <div  id="am-52" class="am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+                
+                                                                        <div  id="am-113" class="am-sub-menu purple-sub" style="background-color: #1275bb">
+                                                                                                <a class="amsm-back" href="#" title="Retour">&nbsp;</a>
+                <div class="am-sub-menu-title">Expertises et publications scientifiques</div>
+                                
+                                                                        <div  class="first am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/page/rapports-denquetes-de-vigilance"  title="Rapports d&#039;enquêtes de vigilance" role="link" target="_self">
+        Rapports d&#039;enquêtes de vigilance
+            </a>
+                                                    
+            </div>
+            
+                
+                                                                        <div  class="last am-sub-menu-item" >
+                                            
+                    
+    <a href="https://ansm.sante.fr/page/publications-scientifiques"  title="Publications scientifiques" role="link" target="_self">
+        Publications scientifiques
+            </a>
+                                                    
+            </div>
+            
+
+                        
+            </div>
+            
+                
+                                                                        <div  id="am-4" class="am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+                
+                                                                        <div  id="am-6" class="am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+                
+                                                                        <div  id="am-38" class="am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+                
+                                                                        <div  id="am-7" class="last am-sub-menu purple-sub" >
+                                                    
+            </div>
+            
+
+            
+
+
+            <div id="wrapper">
+                
+    <div class="ml-container page-title pt-red">
+        <h1>Informations de sécurité</h1>
+        <a class="btn pt-filter-btn ptf-btn-slider-svg pt-red" aria-expanded="false" data-toggle="collapse" data-target="#pt-filters" href="#" title="Filtrer">
+            <span>Filtres</span>
+            <span>Valider</span>
+        </a>
+        <a class="pt-close" data-toggle="collapse" data-target="#pt-filters" href="#" title="Fermer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15">
+    <path fill="#B3B2B2" fill-rule="evenodd" d="M2.75 1.734L7.5 6.485l4.75-4.75a.781.781 0 1 1 1.106 1.104L8.606 7.59l4.75 4.75a.781.781 0 0 1-1.105 1.106L7.5 8.695l-4.752 4.75a.781.781 0 1 1-1.105-1.104L6.395 7.59l-4.75-4.751a.781.781 0 0 1 1.104-1.105z"/>
+</svg>
+
+        </a>
+        <a class="pt-refresh" href="/informations-de-securite/" title="Réinitialiser">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 11">
+    <path fill="#FFF" fill-rule="evenodd" d="M5.5 9.625A4.125 4.125 0 0 1 1.375 5.5a.458.458 0 0 0-.917 0 5.061 5.061 0 1 0 1.375-3.448V.917a.458.458 0 1 0-.916 0V3.21c0 .253.205.458.458.458h2.292a.458.458 0 1 0 0-.917H2.43A4.125 4.125 0 1 1 5.5 9.625z"/>
+</svg>
+
+            <span>Réinitialiser</span>
+        </a>
+        <a class="btn h-f-btn" data-toggle="collapse" data-target="#pt-filters-type" aria-controls="pt-filters" href="#pt-filters" title="Type">
+            Type
+            <i class="fa fa-angle-down" aria-hidden="true"><!----></i>
+        </a>
+        <a class="btn h-f-btn" data-toggle="collapse" data-target="#pt-filters-products" aria-controls="pt-filters-products" href="#pt-filters-products" title="Produits de santé">
+            Produits de santé
+            <i class="fa fa-angle-down" aria-hidden="true"><!----></i>
+        </a>
+        <a class="btn h-f-btn" data-toggle="collapse" data-target="#pt-filters-date" aria-controls="pt-filters-date" href="#pt-filters-date" title="Date">
+            Date
+            <i class="fa fa-angle-down" aria-hidden="true"><!----></i>
+        </a>
+                    <form name="safety_news_filter" method="get" id="form_safety_news_filter_export">
+            <button type="submit" id="safety_news_filter_export" name="safety_news_filter[export]" class="pt-filter-btn btn" title="Utilisez les filtres pour sélectionner les items à exporter">Exporter</button>
+            </form>
+            </div>
+    <div class="white-bg classic-filters-row page-title-filters-area">
+        <div class="ml-container container">
+            <form name="safety_news_filter" method="get">
+            <div id="pt-filters" class="pt-filter-row pt-filter-row-red ckbox-red collapse">
+                <div class="filters-row">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group ptf-item">
+                                <div class="ckbox">
+                                    <label>
+                                        <input type="checkbox" name="d">
+                                        <span>Type</span>
+                                    </label>
+                                    <a class="ptfi-toggle" href="#"><!----></a>
+                                </div>
+                                <div class="ptfi-collapse collapse">
+                                    <div class="ptfi-collapse-sub">
+                                            <div class="form-group">
+                                            <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_1" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_1"   value="1"><span>DEFAUT QUALITE</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_4" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_4"   value="4"><span>INFORMATION AUX UTILISATEURS</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_5" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_5"   value="5"><span>RAPPEL DE PRODUIT</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_2" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_2"   value="2"><span>RISQUES MEDICAMENTEUX</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                        
+    </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group ptf-item">
+                                <div class="ckbox">
+                                    <label>
+                                        <input type="checkbox" name="d">
+                                        <span>Produits de santé</span>
+                                    </label>
+                                    <a class="ptfi-toggle" href="#"><!----></a>
+                                </div>
+                                <div class="ptfi-collapse collapse">
+                                    <div class="ptfi-collapse-sub">
+                                            <div class="form-group">
+                                            <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_20" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_20"  checked value="20"><span>Médicaments</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_19" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_19"   value="19"><span>Dispositifs médicaux</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_26" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_26"   value="26"><span>Dispositifs médicaux de diagnostic in vitro</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_21" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_21"   value="21"><span>Produits biologiques</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_22" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_22"   value="22"><span>Vaccins</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_25" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_25"   value="25"><span>Stupéfiants &amp; psychotropes</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_18" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_18"   value="18"><span>Cosmétiques</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_23" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_23"   value="23"><span>Autres</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                        
+    </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group ptf-item">
+                                <div class="ckbox">
+                                    <label>
+                                        <input class="ckbox-date" type="checkbox" name="d">
+                                        <span>Date</span>
+                                    </label>
+                                    <a class="ptfi-toggle" href="#"><!----></a>
+                                </div>
+                                <div class="ptfi-collapse collapse">
+                                    <div class="ptfi-collapse-sub">
+                                                    <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_0" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_0"   value="this_week"><span>Cette semaine</span>
+            </label>
+        </div>
+            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_1" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_1"   value="this_month"><span>Ce mois-ci</span>
+            </label>
+        </div>
+            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_2" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_2"   value="before_six_months_ago"><span>&lt; de 6 mois</span>
+            </label>
+        </div>
+            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_3" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_3"   value="before_a_year_ago"><span>&lt; de 1 an</span>
+            </label>
+        </div>
+    
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="mobile-filter-btn" type="submit" class="hidden" value="submit"></button>
+            </form>
+            <form name="safety_news_filter" method="get">
+            <div id="pt-filters-type" class="pt-filter-row pt-filter-row-red ckbox-red ckbox-label-s collapse">
+                <div class="classic-filters-wr">
+                        <div class="form-group">
+                                            <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_1" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_1"   value="1"><span>DEFAUT QUALITE</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_4" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_4"   value="4"><span>INFORMATION AUX UTILISATEURS</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_5" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_5"   value="5"><span>RAPPEL DE PRODUIT</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_safetyNewsModels_2" name="safety_news_filter[safetyNewsModels][]" name="safety_news_filter[safetyNewsModels][]" id="safety_news_filter_safetyNewsModels_2"   value="2"><span>RISQUES MEDICAMENTEUX</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                        
+    </div>
+
+                    <div class="filters-row-footer">
+                        <a class="btn pt-filter-btn btn-red ptf-btn-check-svg" data-toggle="collapse" data-target="#pt-filters-type" href="#" title="Valider">
+                            <span>Valider</span>
+                        </a>
+                        <a class="filter-all-checked" href="#" title="Tout sélectionner">Tout sélectionner</a>
+                    </div>
+                </div>
+            </div>
+            <div id="pt-filters-products" class="pt-filter-row pt-filter-row-red ckbox-red ckbox-label-s collapse">
+                <div class="classic-filters-wr">
+                        <div class="form-group">
+                                            <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_20" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_20"  checked value="20"><span>Médicaments</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_19" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_19"   value="19"><span>Dispositifs médicaux</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_26" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_26"   value="26"><span>Dispositifs médicaux de diagnostic in vitro</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_21" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_21"   value="21"><span>Produits biologiques</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_22" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_22"   value="22"><span>Vaccins</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_25" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_25"   value="25"><span>Stupéfiants &amp; psychotropes</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                                                <div class="row">
+                        <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_18" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_18"   value="18"><span>Cosmétiques</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                                            <div class="col-md-4">
+                <div class="form-group ptf-item">
+                                                                    <div class="ckbox">
+                            <label><input type="checkbox" id="safety_news_filter_healthProducts_23" name="safety_news_filter[healthProducts][]" name="safety_news_filter[healthProducts][]" id="safety_news_filter_healthProducts_23"   value="23"><span>Autres</span>
+                            </label>
+                        </div>
+                                    </div>
+            </div>
+                            </div>
+                        
+    </div>
+
+                    <div class="filters-row-footer">
+                        <a class="btn pt-filter-btn btn-red ptf-btn-check-svg" data-toggle="collapse" data-target="#pt-filters-products" href="#" title="Valider">
+                            <span>Valider</span>
+                        </a>
+                        <a class="filter-all-checked" href="#" title="Tout sélectionner">Tout sélectionner</a>
+                    </div>
+                </div>
+            </div>
+            <div id="pt-filters-date" class="pt-filter-row pt-filter-row-red ckbox-red ckbox-label-s collapse">
+                <div class="classic-filters-wr">
+                    <div class="row date-filter">
+            <div class="col-lg-3 form">
+            <p>Choississez une antériorité</p>
+            <div class="form-group">
+                            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_0" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_0"   value="this_week"><span>Cette semaine</span>
+            </label>
+        </div>
+            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_1" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_1"   value="this_month"><span>Ce mois-ci</span>
+            </label>
+        </div>
+            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_2" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_2"   value="before_six_months_ago"><span>&lt; de 6 mois</span>
+            </label>
+        </div>
+            <div class="ckbox">
+            <label><input type="checkbox" id="safety_news_filter_dateAnteriority_3" name="safety_news_filter[dateAnteriority]" class="dateAnteriority" name="safety_news_filter[dateAnteriority]" id="safety_news_filter_dateAnteriority_3"   value="before_a_year_ago"><span>&lt; de 1 an</span>
+            </label>
+        </div>
+    
+
+            </div>
+        </div>
+        <div class="col-lg-9 calendar">
+        <p>Sélectionnez une période de publication</p>
+        <div class="date-range">
+            <div id="start-range">
+                                                        <input type="hidden" id="safety_news_filter_startDate" name="safety_news_filter[startDate]" class="filter_startDate" placeholder="" />
+
+                            </div>
+            <div id="end-range">
+                                                        <input type="hidden" id="safety_news_filter_endDate" name="safety_news_filter[endDate]" class="filter_endDate" placeholder="" />
+
+                            </div>
+        </div>
+    </div>
+</div>
+                    <div class="filters-row-footer">
+                        <a class="btn pt-filter-btn btn-red ptf-btn-check-svg" data-toggle="collapse" data-target="#pt-filters-date" href="#" title="Valider">
+                            <span>Valider</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            </form>
+        </div>
+    </div>
+
+                <div class="main-container container">
+                        <div class="article-list">
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/caelyx-pegylated-liposomal-2-mg-ml-solution-a-diluer-pour-perfusion-le-bouchon-et-la-bague-de-sertissage-peuvent-se-detacher-lors-de-louverture-du-flacon" title="Caelyx Pegylated Liposomal 2 mg/ml, solution à diluer pour perfusion : le bouchon et la bague de sertissage peuvent se détacher lors de l’ouverture du flacon">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 03/11/2026
+                
+                    </span>
+                    <span class="article-title h5">Caelyx Pegylated Liposomal 2 mg/ml, solution à diluer pour perfusion : le bouchon et la bague de sertissage peuvent se détacher lors de l’ouverture du flacon</span>
+                    <span class="article-content">
+                        Information destinée aux médecins prescripteurs, pharmaciens hospitaliers et infirmiers/ières
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/mitomycine-accord-20-mg-poudre-pour-solution-injectable-perfusion-ou-voie-intravesicale-boite-de-1-flacon-laboratoire-accord-healthcare-france-sas" title="Mitomycine Accord 20 mg, poudre pour solution injectable / perfusion ou voie intravésicale, boîte de 1 flacon – Laboratoire Accord Healthcare France SAS">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 03/11/2026
+                
+                    </span>
+                    <span class="article-title h5">Mitomycine Accord 20 mg, poudre pour solution injectable / perfusion ou voie intravésicale, boîte de 1 flacon – Laboratoire Accord Healthcare France SAS</span>
+                    <span class="article-content">
+                        Niveau de rappel : établissements hospitaliers
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/afiveg-40-mg-ml-solution-injectable-en-seringue-preremplie-et-mynzepli-40-mg-ml-solution-injectable-en-seringue-preremplie-laboratoires-biogaran-et-advanz-pharma" title="Afiveg 40 mg/mL, solution injectable en seringue préremplie et Mynzepli 40 mg/mL, solution injectable en seringue préremplie – Laboratoires Biogaran et Advanz Pharma">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 29/10/2026
+                
+                    </span>
+                    <span class="article-title h5">Afiveg 40 mg/mL, solution injectable en seringue préremplie et Mynzepli 40 mg/mL, solution injectable en seringue préremplie – Laboratoires Biogaran et Advanz Pharma</span>
+                    <span class="article-content">
+                        Niveau de rappel : Officines, établissements de santé, circuit de distribution pharmaceutique et patients.
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/ocrevus-ocrelizumab-risque-nouveau-datteinte-hepatique-dorigine-medicamenteuse-et-recommandations-sur-la-surveillance-hepatique-avant-et-pendant-le-traitement" title="Ocrevus (ocrelizumab) : risque nouveau d&#039;atteinte hépatique d&#039;origine médicamenteuse et recommandations sur la surveillance hépatique avant et pendant le traitement">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 08/10/2026
+                
+                    </span>
+                    <span class="article-title h5">Ocrevus (ocrelizumab) : risque nouveau d&#039;atteinte hépatique d&#039;origine médicamenteuse et recommandations sur la surveillance hépatique avant et pendant le traitement</span>
+                    <span class="article-content">
+                        Information destinée aux neurologues, neuropédiatres, hépato-gastroentérologues et médecins généralistes
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/ganirelix-theramex-0-25-mg-0-5-ml-solution-injectable-en-seringue-pre-remplie-laboratoire-theramex-france" title="Ganirelix Theramex 0,25 mg/0,5 mL, solution injectable en seringue pré-remplie - Laboratoire Theramex France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 06/10/2026
+                
+                    </span>
+                    <span class="article-title h5">Ganirelix Theramex 0,25 mg/0,5 mL, solution injectable en seringue pré-remplie - Laboratoire Theramex France</span>
+                    <span class="article-content">
+                        Niveau de rappel : officines et circuit de distribution pharmaceutique
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/flebogamma-dif-50-mg-ml-solution-pour-perfusion-400-ml-et-flebogamma-dif-100-mg-ml-solution-pour-perfusion-100-ml-et-200-ml-laboratoire-grifols-france" title="Flebogamma DIF 50 mg/ml, solution pour perfusion (400 mL) et Flebogamma DIF 100 mg/ml, solution pour perfusion (100 mL et 200 mL) – Laboratoire Grifols France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 22/09/2026
+                
+                    </span>
+                    <span class="article-title h5">Flebogamma DIF 50 mg/ml, solution pour perfusion (400 mL) et Flebogamma DIF 100 mg/ml, solution pour perfusion (100 mL et 200 mL) – Laboratoire Grifols France</span>
+                    <span class="article-content">
+                        Niveau de rappel : en direct auprès des établissements concernés et au niveau des patients ayant reçu ces lots dans le cadre de rétrocessions. <br />
+Aucun numéro d&#039;alerte n&#039;a donc été attribué à ce rappel.
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/clopidogrel-zentiva-75-mg-comprime-pellicule-laboratoire-zentiva-france" title="Clopidogrel Zentiva 75 mg, comprimé pelliculé – Laboratoire Zentiva France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 08/09/2026
+                
+                    </span>
+                    <span class="article-title h5">Clopidogrel Zentiva 75 mg, comprimé pelliculé – Laboratoire Zentiva France</span>
+                    <span class="article-content">
+                        Niveau de rappel : officines et circuit de distribution pharmaceutique
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/tavneos-10-mg-gelule-laboratoire-vifor-france" title="Tavneos 10 mg, gélule – Laboratoire Vifor France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 19/08/2026
+                
+                    </span>
+                    <span class="article-title h5">Tavneos 10 mg, gélule – Laboratoire Vifor France</span>
+                    <span class="article-content">
+                        Niveau de rappel : officines, établissements de santé et circuit de distribution pharmaceutique
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/temozolomide-accord-250-mg-gelule-laboratoire-accord-healtcare-france-sas" title="Témozolomide Accord 250 mg, gélule – Laboratoire Accord Healtcare France SAS">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 14/08/2026
+                
+                    </span>
+                    <span class="article-title h5">Témozolomide Accord 250 mg, gélule – Laboratoire Accord Healtcare France SAS</span>
+                    <span class="article-content">
+                        Niveau de rappel : En direct auprès des établissements de santé concernés et des patients
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/contraceptifs-a-base-de-desogestrel-et-detonogestrel-risque-de-meningiome-et-mesures-pour-minimiser-le-risque" title="Contraceptifs à base de désogestrel et d&#039;étonogestrel : risque de méningiome et mesures pour minimiser le risque">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 11/08/2026
+                
+                    </span>
+                    <span class="article-title h5">Contraceptifs à base de désogestrel et d&#039;étonogestrel : risque de méningiome et mesures pour minimiser le risque</span>
+                    <span class="article-content">
+                        Information destinée aux gynécologues, médecins généralistes, sages-femmes et infirmiers des centres de planning familial.
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/movicol-sans-arome-poudre-pour-solution-buvable-en-sachet-laboratoire-norgine-sas" title="Movicol sans arôme, poudre pour solution buvable en sachet – Laboratoire Norgine SAS">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 10/08/2026
+                
+                    </span>
+                    <span class="article-title h5">Movicol sans arôme, poudre pour solution buvable en sachet – Laboratoire Norgine SAS</span>
+                    <span class="article-content">
+                        Niveau de rappel : officines, établissements de santé et circuit de distribution pharmaceutique
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/litfulo-ritlecitinib-mise-a-jour-des-recommandations-visant-a-reduire-le-risque-devenements-indesirables-cardiovasculaires-majeurs-de-tumeurs-malignes-devenements-thromboemboliques-veineux-dinfections-graves-et-de-mortalite" title="Litfulo (ritlécitinib) : mise à jour des recommandations visant à réduire le risque d’événements indésirables cardiovasculaires majeurs, de tumeurs malignes, d’événements thromboemboliques veineux, d’infections graves et de mortalité">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 10/08/2026
+                
+                    </span>
+                    <span class="article-title h5">Litfulo (ritlécitinib) : mise à jour des recommandations visant à réduire le risque d’événements indésirables cardiovasculaires majeurs, de tumeurs malignes, d’événements thromboemboliques veineux, d’infections graves et de mortalité</span>
+                    <span class="article-content">
+                        Information destinée aux spécialistes en dermatologie, en médecine interne et en pédiatrie
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/pomalidomide-stragen-1-mg-2-mg-3-mg-4-mg-gelule-stragen-france" title="Pomalidomide Stragen 1 mg, 2 mg, 3 mg, 4 mg, gélule - Stragen France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 04/08/2026
+                
+                    </span>
+                    <span class="article-title h5">Pomalidomide Stragen 1 mg, 2 mg, 3 mg, 4 mg, gélule - Stragen France</span>
+                    <span class="article-content">
+                        Rappel destiné aux professionnels de santé, réalisé en direct auprès des établissements hospitaliers concernés et des patients en rétrocession, aucun numéro d&#039;alerte n&#039;a donc été attribué à ce rappel.
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/movicol-poudre-pour-solution-buvable-en-sachet-laboratoire-norgine-sas" title="Movicol, poudre pour solution buvable en sachet – Laboratoire Norgine SAS">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 29/07/2026
+                
+                    </span>
+                    <span class="article-title h5">Movicol, poudre pour solution buvable en sachet – Laboratoire Norgine SAS</span>
+                    <span class="article-content">
+                        Niveau de rappel : officines, établissements de santé et circuit de distribution pharmaceutique
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/duloxetine-zydus-30-mg-gelule-gastro-resistante-laboratoire-zydus-france" title="Duloxétine Zydus 30 mg, gélule gastro-résistante – Laboratoire Zydus France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 27/07/2026
+                
+                    </span>
+                    <span class="article-title h5">Duloxétine Zydus 30 mg, gélule gastro-résistante – Laboratoire Zydus France</span>
+                    <span class="article-content">
+                        Niveau de rappel : officines et circuit de distribution pharmaceutique
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/tavneos-10-mg-gelule-avacopan-recommandation-de-retrait-de-lautorisation-de-mise-sur-le-marche-dans-lunion-europeenne-en-raison-dun-rapport-benefice-risque-defavorable" title="Tavneos 10 mg, gélule (avacopan) – Recommandation de retrait de l’autorisation de mise sur le marché dans l’Union européenne en raison d’un rapport bénéfice/risque défavorable">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 16/07/2026
+                
+                    </span>
+                    <span class="article-title h5">Tavneos 10 mg, gélule (avacopan) – Recommandation de retrait de l’autorisation de mise sur le marché dans l’Union européenne en raison d’un rapport bénéfice/risque défavorable</span>
+                    <span class="article-content">
+                        Information destinée aux professionnels de santé (spécialistes en médecine interne, néphrologie, rhumatologie, pneumologie et dermatologie, pharmaciens d’officine et de PUI)
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/chloraprep-solution-pour-application-cutanee-60-ampoules-en-verre-de-1-ml-avec-applicateur-becton-dickinson-france" title="Chloraprep, solution pour application cutanée 60 ampoules en verre de 1 ml avec applicateur – Becton Dickinson France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 10/07/2026
+                
+                    </span>
+                    <span class="article-title h5">Chloraprep, solution pour application cutanée 60 ampoules en verre de 1 ml avec applicateur – Becton Dickinson France</span>
+                    <span class="article-content">
+                        Niveau de rappel : en direct auprès des établissements de santé destinataires des lots
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/evrysdi-0-75-mg-ml-poudre-pour-solution-buvable-risdiplam-rechercher-la-presence-de-particules-apres-reconstitution" title="Evrysdi 0,75 mg/mL, poudre pour solution buvable (risdiplam) : rechercher la présence de particules après reconstitution">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 15/06/2026
+                
+                    </span>
+                    <span class="article-title h5">Evrysdi 0,75 mg/mL, poudre pour solution buvable (risdiplam) : rechercher la présence de particules après reconstitution</span>
+                    <span class="article-content">
+                        Information destinée aux pharmacies d’officine et pharmacies hospitalières
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/pluvicto-1-000-mbq-ml-solution-injectable-pour-perfusion-invalidation-du-test-de-sterilite-non-conforme-sur-le-lot-lps260415a-03-ayant-fait-lobjet-dune-communication-le-20-mai-2026" title="Pluvicto 1 000 MBq/mL, solution injectable/pour perfusion : invalidation du test de stérilité non conforme sur le lot LPS260415A-03 ayant fait l’objet d’une communication le 20 mai 2026">
+                    <span class="article-category">
+                        RISQUES MEDICAMENTEUX
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 03/06/2026
+                
+                    </span>
+                    <span class="article-title h5">Pluvicto 1 000 MBq/mL, solution injectable/pour perfusion : invalidation du test de stérilité non conforme sur le lot LPS260415A-03 ayant fait l’objet d’une communication le 20 mai 2026</span>
+                    <span class="article-content">
+                        Information destinée aux professionnels de santé (médecins nucléaires, oncologues, pharmaciens hospitaliers, équipes de soins) ayant reçu et administré à leurs patients le lot concerné
+                    </span>
+                </a>
+            </article>
+                    <article class="article-item article-security" role="article">
+                <a href="/informations-de-securite/chloraprep-solution-pour-application-cutanee-60-ampoules-en-verre-de-1-ml-et-20-ampoules-en-verre-de-1-5-ml-avec-applicateur-becton-dickinson-france" title="Chloraprep, solution pour application cutanée 60 ampoules en verre de 1 ml et 20 ampoules en verre de 1,5 ml avec applicateur – Becton Dickinson France">
+                    <span class="article-category">
+                        RAPPEL DE PRODUIT
+                    </span>
+                    <span class="article-health-product">
+                                                    Médicaments
+                                            </span>
+                    <span class="article-date">
+                                                            PUBLIÉ LE 29/05/2026
+                
+                    </span>
+                    <span class="article-title h5">Chloraprep, solution pour application cutanée 60 ampoules en verre de 1 ml et 20 ampoules en verre de 1,5 ml avec applicateur – Becton Dickinson France</span>
+                    <span class="article-content">
+                        Niveau de rappel : en direct auprès des établissements de santé destinataires du lot
+                    </span>
+                </a>
+            </article>
+                <div class="article-more text-center">
+                                <div class="pagination">
+        
+        
+                                    <span class="current">1</span>
+                                                <span class="page">
+                    <a href="/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20&amp;page=2">2</a>
+                </span>
+                                                <span class="page">
+                    <a href="/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20&amp;page=3">3</a>
+                </span>
+                                                <span class="page">
+                    <a href="/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20&amp;page=4">4</a>
+                </span>
+                                                <span class="page">
+                    <a href="/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20&amp;page=5">5</a>
+                </span>
+                    
+                    <span class="next">
+                <a rel="next" href="/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20&amp;page=2">&gt;</a>
+            </span>
+        
+                    <span class="last">
+                <a href="/informations-de-securite/?safety_news_filter%5BhealthProducts%5D%5B0%5D=20&amp;page=38">&gt;&gt;</a>
+            </span>
+            </div>
+
+                    </div>
+    </div>
+                                                                        <footer id="footer" class="">
+    <div class="row" role="navigation">
+                                <div class="ft-col col-md-2">
+                                                                <a class="ft-title" role="link" href="https://ansm.sante.fr/qui-sommes-nous/" target="_self" title="Qui sommes-nous ?">Qui sommes-nous ?</a>
+                                <div class="ft-content">
+                    <p><span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/actualites/a-la-une">Actualit&eacute;s</a></strong></span><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/disponibilites-des-produits-de-sante/medicaments"><strong>Disponibilit&eacute;s des produits de sant&eacute;</strong></a></span></p>
+                </div>
+                                                                                <a class="ft-title" role="link" href="https://ansm.sante.fr/documents/reference/" target="_self" title="Documents de référence">Documents de référence</a>
+                                <div class="ft-content">
+                    <span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/informations-de-securite/">Informations de s&eacute;curit&eacute;</a></strong></span><br /><span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/dossiers-thematiques">Dossiers th&eacute;matiques</a></strong></span>
+                </div>
+                                                                </div>
+                    <div class="ft-col col-md-2">
+                                                    <a class="ft-title" role="link" href="https://ansm.sante.fr/vos-demarches/professionel-de-sante/lancer-une-alerte-de-securite-sanitaire" target="_self" title="Lancer une alerte">Lancer une alerte</a>
+                                <div class="ft-content">
+                    <p><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/documents/reference/declarer-un-effet-indesirable"><strong>D&eacute;clarer un effet ind&eacute;sirable</strong></a></span></p>
+                </div>
+                                                                                <span class="ft-title" role="link" title="Vos démarches">Vos démarches</span>
+                                <div class="ft-content">
+                    <span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/vos-demarches/industriel">- Industriel</a></span><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/vos-demarches/organismes-notifies">- Organisme notifi&eacute;</a></span><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/vos-demarches/professionel-de-sante">- Professionnel de sant&eacute;</a></span><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/vos-demarches/patient">- Patient</a></span><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/vos-demarches/chercheur">- Chercheur</a></span>
+                </div>
+                                                                </div>
+                    <div class="ft-col col-md-2">
+                                                    <a class="ft-title" role="link" href="https://data.ansm.sante.fr/" target="_blank" title="Data ANSM">Data ANSM</a>
+                                <div class="ft-content">
+                    <span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/documents/reference/repertoires-des-essais-cliniques-de-medicaments">R&eacute;pertoire des essais cliniques de m&eacute;dicaments</a></strong><strong><br /><a style="color: #5e2a7e;" href="https://ansm.sante.fr/documents/reference/repertoire-des-medicaments" target="_blank" rel="noopener">R&eacute;pertoire des m&eacute;dicaments</a></strong><strong><br /><a style="color: #5e2a7e;" href="http://base-donnees-publique.medicaments.gouv.fr/" target="_blank" rel="noopener">Base de donn&eacute;es publique des m&eacute;dicaments</a></strong></span>
+                </div>
+                                                                                <a class="ft-title" role="link" href="https://archive.ansm.sante.fr/" target="_self" title="Archives ANSM">Archives ANSM</a>
+                                <div class="ft-content">
+                    <span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/glossaire">Glossaire</a></strong></span>
+                </div>
+                                                                </div>
+                    <div class="ft-col col-md-2">
+                                                    <span class="ft-title" role="link" title="Restez informés">Restez informés</span>
+                                <div class="ft-content">
+                    <span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/newsletter/login">- S'inscrire &agrave; la veille personnalis&eacute;e</a></span><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/newsletter/hebdomadaire/inscription">- Recevoir notre newsletter</a><br /><a style="color: #5e2a7e;" href="https://ansm.sante.fr/page/newsletters">- Consulter nos newsle<span style="color: #5e2a7e;">t</span>ters</a><br /><span style="color: #800080;">- <span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/page/flux-rss">S'inscrire &agrave; nos flux RSS</a></span></span><br /></span>
+                </div>
+                                                                                <a class="ft-title" role="link" href="https://ansm.sante.fr/contact" target="_self" title="Contactez-nous">Contactez-nous</a>
+                                <div class="ft-content">
+                    <span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/espace-presse">Contact presse</a></strong></span><br /><span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/qui-sommes-nous/rejoignez-nous/nos-offres-d-emploi"><span style="color: #5e2a7e;">Rejoignez</span>-nous</a><br /><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/evenements/" target="_blank" rel="noopener">Notre agenda</a></span><br /></strong></span>
+                </div>
+                                                                </div>
+                    <div class="ft-col col-md-2">
+                                                    <a class="ft-title" role="link" href="https://ansm.sante.fr/actualites/?filter%5Bcategories%5D%5B%5D=105#" target="_self" title="Bulletin officiel des actes, décisions et avis">Bulletin officiel des actes, décisions et avis</a>
+                                <div class="ft-content">
+                    <p><span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/page/documents-administratifs-mis-a-la-disposition-du-public">Documents administratifs mis &agrave; la disposition du public</a><br /><a style="color: #5e2a7e;" href="https://ansm.sante.fr/page/operations-realisees-par-lansm-donnant-lieu-au-paiement-dun-droit">Op&eacute;rations donnant lieu au paiement d'un droit</a><br /></strong></span></p>
+                </div>
+                                                                                <a class="ft-title" role="link" href="https://ansm.sante.fr/page/mentions-legales" target="_self" title="Mentions légales">Mentions légales</a>
+                                <div class="ft-content">
+                    <p><span style="color: #5e2a7e;"><strong><a style="color: #5e2a7e;" href="https://ansm.sante.fr/page/protection-des-donnees-a-caractere-personnel-et-politique-de-confidentialite">Politique de protection des donn&eacute;es &agrave; caract&egrave;re personnel</a></strong><strong><br /></strong><strong><span style="color: #5e2a7e;"><a style="color: #5e2a7e;" href="https://ansm.sante.fr/page/gestion-des-cookies">Gestion des cookies</a></span><br /></strong></span></p>
+                </div>
+                                    </div>
+    </div>
+    <div class="sub-footer">
+        <div class="copyright">©2020 ansm.sante.fr</div>
+    </div>
+</footer>
+                                                            </div>
+                            </div>
+        
+                    <div id="show-alert"></div>
+            <div id="show-advertising"></div>
+        
+                    <script
+                src="https://code.jquery.com/jquery-1.12.4.min.js"
+                integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+            crossorigin="anonymous" nonce="zp3IDYc8LQhVHNYIUj77pw=="></script>
+
+            <script src="/libraries/owlcarousel/dist/owl.carousel.min.js" nonce="zp3IDYc8LQhVHNYIUj77pw=="></script>
+
+            <script src="/dist/runtime.d5198350.js"></script><script src="/dist/136.46ebecb3.js"></script><script src="/dist/542.0408e726.js"></script><script src="/dist/917.c7094061.js"></script><script src="/dist/64.edfd7f33.js"></script><script src="/dist/923.f554735f.js"></script><script src="/dist/469.5f653b3f.js"></script><script src="/dist/769.3956990b.js"></script><script src="/dist/app.d5c1c4ff.js"></script>
+
+            
+            <script nonce="zp3IDYc8LQhVHNYIUj77pw==">
+              Smart.notify.setNotifyPosition('center', 'top');
+            </script>
+
+                                        
+    <script src="/dist/506.5444e6b0.js"></script><script src="/dist/date-range-picker.fd4eacc1.js"></script>
+                            <div class="modal fade" id="cookie" tabindex="-1" role="dialog" aria-labelledby="cookie">
+        <div class="modal-dialog " role="document">
+        <div class="modal-content">
+                            <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Gestion des cookies</h4>
+                </div>
+                                        <div class="modal-body">
+                        <div id="modal-content-cookie"></div>
+                </div>
+                            <div id="modal-footer-cookie">
+        <div class="modal-footer">
+        </div>
+    </div>
+        </div>
+    </div>
+    </div>
+            </body>
+</html>

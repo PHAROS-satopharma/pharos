@@ -1,0 +1,17 @@
+# PHAROS collectors — Python 3.12. System packages on the runner: poppler-utils (pdftotext,
+# pdftoppm, pdfinfo), tesseract-ocr with jpn kor fin swe dan nor isl deu fra ita spa por nld ara,
+# fonts-noto-cjk (PDF report), and `playwright install --with-deps chromium`.
+httpx==0.28.1
+psycopg[binary]==3.2.3
+boto3==1.35.90
+pyyaml==6.0.2
+beautifulsoup4==4.12.3
+lxml==5.3.0
+feedparser==6.0.11
+openpyxl==3.1.5
+pillow==11.0.0
+playwright==1.49.1
+python-dateutil==2.9.0.post0
+jinja2==3.1.5
+pytest==8.3.4
+ruff==0.8.6

@@ -1,0 +1,130 @@
+# PHAROS — scheduled collection. ONE job per trigger; runs never overlap (shared "collectors" group with
+# backfill and the monthly report). Times are UTC; Cairo is UTC+2 in winter and UTC+3 in summer.
+#
+#   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
+#   12h      05:47 and 17:47             browser-engine sources (Playwright)
+#   daily    02:31                       large JSON files (EMA medicines, Health Canada recalls …)
+#   weekly   Monday 03:23                SPC / label watch
+#   monthly  the 1st at 01:41            monthly sources (the report itself is report.yml)
+#
+# Telegram dry-run is NOT set here: the collectors read app_setting.telegram_dry_run (true until the owner
+# approves the first real message). A manual run can force --dry-run.
+name: PHAROS collect
+
+on:
+  schedule:
+    - cron: "17 */4 * * *"
+    - cron: "47 5,17 * * *"
+    - cron: "31 2 * * *"
+    - cron: "23 3 * * 1"
+    - cron: "41 1 1 * *"
+  workflow_dispatch:
+    inputs:
+      schedule:
+        description: Which schedule to run
+        type: choice
+        options: ["4h", "12h", "daily", "weekly", "monthly", "all"]
+        default: "4h"
+      source:
+        description: Only this source id (optional)
+        type: string
+        required: false
+      dry_run:
+        description: Force dry run (no Telegram, whatever the app setting says)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collectors
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ github.event.schedule == '23 3 * * 1' && 90 || (github.event_name == 'workflow_dispatch' && 120 || 40) }}
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_BOT_USERNAME: ${{ secrets.TELEGRAM_BOT_USERNAME }}
+      NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+      PHAROS_IMAP_HOST: ${{ secrets.PHAROS_IMAP_HOST }}
+      PHAROS_IMAP_PORT: ${{ secrets.PHAROS_IMAP_PORT }}
+      PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
+      PHAROS_IMAP_PASSWORD: ${{ secrets.PHAROS_IMAP_PASSWORD }}
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Which schedule
+        id: which
+        env:
+          CRON: ${{ github.event.schedule }}
+          INPUT_SCHEDULE: ${{ inputs.schedule }}
+        run: |
+          case "$CRON" in
+            "17 */4 * * *")  s=4h ;;
+            "47 5,17 * * *") s=12h ;;
+            "31 2 * * *")    s=daily ;;
+            "23 3 * * 1")    s=weekly ;;
+            "41 1 1 * *")    s=monthly ;;
+            *)               s="${INPUT_SCHEDULE:-4h}" ;;
+          esac
+          case "$s" in 4h|12h|daily|weekly|monthly|all) ;; *) echo "unknown schedule $s"; exit 1 ;; esac
+          echo "schedule=$s" >> "$GITHUB_OUTPUT"
+          # Only browser-engine runs need Playwright (12h, all, and the weekly SPC watch for JS-only sites).
+          case "$s" in 12h|all|weekly) echo "browser=true" >> "$GITHUB_OUTPUT" ;; *) echo "browser=false" >> "$GITHUB_OUTPUT" ;; esac
+          echo "Running schedule $s"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - name: PDF text and OCR (cached)
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: >-
+            poppler-utils tesseract-ocr tesseract-ocr-jpn tesseract-ocr-kor tesseract-ocr-fin tesseract-ocr-swe
+            tesseract-ocr-dan tesseract-ocr-nor tesseract-ocr-isl tesseract-ocr-deu tesseract-ocr-fra
+            tesseract-ocr-ita tesseract-ocr-spa tesseract-ocr-por tesseract-ocr-nld tesseract-ocr-ara
+          version: "1"
+
+      - name: Python packages
+        run: pip install -r collectors/requirements.txt
+
+      - name: Playwright browser (cached)
+        if: steps.which.outputs.browser == 'true'
+        id: pw-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('collectors/requirements.txt') }}
+      - name: Playwright install
+        if: steps.which.outputs.browser == 'true'
+        env:
+          HIT: ${{ steps.pw-cache.outputs.cache-hit }}
+        run: |
+          if [ "$HIT" != "true" ]; then python -m playwright install --with-deps chromium
+          else python -m playwright install-deps chromium; fi
+
+      - name: Collect
+        env:
+          SCHEDULE: ${{ steps.which.outputs.schedule }}
+          SOURCE: ${{ inputs.source }}
+          DRY: ${{ inputs.dry_run && '1' || '' }}
+        run: |
+          args=(--schedule "$SCHEDULE")
+          if [ -n "$SOURCE" ]; then
+            [[ "$SOURCE" =~ ^[a-z0-9-]+$ ]] || { echo "bad source id"; exit 1; }
+            args+=(--source "$SOURCE")
+          fi
+          [ -n "$DRY" ] && args+=(--dry-run)
+          python -m collectors.run "${args[@]}"

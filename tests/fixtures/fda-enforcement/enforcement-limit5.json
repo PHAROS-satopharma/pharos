@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "disclaimer": "Do not rely on openFDA to make decisions regarding medical care. While we make every effort to ensure that data is accurate, you should assume all results are unvalidated. We may limit or otherwise restrict your access to the API in line with our Terms of Service.",
+    "terms": "https://open.fda.gov/terms/",
+    "license": "https://open.fda.gov/license/",
+    "last_updated": "2026-10-28",
+    "results": {
+      "skip": 0,
+      "limit": 5,
+      "total": 18076
+    }
+  },
+  "results": [
+    {
+      "status": "Ongoing",
+      "city": "Haridwar",
+      "state": "",
+      "country": "India",
+      "classification": "Class II",
+      "openfda": {},
+      "product_type": "Drugs",
+      "event_id": "99849",
+      "recalling_firm": "PRITAM INTERNATIONAL PRIVATE LIMITED",
+      "address_1": "Khasra No. 138, Raipur Industrial Area",
+      "address_2": "Bhagwanpur",
+      "postal_code": "N/A",
+      "voluntary_mandated": "Voluntary: Firm initiated",
+      "initial_firm_notification": "Two or more of the following: Email, Fax, Letter, Press Release, Telephone, Visit",
+      "distribution_pattern": "US Nationwide.",
+      "recall_number": "D-0062-2027",
+      "product_description": "Brush Buddies, Mint Chocolate Chip Ice Cream Flavored Toothpaste, Anticavity Fluoride Toothpaste, (sodium fluoride 0.243%) Net Wt. 3.5 oz (99g), Distributed by Ashtel Studios Inc., Ontario, California 91761, NDC 84140-520-35, Item # 88520, UPC 8 10147 88520 6",
+      "product_quantity": "112,092 tubes",
+      "reason_for_recall": "CGMP Deviations.",
+      "recall_initiation_date": "20260910",
+      "center_classification_date": "20261019",
+      "report_date": "20261028",
+      "code_info": "Lot# LWP250037221405, Exp Date: 07/04/2027;  Lot# LWP250048151011, Exp Date: 11/11/2027;  Lot# LWP250051162312A, Exp Date: 02/08/2028;  Lot# LWP0054880903C, Exp Date: 04/30/2028.",
+      "more_code_info": ""
+    },
+    {
+      "status": "Ongoing",
+      "city": "Rochester",
+      "state": "MI",
+      "country": "United States",
+      "classification": "Class I",
+      "openfda": {
+        "application_number": [
+          "ANDA091665"
+        ],
+        "brand_name": [
+          "ARGATROBAN"
+        ],
+        "generic_name": [
+          "ARGATROBAN"
+        ],
+        "manufacturer_name": [
+          "Par Health USA, LLC"
+        ],
+        "product_ndc": [
+          "42023-182"
+        ],
+        "product_type": [
+          "HUMAN PRESCRIPTION DRUG"
+        ],
+        "route": [
+          "INTRAVENOUS"
+        ],
+        "substance_name": [
+          "ARGATROBAN"
+        ],
+        "rxcui": [
+          "308351"
+        ],
+        "spl_id": [
+          "05c8d32d-744b-4758-a94e-d912f410bbf7"
+        ],
+        "spl_set_id": [
+          "d4e5238f-2378-424e-bda2-f1a2cf874041"
+        ],
+        "package_ndc": [
+          "42023-182-01"
+        ],
+        "is_original_packager": [
+          true
+        ],
+        "nui": [
+          "N0000175980",
+          "N0000175518",
+          "N0000009963"
+        ],
+        "pharm_class_epc": [
+          "Anti-coagulant [EPC]",
+          "Direct Thrombin Inhibitor [EPC]"
+        ],
+        "pharm_class_moa": [
+          "Thrombin Inhibitors [MoA]"
+        ],
+        "unii": [
+          "IY90U61Z3S"
+        ]
+      },
+      "product_type": "Drugs",
+      "event_id": "100072",
+      "recalling_firm": "Par Health USA, LLC",
+      "address_1": "870 Parkdale Rd",
+      "address_2": "",
+      "postal_code": "48307-1740",
+      "voluntary_mandated": "Voluntary: Firm initiated",
+      "initial_firm_notification": "Press Release",
+      "distribution_pattern": "Nationwide within the United States",
+      "recall_number": "D-0082-2027",
+      "product_description": "Argatroban Injection, USP, 250 mg/2.5mL (100 mg/mL), 2.5 mL x 1 Single Dose Vial, Rx only, Manufactured for: Endo USA, Malvern,PA 19355/Argatroban Injection, 250 mg/2.5mL (100 mg/mL), 2.5 mL x 1 Single Dose Vial, Rx only,  Distributed by: Par Pharmaceutical, Chestnut Ridge, NY 10977, NDC 42023-182-01.",
+      "product_quantity": "18,991 vials",
+      "reason_for_recall": "Particulate matter: particulate matter identified as cellulose, polystyrene, polyethylene teraphalate, stainless steel, or stopper material in the product solution.",
+      "recall_initiation_date": "20261013",
+      "center_classification_date": "20261026",
+      "report_date": "20261028",
+      "code_info": "Lot #: 83449, Exp Date: 10/2026; 82682, Exp Date: 11/2026; 86714, 87302, 87560, Exp Date: 02/2027; 87753, 88401, Exp Date: 03/2027; 88614, 88836, Exp Date: 04/2027; 90220, Exp Date: 05/2027; 91216, 91219, Exp Date: 06/2027; 92004, 92006, Exp Date: 07/2027; 92009, 92596, 92782, 93107, 93329, Exp Date: 08/2027; 93890, Exp Date: 09/2027.",
+      "more_code_info": ""
+    },
+    {
+      "status": "Ongoing",
+      "city": "Haridwar",
+      "state": "",
+      "country": "India",
+      "classification": "Class II",
+      "openfda": {},
+      "product_type": "Drugs",
+      "event_id": "99849",
+      "recalling_firm": "PRITAM INTERNATIONAL PRIVATE LIMITED",
+      "address_1": "Khasra No. 138, Raipur Industrial Area",
+      "address_2": "Bhagwanpur",
+      "postal_code": "N/A",
+      "voluntary_mandated": "Voluntary: Firm initiated",
+      "initial_firm_notification": "Two or more of the following: Email, Fax, Letter, Press Release, Telephone, Visit",
+      "distribution_pattern": "US Nationwide.",
+      "recall_number": "D-0060-2027",
+      "product_description": "evo, Sensitive, Anticavity Fluoride Toothpaste, (potassium nitrate 5%, sodium fluoride 0.24%) Sweet Mint, Net Wt. 3.5 oz (99g), Distributed by Ashtel Studios Inc., Ontario, California 91761, NDC 84140-620-35, Item # 88620 UPC8 10147 88620 3",
+      "product_quantity": "389,880 tubes",
+      "reason_for_recall": "CGMP Deviations.",
+      "recall_initiation_date": "20260910",
+      "center_classification_date": "20261019",
+      "report_date": "20261028",
+      "code_info": "Lot# LWP250038760606, Exp Date: 08/05/2027;  Lot# LWP250045152409B, Exp Date: 10/07/2027;  Lot# LWP250046862110B, Exp Date: 11/15/2027;  Lot# LWP250047640511C, Exp Date: 12/15/2027;  Lot# LWP250051172312B, Exp Date: 01/27/2028;  Lot# LWP260052241401A, Exp Date: 03/20/2028;  Lot# LWP260055532003, Exp Date: 04/12/2028.",
+      "more_code_info": ""
+    },
+    {
+      "status": "Ongoing",
+      "city": "Haridwar",
+      "state": "",
+      "country": "India",
+      "classification": "Class II",
+      "openfda": {},
+      "product_type": "Drugs",
+      "event_id": "99849",
+      "recalling_firm": "PRITAM INTERNATIONAL PRIVATE LIMITED",
+      "address_1": "Khasra No. 138, Raipur Industrial Area",
+      "address_2": "Bhagwanpur",
+      "postal_code": "N/A",
+      "voluntary_mandated": "Voluntary: Firm initiated",
+      "initial_firm_notification": "Two or more of the following: Email, Fax, Letter, Press Release, Telephone, Visit",
+      "distribution_pattern": "US Nationwide.",
+      "recall_number": "D-0056-2027",
+      "product_description": "Brush Buddies, Crayola, Silly Scents, Anticavity Fluoride Toothpaste, (sodium fluoride0.243%) Watermelon Flavor, Net Wt. 4.0 oz (113g), Distributed by Ashtel Studios Inc., Ontario, California 91761, NDC 84140-004-40, Item # Product code: 32730, UPC 8 50048 32730 6.",
+      "product_quantity": "320,232 tubes",
+      "reason_for_recall": "CGMP Deviations.",
+      "recall_initiation_date": "20260910",
+      "center_classification_date": "20261019",
+      "report_date": "20261028",
+      "code_info": "Lot LWP240027561211, Exp Date: 12/07/2026;  Lot # LWP250031970602, Exp Date: 02/28/2027;  Lot # LWP250031980602, Exp Date: 03/11/2027;  Lot # LWP250032381402, Exp Date: 03/17/2027;  Lot # LWP250035680204, Exp Date: 04/30/2027;  Lot # LWP250037682005A, Exp Date: 06/08/2027;  Lot # LWP250048601811, Exp Date: 12/09/2027;  Lot # LWP250051382412, Exp Date: 01/09/2028;  Lot # LWP260053652002, LWP260054222502, Exp Date: 03/31/2028.",
+      "more_code_info": ""
+    },
+    {
+      "status": "Ongoing",
+      "city": "Haridwar",
+      "state": "",
+      "country": "India",
+      "classification": "Class II",
+      "openfda": {},
+      "product_type": "Drugs",
+      "event_id": "99849",
+      "recalling_firm": "PRITAM INTERNATIONAL PRIVATE LIMITED",
+      "address_1": "Khasra No. 138, Raipur Industrial Area",
+      "address_2": "Bhagwanpur",
+      "postal_code": "N/A",
+      "voluntary_mandated": "Voluntary: Firm initiated",
+      "initial_firm_notification": "Two or more of the following: Email, Fax, Letter, Press Release, Telephone, Visit",
+      "distribution_pattern": "US Nationwide.",
+      "recall_number": "D-0067-2027",
+      "product_description": "BB (Brush Buddies) Advanced Whitening, Anti-Cavity Fluoride Toothpaste, (sodium fluoride 0,24%) Peppermint, Net Wt 3.5 oz (99g), Distributed by Ashtel Studios Inc., Ontario, California 91761, NDC 84140-885-42, Item # 88542, UPC 8 10147 88542 8",
+      "product_quantity": "198,288 tubes",
+      "reason_for_recall": "CGMP Deviations.",
+      "recall_initiation_date": "20260910",
+      "center_classification_date": "20261019",
+      "report_date": "20261028",
+      "code_info": "Lot # LWP250036560205A, Exp Date: 05/25/2027;  Lot # LWP250038232805A, Exp Date: 06/19/2027;  Lot # LWP0054880903D, Exp Date: 01/28/2028;  Lot # LWP260056333003C, Exp Date: 06/04/2028.",
+      "more_code_info": ""
+    }
+  ]
+}

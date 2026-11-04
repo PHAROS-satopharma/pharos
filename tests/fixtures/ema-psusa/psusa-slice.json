@@ -1,0 +1,118 @@
+{
+    "meta": {
+        "total_records": 2752,
+        "timestamp": "2026-11-04T18:05:17Z"
+    },
+    "data": [
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "tenoxicam",
+            "active_substance": "tenoxicam",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00002893/202602",
+            "regulatory_outcome": "Maintenance",
+            "first_published_date": "30/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00002893-202602"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "lornoxicam",
+            "active_substance": "lornoxicam",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00001911/202412",
+            "regulatory_outcome": "Maintenance",
+            "first_published_date": "29/07/2025",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00001911-202412"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "piroxicam",
+            "active_substance": "piroxicam",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00002438/202304",
+            "regulatory_outcome": "Variation",
+            "first_published_date": "24/01/2024",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00002438-202304"
+        },
+        {
+            "category": "",
+            "active_substances_in_scope_of_procedure": "Meloxicam",
+            "active_substance": "meloxicam",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00010474/201607",
+            "regulatory_outcome": "Variation",
+            "first_published_date": "05/12/2023",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00010474-201607"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "gliclazide",
+            "active_substance": "gliclazide",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00001532/202602",
+            "regulatory_outcome": "Maintenance",
+            "first_published_date": "30/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00001532-202602"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "nicorandil",
+            "active_substance": "nicorandil",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00002152/202602",
+            "regulatory_outcome": "Maintenance",
+            "first_published_date": "30/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00002152-202602"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "aprotinin",
+            "active_substance": "aprotinin",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00000230/202602",
+            "regulatory_outcome": "Maintenance",
+            "first_published_date": "30/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00000230-202602"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "diacerein",
+            "active_substance": "Diacerein",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00001026/202512",
+            "regulatory_outcome": "Variation",
+            "first_published_date": "23/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00001026-202512"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "alendronate",
+            "active_substance": "alendronate",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00000078/202601",
+            "regulatory_outcome": "Variation",
+            "first_published_date": "21/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00000078-202601"
+        },
+        {
+            "category": "Human",
+            "active_substances_in_scope_of_procedure": "cystine / pyridoxine hydrochloride",
+            "active_substance": "cystine;pyridoxine hydrochloride",
+            "related_medicines": "",
+            "procedure_number": "PSUSA/00000910/202603",
+            "regulatory_outcome": "Maintenance",
+            "first_published_date": "30/10/2026",
+            "last_updated_date": "",
+            "psusa_url": "https://www.ema.europa.eu/en/medicines/psusa/psusa-00000910-202603"
+        }
+    ]
+}
