@@ -266,6 +266,28 @@ jobs:
           select ops_watchdog() as wd2 \gset
           select pg_temp.ci_assert(:'wd1' = 'logged (dry run)' and :'wd2' = 'suppressed', 'watchdog alerts once, then waits');
           select pg_temp.ci_assert((select count(*) from ops_alert_log where dry_run and not sent) = 1, 'dry-run alert is logged, not sent');
+
+          -- The admin's test message: admins only, only to his own linked chat, the reason when it cannot go.
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+          set role authenticated;
+          do $$ declare denied boolean := false; begin
+            begin perform send_telegram_test(); exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: a reader sent a test message'; end if;
+          end $$;
+          reset role;
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+          set role authenticated;
+          select send_telegram_test()::text as t_unlinked \gset
+          reset role;
+          update person set telegram_chat_id = 4242 where email = 'admin@example.test';
+          set role authenticated;
+          select send_telegram_test()::text as t_novault \gset
+          reset role;
+          select pg_temp.ci_assert(:'t_unlinked'::jsonb ->> 'reason' = 'Your Telegram is not connected yet.',
+            'an unlinked admin is told to connect first');
+          select pg_temp.ci_assert((:'t_novault'::jsonb ->> 'ok')::boolean = false
+            and exists (select 1 from ops_alert_log where kind = 'test' and not sent and error like '%TELEGRAM_BOT_TOKEN%'),
+            'without the bot token nothing is sent and the reason is logged');
           SQL
 
       # ───────────── Edge Functions: deno check ─────────────

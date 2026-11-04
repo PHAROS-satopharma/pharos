@@ -112,8 +112,14 @@ After that, admins invite everyone else from the People screen (the `invite-pers
 
 ## Turning real Telegram messages on
 
-`app_setting.telegram_dry_run` starts at `true`. Only the owner turns it off, in the app's settings screen,
-after he has approved the first message. Every change is written to `audit_log`.
+`app_setting.telegram_dry_run` starts at `true`. Only the owner turns it off, on *My account → Real Telegram
+messages* (admins only):
+
+1. **Send me a test message** sends one real message to his own linked chat, and to nobody else
+   (`send_telegram_test()`, bot token from Vault). The screen shows Telegram's answer.
+2. **What would have gone** shows the latest messages written down during dry run.
+3. Once a test has gone, he ticks the approval and clicks **Turn real messages on**. **Back to dry run**
+   undoes it. Every change is written to `audit_log`.
 
 ## Adding a source
 
