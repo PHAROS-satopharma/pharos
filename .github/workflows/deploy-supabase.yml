@@ -36,7 +36,7 @@ jobs:
         run: supabase link --project-ref "$PROJECT_REF"
 
       - name: Apply migrations
-        run: supabase db push --linked
+        run: supabase db push --linked --yes
 
       - name: Function secrets
         env:
@@ -58,11 +58,11 @@ jobs:
             v="${!n}"
             [ -n "$v" ] && printf '%s=%s\n' "$n" "$v" >> "$f"
           done
-          if [ -s "$f" ]; then supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f"; fi
+          if [ -s "$f" ]; then supabase secrets set --project-ref "$PROJECT_REF" --env-file "$f" --yes; fi
           rm -f "$f"
 
       - name: Deploy Edge Functions
-        run: supabase functions deploy --project-ref "$PROJECT_REF"
+        run: supabase functions deploy --project-ref "$PROJECT_REF" --yes
 
       - name: Vault secrets for the watchdog
         env:
