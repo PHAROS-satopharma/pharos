@@ -138,7 +138,8 @@ def test_dkma_letters_link_the_pdf():
     first, second = items[0], items[1]
     assert first.title == "Oraqix Periodontal Gel"
     assert first.published == date(2026, 11, 2)
-    assert first.url == "https://laegemiddelstyrelsen.dk/~/media/3B4CB26A8CA64DF5B0EE0163A527F07E.ashx"
+    # the page links "~/media/…"; the site serves the same PDF at /media/… (checked live, 200 application/pdf)
+    assert first.url == "https://laegemiddelstyrelsen.dk/media/3B4CB26A8CA64DF5B0EE0163A527F07E.ashx"
     assert first.attachment_urls == [first.url]
     assert first.external_id == "dkma:3B4CB26A8CA64DF5B0EE0163A527F07E"
     assert second.title == "Ocrevus (ocrelizumab)"
@@ -429,9 +430,13 @@ def test_prac_signal_recommendations_with_translations():
     assert first.external_id == "EMA/PRAC/206892/2026"
     assert first.published == date(2026, 10, 26)
     assert first.doc_type == "signal"
-    assert first.url.endswith("-prac_en.pdf")
-    assert "bg" in first.structured["translations"]
+    assert first.url.endswith("-prac-meeting_en.pdf")
     assert first.attachment_urls == [first.url]
+    # the recommendations are English only; the product-information wording beside them is in every EU language
+    assert first.structured["translations"] is None
+    wording = next(i for i in items if i.structured["translations"])
+    assert "new-product-information-wording" in wording.url
+    assert "bg" in wording.structured["translations"]
 
 
 def test_prac_meeting_highlights():

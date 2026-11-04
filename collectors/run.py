@@ -208,7 +208,8 @@ class Runner:
     # ───────────────────────────── one source ─────────────────────────────
     def run_source(self, src: SourceConfig) -> SourceStats:
         stats = SourceStats()
-        prev = self.store.get_source(src.id) or {}
+        # a copy: set_source_state below must not change what "the previous health" was
+        prev = dict(self.store.get_source(src.id) or {})
         sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
         self.ctx.begin_source()
         t0 = time.monotonic()
