@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
+// Only the project origin: a pasted API address such as https://<ref>.supabase.co/rest/v1/ would send
+// sign-in to /rest/v1/auth/v1/… ("Invalid path specified in request URL").
+const url = (import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/(rest|auth)\/v1\/?$/, '').replace(/\/+$/, '');
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /** False when the build was made without the two Supabase variables; the app then says so plainly. */
