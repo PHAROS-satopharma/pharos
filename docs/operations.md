@@ -9,7 +9,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) |
-| `collect.yml`, schedule **daily** | 02:31 | Large JSON files (EMA medicines, Health Canada recalls) |
+| `collect.yml`, schedule **daily** | 02:31 | Large JSON files (EMA medicines, Health Canada recalls); NCBI literature (PubMed and PubMed Central) |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
@@ -26,7 +26,7 @@ collection can never drop the monthly report. GitHub can start scheduled runs la
 a new repository). The minutes are chosen off the hour to reduce this.
 
 Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under the job's timeout), and in a
-normal run one source gets at most 10 minutes. When the budget runs out the run stops starting new notices
+normal run one source gets at most 10 minutes (NCBI literature 15). When the budget runs out the run stops starting new notices
 and sources and ends cleanly; what is left waits for the next run, and the source checked longest ago goes
 first next time. The screening log shows "time budget reached" on a source that was cut short. A run that
 crashes is recorded as not ok.
@@ -40,7 +40,7 @@ GitHub rounds each job up to a whole minute.
 |---|---|---|---|
 | collect 4h | 6 a day × 30 = 180 | 2 | 360 |
 | collect 12h (Playwright) | 2 a day × 30 = 60 | 4 | 240 |
-| collect daily | 30 | 3 | 90 |
+| collect daily (with NCBI literature) | 30 | 6 | 180 |
 | collect weekly (SPC) | 4.35 | 10 | 44 |
 | collect monthly | 1 | 4 | 4 |
 | report (one real run, one run that skips) | 2 | 6 + 1 | 7 |
@@ -50,9 +50,11 @@ GitHub rounds each job up to a whole minute.
 | CI (only the changed parts are checked) | about 40 | 3 | 120 |
 | deploy Supabase | about 10 | 3 | 30 |
 | deploy web | about 10 | 2 | 20 |
-| **Total** | | | **about 1,014** |
+| **Total** | | | **about 1,104** |
 
-That is about 233 minutes a week, inside acceptance test 13's limit of 300. A backfill is a one-off, at most
+That is about 254 minutes a week, inside acceptance test 13's limit of 300. While a new ingredient's or class
+word's literature look-back is filling (see NCBI literature), the daily run takes up to about 18 minutes: up to
+about 360 more minutes in that month. A backfill is a one-off, at most
 300 minutes. Run it in a month with headroom.
 
 To check the real figure: *GitHub organisation → Settings → Billing → Usage*. If a month goes over 1,100,
@@ -157,6 +159,9 @@ messages* (admins only):
    names.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
+7. The NCBI literature watch searches PubMed and PubMed Central for its English name and its English class
+   words at its next daily run, looking back 12 months first (stored as history, no alerts). See NCBI
+   literature below.
 
 ## Signals
 
@@ -232,6 +237,38 @@ notice shows our section to read side by side.
   owner). When a record changes after it was signed — a report made again, a signal reopened — the page marks
   the signature "The record changed after this signature" and the record can be signed again.
 - The inspection pack lists every signature of the period (sheet "Sign-offs").
+
+## NCBI literature (PubMed and PubMed Central)
+
+- **What is searched.** Every day (the daily run), for each active ingredient: its English name (INN) and each
+  English word of its drug classes, on PubMed and on PubMed Central (full texts). Each is typed exactly as a
+  person types it on the NCBI websites (no quotes, no field tag), so NCBI expands it the same way. The run reads
+  by entry date, every page of results, and stores each paper once: under its PMID with both links when it is in
+  both databases, under its PMC id when it is not in PubMed yet. A paper found only by a class word is
+  class-only: it goes to the daily class digest, never an immediate alert. A paper found by the name alerts like
+  any notice (PubMed Central adds full-text mentions: expect several a day for a common ingredient).
+- **Look-back.** A search word never searched before (a new ingredient, a new class word, or one not searched
+  for 90 days) first reads the last 12 months. What it finds is stored as history: no alert, no digest line.
+  After that each run reads from the last complete run minus 3 days. `literature_search` (migration 0035) holds
+  one row per database and word: the look-back's days and, once every paper it found is stored, when it
+  finished. To read a word's 12 months again, delete its two rows.
+- **How fast.** A run reads and stores at most 800 papers in at most 15 minutes, new papers first, then the
+  look-backs' name papers, then their class papers; the rest wait for the next day (the screening log says "time
+  budget reached"). Storing takes about a second a paper, so a large look-back takes days: levofloxacin's 12
+  months are about 8,000 papers (PubMed 1,105 and PMC 7,838 on 6 November 2026), the NSAID class words about
+  20,000. To fill a look-back in one go, run `backfill.yml` with `source: pubmed` (up to 285 minutes, about
+  17,000 papers, name papers first, everything as history); the next daily run then finds them stored.
+- **Capacity.** About 3 KB of database per paper: 50,000 papers is about 150 MB. The watchdog warns at 350 MB.
+  Watch the database size while the first look-backs fill, and keep class words specific (each class word adds
+  thousands of papers a year).
+- **Etiquette.** `tool=pharos`; at most 3 requests a second, or 10 with `NCBI_API_KEY` (a free key from an NCBI
+  account; set it as a repository secret: the collectors and the `literature-search` function use it).
+- **Live counts.** The `literature-search` function returns, for an ingredient and a range of publication
+  dates, the live PubMed and PMC count of each search with a link that opens the same search on the website.
+  On 6 November 2026 its counts for levofloxacin, 1-31 October 2026, were the websites' own: PubMed 89 and PMC
+  357 for "levofloxacin", 233 and 475 for "fluoroquinolones", 187 and 491 for "nonsteroidal
+  anti-inflammatory". The stored papers can differ from these counts: the watch reads by entry date, the
+  counts are by publication date.
 
 ## Literature case reports and PRAC agendas
 
