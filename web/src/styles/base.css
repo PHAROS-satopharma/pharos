@@ -1853,6 +1853,53 @@ button.stat[aria-pressed='true'] {
   color: var(--muted);
   font-size: 12.5px;
 }
+/* "On this page": one ruled strip, a numbered link per section, so a long notice is one jump away. */
+.detail-toc {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--text);
+  background: var(--surface);
+}
+.detail-toc-link {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 11px 16px 10px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 3px solid transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.detail-toc-link:last-child {
+  border-right: 0;
+}
+.detail-toc-link:hover {
+  border-bottom-color: var(--beacon);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.detail-toc-index {
+  color: var(--beacon-deep);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.detail-toc-count {
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+}
+.detail-section {
+  scroll-margin-top: calc(var(--band) + var(--bar-h) + 20px);
+}
 .copies {
   border-top: 2px solid var(--text);
 }
@@ -1860,13 +1907,23 @@ button.stat[aria-pressed='true'] {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 8px 24px;
-  padding: 18px 0;
+  padding: 18px 0 18px 16px;
   border-bottom: 1px solid var(--rule);
+}
+/* the copy the notice was first published as: a beacon rule down its left edge */
+.copy.is-anchor {
+  box-shadow: inset 3px 0 0 var(--beacon);
 }
 .copy-where {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
+}
+.copy-date {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 .copy-regulator {
   color: var(--muted);
@@ -1892,9 +1949,6 @@ button.stat[aria-pressed='true'] {
   margin-top: 8px;
   color: var(--muted);
   font-size: 12.5px;
-}
-.copy-meta > span:first-child {
-  font-family: var(--font-mono);
 }
 .copy-actions {
   display: flex;
@@ -1924,9 +1978,40 @@ button.stat[aria-pressed='true'] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
-  margin-bottom: 8px;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 0 -20px 14px;
+  padding: 0 20px 12px;
+  border-bottom: 1px solid var(--rule);
   font-size: 12.5px;
+}
+.evidence-where,
+.evidence-matched {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.evidence-regulator {
+  font-weight: 600;
+}
+.evidence-lang {
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.evidence-count {
+  padding: 0 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 18px;
 }
 .evidence-title {
   font-family: var(--font-display);
@@ -2076,6 +2161,16 @@ mark.hl {
 .timeline-item:first-child::before {
   background: var(--beacon);
 }
+.timeline-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 4px;
+}
+.timeline-arrow {
+  color: var(--muted);
+}
 .timeline-comment {
   margin-top: 8px;
   padding: 8px 12px;
@@ -2106,6 +2201,16 @@ mark.hl {
   justify-content: space-between;
   gap: 6px;
   font-weight: 500;
+}
+.notified-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+/* the time lines up under the name, past the initials */
+.notified-meta {
+  margin-top: 2px;
+  padding-left: 38px;
 }
 
 /* ───────── sign in ─────────
@@ -2921,6 +3026,41 @@ mark.hl {
   }
   .copy {
     grid-template-columns: minmax(0, 1fr);
+    padding-right: 0;
+  }
+  .copy-where {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+  }
+  /* the bar scrolls away on a phone, so a section lands just under the top of the window */
+  .detail-section {
+    scroll-margin-top: 12px;
+  }
+  .detail-toc {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    border-bottom: 0;
+  }
+  .detail-toc-link:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .detail-toc-link {
+    border-bottom: 1px solid var(--rule);
+  }
+  .detail-toc-link:nth-child(2n) {
+    border-right: 0;
+  }
+  .detail-toc-link:hover {
+    border-bottom-color: var(--beacon);
+  }
+  .evidence-doc {
+    padding: 16px;
+  }
+  .evidence-head {
+    margin: 0 -16px 14px;
+    padding: 0 16px 12px;
   }
   .diff-grid {
     grid-template-columns: minmax(0, 1fr);

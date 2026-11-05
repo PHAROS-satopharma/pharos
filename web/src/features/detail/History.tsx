@@ -1,7 +1,8 @@
 import { formatDateTime } from '../../lib/format';
 import { NOTIF_KIND_LABEL, STATUS_LABEL } from '../../lib/labels';
 import type { NotificationRow, ReviewEventRow } from '../../lib/types';
-import { Tag } from '../../ui/Tag';
+import { Monogram } from '../../ui/Monogram';
+import { StatusPill, Tag } from '../../ui/Tag';
 
 export function ReviewHistory({ events }: { events: ReviewEventRow[] }) {
   if (events.length === 0) return <p className="soft small">No decision has been recorded yet.</p>;
@@ -10,8 +11,16 @@ export function ReviewHistory({ events }: { events: ReviewEventRow[] }) {
       {events.map((e) => (
         <li key={e.id} className="timeline-item">
           <div className="timeline-line">
-            <strong>{e.person?.full_name ?? 'Someone'}</strong> changed {STATUS_LABEL[e.from_status]} to{' '}
-            <strong>{STATUS_LABEL[e.to_status]}</strong>
+            <strong>{e.person?.full_name ?? 'Someone'}</strong>
+            <span className="visually-hidden">
+              {' '}
+              changed {STATUS_LABEL[e.from_status]} to {STATUS_LABEL[e.to_status]}
+            </span>
+          </div>
+          <div className="timeline-change" aria-hidden="true">
+            <StatusPill status={e.from_status} />
+            <span className="timeline-arrow">→</span>
+            <StatusPill status={e.to_status} />
           </div>
           <div className="soft small">{formatDateTime(e.created_at)}</div>
           {e.comment ? (
@@ -40,7 +49,10 @@ export function WhoWasNotified({ rows, mine = false }: { rows: NotificationRow[]
       {rows.map((n) => (
         <li key={n.id} className="notified-item">
           <div className="notified-line">
-            <span>{n.person?.full_name ?? 'A person no longer listed'}</span>
+            <span className="notified-person">
+              <Monogram name={n.person?.full_name ?? '?'} />
+              {n.person?.full_name ?? 'A person no longer listed'}
+            </span>
             {n.dry_run ? (
               <Tag tone="quiet" title="Test mode: the message was prepared but not sent.">
                 Not sent (test mode)
@@ -53,7 +65,7 @@ export function WhoWasNotified({ rows, mine = false }: { rows: NotificationRow[]
               <Tag tone="success">Sent</Tag>
             )}
           </div>
-          <div className="soft small">
+          <div className="soft small notified-meta">
             {NOTIF_KIND_LABEL[n.kind]} · {formatDateTime(n.sent_at)}
           </div>
         </li>

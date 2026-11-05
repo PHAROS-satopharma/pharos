@@ -12,6 +12,7 @@ import { Button } from '../../ui/Button';
 import { Country } from '../../ui/Flag';
 import { Notice } from '../../ui/States';
 import { Tag } from '../../ui/Tag';
+import { cx } from '../../ui/cx';
 
 function CopyActions({ issueId, copy }: { issueId: string; copy: IssueCopy }) {
   const { person } = useAuth();
@@ -94,10 +95,11 @@ export function PublishedIn({ issueId, copies }: { issueId: string; copies: Issu
         if (!d) return null;
         const reg = d.source?.regulator ?? null;
         return (
-          <li key={d.id} className="copy">
+          <li key={d.id} className={cx('copy', c.link === 'anchor' && 'is-anchor')}>
             <div className="copy-where">
               <Country name={reg?.country_name ?? null} code={reg?.country_code ?? null} />
               <span className="copy-regulator">{reg?.name ?? 'Unknown regulator'}</span>
+              <span className="copy-date">{formatDate(d.published_date)}</span>
             </div>
             <div className="copy-body">
               <a
@@ -111,7 +113,6 @@ export function PublishedIn({ issueId, copies }: { issueId: string; copies: Issu
                 {d.title_orig} <span aria-hidden>↗</span>
               </a>
               <div className="copy-meta">
-                <span>{formatDate(d.published_date)}</span>
                 <span>{DOC_TYPE_LABEL[d.doc_type]}</span>
                 {c.link === 'anchor' ? <Tag tone="blue">First published here</Tag> : null}
                 <Tag

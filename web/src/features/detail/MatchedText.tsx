@@ -22,13 +22,13 @@ function Marked({ segs }: { segs: Segment[] }) {
   );
 }
 
-function whatMatched(ms: MatchRow[]): string {
+function whatMatched(ms: MatchRow[]): string[] {
   const names = new Set<string>();
   for (const m of ms) {
     if (m.ingredient) names.add(m.ingredient.inn_en);
     else if (m.drug_class) names.add(`${m.drug_class.name_en} (class-wide)`);
   }
-  return [...names].join(', ');
+  return [...names];
 }
 
 function TextBlock({
@@ -76,7 +76,7 @@ function TextBlock({
     <div className="evidence-block">
       <div className="evidence-label">
         {label}
-        <span className="soft small">
+        <span className="evidence-count">
           {ranges.length} {ranges.length === 1 ? 'place' : 'places'}
         </span>
         {possible ? <Tag tone="warning">Possible match, check the original</Tag> : null}
@@ -133,10 +133,21 @@ export function MatchedText({
         return (
           <article key={d.id} className="evidence-doc">
             <header className="evidence-head">
-              <Country name={reg?.country_name ?? null} code={reg?.country_code ?? null} />
-              <span className="soft">{reg?.name}</span>
-              <span className="soft">· {languageName(d.lang)}</span>
-              <span className="soft">· matched {whatMatched(ms)}</span>
+              <span className="evidence-where">
+                <Country name={reg?.country_name ?? null} code={reg?.country_code ?? null} />
+                <span className="evidence-regulator">{reg?.name}</span>
+                <span className="evidence-lang">{languageName(d.lang)}</span>
+              </span>
+              <span className="evidence-matched">
+                <span className="micro soft">Matched</span>
+                <span className="chips">
+                  {whatMatched(ms).map((name) => (
+                    <span key={name} className="chip">
+                      {name}
+                    </span>
+                  ))}
+                </span>
+              </span>
             </header>
             <h3 className="evidence-title" dir="auto" lang={d.lang ?? undefined}>
               <Marked segs={segments(d.title_orig, titleRanges)} />
