@@ -184,14 +184,22 @@ def test_pubmed_esummary():
         pubmed.parse_esummary({"error": "x"}, "lornoxicam")
 
 
-def ncbi_ctx(tmp_path, esearch_failures: int, last_ok_at=None):
-    """A context whose E-utilities answers HTTP 500 to the first ``esearch_failures`` searches."""
+NCBI_DOWN = (b'{"header":{"type":"esearch","version":"0.3"},"esearchresult":{"ERROR":"Search Backend '
+             b'failed: Search is temporarily unavailable. Please try again later. Details: Cannot connect '
+             b'to SOLR"}}')
+
+
+def ncbi_ctx(tmp_path, esearch_failures: int, last_ok_at=None, backend_down: bool = False):
+    """A context whose E-utilities fails the first ``esearch_failures`` searches: HTTP 500, or (as
+    on 2026-11-05) HTTP 200 carrying "Search Backend failed"."""
     calls: list[str] = []
 
     def handler(req: httpx.Request) -> httpx.Response:
         calls.append(str(req.url))
         if "esearch" in req.url.path:
             if sum("esearch" in c for c in calls) <= esearch_failures:
+                if backend_down:
+                    return httpx.Response(200, headers={"content-type": "application/json"}, content=NCBI_DOWN)
                 return httpx.Response(500, headers={"content-type": "text/html"}, text="<html>Error</html>")
             return httpx.Response(200, headers={"content-type": "application/json"},
                                   content=fixture("pubmed/esearch-lornoxicam.json"))
@@ -225,6 +233,17 @@ def test_pubmed_fails_when_ncbi_stays_down(tmp_path):
         pubmed.list_items(ctx, CFG["pubmed"])
     assert err.value.status == 500
     assert sleeps == [5.0, 15.0, 30.0, 60.0] and len(calls) == 5
+
+
+def test_pubmed_search_backend_down_is_waited_out_then_counts_as_down(tmp_path):
+    ctx, _, sleeps = ncbi_ctx(tmp_path, esearch_failures=2, backend_down=True)
+    assert len(pubmed.list_items(ctx, CFG["pubmed"])) == 3
+    assert sleeps == [5.0, 15.0]
+    ctx, calls, _ = ncbi_ctx(tmp_path, esearch_failures=99, backend_down=True)
+    with pytest.raises(FetchError) as err:                    # a failure, never ParseError
+        pubmed.list_items(ctx, CFG["pubmed"])
+    assert err.value.status == 503 and "temporarily unavailable" in str(err.value)
+    assert len(calls) == 5
 
 
 def test_pubmed_searches_back_to_the_last_complete_run(tmp_path):
