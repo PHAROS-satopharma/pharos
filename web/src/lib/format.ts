@@ -121,7 +121,7 @@ export const PHAROS_START_MONTH = '2026-11';
 
 /** Whether PHAROS was screening in a month ("2026-11" or a "2026-11-01" date). */
 export function isScreenedMonth(month: string): boolean {
-  return month.length > 0; // TEMPORARY break
+  return month.slice(0, 7) >= PHAROS_START_MONTH;
 }
 
 /** The UTC bounds of a Cairo calendar month ("2026-10"), as ISO strings: [from, to). */
