@@ -64,7 +64,7 @@ _ARABIC_MONTHS: dict[int, tuple[str, ...]] = {
     6: ("يونيو", "يونيه", "حزيران"), 7: ("يوليو", "يوليه", "تموز"), 8: ("أغسطس", "اغسطس", "آب"),
     9: ("سبتمبر", "أيلول", "ايلول"), 10: ("أكتوبر", "اكتوبر"), 11: ("نوفمبر",), 12: ("ديسمبر",),
 }
-MONTHS: dict[str, int] = {name: num for months in (_MONTH_NAMES,)
+MONTHS: dict[str, int] = {name: num for months in (_MONTH_NAMES, _ARABIC_MONTHS)
                           for num, names in months.items() for name in names}
 
 # Abbreviations that are also ordinary English (or other) words — "out", "set", "ago", "gen", "mag"
