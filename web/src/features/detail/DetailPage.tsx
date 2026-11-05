@@ -75,8 +75,14 @@ export function DetailPage() {
   const shownPdf = pdfs.find((p) => p.key === pdfKey) ?? pdfs[0] ?? null;
   const isLabelChange = row.doc_type === 'label_change' || (spc.data?.length ?? 0) > 0;
   const link = safeHref(row.link);
-  let n = 0;
-  const idx = () => String(++n).padStart(2, '0');
+  // The page's sections in order: their numbers, and the "On this page" bar that jumps to each.
+  const sections: { id: string; title: string; short: string; count?: number }[] = [
+    { id: 'published-in', title: 'Published in', short: 'Published in', count: copies.data?.length },
+    { id: 'where-named', title: 'Where the ingredient is named', short: 'Where it is named' },
+    { id: 'original', title: 'The original document', short: 'The original', count: pdfs.length || undefined },
+    ...(isLabelChange ? [{ id: 'what-changed', title: 'What changed in the product information', short: 'What changed' }] : []),
+  ];
+  const idx = (id: string) => String(sections.findIndex((x) => x.id === id) + 1).padStart(2, '0');
 
   return (
     <div className="page detail">
@@ -145,9 +151,28 @@ export function DetailPage() {
 
       <div className="detail-grid">
         <div className="detail-main">
-          <section className="section">
+          <nav className="detail-toc" aria-label="On this page">
+            {sections.map((x) => (
+              <a
+                key={x.id}
+                href={`#${x.id}`}
+                className="detail-toc-link"
+                title={x.title}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(x.id)?.scrollIntoView({ block: 'start' });
+                }}
+              >
+                <span className="detail-toc-index">{idx(x.id)}</span>
+                <span className="detail-toc-title">{x.short}</span>
+                {x.count ? <span className="detail-toc-count">{x.count}</span> : null}
+              </a>
+            ))}
+          </nav>
+
+          <section id="published-in" className="section detail-section">
             <SectionHead
-              index={idx()}
+              index={idx('published-in')}
               title="Published in"
               aside={copies.data ? <span className="soft small">{copies.data.length} {copies.data.length === 1 ? 'copy' : 'copies'}</span> : null}
             />
@@ -160,8 +185,8 @@ export function DetailPage() {
             )}
           </section>
 
-          <section className="section">
-            <SectionHead index={idx()} title="Where the ingredient is named" />
+          <section id="where-named" className="section detail-section">
+            <SectionHead index={idx('where-named')} title="Where the ingredient is named" />
             {docIds.length === 0 ? (
               <p className="soft">No document is linked yet.</p>
             ) : evidence.isPending ? (
@@ -178,9 +203,9 @@ export function DetailPage() {
             )}
           </section>
 
-          <section className="section">
+          <section id="original" className="section detail-section">
             <SectionHead
-              index={idx()}
+              index={idx('original')}
               title="The original document"
               aside={
                 pdfs.length > 1 ? (
@@ -216,8 +241,8 @@ export function DetailPage() {
           </section>
 
           {isLabelChange ? (
-            <section className="section">
-              <SectionHead index={idx()} title="What changed in the product information" />
+            <section id="what-changed" className="section detail-section">
+              <SectionHead index={idx('what-changed')} title="What changed in the product information" />
               {spc.isPending ? (
                 <Loading label="Reading the changes" />
               ) : spc.isError ? (
