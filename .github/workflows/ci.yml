@@ -302,6 +302,16 @@ jobs:
           select pg_temp.ci_assert(:hits_fi2 = 1, 'a notice whose page and attachment both name it is counted once');
           delete from document where id in ('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-0000000000d3',
                                             '00000000-0000-0000-0000-0000000000d4');
+
+          -- 0022: a backslash in the term is literal, never a LIKE escape.
+          insert into document (id, source_id, external_id, url, title_orig, lang) values
+            ('00000000-0000-0000-0000-0000000000d5', 'ci-test', 'x5', 'https://example.test/5', 'Saved under C:\temp here', 'en'),
+            ('00000000-0000-0000-0000-0000000000d6', 'ci-test', 'x6', 'https://example.test/6', 'Saved under C:temp here', 'en');
+          set role authenticated;
+          select archive_hit_count('c:\temp', null) as hits_bs \gset
+          reset role;
+          select pg_temp.ci_assert(:hits_bs = 1, 'a backslash in the term is literal (' || :hits_bs || ')');
+          delete from document where id in ('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000d6');
           delete from attachment where id = '00000000-0000-0000-0000-0000000000f1';
 
           -- An admin can queue a probe as themselves.
