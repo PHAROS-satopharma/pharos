@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, openArchived, unwrap } from '../../lib/api';
+import { downloadArchived, errorMessage, unwrap } from '../../lib/api';
 import { cairoThisMonth, formatDateTime, formatMonth, formatNumber, formatYearMonth } from '../../lib/format';
 import { CHANNEL_LABEL, KIND_LABEL } from '../../lib/labels';
 import type { MonthlyReport } from '../../lib/types';
@@ -14,6 +14,11 @@ import { PageHead, SectionHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
 
+/** "PHAROS-screening-2026-10.xlsx": the month the report covers, in the name the file is saved under. */
+function reportFileName(month: string, ext: 'xlsx' | 'pdf'): string {
+  return `PHAROS-screening-${month.slice(0, 7)}.${ext}`;
+}
+
 function MonthlyReports() {
   const [openError, setOpenError] = useState<string | null>(null);
   const reports = useQuery({
@@ -24,10 +29,10 @@ function MonthlyReports() {
       ) ?? [],
   });
 
-  async function open(key: string) {
+  async function save(key: string, filename: string) {
     setOpenError(null);
     try {
-      await openArchived(key);
+      await downloadArchived(key, filename);
     } catch (e) {
       setOpenError(errorMessage(e));
     }
@@ -44,7 +49,7 @@ function MonthlyReports() {
   }
   return (
     <>
-      {openError ? <Notice tone="error">The file could not be opened: {openError}</Notice> : null}
+      {openError ? <Notice tone="error">The file could not be downloaded: {openError}</Notice> : null}
       <Table className="reports">
         <thead>
           <tr>
@@ -65,10 +70,18 @@ function MonthlyReports() {
               </td>
               <td className="num">
                 <div className="button-row report-files">
-                  <Button size="sm" onClick={() => void open(r.xlsx_r2_key)} title={`SHA-256 ${r.xlsx_sha256}`}>
+                  <Button
+                    size="sm"
+                    onClick={() => void save(r.xlsx_r2_key, reportFileName(r.month, 'xlsx'))}
+                    aria-label={`Download the ${formatMonth(r.month)} report as Excel`}
+                  >
                     Excel
                   </Button>
-                  <Button size="sm" onClick={() => void open(r.pdf_r2_key)} title={`SHA-256 ${r.pdf_sha256}`}>
+                  <Button
+                    size="sm"
+                    onClick={() => void save(r.pdf_r2_key, reportFileName(r.month, 'pdf'))}
+                    aria-label={`Download the ${formatMonth(r.month)} report as PDF`}
+                  >
                     PDF
                   </Button>
                 </div>

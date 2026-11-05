@@ -20,7 +20,8 @@ __all__ = ["FetchContext", "FetchError", "Fetched", "Item", "NotSetUp", "ParseEr
            "parse_date", "soup"]
 
 _DMY = re.compile(r"\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b")
-_YMD = re.compile(r"\b(\d{4})[./-](\d{1,2})[./-](\d{1,2})\b")
+# (?!\d) rather than \b after the day: an ISO timestamp ("2026-10-12T11:00") has no boundary before T
+_YMD = re.compile(r"\b(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)")
 _YMD_COMPACT = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
 _JA = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 _KO = re.compile(r"(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일")

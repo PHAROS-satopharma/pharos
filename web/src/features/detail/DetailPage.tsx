@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { useCopies, useEvidence, useIssue, useNotified, useReviews, useSpcChanges, type CopyDocument } from './queries';
 import { DecisionPanel } from './DecisionPanel';
 import { PublishedIn } from './PublishedIn';
@@ -14,20 +14,35 @@ import { DOC_TYPE_LABEL } from '../../lib/labels';
 import { Country } from '../../ui/Flag';
 import { Select } from '../../ui/Select';
 import { Empty, ErrorNote, Loading } from '../../ui/States';
-import { StatusPill, Tag } from '../../ui/Tag';
+import { IngredientChips, StatusPill, Tag } from '../../ui/Tag';
 import { SectionHead } from '../../ui/Text';
+import { fileNameFor } from '../../lib/download';
 
 interface PdfFile {
   key: string;
   label: string;
+  /** The name the original is saved under: its own file name, else the last part of its link. */
+  filename: string;
+}
+
+function pdfName(nameOrUrl: string | null | undefined): string {
+  const name = fileNameFor(nameOrUrl, 'PHAROS-notice.pdf');
+  return name.toLowerCase().endsWith('.pdf') ? name : `${name}.pdf`;
 }
 
 function isPdf(mime: string | null | undefined, name: string | null | undefined): boolean {
   return (mime ?? '').toLowerCase().includes('pdf') || (name ?? '').toLowerCase().endsWith('.pdf');
 }
 
+/** Where "All notifications" goes: the list as it was left (its filters), else the plain list. */
+function backTo(state: unknown): string {
+  const back = (state as { back?: unknown } | null)?.back;
+  return typeof back === 'string' && (back === '/' || back.startsWith('/?')) ? back : '/';
+}
+
 export function DetailPage() {
   const { id = '' } = useParams();
+  const back = backTo(useLocation().state);
   const issue = useIssue(id);
   const copies = useCopies(id);
   const documents = useMemo(
@@ -46,10 +61,14 @@ export function DetailPage() {
     const out: PdfFile[] = [];
     for (const d of documents) {
       const where = d.source?.regulator?.name ?? 'Regulator';
-      if (d.r2_key && isPdf(d.mime, d.url)) out.push({ key: d.r2_key, label: `${where}: the notice` });
+      if (d.r2_key && isPdf(d.mime, d.url)) out.push({ key: d.r2_key, label: `${where}: the notice`, filename: pdfName(d.url) });
       for (const a of evidence.data?.attachments ?? []) {
         if (a.document_id === d.id && a.r2_key && isPdf(a.mime, a.filename ?? a.url)) {
-          out.push({ key: a.r2_key, label: `${where}: ${a.filename ?? 'attached file'}` });
+          out.push({
+            key: a.r2_key,
+            label: `${where}: ${a.filename ?? 'attached file'}`,
+            filename: pdfName(a.filename ?? a.url),
+          });
         }
       }
     }
@@ -65,7 +84,7 @@ export function DetailPage() {
   const row = issue.data;
   if (!row) {
     return (
-      <Empty title="This notification does not exist." action={<Link to="/">Back to the notifications</Link>}>
+      <Empty title="This notification does not exist." action={<Link to={back}>Back to the notifications</Link>}>
         <p>It may have been merged into another notification, or the link is incomplete.</p>
       </Empty>
     );
@@ -87,7 +106,7 @@ export function DetailPage() {
   return (
     <div className="page detail">
       <header className="detail-head masthead">
-        <Link to="/" className="back-link">
+        <Link to={back} className="back-link">
           <span aria-hidden>←</span> All notifications
         </Link>
         <div className="detail-eyebrow">
@@ -119,19 +138,7 @@ export function DetailPage() {
           <div className="detail-fact">
             <dt>Ingredient</dt>
             <dd>
-              {(row.ingredients ?? []).length > 0 ? (
-                <span className="chips">
-                  {(row.ingredients ?? []).map((n) => (
-                    <span key={n} className="chip">
-                      {n}
-                    </span>
-                  ))}
-                </span>
-              ) : row.class_only ? (
-                <span className="chip chip-quiet">Class-wide</span>
-              ) : (
-                '—'
-              )}
+              <IngredientChips ingredients={row.ingredients} classOnly={row.class_only} />
             </dd>
           </div>
           <div className="detail-fact">
@@ -219,7 +226,7 @@ export function DetailPage() {
               }
             />
             {shownPdf ? (
-              <PdfViewer key={shownPdf.key} r2Key={shownPdf.key} label={shownPdf.label} />
+              <PdfViewer key={shownPdf.key} r2Key={shownPdf.key} label={shownPdf.label} filename={shownPdf.filename} />
             ) : evidence.isPending && docIds.length > 0 ? (
               <Loading label="Looking for the archived files" />
             ) : (

@@ -71,6 +71,7 @@ export function SourcesPage() {
     return HEALTH_ORDER.filter((h) => counts.get(h)).map((h) => ({ health: h, count: counts.get(h) ?? 0 }));
   }, [sources.data]);
   const enabledCount = useMemo(() => (sources.data ?? []).filter((s) => s.enabled).length, [sources.data]);
+  const offCount = (sources.data?.length ?? 0) - enabledCount;
 
   return (
     <div className="page">
@@ -99,6 +100,13 @@ export function SourcesPage() {
               title={HEALTH_LABEL[h.health].explain}
             />
           ))}
+          {offCount > 0 ? (
+            <Stat
+              value={offCount}
+              label="Switched off"
+              title="Listed but not read: an administrator switches each one on with its Read switch."
+            />
+          ) : null}
         </StatRow>
       ) : null}
       {toggle.isError ? <Notice tone="error">Not changed: {errorMessage(toggle.error)}</Notice> : null}

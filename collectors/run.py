@@ -70,6 +70,14 @@ def _utc_midnight(d: date | None) -> datetime | None:
     return datetime(d.year, d.month, d.day, tzinfo=timezone.utc) if d else None
 
 
+def latest_published(items: list) -> date | None:
+    """The newest publication date among the items, ignoring any dated after tomorrow (UTC): a date in
+    the future is a misread, and the source's last-item date only ever moves forward, so one would
+    stick (the UK alerts feed once showed 10 Dec 2026 for a recall of 12 Oct 2026)."""
+    limit = datetime.now(timezone.utc).date() + timedelta(days=1)
+    return max((it.published for it in items if it.published and it.published <= limit), default=None)
+
+
 def _filename(url: str) -> str:
     name = PurePosixPath(unquote(urlsplit(url).path)).name
     return name[:200] or "attachment"
@@ -288,7 +296,7 @@ class Runner:
                 notes.append(f"time budget reached: {waiting} new item(s) wait for the next run")
                 log.warning("%s: time budget reached, %d new item(s) wait", src.id, waiting)
             stats.error = "; ".join(notes) or None
-            latest = max((it.published for it in items if it.published), default=None)
+            latest = latest_published(items)
             health = self._quiet_health(src, prev, latest)
             # ok=True records a COMPLETE run; a run cut short leaves last_ok_at alone (seed continues)
             self.store.set_source_state(src.id, health=health, consecutive_failures=0,

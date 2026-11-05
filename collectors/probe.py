@@ -14,7 +14,7 @@ import traceback
 from datetime import datetime, timezone
 from typing import Any
 
-from collectors.core.context import (PRIVATE_NETWORK_MESSAGE, FetchContext, SourceBlocked,
+from collectors.core.context import (PRIVATE_NETWORK_MESSAGE, FetchContext, NotSetUp, SourceBlocked,
                                      UnsafeAddress)
 from collectors.core.models import Fetched, SourceConfig
 from collectors.core.registry import load_parser
@@ -22,6 +22,10 @@ from collectors.core.registry import load_parser
 log = logging.getLogger(__name__)
 
 MAX_ITEMS = 20
+# A web page PHAROS has no reading rules for: said in the admin's words, not the parser's.
+NOT_SET_UP_MESSAGE = ("it is a web page PHAROS has no reading rules for yet. PHAROS can test a news feed "
+                      "(RSS or Atom) or a page it already knows how to read; this one needs its reading rules "
+                      "set up first")
 _XML_ROOT = re.compile(rb"^\s*(?:<\?xml[^>]*>\s*)?(?:<!--.*?-->\s*)*<(rss|feed|rdf:RDF)\b", re.S | re.I)
 
 
@@ -76,6 +80,8 @@ def run_probe(store: Any, ctx: FetchContext, probe_id: str) -> dict:
         result.update(status="failed", error=PRIVATE_NETWORK_MESSAGE)
     except SourceBlocked as exc:
         result.update(status="failed", error=f"Blocked by a bot check: {exc}")
+    except NotSetUp:
+        result.update(status="failed", error=NOT_SET_UP_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure is reported to the admin screen
         log.warning("probe %s failed: %s", probe_id, traceback.format_exc())
         result.update(status="failed", error=f"{type(exc).__name__}: {exc}"[:1000])

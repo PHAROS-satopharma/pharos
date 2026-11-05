@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { downloadBlob } from './download';
 
 interface DbResult {
   data: unknown;
@@ -74,21 +75,15 @@ export async function archiveUrl(r2Key: string): Promise<string> {
   return r.url;
 }
 
-/** Opens an archived original in a new tab. The tab is opened first so the browser does not block it. */
-export async function openArchived(r2Key: string): Promise<void> {
-  const w = window.open('about:blank', '_blank');
-  try {
-    const url = await archiveUrl(r2Key);
-    if (w) {
-      w.opener = null;
-      w.location.href = url;
-    } else {
-      window.location.assign(url);
-    }
-  } catch (e) {
-    w?.close();
-    throw e;
-  }
+/**
+ * Saves an archived original under its real name. The file is fetched here and saved by the browser,
+ * so no empty tab is left behind and a spreadsheet is not lost to a blocked pop-up download.
+ */
+export async function downloadArchived(r2Key: string, filename: string): Promise<void> {
+  const url = await archiveUrl(r2Key);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`The archive answered ${res.status}.`);
+  downloadBlob(await res.blob(), filename);
 }
 
 /**

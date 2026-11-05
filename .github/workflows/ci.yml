@@ -235,6 +235,29 @@ jobs:
           select pg_temp.ci_assert(:hits_fi = 1 and :hits_de = 0, 'archive_hit_count is case-insensitive and language-filtered');
           select pg_temp.ci_assert(:hits_wild = 0, 'LIKE wildcards in the term are literal');
 
+          -- 0016: the archive test counts notices, and reads their titles and structured data too.
+          insert into document (id, source_id, external_id, url, title_orig, lang, structured) values
+            ('00000000-0000-0000-0000-0000000000d2', 'ci-test', 'x2', 'https://example.test/2',
+             'Lornoxicam and the kidney', 'en', '{"abstract": "A case after lornoxicam."}'),
+            ('00000000-0000-0000-0000-0000000000d3', 'ci-test', 'x3', 'https://example.test/3',
+             'A case report', 'en', '{"mesh": [{"term": "Lornoxicam"}], "lornoxicam_key": 1}'),
+            ('00000000-0000-0000-0000-0000000000d4', 'ci-test', 'x4', 'https://example.test/4',
+             'Nothing here', 'en', '{"lornoxicam": "a key, not a value"}');
+          insert into attachment (id, document_id, url)
+            values ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000d1', 'https://example.test/1.pdf');
+          insert into document_text (document_id, attachment_id, text)
+            values ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000f1', 'Liite: lornoksikaami.');
+          set role authenticated;
+          select archive_hit_count('lornoxicam', 'en') as hits_en \gset
+          select archive_hit_count('lornoksikaam', 'fi') as hits_fi2 \gset
+          reset role;
+          select pg_temp.ci_assert(:hits_en = 2,
+            'a notice is found by its title or a value in its data, never by a key (' || :hits_en || ')');
+          select pg_temp.ci_assert(:hits_fi2 = 1, 'a notice whose page and attachment both name it is counted once');
+          delete from document where id in ('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-0000000000d3',
+                                            '00000000-0000-0000-0000-0000000000d4');
+          delete from attachment where id = '00000000-0000-0000-0000-0000000000f1';
+
           -- An admin can queue a probe as themselves.
           select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
           set role authenticated;

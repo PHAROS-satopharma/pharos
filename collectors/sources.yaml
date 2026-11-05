@@ -703,7 +703,7 @@ sources:
     regulator: EMA
     kind: safety
     channel: html
-    url: https://www.ema.europa.eu/en/committees/prac/prac-agendas-minutes-highlights
+    url: https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/pharmacovigilance-post-authorisation/signal-management/prac-recommendations-safety-signals
     parser: prac
     languages: [en, bg, cs, da, de, el, es, et, fi, fr, ga, hr, hu, it, lt, lv, mt, nl, pl, pt, ro, sk, sl, sv]
     schedule: 4h

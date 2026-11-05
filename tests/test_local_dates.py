@@ -118,3 +118,18 @@ def test_romance_month_abbreviations(text, lang, expected):
 @pytest.mark.parametrize("text", ["carried out 2026", "set 2026", "2 ago 2026"])
 def test_english_words_are_not_months_on_an_english_page(text):
     assert local_date(text, "en") is None
+
+
+# ───────────────────────────── ISO timestamps ─────────────────────────────
+
+
+@pytest.mark.parametrize("text,expected", [
+    # gov.uk's Atom <updated>: the day is followed by "T", not a word boundary. Read day-first by the
+    # fallback, 12 October became 10 December, and the UK alerts source showed a date in the future.
+    ("2026-10-12T11:00:23+01:00", date(2026, 10, 12)),
+    ("2026-08-11T09:55:20Z", date(2026, 8, 11)),
+    ("2026-03-04T00:00:00.000+08:00", date(2026, 3, 4)),
+    ("2026-10-12", date(2026, 10, 12)),
+])
+def test_iso_timestamps_are_year_month_day(text, expected):
+    assert parse_date(text) == expected
