@@ -26,6 +26,7 @@ context and reuses the first answer (``common.get_reusing``).
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 
 import logging
 
@@ -46,9 +47,13 @@ FULL_HTML = "html"           # Snapshot.method: the full ficha técnica HTML spl
 log = logging.getLogger(__name__)
 
 
+MADRID = ZoneInfo("Europe/Madrid")
+
+
 def _ms_date(ms) -> date | None:
+    # The date in Spain: a document dated just after midnight in Madrid is still the day before in UTC.
     try:
-        return datetime.fromtimestamp(int(ms) / 1000, tz=timezone.utc).date()
+        return datetime.fromtimestamp(int(ms) / 1000, tz=timezone.utc).astimezone(MADRID).date()
     except (TypeError, ValueError, OverflowError):
         return None
 

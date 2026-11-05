@@ -217,6 +217,16 @@ def test_mpa_newslist():
     assert first.body_text == "Information till hälso- och sjukvården – DHPC."
 
 
+def test_mpa_published_is_the_day_in_sweden():
+    d = lakemedelsverket.published_date
+    assert d("2026-03-04T23:30:00Z", "sv") == date(2026, 3, 5)        # 00:30 in Stockholm (UTC+1)
+    assert d("2026-07-04T22:30:00+00:00", "sv") == date(2026, 7, 5)   # 00:30 in Stockholm (UTC+2)
+    assert d("2025-06-04T05:22:30+00:00", "sv") == date(2025, 6, 4)
+    assert d("2026-03-04", "sv") == date(2026, 3, 4)
+    assert d(None, "sv") is None
+    assert d("soon", "sv") is None
+
+
 def test_mpa_content_api_body():
     text, pdfs = lakemedelsverket.parse_content(json.loads(fixture("mpa-news/detail_content.json")))
     assert "Sammanfattning" in text
