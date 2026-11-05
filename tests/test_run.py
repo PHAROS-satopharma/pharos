@@ -191,3 +191,76 @@ def test_an_old_notice_found_by_a_regular_run_is_history(tmp_path):
     assert doc["is_backfill"]
     assert all(i["is_backfill"] for i in store.issue.values())
     ctx.close()
+
+
+def test_one_bad_notice_never_blocks_the_rest(tmp_path, monkeypatch):
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    real = runner.process_item
+
+    def flaky(src, module, item, **kw):
+        if item.external_id == "PSUSA/00001911/202412":
+            raise ValueError("A string literal cannot contain NUL (0x00) characters.")
+        return real(src, module, item, **kw)
+
+    monkeypatch.setattr(runner, "process_item", flaky)
+    stats = runner.run_source(SRC)
+    assert not stats.failed and stats.new == 8                       # the other eight are stored
+    assert "1 item(s) failed" in stats.error and "ValueError" in stats.error
+    assert store.source["ema-psusa"]["consecutive_failures"] == 0
+    ctx.close()
+
+
+def test_time_budget_cuts_a_source_cleanly_and_seeding_continues(tmp_path):
+    from collectors.run import SOURCE_BUDGET_S
+
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    ticks = iter(range(0, 10_000, SOURCE_BUDGET_S // 2 + 1))         # every look at the clock: +5 min
+    runner.clock = lambda: next(ticks)
+    stats = runner.run_source(SRC)
+    assert not stats.failed and stats.new == 1                       # one notice, then the budget
+    assert "time budget reached: 8 new item(s) wait" in stats.error
+    assert store.source["ema-psusa"].get("last_ok_at") is None       # not a complete run
+    # the next run carries on: still the seed, so the old notices behind the cut never alert
+    runner.clock = lambda: 0
+    stats = runner.run_source(SRC)
+    assert stats.new == 8 and stats.alerts == [] and store.notification == []
+    docs = [d for d in store.document.values() if d["source_id"] == "ema-psusa"]
+    assert len(docs) == 9 and all(d["is_backfill"] for d in docs)
+    assert store.source["ema-psusa"]["last_ok_at"] is not None
+    ctx.close()
+
+
+def test_run_deadline_leaves_sources_for_the_next_run(tmp_path):
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    runner.deadline, runner.clock = 100.0, lambda: 100.0
+    assert runner.run([SRC])
+    assert runner.skipped == ["ema-psusa"] and store.source_run == {}
+    ctx.close()
+
+
+def test_a_crashed_run_is_never_recorded_as_ok(tmp_path, monkeypatch):
+    from collectors import run as run_mod
+
+    monkeypatch.chdir(tmp_path)
+    finished: list[bool] = []
+    monkeypatch.setattr(MemoryStore, "finish_run", lambda self, run_id, ok: finished.append(ok))
+
+    def boom(self, sources):
+        raise RuntimeError("database went away")
+
+    monkeypatch.setattr(run_mod.Runner, "run", boom)
+    with pytest.raises(RuntimeError):
+        run_mod.main(["--no-db", "--source", "ema-psusa"])
+    assert finished == [False]
+
+
+def test_nul_characters_never_reach_postgres():
+    from collectors.core.db import _dumps, clean
+
+    assert clean({"t": "Rote-Hand-Brief\x00", "l": ["a\x00", 1], "n": None}) == {
+        "t": "Rote-Hand-Brief", "l": ["a", 1], "n": None}
+    assert clean(("x\x00y",)) == ("xy",)
+    assert _dumps({"t": "a\x00b"}) == '{"t": "ab"}'
