@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 // queries.ts imports the Supabase client; the totals under test never call it.
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
-import { totalsBySource, type RunSlice } from './queries';
+import { RUN_NOTE, totalsBySource, type RunSlice } from './queries';
 
 function run(started_at: string, error: string | null, source_id = 'fda-email', http_status: number | null = null): RunSlice {
   return {
@@ -52,5 +52,23 @@ describe('totalsBySource', () => {
     expect(t.get('infarmed-circulares')?.failed).toBe(1);
     expect(t.get('infarmed-circulares')?.lastError).toMatch(/^parse: /);
     expect(t.get('fda-enforcement')?.failed).toBe(1);
+  });
+});
+
+// The database decides what a failed run is (source_run_failed() in the migrations); this page decides
+// it again for its 48-hour counts. The two lists of notes must stay one list.
+const MIGRATIONS = import.meta.glob('../../../../supabase/migrations/*.sql', {
+  query: '?raw', import: 'default', eager: true,
+}) as Record<string, string>;
+
+describe('RUN_NOTE', () => {
+  it('is the same list of notes as source_run_failed() in the database', () => {
+    const defining = Object.keys(MIGRATIONS).sort()
+      .filter((f) => /function\s+(public\.)?source_run_failed/i.test(MIGRATIONS[f]));
+    expect(defining.length).toBeGreaterThan(0);
+    const sql = MIGRATIONS[defining[defining.length - 1]];
+    const inDb = /p_error\s+!~\s+'([^']+)'/.exec(sql)?.[1];
+    expect(inDb).toBeDefined();
+    expect(RUN_NOTE.source).toBe(inDb);
   });
 });

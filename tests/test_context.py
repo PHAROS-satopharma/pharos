@@ -230,3 +230,89 @@ def test_a_third_stall_is_reported_and_a_post_is_never_sent_twice(tmp_path):
     with pytest.raises(httpx.ConnectError):
         ctx.post("https://www.bfarm.de/form", data={"q": "x"})
     assert calls == ["POST"]
+
+
+def test_a_server_error_is_tried_again_like_a_stall_then_read(tmp_path):
+    # openFDA 21:17 and INFARMED 18:20 Cairo, 5 Nov 2026: one 500 that the same request answered straight after.
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(500, text="Internal Server Error")
+        if len(calls) == 2:
+            return httpx.Response(502, text="Bad Gateway")
+        return httpx.Response(200, headers={"content-type": "text/html"}, text="<html>recalls</html>")
+
+    ctx, sleeps = make_ctx(tmp_path, handler)
+    got = ctx.get("https://api.fda.gov/drug/enforcement.json")
+    assert got.status == 200 and len(calls) == 3
+    assert sleeps == [15.0, 35.0]
+
+
+def test_a_third_server_error_fails_and_post_or_opt_out_is_not_repeated(tmp_path):
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(req.method)
+        return httpx.Response(504, text="Gateway Timeout")
+
+    ctx, _ = make_ctx(tmp_path, handler)
+    with pytest.raises(FetchError) as err:
+        ctx.get("https://www.infarmed.pt/a")
+    assert err.value.status == 504 and calls == ["GET", "GET", "GET"]
+    calls.clear()
+    with pytest.raises(FetchError):
+        ctx.post("https://www.infarmed.pt/form", data={"q": "x"})
+    assert calls == ["POST"]
+    calls.clear()
+    with pytest.raises(FetchError):     # PubMed keeps its own, longer schedule
+        ctx.get("https://eutils.ncbi.nlm.nih.gov/x", retry_server_errors=False)
+    assert calls == ["GET"]
+
+
+def test_retry_after_zero_still_waits(tmp_path):
+    # EMA answered "too many requests"; a Retry-After of 0 must not turn into three requests in a row.
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(429, headers={"Retry-After": "0"}, text="Too many requests")
+        return httpx.Response(200, headers={"content-type": "application/json"}, text="{}")
+
+    ctx, sleeps = make_ctx(tmp_path, handler)
+    assert ctx.get("https://www.ema.europa.eu/en/z.json").status == 200
+    assert 5.0 in sleeps and 0.0 not in sleeps
+
+
+def test_the_default_host_gap_is_two_seconds():
+    from collectors.core.context import HOST_GAP_S
+
+    assert HOST_GAP_S == 2.0
+
+
+SECURITY_PAGE = (b"<html><head><title>Security check</title></head><body><h1>One more step</h1>"
+                 b"<p>Please complete the captcha below to continue to the site.</p></body></html>")
+
+
+def test_a_list_page_that_reads_like_a_security_check_is_blocked_not_changed():
+    from collectors.core.models import Fetched
+    from collectors.parsers._html_util import require
+
+    page = Fetched(200, "https://www.example.gov/alerts", SECURITY_PAGE, "text/html")
+    with pytest.raises(SourceBlocked, match="security check"):
+        require([], page, marker='id="results"')
+
+
+def test_a_real_page_that_lost_its_list_is_still_a_parse_error():
+    from collectors.core.context import ParseError
+    from collectors.core.models import Fetched
+    from collectors.parsers._html_util import require
+
+    big = b"<html><body>" + b"<p>news</p>" * 12000 + b"<form>captcha</form></body></html>"
+    with pytest.raises(ParseError):         # a large page with a contact-form captcha is not a block page
+        require([], Fetched(200, "https://www.example.gov/a", big, "text/html"), marker='id="results"')
+    marked = b'<html><div id="results"></div><p>Security check</p></html>'
+    with pytest.raises(ParseError):         # the healthy page's marker is there: the list itself changed
+        require([], Fetched(200, "https://www.example.gov/b", marked, "text/html"), marker='id="results"')

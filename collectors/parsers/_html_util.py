@@ -24,8 +24,9 @@ import re
 from datetime import date
 from typing import Iterable
 
-from collectors.parsers.base import (FetchContext, Fetched, ParseError, SourceConfig, absolute,
-                                     era_date, keyword_ok, parse_date)
+from collectors.core.context import looks_like_block_page
+from collectors.parsers.base import (FetchContext, Fetched, ParseError, SourceBlocked, SourceConfig,
+                                     absolute, era_date, keyword_ok, parse_date)
 
 __all__ = ["MONTHS", "absolute", "block_text", "clean", "column", "fill_detail", "keep", "links_in",
            "local_date", "node_text", "pages_to_read", "require", "slug_id", "table_records"]
@@ -193,6 +194,10 @@ def require(rows: Iterable, fetched: Fetched, *, marker: str | None = None,
     text = fetched.text if fetched.content else ""
     if any(m and m in text for m in empty_markers):
         return
+    if not (marker and marker in text) and looks_like_block_page(text):
+        # A firewall page of a vendor ``looks_like_challenge`` does not know, served as HTTP 200
+        # (INFARMED's Fortinet captcha, 5 Nov 2026): a bot check, never "the page changed shape".
+        raise SourceBlocked(f"bot check at {fetched.final_url} (no list; the page reads like a security check)")
     hint = f" (marker {marker!r} {'present' if marker and marker in text else 'missing'})" \
         if marker else ""
     raise ParseError(f"no rows recognised at {fetched.final_url}{hint}")

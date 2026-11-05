@@ -179,7 +179,7 @@ def test_openfda_server_error_is_asked_again(tmp_path):
     # answered 200 straight after.
     ctx, calls, sleeps = openfda_ctx(tmp_path, [500, 502])
     items = openfda_enforcement.list_items(ctx, CFG["fda-enforcement"])
-    assert len(items) == 5 and len(calls) == 3 and sleeps == [15.0, 45.0]
+    assert len(items) == 5 and len(calls) == 3 and sleeps == [15.0, 35.0]
 
 
 def test_openfda_still_down_fails_with_its_own_message(tmp_path):
