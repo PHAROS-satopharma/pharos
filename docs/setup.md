@@ -142,7 +142,8 @@ GitHub does not allow secret names that start with `GITHUB_`, which is why the d
    deploy Supabase** runs: it creates the tables, deploys the functions, copies the secrets and sets the
    Telegram webhook. **PHAROS deploy web** then publishes `https://pharos-satopharma.pages.dev`. Deploys
    only ever run from `main` after CI passes. If CI fails on `main`, that push is not deployed: fix it, or
-   run the deploy by hand from `main` (a later push deploys only the parts it touches itself).
+   run the deploy by hand from `main`. Every tested push to `main` deploys everything (both deploys are
+   safe to repeat), so a later successful push also catches up anything an earlier one missed.
 2. Supabase *Authentication → Users → Invite user*: invite your own work email. The lead then makes that
    account the first administrator (one line, in docs/operations.md under "First administrator").
 3. Open the website from the invitation email, set your password, and link Telegram from your profile.

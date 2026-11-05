@@ -1,5 +1,5 @@
 # PHAROS — build the web app and publish it to Cloudflare Pages (project "pharos-satopharma") after "PHAROS CI" has
-# passed on a push to main that touches web/. Never from another branch: a run started by hand works on
+# passed on a push to main (every tested commit). Never from another branch: a run started by hand works on
 # main only. The site is built here, so the Cloudflare Pages project needs no environment variables.
 name: PHAROS deploy web
 
@@ -50,7 +50,10 @@ jobs:
           fi
           files="$(git diff --name-only 'HEAD^1' HEAD)"
           echo "$files"
-          if echo "$files" | grep -qE '^(web/|\.github/workflows/deploy-web\.yml$)'; then deploy=true; else deploy=false; fi
+          # Always deploy: when main moves fast GitHub drops queued CI runs, so the commit that brought a
+          # change may never get a deploy of its own, and the next tested commit's own diff would not show
+          # it. Every step below is safe to repeat (db push applies only what is missing).
+          deploy=true
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
           echo "deploy=$deploy"
 
