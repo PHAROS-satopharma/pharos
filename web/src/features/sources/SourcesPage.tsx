@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrapChanged } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { formatCairoDate, formatDateTime, formatNumber, timeAgo } from '../../lib/format';
+import { formatDateTime, formatNumber, formatPublishedDay, timeAgo } from '../../lib/format';
 import { CHANNEL_LABEL, HEALTH_LABEL, KIND_LABEL, hostOf, languageName } from '../../lib/labels';
 import { safeHref } from '../../lib/safeHref';
 import type { SourceHealth } from '../../lib/types';
@@ -184,8 +184,8 @@ export function SourcesPage() {
                             </div>
                             <div>
                               <dt>Last published</dt>
-                              <dd className="mono" title={formatDateTime(s.last_item_at)}>
-                                {s.last_item_at ? formatCairoDate(s.last_item_at) : '—'}
+                              <dd className="mono" title="The publication date of the newest notice, as the regulator printed it">
+                                {formatPublishedDay(s.last_item_at)}
                               </dd>
                             </div>
                           </dl>
