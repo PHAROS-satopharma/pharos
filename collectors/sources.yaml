@@ -811,8 +811,7 @@ sources:
     languages: [en, bg, cs, da, de, el, es, et, fi, fr, ga, hr, hu, it, lt, lv, mt, nl, pl, pt, ro, sk, sl, sv]
     schedule: 4h
     expected_max_gap_days: 45
-    enabled: false
-    notes: needs live probe — PRAC signal recommendations come in every EU language.
+    notes: Live probe 5 Nov 2026 read 159 documents (signals and meeting highlights); switched on by migration 0021. The English original is screened; the translations are linked.
 
   - id: who-alerts
     regulator: WHO
