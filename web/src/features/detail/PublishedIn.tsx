@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatDate, formatDateTime } from '../../lib/format';
+import { safeHref } from '../../lib/safeHref';
 import { DOC_TYPE_LABEL, METHOD_LABEL } from '../../lib/labels';
 import type { IssueCopy } from './queries';
 import { Button } from '../../ui/Button';
@@ -100,7 +101,7 @@ export function PublishedIn({ issueId, copies }: { issueId: string; copies: Issu
             </div>
             <div className="copy-body">
               <a
-                href={d.url}
+                href={safeHref(d.url) ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="copy-title"

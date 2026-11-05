@@ -36,7 +36,8 @@ import httpx
 from collectors import backfill as bf
 from collectors.alerts import Notifier
 from collectors.core.archive import Archive
-from collectors.core.context import FetchContext, FetchError, ParseError, SourceBlocked
+from collectors.core.context import (FetchContext, FetchError, ParseError, SourceBlocked,
+                                     install_log_redaction, redact)
 from collectors.core.imap_inbox import NOT_CONFIGURED
 from collectors.core.models import Item, SourceConfig
 from collectors.core.registry import load_parser, source_configs, sync_catalogue
@@ -259,8 +260,8 @@ class Runner:
                 except SourceBlocked:
                     raise
                 except Exception as exc:  # noqa: BLE001 - one bad notice never stops the ones behind it
-                    item_errors.append(f"{it.external_id}: {type(exc).__name__}: {exc}")
-                    log.warning("%s item %s: %s", src.id, it.external_id, traceback.format_exc())
+                    item_errors.append(redact(f"{it.external_id}: {type(exc).__name__}: {exc}"))
+                    log.warning("%s item %s: %s", src.id, it.external_id, redact(traceback.format_exc()))
             tried = len(fresh) - waiting
             if tried and len(item_errors) == tried:
                 raise FetchError(0, src.url, f"every new item failed; first: {item_errors[0]}")
@@ -280,21 +281,21 @@ class Runner:
                 self.notifier.health_alert(src.id, "degraded",
                                            f"No new notice for more than {src.expected_max_gap_days} days.")
         except SourceBlocked as exc:
-            stats.error = f"blocked: {exc}"
+            stats.error = redact(f"blocked: {exc}")
             self.store.set_source_state(src.id, health="blocked", consecutive_failures=failures + 1)
             if prev.get("health") != "blocked":
-                self.notifier.health_alert(src.id, "blocked", str(exc))
+                self.notifier.health_alert(src.id, "blocked", redact(exc))
         except ParseError as exc:
             stats.failed = True
-            stats.error = f"parse: {exc}"
+            stats.error = redact(f"parse: {exc}")
             self.store.set_source_state(src.id, health="degraded", consecutive_failures=failures + 1)
             if prev.get("health") != "degraded":
-                self.notifier.health_alert(src.id, "degraded", f"The page changed shape: {exc}")
+                self.notifier.health_alert(src.id, "degraded", redact(f"The page changed shape: {exc}"))
         except Exception as exc:  # noqa: BLE001 - network, HTTP, a parser bug: all count as a failure
             failures += 1
             stats.failed = True
-            stats.error = f"{type(exc).__name__}: {exc}"[:1000]
-            log.warning("%s failed: %s", src.id, traceback.format_exc())
+            stats.error = redact(f"{type(exc).__name__}: {exc}")[:1000]
+            log.warning("%s failed: %s", src.id, redact(traceback.format_exc()))
             health = "down" if failures >= DOWN_AFTER else (prev.get("health") or "unknown")
             if health == "blocked":
                 health = "down" if failures >= DOWN_AFTER else "blocked"
@@ -414,6 +415,7 @@ def main(argv: list[str] | None = None) -> int:
     args.backfill = backfill_months is not None
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    install_log_redaction()     # no bot token or api_key from httpx's request log, ever
     if args.no_db:
         from collectors.core.memstore import MemoryStore
 
@@ -475,7 +477,7 @@ def main(argv: list[str] | None = None) -> int:
                 try:
                     from collectors.spc.run import run_spc
 
-                    created = run_spc(ctx, db, spc_ids)
+                    created = run_spc(ctx, db, spc_ids, store=store, notifier=notifier)
                     for issue_id in created or []:
                         notifier.issue_alert(issue_id)
                 except Exception:  # noqa: BLE001 - SPC trouble is logged, the run continues

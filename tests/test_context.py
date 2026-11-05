@@ -111,3 +111,74 @@ def test_a_real_regulator_page_is_not_a_challenge():
     from collectors.core.context import looks_like_challenge
     html = (Path(__file__).parent / "fixtures" / "aifa-sicurezza" / "niis_live_2026-11-05.html").read_text(encoding="utf-8")
     assert not looks_like_challenge(html, 200)
+
+
+# ───────────────────────────── secrets never reach messages or logs ─────────────────────────────
+
+NCBI_KEY = "0123456789abcdef0123456789abcdef0123"
+BOT = "bot7123456789:AAH-secretTokenPart_xyz"
+
+
+def test_redact_hides_url_secrets():
+    from collectors.core.context import redact
+
+    url = ("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=x"
+           f"&tool=pharos&api_key={NCBI_KEY}")
+    got = redact(f"HTTP 500 for {url}")
+    assert NCBI_KEY not in got and "api_key=<redacted>" in got and "db=pubmed&term=x" in got
+    for secret_url in (f"https://api.telegram.org/{BOT}/sendMessage",
+                       "https://user:hunter2@example.org/x",
+                       "https://x.org/a?token=T0K3N&password=pw1&key=K3Y"):
+        out = redact(secret_url)
+        for secret in ("AAH-secretTokenPart_xyz", "hunter2", "T0K3N", "pw1", "K3Y"):
+            assert secret not in out, out
+
+
+def test_fetch_errors_never_carry_the_api_key(tmp_path):
+    def handler(req: httpx.Request) -> httpx.Response:
+        if "blocked" in req.url.path:
+            return httpx.Response(403, headers={"content-type": "text/html"},
+                                  text="<html><title>Just a moment...</title></html>")
+        return httpx.Response(500, text="oops")
+
+    ctx, _ = make_ctx(tmp_path, handler)
+    with pytest.raises(FetchError) as err:
+        ctx.get(f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&api_key={NCBI_KEY}")
+    assert NCBI_KEY not in str(err.value) and NCBI_KEY not in err.value.url
+    with pytest.raises(SourceBlocked) as blocked:
+        ctx.get(f"https://eutils.ncbi.nlm.nih.gov/blocked?api_key={NCBI_KEY}")
+    assert NCBI_KEY not in str(blocked.value)
+
+
+def test_log_redaction_quiets_httpx_and_redacts_records():
+    import logging
+
+    from collectors.core.context import install_log_redaction
+
+    seen: list[str] = []
+
+    class Capture(logging.Handler):
+        def emit(self, record):
+            seen.append(self.format(record))
+
+    root = logging.getLogger()
+    handler = Capture()
+    root.addHandler(handler)
+    levels = {n: logging.getLogger(n).level for n in ("httpx", "httpcore")}
+    try:
+        install_log_redaction()
+        assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
+        assert logging.getLogger("httpcore").getEffectiveLevel() >= logging.WARNING
+        logging.getLogger("collectors.test").warning(
+            "HTTP Request: POST %s", f"https://api.telegram.org/{BOT}/sendMessage")
+        try:
+            raise RuntimeError(f"failed https://x.org/?api_key={NCBI_KEY}")
+        except RuntimeError:
+            logging.getLogger("collectors.test").exception("boom")
+    finally:
+        root.removeHandler(handler)
+        for n, lvl in levels.items():
+            logging.getLogger(n).setLevel(lvl)
+    text = "\n".join(seen)
+    assert "AAH-secretTokenPart_xyz" not in text and NCBI_KEY not in text
+    assert "api.telegram.org/bot<redacted>/sendMessage" in text

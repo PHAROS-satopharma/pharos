@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { unwrap } from '../../lib/api';
+import { personNames } from '../../lib/people';
 import { ISSUE_COLUMNS } from '../issues/queries';
 import type {
   AttachmentRow,
@@ -70,17 +71,24 @@ export function useCopies(id: string) {
   return useQuery({
     queryKey: ['issue-copies', id],
     queryFn: async () => {
-      const rows =
-        unwrap<IssueCopy[] | null>(
+      // Who linked a copy: the name comes from person_directory, because the person table shows a
+      // non-admin only their own row.
+      const raw =
+        unwrap<(Omit<IssueCopy, 'linked_by_person'> & { linked_by: string | null })[] | null>(
           await supabase
             .from('issue_document')
             .select(
-              'link,method,score,linked_at,linked_by_person:linked_by(full_name),' +
+              'link,method,score,linked_at,linked_by,' +
                 'document:document_id(id,url,title_orig,lang,doc_type,published_date,first_seen_at,r2_key,mime,is_backfill,' +
                 'source:source_id(id,channel,regulator:regulator_id(name,country_name,country_code)))',
             )
             .eq('issue_id', id),
         ) ?? [];
+      const names = await personNames(raw.map((r) => r.linked_by));
+      const rows = raw.map(({ linked_by, ...r }): IssueCopy => {
+        const name = linked_by ? names.get(linked_by) : undefined;
+        return { ...r, linked_by_person: name ? { full_name: name } : null };
+      });
       return rows
         .filter((r) => r.document !== null)
         .sort((a, b) => {
@@ -165,17 +173,26 @@ export function useSpcChanges(issueId: string) {
 export function useReviews(issueId: string) {
   return useQuery({
     queryKey: ['issue-reviews', issueId],
-    queryFn: async () =>
-      unwrap<ReviewEventRow[] | null>(
-        await supabase
-          .from('review_event')
-          .select('id,from_status,to_status,comment,created_at,person:person_id(full_name)')
-          .eq('issue_id', issueId)
-          .order('created_at', { ascending: true }),
-      ) ?? [],
+    queryFn: async () => {
+      // Reviewers' names come from person_directory: the person table shows a non-admin only their own row.
+      const raw =
+        unwrap<(Omit<ReviewEventRow, 'person'> & { person_id: string })[] | null>(
+          await supabase
+            .from('review_event')
+            .select('id,from_status,to_status,comment,created_at,person_id')
+            .eq('issue_id', issueId)
+            .order('created_at', { ascending: true }),
+        ) ?? [];
+      const names = await personNames(raw.map((r) => r.person_id));
+      return raw.map(({ person_id, ...r }): ReviewEventRow => {
+        const name = names.get(person_id);
+        return { ...r, person: name ? { full_name: name } : null };
+      });
+    },
   });
 }
 
+/** Messages about this notice: every person's for an admin, only your own otherwise (row-level security). */
 export function useNotified(issueId: string) {
   return useQuery({
     queryKey: ['issue-notified', issueId],

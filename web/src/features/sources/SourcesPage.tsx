@@ -5,6 +5,7 @@ import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatCairoDate, formatDateTime, formatNumber, timeAgo } from '../../lib/format';
 import { CHANNEL_LABEL, HEALTH_LABEL, KIND_LABEL, hostOf, languageName } from '../../lib/labels';
+import { safeHref } from '../../lib/safeHref';
 import type { SourceHealth } from '../../lib/types';
 import { Button } from '../../ui/Button';
 import { Toggle } from '../../ui/Input';
@@ -148,7 +149,7 @@ export function SourcesPage() {
                           <span className="source-kind">{KIND_LABEL[s.kind]}</span>
                           <span className="cell-sub">
                             {CHANNEL_LABEL[s.channel]} ·{' '}
-                            <a href={s.url} target="_blank" rel="noopener noreferrer">
+                            <a href={safeHref(s.url) ?? undefined} target="_blank" rel="noopener noreferrer">
                               {hostOf(s.url)}
                             </a>
                             {languages ? <> · {languages}</> : null}
