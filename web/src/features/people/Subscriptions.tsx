@@ -5,6 +5,7 @@ import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
 import { SUB_KIND_LABEL } from '../../lib/labels';
 import type { SubKind, SubscriptionRow } from '../../lib/types';
 import { useIngredientList } from './useIngredientList';
+import { subscriptionKinds } from './subKinds';
 import { Button } from '../../ui/Button';
 import { Select } from '../../ui/Select';
 import { Notice } from '../../ui/States';
@@ -36,8 +37,11 @@ export function SubscriptionEditor({
 }) {
   const qc = useQueryClient();
   const ingredients = useIngredientList();
-  const [kind, setKind] = useState<SubKind>('ingredient');
+  const [picked, setKind] = useState<SubKind>('ingredient');
   const [ingredientId, setIngredientId] = useState('');
+  const kinds = subscriptionKinds(allowHealth);
+  // a role changed away from admin while health alerts were picked: fall back to what can be added
+  const kind = kinds.includes(picked) ? picked : 'ingredient';
 
   const refresh = async () => {
     await Promise.all(invalidate.map((k) => qc.invalidateQueries({ queryKey: k })));
@@ -69,7 +73,6 @@ export function SubscriptionEditor({
   const duplicate = subs.some(
     (s) => s.kind === kind && (kind !== 'ingredient' || (s.ingredient_id ?? '') === ingredientId),
   );
-  const kinds: SubKind[] = allowHealth ? ['ingredient', 'class_digest', 'admin_health'] : ['ingredient', 'class_digest'];
 
   return (
     <div className="subs">
@@ -84,6 +87,9 @@ export function SubscriptionEditor({
                 <span className="sub-text" title={describeSub(s)}>
                   <span className="sub-what">{what}</span>
                   {when ? <span className="sub-when">{when}</span> : null}
+                  {s.kind === 'admin_health' && !allowHealth ? (
+                    <span className="sub-when">Not sent: admins only</span>
+                  ) : null}
                 </span>
                 <Button
                   size="sm"
