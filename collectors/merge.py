@@ -73,6 +73,9 @@ class MergeResult:
     method: str
     score: int | None
     suggested_to: list[str] = field(default_factory=list)
+    # An existing issue took this document (a late anchor, or a copy that may bring new ingredients):
+    # alert whoever has not had it yet.
+    alert: bool = False
 
 
 def compatible(anchor_type: str, copy_type: str) -> bool:
@@ -184,9 +187,9 @@ def merge_document(store: Any, d: DocFacts, ingredient_ids: Iterable[str] | None
             best, _, iss = scored[0]
             store.link_document(iss["id"], d.document_id, link="anchor", method="auto", score=best)
             store.set_issue_anchor(iss["id"], d.document_id, title=d.title, doc_type=d.doc_type,
-                                   first_date=d.published)
+                                   first_date=d.published, is_backfill=d.is_backfill)
             store.add_issue_ingredients(iss["id"], ingredients)
-            return MergeResult(iss["id"], False, "anchor", "auto", best)
+            return MergeResult(iss["id"], False, "anchor", "auto", best, alert=True)
         issue_id = _new_issue(store, d, ingredients)
         suggested = []
         for s, _, iss in scored:
@@ -221,7 +224,8 @@ def merge_document(store: Any, d: DocFacts, ingredient_ids: Iterable[str] | None
     if best and best[2] and best[0] >= AUTO_SCORE and d.is_eu:
         s, iss, _ = best
         store.link_document(iss["id"], d.document_id, link="copy", method="auto", score=s)
-        return MergeResult(iss["id"], False, "copy", "auto", s)
+        store.add_issue_ingredients(iss["id"], ingredients)
+        return MergeResult(iss["id"], False, "copy", "auto", s, alert=True)
     issue_id = _new_issue(store, d, ingredients)
     suggested = []
     if best and best[0] >= SUGGEST_SCORE:

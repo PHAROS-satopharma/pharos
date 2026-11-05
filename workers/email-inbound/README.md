@@ -14,7 +14,11 @@ For every email sent to an alias, the Worker:
 2. Reads the text and HTML parts with `postal-mime`.
 3. Inserts one `inbound_email` row with the service key. `source_id` comes from the alias: `fimea@` maps to
    `fimea-email` and `tga@` maps to `tga-email`. If the source row is not there yet, the row is kept with an
-   empty `source_id`.
+   empty `source_id`. The From line can be forged, so the row gets its source only when the From domain is
+   on that source's `SOURCE_DOMAINS` list and the receiving server's own `Authentication-Results`
+   (`mx.cloudflare.net`) shows DMARC, DKIM or SPF passing for it, the rules of the IMAP path. Any other
+   message is kept with an empty `source_id`, which the collectors never read. Check a test message's
+   headers first: if Cloudflare hands the Worker no verdict, every message is kept that way.
 4. Forwards a copy to `FORWARD_TO` if it is set, so people still see subscription confirmations.
 
 The collectors' `email_inbox` parser turns each row into items and sets `processed_at`.
@@ -38,7 +42,8 @@ Mail to any other address on the domain is rejected.
 
 ## Adding another alias
 
-Add `alias=source-id` to `ALIAS_SOURCES` in `wrangler.toml`. Add a routing rule as in step 5. Add the source
+Add `alias=source-id` to `ALIAS_SOURCES` and `source-id=domain` to `SOURCE_DOMAINS` in `wrangler.toml`. Add a
+routing rule as in step 5. Add the source
 to `collectors/sources.yaml` with `channel: email` and `parser: email_inbox`.
 
 ## Settings
@@ -47,6 +52,8 @@ to `collectors/sources.yaml` with `channel: email` and `parser: email_inbox`.
 |---|---|---|
 | `ARCHIVE` | `wrangler.toml` (R2 binding) | Bucket `pharos-archive`; must equal `R2_BUCKET` |
 | `ALIAS_SOURCES` | `wrangler.toml` | `alias=source-id`, comma-separated |
+| `SOURCE_DOMAINS` | `wrangler.toml` | `source-id=domain\|domain`, comma-separated: the From domains each source accepts |
+| `AUTHSERV` | `wrangler.toml` (optional) | The server whose verdicts count; `mx.cloudflare.net` when not set |
 | `SUPABASE_URL` | Worker secret (from GitHub) | Project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Worker secret (from GitHub) | Service key, so the Worker can insert past row-level security |
 | `FORWARD_TO` | Worker secret (from GitHub `PV_MAILBOX`) | Optional copy to a verified destination |
