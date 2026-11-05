@@ -797,6 +797,26 @@ def test_email_rows_are_marked_only_once_their_items_are_stored():
     assert dry.db.marked == []                            # a dry run never consumes the mailbox
 
 
+def test_catalogue_channel_says_how_the_source_is_read():
+    # Audit: mpa-news said "browser" but its parser calls a plain JSON API.
+    import importlib
+    import inspect
+
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    for s in sources:
+        if s.channel != "browser":
+            continue
+        try:
+            module = importlib.import_module(f"collectors.parsers.{s.parser}")
+        except ImportError:
+            module = importlib.import_module(f"collectors.spc.{s.parser}")
+        code = inspect.getsource(module)
+        assert "browser" in code and ("browser_get" in code or (s.options or {}).get("browser")), s.id
+    assert {s.id: s.channel for s in sources}["mpa-news"] == "api"
+
+
 def test_catalogue_urls_match_the_pages_the_parsers_read():
     # Two catalogue entries pointed at landing pages with no list (both failed every run, 5 Nov 2026).
     from collectors.core.registry import load_catalogue
