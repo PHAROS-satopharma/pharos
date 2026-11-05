@@ -11,6 +11,7 @@ import { Field, Input } from '../../ui/Input';
 import { ErrorNote, Loading, Notice } from '../../ui/States';
 import { PageHead, SectionHead } from '../../ui/Text';
 import { SubscriptionEditor } from '../people/Subscriptions';
+import { RealMessages } from './RealMessages';
 
 function TelegramLink() {
   const { person, refreshPerson } = useAuth();
@@ -205,8 +206,15 @@ export function MePage() {
         )}
       </section>
 
+      {isAdmin ? (
+        <section className="section">
+          <SectionHead index="03" title="Real Telegram messages" />
+          <RealMessages />
+        </section>
+      ) : null}
+
       <section className="section">
-        <SectionHead index="03" title="Password" />
+        <SectionHead index={isAdmin ? '04' : '03'} title="Password" />
         <p className="small muted">Set or change the password you sign in with. The email link keeps working too.</p>
         <PasswordForm />
       </section>
