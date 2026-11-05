@@ -133,14 +133,51 @@ def test_the_default_is_off():
         ctx.close()
 
 
+class _Request:
+    def __init__(self, url: str, redirected: bool) -> None:
+        self.url = url
+        self.redirected_from = object() if redirected else None
+
+
+class _Route:
+    def __init__(self, request: _Request, log: dict[str, str]) -> None:
+        self.request, self._log = request, log
+
+    def continue_(self):
+        self._log[self.request.url] = "continue"
+
+    def abort(self, code=None):
+        self._log[self.request.url] = "abort"
+
+
 class _Page:
-    def __init__(self, final_url: str) -> None:
+    """``requests``: (url, is a redirect hop) the page makes while loading. Like Playwright, the route
+    handler never sees a redirect hop; the request event sees every request."""
+
+    def __init__(self, final_url: str, requests: tuple = ()) -> None:
         self.url = final_url
         self.visited: list[str] = []
         self.closed = False
+        self.requests = requests
+        self.routed: dict[str, str] = {}
+        self._route = None
+        self._listeners: list = []
+
+    def route(self, pattern, handler):
+        self._route = handler
+
+    def on(self, event, callback):
+        if event == "request":
+            self._listeners.append(callback)
 
     def goto(self, url, **_):
         self.visited.append(url)
+        for req_url, redirected in self.requests:
+            request = _Request(req_url, redirected)
+            for callback in self._listeners:
+                callback(request)
+            if not redirected and self._route is not None:
+                self._route(_Route(request, self.routed))
         return type("R", (), {"status": 200})()
 
     def wait_for_load_state(self, *a, **k):
@@ -154,8 +191,8 @@ class _Page:
 
 
 class _Browser:
-    def __init__(self, final_url: str) -> None:
-        self.page = _Page(final_url)
+    def __init__(self, final_url: str, requests: tuple = ()) -> None:
+        self.page = _Page(final_url, requests)
 
     def new_page(self, **_):
         return self.page
@@ -214,3 +251,67 @@ def test_the_probe_and_the_scheduled_run_turn_public_only_on(tmp_path, monkeypat
     monkeypatch.setattr(probe_mod, "run_probe", lambda store, ctx, pid: {"status": "ok"})
     run_mod.main(["--no-db", "--probe-id", "p1"])
     assert len(made) == 2 and all(kw.get("public_only") is True for kw in made)
+
+
+def test_the_browser_blocks_the_pages_own_requests_into_a_private_network(tmp_path):
+    ctx, _ = make_ctx(tmp_path, ok)
+    meta = "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
+    ctx._browser = browser = _Browser("https://www.regulator.example/page", requests=(
+        ("https://www.regulator.example/app.js", False), (meta, False),
+        ("http://metadata.test/latest/", False), ("data:text/plain,x", False)))
+    assert ctx.browser_get("https://www.regulator.example/page").status == 200
+    assert browser.page.routed == {"https://www.regulator.example/app.js": "continue", meta: "abort",
+                                   "http://metadata.test/latest/": "abort", "data:text/plain,x": "continue"}
+    ctx._browser = None
+    ctx.close()
+
+
+def test_the_browser_hands_back_nothing_when_a_request_was_redirected_inside(tmp_path):
+    ctx, _ = make_ctx(tmp_path, ok)
+    ctx._browser = _Browser("https://www.regulator.example/page",
+                            requests=(("http://metadata.test/latest/", True),))
+    with pytest.raises(UnsafeAddress):
+        ctx.browser_get("https://www.regulator.example/page")
+    ctx._browser = None
+    ctx.close()
+
+
+def test_a_name_that_rebinds_after_the_check_never_connects_inside(tmp_path, monkeypatch):
+    import httpcore
+
+    from collectors.core import context as context_mod
+
+    connected: list[str] = []
+
+    def connect(self, host, port, **kw):
+        connected.append(host)
+        raise httpcore.ConnectError("no network in the tests")
+
+    monkeypatch.setattr(httpcore.SyncBackend, "connect_tcp", connect)
+    ctx = FetchContext(None, "run", archive=Archive(enabled=False), host_gap_s=0, public_only=True)
+    assert isinstance(ctx._client._transport._pool._network_backend, context_mod._PinnedBackend)
+    answers = iter([["93.184.216.34"], ["127.0.0.1"]])    # public for the check, then inside
+    ctx._resolve = lambda host: next(answers)
+    ctx._sleep = lambda s: None
+    try:
+        with pytest.raises(UnsafeAddress):
+            ctx.get("http://rebind.test/")
+    finally:
+        ctx.close()
+    assert connected == []                                  # the socket never opened
+
+
+def test_the_connection_goes_to_the_address_that_was_checked(monkeypatch):
+    import httpcore
+
+    from collectors.core import context as context_mod
+
+    connected: list[tuple[str, int]] = []
+    monkeypatch.setattr(httpcore.SyncBackend, "connect_tcp",
+                        lambda self, host, port, **kw: connected.append((host, port)) or "stream")
+    backend = context_mod._PinnedBackend(lambda: fake_resolve)
+    assert backend.connect_tcp("www.regulator.example", 443) == "stream"
+    assert connected == [("93.184.216.34", 443)]
+    with pytest.raises(UnsafeAddress):
+        backend.connect_tcp("mixed.test", 443)
+    assert connected == [("93.184.216.34", 443)]

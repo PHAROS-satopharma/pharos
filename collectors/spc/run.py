@@ -397,6 +397,9 @@ def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict]
         else:
             store.set_source_state(source_id, health="ok", consecutive_failures=0, ok=True)
         error = stats.error_text()
+        if stats.failed(len(ingredients)):
+            # a failure, not a note: source_run_failed() (migration 0018) tells the two apart this way
+            error = f"no label read: {error or 'no product found'}"[:1000]
     except SourceBlocked as exc:
         error = redact(f"blocked: {exc}")
         store.set_source_state(source_id, health="blocked", consecutive_failures=failures + 1)

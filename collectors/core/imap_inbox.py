@@ -14,8 +14,10 @@ passing for one of that source's allowed domains. Yahoo's IMAP server hands some
 no Authentication-Results at all (GovDelivery's FDA mail on 5 Nov 2026, although Yahoo's web view shows
 one); for those only, PHAROS checks the DKIM signature itself against the signer's DNS key and accepts a
 valid one from an allowed domain (``dkim_verified``). A server verdict that is present and not passing is
-never overridden. Anything else is held: left unread, counted, and
-reported in the screening log. Bodies are capped so no message can fill the database.
+never overridden. An Authentication-Results header that sits below the hop where the message entered the
+receiving server (the topmost Received line naming a public address) came with the message, so the sender
+wrote it: it is never the server's verdict, whatever server name it carries. Anything else is held: left
+unread, counted, and reported in the screening log. Bodies are capped so no message can fill the database.
 
 Environment: ``PHAROS_IMAP_HOST``, ``PHAROS_IMAP_PORT`` (993, SSL), ``PHAROS_IMAP_USER``,
 ``PHAROS_IMAP_PASSWORD``. Absent → skipped, and the caller records 'imap not configured'.
@@ -25,6 +27,7 @@ from __future__ import annotations
 
 import email
 import imaplib
+import ipaddress
 import logging
 import os
 import re
@@ -46,6 +49,7 @@ _AR_RESULT = re.compile(r"(?<![\w.-])(dmarc|dkim|spf)\s*=\s*([a-z]+)", re.I)
 _DKIM_D = re.compile(r"(?:^|;)\s*d\s*=\s*([^;\s]+)", re.I)
 _AR_PROP = re.compile(r"(?<![\w.-])(header\.d|header\.i|header\.from|smtp\.mailfrom)\s*=\s*([^\s;()]+)",
                       re.I)
+_IP_LITERAL = re.compile(r"[\[(](?:IPv6:)?([0-9A-Fa-f:.]{3,})[\])]")
 
 
 @dataclass
@@ -82,15 +86,38 @@ def _domain_of(value: str) -> str:
     return value.rsplit("@", 1)[-1] if "@" in value else value
 
 
+def _from_public_address(received: str) -> bool:
+    """True when a Received line's from-part records a public address: the hop where the message came
+    in from outside (the receiving server's own internal hops record private ones)."""
+    for m in _IP_LITERAL.finditer(received.split(" by ", 1)[0]):
+        try:
+            if ipaddress.ip_address(m.group(1)).is_global:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+def _server_results(raw_headers: bytes) -> str:
+    """The topmost Authentication-Results, or '' when there is none or it sits below the hop where the
+    message entered the receiving server (then the sender wrote it)."""
+    headers = [(k.lower(), " ".join(str(v).split()))
+               for k, v in email.message_from_bytes(raw_headers).items()]
+    top = next((i for i, (k, _) in enumerate(headers) if k == "authentication-results"), None)
+    if top is None:
+        return ""
+    entry = next((i for i, (k, v) in enumerate(headers)
+                  if k == "received" and _from_public_address(v)), None)
+    return "" if entry is not None and top > entry else headers[top][1]
+
+
 def sender_verified(raw_headers: bytes, allowed: Iterable[str],
                     authserv_domains: Iterable[str]) -> bool:
     """True when the topmost Authentication-Results, written by a trusted server, shows DMARC, DKIM or
     SPF passing for an allowed domain."""
-    msg = email.message_from_bytes(raw_headers)
-    results = msg.get_all("Authentication-Results") or []
-    if not results:
+    top = _server_results(raw_headers)              # the receiving server's own header comes first
+    if not top:
         return False
-    top = " ".join(str(results[0]).split())         # the receiving server's own header comes first
     authserv = top.split(";", 1)[0].strip().split()[0].lower() if top.strip() else ""
     if not domain_matches(authserv, list(authserv_domains)):
         return False
@@ -110,8 +137,7 @@ def sender_verified(raw_headers: bytes, allowed: Iterable[str],
 
 def has_trusted_verdict(raw_headers: bytes, authserv_domains: Iterable[str]) -> bool:
     """True when the topmost Authentication-Results was written by a trusted server (whatever it says)."""
-    results = email.message_from_bytes(raw_headers).get_all("Authentication-Results") or []
-    top = " ".join(str(results[0]).split()) if results else ""
+    top = _server_results(raw_headers)
     authserv = top.split(";", 1)[0].strip().split()[0].lower() if top.strip() else ""
     return bool(authserv) and domain_matches(authserv, list(authserv_domains))
 

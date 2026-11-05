@@ -232,12 +232,13 @@ class MemoryStore:
                                     "link": link, "method": method, "score": score})
 
     def set_issue_anchor(self, issue_id: str, document_id: str, *, title: str, doc_type: str,
-                         first_date: date | None) -> None:
+                         first_date: date | None, is_backfill: bool = True) -> None:
         for x in self.issue_document:
             if x["issue_id"] == issue_id and x["link"] == "anchor" and x["document_id"] != document_id:
                 x["link"] = "copy"
         iss = self.issue[issue_id]
-        iss.update(anchor_document_id=document_id, title=title, doc_type=doc_type)
+        iss.update(anchor_document_id=document_id, title=title, doc_type=doc_type,
+                   is_backfill=iss["is_backfill"] and is_backfill)
         if first_date and (iss["first_date"] is None or first_date < iss["first_date"]):
             iss["first_date"] = first_date
 
@@ -290,10 +291,25 @@ class MemoryStore:
     def insert_notification(self, **fields: Any) -> None:
         self.notification.append({**fields, "sent_at": _now()})
 
-    def last_notification_at(self, kind: str, *, delivered_only: bool = False) -> datetime | None:
+    def last_notification_at(self, kind: str, *, delivered_only: bool = False,
+                             before: datetime | None = None) -> datetime | None:
         times = [n["sent_at"] for n in self.notification
-                 if n["kind"] == kind and not (delivered_only and n.get("error"))]
+                 if n["kind"] == kind and not (delivered_only and n.get("error"))
+                 and (before is None or n["sent_at"] < before)]
         return max(times) if times else None
+
+    def refused_people(self, kind: str, since: datetime) -> list[str]:
+        recent = [n for n in self.notification if n["kind"] == kind and n["sent_at"] >= since]
+        got = {n["person_id"] for n in recent if not n.get("error")}
+        return sorted({n["person_id"] for n in recent
+                       if n.get("error") and n["person_id"] and n["person_id"] not in got})
+
+    def refused_alert_issues(self, since: datetime) -> list[str]:
+        rows = [n for n in self.notification if n["kind"] == "immediate"]
+        got = {(n["person_id"], n["issue_id"]) for n in rows if not n.get("error")}
+        return sorted({n["issue_id"] for n in rows
+                       if n.get("error") and n["issue_id"] and n["sent_at"] >= since
+                       and (n["person_id"], n["issue_id"]) not in got})
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = [(r["created_at"], i) for i, r in self.issue.items()
