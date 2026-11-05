@@ -14,7 +14,7 @@ import pytest
 from collectors.parsers import (aifa, ansm, bfarm_risk, cbg, dkma, email_inbox, famhp,
                                 generic_html, hpra, ima_is, infarmed, lakemedelsverket, lu_sante,
                                 medsafe, mfds, noma, pmda, prac, swissmedic, tga, who_alerts)
-from collectors.core.models import Fetched
+from collectors.core.models import Fetched, Item
 from collectors.parsers._html_util import local_date
 from collectors.parsers.base import FetchError, NotSetUp, ParseError, SourceBlocked
 from tests.fakes_a2 import FakeCtx, fetched, fixture, source
@@ -691,6 +691,31 @@ def test_famhp_interstitial_is_blocked_not_bypassed():
     f = fetched("famhp-news/challenge_fr.html", "https://www.afmps.be/fr/news")
     with pytest.raises(SourceBlocked):
         famhp.check_not_interstitial(f)
+
+
+FAMHP_NEWS = {"fr": "https://www.afmps.be/fr/news/vitamine_d3_colecalciferol_attention_aux_differents_dosages",
+              "nl": "https://www.fagg.be/nl/news/vitamine_d3_cholecalciferol_opgelet_met_verschillende_doseringen"}
+
+
+@pytest.mark.parametrize("lang", ["fr", "nl"])
+def test_famhp_news_date_comes_from_the_news_page(lang):
+    # The lists show no dates (seen 5 Nov 2026); the page's publication-date field does, and the
+    # "last updated" stamp below it (16/10/2026) is not the date of the news.
+    src = source("famhp-news", "https://www.afmps.be/fr/news", languages=["fr", "nl"], parser="famhp")
+    ctx = FakeCtx({FAMHP_NEWS[lang]: f"famhp-news/detail_{lang}.html"})
+    item = Item(external_id=FAMHP_NEWS[lang], url=FAMHP_NEWS[lang], title="Vitamine D3", published=None,
+                doc_type="other", lang=lang)
+    item = famhp.fetch_detail(ctx, src, item)
+    assert item.published == date(2026, 10, 15)
+    assert "vitamine D3" in item.body_text
+
+
+def test_famhp_a_date_from_the_list_is_kept():
+    ctx = FakeCtx({FAMHP_NEWS["fr"]: "famhp-news/detail_fr.html"})
+    src = source("famhp-news", "https://www.afmps.be/fr/news", languages=["fr", "nl"], parser="famhp")
+    item = Item(external_id="x", url=FAMHP_NEWS["fr"], title="t", published=date(2026, 10, 14),
+                doc_type="other", lang="fr")
+    assert famhp.fetch_detail(ctx, src, item).published == date(2026, 10, 14)
 
 
 F5_INJECTED = (b'<script type="text/javascript" '
