@@ -83,7 +83,7 @@ select pg_temp.so_assert(:'so_upd' like '42501%' and :'so_del' like '%never chan
 select pg_temp.so_assert(:'so_old' like '28P01%' and :'so_otp' like '28P01%',
   'a password older than five minutes, or no password at all, cannot sign');
 select pg_temp.so_assert(:'so_rev_report' like '42501%', 'only an administrator signs the monthly report');
-select pg_temp.so_assert(:'so_open' like '%once it is closed%' and :so_sig, 'a reviewer signs a closed signal only');
+select pg_temp.so_assert(:'so_open' like '%once it is closed%' and :'so_sig' = 't', 'a reviewer signs a closed signal only');
 select pg_temp.so_assert(:'so_reader' like '42501%' and :so_seen = 2, 'a reader signs nothing and reads every signature');
 select pg_temp.so_assert(:'so_fp2' <> :'so_fp', 'a report made again no longer matches its signature');
 
