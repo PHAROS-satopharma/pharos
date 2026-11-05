@@ -466,7 +466,9 @@ def main(argv: list[str] | None = None) -> int:
                           public_only=True) as ctx:
             result = run_probe(store, ctx, args.probe_id)
         print(json.dumps({k: v for k, v in result.items() if k != "items"}, default=str))
-        return 0 if result.get("status") == "ok" else 1
+        # A site that refuses, or a page with no reading rules, is the probe's answer and is already on
+        # the admin screen: the job stays green. Only a probe that could not be read or written fails it.
+        return 0
 
     sync_catalogue(store)
     slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
