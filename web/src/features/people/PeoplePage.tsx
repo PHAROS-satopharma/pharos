@@ -15,6 +15,7 @@ import { Tag } from '../../ui/Tag';
 import { PageHead } from '../../ui/Text';
 import { Monogram } from '../../ui/Monogram';
 import { SubscriptionEditor } from './Subscriptions';
+import { getsHealthAlerts } from './subKinds';
 
 interface PersonWithSubs extends Person {
   subscription: SubscriptionRow[];
@@ -197,7 +198,7 @@ export function PeoplePage() {
                     <SubscriptionEditor
                       personId={p.id}
                       subs={p.subscription ?? []}
-                      allowHealth
+                      allowHealth={getsHealthAlerts(p.role)}
                       invalidate={[['people'], ['my-subs']]}
                     />
                   </td>
