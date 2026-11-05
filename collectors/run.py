@@ -390,7 +390,9 @@ def _trigger(args) -> str:
         return "backfill"
     if args.probe_id:
         return "probe"
-    return "cron" if os.environ.get("GITHUB_EVENT_NAME") == "schedule" else "manual"
+    # repository_dispatch "collect" is the database's back-up timer for a slot GitHub skipped.
+    event = os.environ.get("GITHUB_EVENT_NAME")
+    return "cron" if event in ("schedule", "repository_dispatch") else "manual"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -436,8 +438,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result.get("status") == "ok" else 1
 
     sync_catalogue(store)
+    slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
     run_id = store.create_run(_trigger(args),
-                              os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"))
+                              os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"), slot)
     archive = Archive()
     t_start = time.monotonic()
     ok = False

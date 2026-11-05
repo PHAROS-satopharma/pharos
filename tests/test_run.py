@@ -264,3 +264,9 @@ def test_nul_characters_never_reach_postgres():
         "t": "Rote-Hand-Brief", "l": ["a", 1], "n": None}
     assert clean(("x\x00y",)) == ("xy",)
     assert _dumps({"t": "a\x00b"}) == '{"t": "ab"}'
+
+
+def test_each_run_records_the_slot_it_served(tmp_path):
+    store = MemoryStore()
+    rid = store.create_run("cron", "sha", "12h")
+    assert store.run[rid]["schedule"] == "12h"
