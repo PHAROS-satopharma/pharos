@@ -62,33 +62,10 @@ export function SignIn() {
 
   return (
     <div className="signin">
+      {/* The mark and the promise, then the form, then the three facts: on a phone the form is on the first screen. */}
       <section className="signin-side" aria-label="PHAROS">
         <PharosMark variant="stacked" height={240} className="signin-mark" />
-        <div className="signin-words">
-          <h1 className="signin-title">Safety notifications from every regulator we watch.</h1>
-          <ol className="signin-facts">
-            <li className="signin-fact">
-              <span className="signin-fact-index">01</span>
-              <span>
-                <strong>Read in its own language.</strong> Each regulator is screened as it publishes; nothing is
-                translated.
-              </span>
-            </li>
-            <li className="signin-fact">
-              <span className="signin-fact-index">02</span>
-              <span>
-                <strong>Kept with the original.</strong> Every page and PDF is archived exactly as it was found.
-              </span>
-            </li>
-            <li className="signin-fact">
-              <span className="signin-fact-index">03</span>
-              <span>
-                <strong>Reviewed by name.</strong> Each notice is marked relevant or not by a named reviewer.
-              </span>
-            </li>
-          </ol>
-        </div>
-        <span className="micro signin-by">by Sato Pharma</span>
+        <h1 className="signin-title">Safety notifications from every regulator we watch.</h1>
       </section>
 
       <section className="signin-main">
@@ -168,6 +145,31 @@ export function SignIn() {
             Access is by invitation only. If you need an account, ask a PHAROS administrator.
           </p>
         </form>
+      </section>
+
+      <section className="signin-about" aria-label="About PHAROS">
+        <ol className="signin-facts">
+          <li className="signin-fact">
+            <span className="signin-fact-index">01</span>
+            <span>
+              <strong>Read in its own language.</strong> Each regulator is screened as it publishes; nothing is
+              translated.
+            </span>
+          </li>
+          <li className="signin-fact">
+            <span className="signin-fact-index">02</span>
+            <span>
+              <strong>Kept with the original.</strong> Every page and PDF is archived exactly as it was found.
+            </span>
+          </li>
+          <li className="signin-fact">
+            <span className="signin-fact-index">03</span>
+            <span>
+              <strong>Reviewed by name.</strong> Each notice is marked relevant or not by a named reviewer.
+            </span>
+          </li>
+        </ol>
+        <span className="micro signin-by">by Sato Pharma</span>
       </section>
     </div>
   );
