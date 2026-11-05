@@ -86,9 +86,10 @@ class Store:
         return row["country_code"] if row else None
 
     # ───────────────────────────── runs ─────────────────────────────
-    def create_run(self, trigger: str, git_sha: str | None) -> str:
-        row = self.db.fetchone("insert into run (trigger, git_sha) values (%(t)s, %(g)s) returning id",
-                               {"t": trigger, "g": git_sha})
+    def create_run(self, trigger: str, git_sha: str | None, schedule: str | None = None) -> str:
+        row = self.db.fetchone(
+            "insert into run (trigger, git_sha, schedule) values (%(t)s, %(g)s, %(s)s) returning id",
+            {"t": trigger, "g": git_sha, "s": schedule})
         return str(row["id"])
 
     def finish_run(self, run_id: str, ok: bool) -> None:

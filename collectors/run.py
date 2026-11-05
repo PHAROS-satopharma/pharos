@@ -87,6 +87,9 @@ class Runner:
         self.load_parser = parser_loader
         self.backfill_start = bf.cutoff(settings)
         self.summary = bf.BackfillSummary(self.backfill_start)
+        # time.monotonic() after which no new source is started (the job's own limit would cut the
+        # run off mid-source and leave it unfinished); None = no limit.
+        self.deadline: float | None = None
         self.imap_note: dict[str, str] = {}
         self.issues_created = 0
         self._countries: dict[str, str | None] = {}
@@ -327,7 +330,18 @@ class Runner:
     def run(self, sources: list[SourceConfig]) -> bool:
         """True when no source failed (a blocked source is a known state, not a failed run)."""
         self.pull_mail(sources)
-        results = [self.run_source(src) for src in sources]
+        if self.deadline is not None and sources:
+            # Start each run at a different place in the list, so a run that stops on its time
+            # budget never leaves the same sources unread twice in a row.
+            k = int(time.time() // 3600) % len(sources)
+            sources = sources[k:] + sources[:k]
+        results = []
+        for n, src in enumerate(sources):
+            if self.deadline is not None and time.monotonic() > self.deadline:
+                log.warning("time budget used: %d source(s) left for the next run: %s",
+                            len(sources) - n, ", ".join(x.id for x in sources[n:]))
+                break
+            results.append(self.run_source(src))
         return not any(s.failed for s in results)
 
 
@@ -349,7 +363,9 @@ def _trigger(args) -> str:
         return "backfill"
     if args.probe_id:
         return "probe"
-    return "cron" if os.environ.get("GITHUB_EVENT_NAME") == "schedule" else "manual"
+    # repository_dispatch "collect" is the database's back-up timer for a slot GitHub skipped.
+    event = os.environ.get("GITHUB_EVENT_NAME")
+    return "cron" if event in ("schedule", "repository_dispatch") else "manual"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -395,8 +411,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result.get("status") == "ok" else 1
 
     sync_catalogue(store)
+    slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
     run_id = store.create_run(_trigger(args),
-                              os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"))
+                              os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"), slot)
     archive = Archive()
     ok = False
     with FetchContext(db, run_id, backfill=args.backfill, archive=archive,
@@ -406,6 +423,9 @@ def main(argv: list[str] | None = None) -> int:
             ctx.backfill_months = int(settings.get("backfill_months", 12) or 12)
             notifier = Notifier(store, settings, dry_run=args.dry_run, archive=archive)
             runner = Runner(store, ctx, notifier, settings, backfill=args.backfill)
+            budget = os.environ.get("PHAROS_TIME_BUDGET_MIN")
+            if budget:
+                runner.deadline = time.monotonic() + float(budget) * 60
             ok = True
             if not args.spc_ingredient:
                 sources = select_sources(source_configs(store), args.schedule, args.source,

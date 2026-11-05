@@ -18,6 +18,9 @@ on:
     - cron: "31 2 * * *"
     - cron: "23 3 * * 1"
     - cron: "41 1 1 * *"
+  # The database's back-up timer (supabase/migrations/0006) for a slot GitHub's cron skipped.
+  repository_dispatch:
+    types: [collect]
   workflow_dispatch:
     inputs:
       schedule:
@@ -44,7 +47,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ github.event.schedule == '23 3 * * 1' && 90 || (github.event_name == 'workflow_dispatch' && 120 || 40) }}
+    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || 40) }}
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -59,6 +62,8 @@ jobs:
       PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
       PHAROS_IMAP_PASSWORD: ${{ secrets.PHAROS_IMAP_PASSWORD }}
       GIT_SHA: ${{ github.sha }}
+      # Stop starting new sources ~8 minutes before the job limit, so the run finishes and is recorded.
+      PHAROS_TIME_BUDGET_MIN: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 80 || (github.event_name == 'workflow_dispatch' && 110 || 32) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -66,7 +71,7 @@ jobs:
         id: which
         env:
           CRON: ${{ github.event.schedule }}
-          INPUT_SCHEDULE: ${{ inputs.schedule }}
+          INPUT_SCHEDULE: ${{ inputs.schedule || github.event.client_payload.schedule }}
         run: |
           case "$CRON" in
             "17 */4 * * *")  s=4h ;;

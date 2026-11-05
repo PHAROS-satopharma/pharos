@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 import dataclasses
 import json
+import time
 from datetime import date
 from pathlib import Path
 
@@ -191,3 +192,20 @@ def test_an_old_notice_found_by_a_regular_run_is_history(tmp_path):
     assert doc["is_backfill"]
     assert all(i["is_backfill"] for i in store.issue.values())
     ctx.close()
+
+
+def test_a_run_past_its_time_budget_starts_no_more_sources(tmp_path):
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    runner.deadline = time.monotonic() - 1           # the budget is already used up
+    assert runner.run([SRC])                         # stopping on time is not a failure
+    assert server.hits == 0 and store.source_run == {}
+    runner.deadline = time.monotonic() + 3600
+    assert runner.run([SRC]) and server.hits == 1
+    ctx.close()
+
+
+def test_each_run_records_the_slot_it_served(tmp_path):
+    store = MemoryStore()
+    rid = store.create_run("cron", "sha", "12h")
+    assert store.run[rid]["schedule"] == "12h"

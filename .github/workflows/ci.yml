@@ -288,6 +288,18 @@ jobs:
           select pg_temp.ci_assert((:'t_novault'::jsonb ->> 'ok')::boolean = false
             and exists (select 1 from ops_alert_log where kind = 'test' and not sent and error like '%TELEGRAM_BOT_TOKEN%'),
             'without the bot token nothing is sent and the reason is logged');
+
+          -- The back-up timer: a slot that already ran is left alone; a skipped one asks GitHub,
+          -- and without its Vault secrets the reason is logged. The app cannot call it.
+          insert into run (trigger, schedule, started_at) values ('cron', '4h', now() - interval '20 minutes');
+          select public.ops_kick_collect('4h') as k_ran \gset
+          select public.ops_kick_collect('12h') as k_novault \gset
+          select pg_temp.ci_assert(:'k_ran' = 'already ran', 'a slot GitHub ran is not started twice');
+          select pg_temp.ci_assert(:'k_novault' = 'not started: Vault secrets missing'
+            and exists (select 1 from ops_alert_log where kind = 'collect_kick' and not sent),
+            'a skipped slot without the dispatch token logs why');
+          select pg_temp.ci_assert(not has_function_privilege('authenticated', 'public.ops_kick_collect(text)', 'execute'),
+            'signed-in users cannot start collections through the timer');
           SQL
 
       # ───────────── Edge Functions: deno check ─────────────
