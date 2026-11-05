@@ -424,6 +424,7 @@ sources:
     expected_max_gap_days: 45
     options:
       extra_urls: ["https://www.aifa.gov.it/ricerca-aifa?searchKeywords=&structures=93604&adtCategories=1960205"]
+      doc_type_by_url: {"adtCategories=1960205": safety_update}
 
   - id: hpra-notices
     regulator: HPRA
