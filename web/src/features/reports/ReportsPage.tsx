@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { downloadArchived, errorMessage, unwrap } from '../../lib/api';
@@ -297,9 +298,16 @@ export function ReportsPage() {
         <SectionHead index="02" title="Screening log" />
         <ScreeningLog />
       </section>
+      <section className="section">
+        <SectionHead index="03" title="PSUR builder" aside={<Link to="/psur">Open the PSUR builder</Link>} />
+        <p className="soft">
+          For one ingredient and one reporting interval, set from EMA’s EURD list: the regulator actions, label changes,
+          literature and signals PHAROS found, ready to print or to take into Excel.
+        </p>
+      </section>
       {isAdmin ? (
         <section className="section">
-          <SectionHead index="03" title="Inspection pack" />
+          <SectionHead index="04" title="Inspection pack" />
           <InspectionPack />
         </section>
       ) : null}
