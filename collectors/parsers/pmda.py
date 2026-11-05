@@ -26,6 +26,16 @@ date cell spans several rows (``rowspan``): "2026年10月27日" + the MHLW notic
 Table No. | 発行年月日 ("2026年4月") | タイトル (first PDF link = the issue) | image. doc_type
 ``safety_update``.
 
+``page: letters`` — ``pmda-company-letters``, 製薬企業からの適正使用等に関するお知らせ,
+``https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0004.html``
+(the Japanese company letters to healthcare professionals, checked 5 Nov 2026). One unpaged
+``table.normal-table``, newest first: 掲載年月 ("2026年10月", sometimes "2022年4月 （2026年9月更新）")
+| タイトル (first PDF link = the letter; further 参考 links are attachments) | 情報提供元 (company).
+An updated letter keeps its PDF address, so the update month is part of the external id and is the
+published date: the update reaches review as a new item. doc_type ``dhpc``.
+``pmda-proper-use`` (PMDAからの医薬品適正使用のお願い, ``…/properly-use-alert/0002.html``) has the
+same No. | 発行年月 | タイトル table as ``msi`` and is read with ``page: msi``.
+
 (checked 4 Nov 2026)
 
 Options: ``page``, ``doc_type``, ``backfill_years`` (2), ``include_keywords`` /
@@ -46,6 +56,7 @@ _JA_DATE = re.compile(r"(?:\d{4}|(?:令和|平成)\s*(?:元|\d{1,2}))\s*年\s*\d
                       r"(?:\s*\d{1,2}\s*日)?")
 _FY = re.compile(r"(\d{4})\s*年度指示分")
 _FILE = re.compile(r"/files/(\d+)\.pdf", re.I)
+_UPDATED = re.compile(r"[（(]\s*([^（）()]*?)更新\s*[）)]")
 _BLUE = re.compile(r"224\s*,\s*255\s*,\s*255|#e0ffff", re.I)
 
 
@@ -53,7 +64,7 @@ def page_kind(source: SourceConfig) -> str:
     kind = (source.options or {}).get("page")
     if kind:
         return str(kind).lower()
-    for k in ("revisions", "urgent", "msi"):
+    for k in ("revisions", "urgent", "msi", "letters"):
         if source.id.endswith(k):
             return k
     return "revisions"
@@ -192,6 +203,39 @@ def parse_msi(html, base_url: str, source: SourceConfig) -> list[Item]:
     return items
 
 
+def parse_letters(html, base_url: str, source: SourceConfig) -> list[Item]:
+    doc = soup(html)
+    lang = source.lang or "ja"
+    items: list[Item] = []
+    seen: set[str] = set()
+    for table in doc.select("table.normal-table"):
+        for tr in table.find_all("tr"):
+            tds = tr.find_all("td", recursive=False)
+            if len(tds) < 3:
+                continue
+            pdfs = links_in(tds[1:2], base_url)
+            if not pdfs:
+                continue
+            a = tds[1].select_one("a[href]")
+            title = strip_size(node_text(a)) if a is not None else ""
+            company = node_text(tds[2])
+            when = node_text(tds[0])
+            updated = _UPDATED.search(when)
+            published = local_date(updated.group(1) if updated else when, lang)
+            key = f"pmda-letter:{_file_id(pdfs[0])}"
+            if updated and published:
+                key += f":{published.isoformat()}"
+            if not title or key in seen or not keep(source, title, company):
+                continue
+            seen.add(key)
+            items.append(Item(
+                external_id=key, url=pdfs[0], title=title, published=published,
+                doc_type=(source.options or {}).get("doc_type", "dhpc"), lang=lang,
+                body_text="\n".join(x for x in (title, company) if x), attachment_urls=pdfs,
+                structured={"company": company, "date_text": when}))
+    return items
+
+
 def list_items(ctx, source: SourceConfig) -> list[Item]:
     kind = page_kind(source)
     f = ctx.get(source.url)
@@ -201,8 +245,8 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
         items = parse_urgent(f, f.final_url, source)
         require(items or soup(f).select("table.normal-table td a[href]"), f, marker="normal-table")
         return items
-    if kind == "msi":
-        items = parse_msi(f, f.final_url, source)
+    if kind in ("msi", "letters"):
+        items = (parse_msi if kind == "msi" else parse_letters)(f, f.final_url, source)
         require(items or soup(f).select("table.normal-table td a[href]"), f, marker="normal-table")
         return items
     # revisions: index → fiscal-year pages (or source.url already is a year page)

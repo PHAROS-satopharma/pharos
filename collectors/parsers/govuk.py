@@ -29,6 +29,9 @@ ALERT_TYPES = {
     "drugs": "safety_alert",
     "medicines-notification": "safety_alert",
     "national-patient-safety": "safety_alert",
+    # The monthly "MHRA Safety Roundup": since mid-2025 the letters sent to healthcare professionals
+    # (DHPCs) are listed only in its body, which is read and screened in full.
+    "mhra-safety-round-up": "newsletter",
     "devices": "other",
     "field-safety-notices": "other",
 }

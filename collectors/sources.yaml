@@ -28,6 +28,12 @@ regulators:
     name: Therapeutic Goods Administration
     languages: [en]
     homepage: https://www.tga.gov.au/
+  - id: PEI
+    country_code: DE
+    country_name: Germany
+    name: Paul-Ehrlich-Institut
+    languages: [de]
+    homepage: https://www.pei.de/
   - id: BASG
     country_code: AT
     country_name: Austria
@@ -321,6 +327,40 @@ sources:
         - https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Aufforderung-zur-Textanpassung/_node.html
 
   # ───────────── Austria ─────────────
+  - id: basg-dhpc
+    regulator: BASG
+    kind: safety
+    channel: html
+    # The DHPC list itself: BASG's whole-site RSS (basg-whatsnew) carried none of the letters
+    # (checked 5 Nov 2026: no Caelyx 3 Nov or Ocrevus 12 Oct among its 56 items).
+    url: https://www.basg.gv.at/gesundheitsberufe/sicherheitsinformationen-dhpc
+    parser: basg_dhpc
+    languages: [de]
+    schedule: 4h
+    expected_max_gap_days: 90
+    options:
+      doc_type: dhpc
+
+  - id: pei-rhb
+    regulator: PEI
+    kind: safety
+    channel: rss
+    # Germany's letters for vaccines, blood products, antibodies and ATMPs come from PEI, not BfArM
+    # (Respreeza 30 Oct, Ocrevus 8 Oct, Ixchiq 14 Jul 2026 were in no BfArM list). The feed holds
+    # only the latest 8, so it is read every 4 h.
+    url: https://www.pei.de/SiteGlobals/Functions/RSSFeed/RSSGenerator_Sicherheitsinformationen.xml?nn=168758
+    parser: feed
+    languages: [de]
+    schedule: 4h
+    expected_max_gap_days: 90
+    options:
+      doc_type: dhpc
+      doc_type_rules:
+        - {keyword: Informationsbrief, doc_type: safety_alert}
+        - {keyword: Sicherheitsbewertung, doc_type: safety_update}
+      body_selector: "#content"
+      attachment_patterns: ["blob=publicationfile", ".pdf"]
+
   - id: basg-whatsnew
     regulator: BASG
     kind: safety
@@ -362,6 +402,19 @@ sources:
       body_selector: "article"
 
   # ───────────── Singapore ─────────────
+  - id: aemps-dhpc
+    regulator: AEMPS
+    kind: safety
+    channel: json
+    # « Cartas de seguridad a los profesionales sanitarios »: AEMPS posts its DHPCs only here, never
+    # to the site feed (aemps-feed missed the Ocrevus letter of 8 Oct 2026).
+    url: https://docswebaemps.aemps.es/php/mostrar.php
+    parser: aemps_dhpc
+    languages: [es]
+    schedule: 12h
+    expected_max_gap_days: 120
+    options: {since_days: 400, doc_type: dhpc}
+
   - id: hsa-announcements
     regulator: HSA
     kind: safety
@@ -405,7 +458,9 @@ sources:
     channel: html
     # Filtered to medicines (healthProducts 20): unfiltered, devices and diagnostics filled 18 of the
     # 20 items on 5 Nov 2026. Further pages add &page=2…, which keeps the filter (checked live).
-    url: https://ansm.sante.fr/informations-de-securite/?safety_news_filter[healthProducts][]=20
+    # Vaccines (22), biological products (21) and narcotics & psychotropics (25) are medicines too:
+    # the Ixchiq vaccine DHPC of 15 Jul 2026 is tagged 22 only, so filter 20 alone missed it.
+    url: https://ansm.sante.fr/informations-de-securite/?safety_news_filter[healthProducts][]=20&safety_news_filter[healthProducts][]=21&safety_news_filter[healthProducts][]=22&safety_news_filter[healthProducts][]=25
     parser: ansm
     languages: [fr]
     schedule: 4h
@@ -557,6 +612,32 @@ sources:
     expected_max_gap_days: 365
     notes: PMDA医療安全情報 — A2 confirms the URL.
 
+  - id: pmda-company-letters
+    regulator: PMDA
+    kind: safety
+    channel: html
+    # 製薬企業からの適正使用等に関するお知らせ: the companies' letters to healthcare professionals,
+    # Japan's DHPCs (96 rows on 5 Nov 2026, newest 2026年10月 フィブラストスプレー). No other PMDA
+    # page PHAROS read listed them.
+    url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0004.html
+    parser: pmda
+    languages: [ja]
+    schedule: 12h
+    expected_max_gap_days: 180
+    options: {page: letters, doc_type: dhpc}
+
+  - id: pmda-proper-use
+    regulator: PMDA
+    kind: safety
+    channel: html
+    # PMDAからの医薬品適正使用のお願い (18 issues; 2026年10月 GLP-1受容体作動薬…). Same table as PMDA医療安全情報.
+    url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0002.html
+    parser: pmda
+    languages: [ja]
+    schedule: 12h
+    expected_max_gap_days: 365
+    options: {page: msi, doc_type: safety_alert}
+
   # ───────────── South Korea ─────────────
   - id: mfds-letters
     regulator: MFDS
@@ -586,6 +667,19 @@ sources:
         fr: https://www.afmps.be/fr/news
         nl: https://www.fagg.be/nl/news
 
+  - id: cbg-dhpc
+    regulator: CBG
+    kind: safety
+    channel: html
+    # The DHPC letter pages, found in CBG's plain XML sitemap (newest changes first). The news list
+    # had no item for "DHPC Caelyx" (30 Oct 2026) or "DHPC Tavneos" (16 Jul 2026).
+    url: https://www.cbg-meb.nl/sitemap/1.xml
+    parser: cbg_dhpc
+    languages: [nl]
+    schedule: 12h
+    expected_max_gap_days: 120
+    options: {sitemaps: 3, doc_type: dhpc}
+
   - id: cbg-news
     regulator: CBG
     kind: safety
@@ -605,7 +699,9 @@ sources:
     languages: [sv]
     schedule: 12h
     expected_max_gap_days: 45
-    notes: Read from the site's own news API (/api/newslist), four categories; the link is the news page for people.
+    notes: Read from the site's own news API (/api/newslist), four categories plus every safety news item; the link is the news page for people.
+    # all_safety_news: two safety news of 2026 carried no category at all (Ontozry 13 Apr, klozapin 24 Mar).
+    options: {all_safety_news: true}
 
   - id: tga-alerts
     regulator: TGA
