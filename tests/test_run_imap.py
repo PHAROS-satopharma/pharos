@@ -197,3 +197,15 @@ def test_fda_and_famhp_mail_reach_their_own_sources():
     assert owner("info.fda.gov") == {"fda-email"}
     assert owner("afmps.be") == {"famhp-email"} and owner("fagg-afmps.be") == {"famhp-email"}
     assert owner("health.gov.au") == {"tga-email"} and owner("fimea.fi") == {"fimea-email"}
+
+
+def test_held_mail_log_names_the_servers_verdicts_without_addresses():
+    from collectors.core.imap_inbox import auth_summary
+    hdr = (b"Authentication-Results: mta.yahoo.com;\r\n dkim=pass header.i=@public.govdelivery.com;\r\n"
+           b" dmarc=pass(p=NONE) header.from=public.govdelivery.com;\r\n"
+           b"From: FDA <usfda@public.govdelivery.com>\r\n\r\n")
+    got = auth_summary(hdr)
+    assert got.startswith("mta.yahoo.com (1 header(s)):")
+    assert "dkim=pass(public.govdelivery.com)" in got and "dmarc=pass(public.govdelivery.com)" in got
+    assert "usfda@" not in got
+    assert auth_summary(b"From: FDA <usfda@public.govdelivery.com>\r\n\r\n") == "no Authentication-Results header"
