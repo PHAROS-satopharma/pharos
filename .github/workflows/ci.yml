@@ -457,6 +457,19 @@ jobs:
             'a skipped slot without the dispatch token logs why');
           select pg_temp.ci_assert(not has_function_privilege('authenticated', 'public.ops_kick_collect(text)', 'execute'),
             'signed-in users cannot start collections through the timer');
+
+          -- 0010: a manual link is recorded as the person who made it, at the database's time.
+          insert into issue (id, doc_type, title) values ('00000000-0000-0000-0000-0000000000e9', 'dhpc', 'CI link issue');
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+          set role authenticated;
+          insert into issue_document (issue_id, document_id, link, method, linked_by, linked_at)
+            select '00000000-0000-0000-0000-0000000000e9', '00000000-0000-0000-0000-0000000000d1', 'copy', 'manual',
+                   id, '2000-01-01 00:00+00' from person where email = 'reader@example.test';
+          reset role;
+          select pg_temp.ci_assert((select linked_by = (select id from person where email = 'admin@example.test')
+                                           and linked_at > now() - interval '1 hour'
+                                      from issue_document where issue_id = '00000000-0000-0000-0000-0000000000e9'),
+            'a link names the signed-in person who made it and the database time, never what the browser sent');
           SQL
 
       # ───────────── the collectors' real SQL (collectors/core/store.py) on the migrated schema ─────────────
