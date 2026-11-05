@@ -102,7 +102,7 @@ def source(**options) -> object:
 
 def test_the_catalogue_runs_ncbi_daily_with_a_high_cap():
     assert SRC.schedule == "daily"
-    assert int(SRC.options["max_new_items"]) >= 1000
+    assert int(SRC.options["max_new_items"]) >= 800 and SRC.options["time_budget_min"] >= 15
     assert SRC.options["look_back_months"] == 12 and SRC.options.get("backfill_all") is True
 
 
@@ -312,14 +312,19 @@ def test_a_new_ingredient_looks_back_12_months_once_then_reads_daily(tmp_path):
             assert windows(ncbi, db, term) == {(YEAR_AGO, TODAY)}, (db, term)     # never searched
     assert not ncbi.esearches(term="Fluorchinolone")                               # English words only
     got = docs(store)
-    assert len(got) == 1 + 62 + 7
+    assert len(got) == 1 + 62 + 7 - 1          # one fluoroquinolones paper names levofloxacin in its full text
     new = [d for k, d in got.items() if k != "42846100"]
     assert all(d["is_backfill"] and d["structured"]["look_back"] for d in new)     # history: no alert
     assert stats.alerts == [] and not [n for n in store.notification if n["kind"] == "immediate"]
     fq = [d for d in new if d["structured"]["query_term"] == ["fluoroquinolones"]]
-    assert len(fq) == 7 and all(d["structured"]["class_only"] for d in fq)
+    assert len(fq) == 6 and all(d["structured"]["class_only"] for d in fq)
     fq_issues = [i for i in store.issue.values() if i["anchor_document_id"] in {d["id"] for d in fq}]
-    assert len(fq_issues) == 7 and all(i["class_only"] for i in fq_issues)        # the class digest's
+    assert len(fq_issues) == 6 and all(i["class_only"] for i in fq_issues)        # the class digest's
+    both = got["42972474"]["structured"]           # found by the class word and by the name: not class-only
+    assert both["query_term"] == ["fluoroquinolones", "levofloxacin"] and not both["class_only"]
+    assert both["queries"] == [{"query": "fluoroquinolones", "kind": "class", "db": ["pubmed"]},
+                               {"query": "levofloxacin", "kind": "name", "db": ["pmc"]}]
+    assert got["42972474"]["url"] == "https://pubmed.ncbi.nlm.nih.gov/42972474/"
     assert got["42979212"]["structured"]["pmc_url"] == "https://pmc.ncbi.nlm.nih.gov/articles/PMC13730105/"
     rows = store.literature_searches()
     assert all(r["look_back_done_at"] for r in rows.values())
@@ -339,7 +344,8 @@ def test_a_look_back_cut_short_continues_on_the_next_run(tmp_path):
     add_levofloxacin(store)
     ncbi = Ncbi(LEVO)
     stats = run_pubmed(store, tmp_path, ncbi, max_new_items=40)
-    assert not stats.failed and stats.new == 40
+    # 40 records read: the 5 PubMed ones, then the 35 newest PMC ones (one the full text of a PubMed paper)
+    assert not stats.failed and stats.new == 39
     rows = store.literature_searches()
     assert rows[("pubmed", "levofloxacin")]["look_back_done_at"]            # its 5 papers are in
     assert rows[("pmc", "levofloxacin")]["look_back_done_at"] is None       # 35 of its 59 are
@@ -353,7 +359,7 @@ def test_a_look_back_cut_short_continues_on_the_next_run(tmp_path):
     assert windows(ncbi, "pubmed", "levofloxacin") == {(since, TODAY)}
     assert windows(ncbi, "pmc", "levofloxacin") == {(YEAR_AGO, TODAY)}             # its look-back again
     assert windows(ncbi, "pubmed", "fluoroquinolones") == {(YEAR_AGO, TODAY)}
-    assert len(docs(store)) == 1 + 62 + 7
+    assert len(docs(store)) == 1 + 62 + 7 - 1
     assert all(d["is_backfill"] for k, d in docs(store).items() if k != "42846100")
     assert all(r["look_back_done_at"] for r in store.literature_searches().values())
     assert stats.alerts == []
@@ -399,3 +405,20 @@ def test_a_paper_stored_under_its_pmc_id_is_not_stored_again(tmp_path):
     assert not stats.failed
     assert "42979212" not in docs(store) and "PMC13730105" in docs(store)
     assert all(r["look_back_done_at"] for r in store.literature_searches().values())
+
+
+def test_ncbi_has_its_own_time_budget(tmp_path):
+    store = live_like_store()
+    add_levofloxacin(store)
+    run_id = store.create_run("cron", "test-sha", "daily")
+    ctx = context(tmp_path, Ncbi(LEVO), run_id)
+    settings = {**store.settings(), "alert_max_age_days": 100_000}
+    runner = Runner(store, ctx, Notifier(store, settings, telegram=ExplodingTelegram()), settings)
+    ticks = iter(range(0, 100_000, 60))                     # every look at the clock: one more minute
+    runner.clock = lambda: next(ticks)
+    stats = runner.run_source(source(page_size=2, time_budget_min=12))   # 10 minutes for the others
+    assert not stats.failed and 10 < stats.new < 13
+    assert "time budget reached" in stats.error
+    assert store.source["pubmed"]["last_ok_at"] < datetime.now(timezone.utc) - timedelta(hours=1)
+    assert not store.literature_searches()[("pmc", "levofloxacin")]["look_back_done_at"]
+    ctx.close()

@@ -53,6 +53,7 @@ class MemoryStore:
         self.subscription: list[dict] = []
         self.notification: list[dict] = []
         self.probe_result: dict[str, dict] = {}
+        self.literature_search: dict[tuple[str, str], dict] = {}
 
     @contextmanager
     def transaction(self):
@@ -141,6 +142,26 @@ class MemoryStore:
     def known_external_ids(self, source_id: str) -> set[str]:
         return {d["external_id"] for d in self.document.values() if d["source_id"] == source_id}
 
+    def literature_known_ids(self, source_id: str) -> set[str]:
+        docs = [d for d in self.document.values() if d["source_id"] == source_id]
+        return ({d["external_id"] for d in docs}
+                | {(d.get("structured") or {}).get("pmcid") for d in docs if (d.get("structured") or {}).get("pmcid")})
+
+    def literature_searches(self) -> dict[tuple[str, str], dict]:
+        return {k: dict(v) for k, v in self.literature_search.items()}
+
+    def save_literature_searches(self, rows: list[dict]) -> None:
+        now = _now()
+        for r in rows:
+            old = self.literature_search.get((r["db"], r["query"])) or {}
+            done_at = None
+            if r["done"]:
+                kept = old.get("look_back_done_at") and old.get("look_back_from") == r["look_back_from"]
+                done_at = old["look_back_done_at"] if kept else now
+            self.literature_search[(r["db"], r["query"])] = {
+                "db": r["db"], "query": r["query"], "kind": r["kind"], "look_back_from": r["look_back_from"],
+                "history_until": r["history_until"], "look_back_done_at": done_at, "last_searched_at": now}
+
     def insert_document(self, doc: dict) -> str | None:
         if doc["external_id"] in self.known_external_ids(doc["source_id"]):
             return None
@@ -178,6 +199,17 @@ class MemoryStore:
     def active_ingredients(self) -> list[dict]:
         return [dict(r, id=i) for i, r in self.ingredient.items() if r.get("active", True)]
 
+    def class_words(self, lang: str = "en") -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for ing, cls in self.ingredient_class:
+            row = self.ingredient.get(ing)
+            if row is None or not row.get("active", True):
+                continue
+            words = sorted(t.term for t in self.terms if t.is_class and t.class_id == cls and t.lang == lang)
+            if words:
+                out[row["inn_en"]] = sorted({*out.get(row["inn_en"], []), *words})
+        return out
+
     def ingredients_without_spc(self) -> list[str]:
         return [i for i, r in self.ingredient.items() if r.get("active", True) and i not in self.spc_mah]
 
@@ -196,6 +228,8 @@ class MemoryStore:
         for iss in self.issue.values():
             if iss["first_date"] is None or not (date_from <= iss["first_date"] <= date_to):
                 continue
+            if iss["doc_type"] == "literature":
+                continue  # a paper merges with nothing (merge.compatible)
             if not ids & {g for i, g in self.issue_ingredient if i == iss["id"]}:
                 continue
             docs = []

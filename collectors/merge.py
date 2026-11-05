@@ -166,6 +166,10 @@ def merge_document(store: Any, d: DocFacts, ingredient_ids: Iterable[str] | None
                    mahs: Iterable[str] | None = None) -> MergeResult:
     """Place a newly matched document: an existing issue, or a new one (plus suggestions)."""
     ingredients = set(ingredient_ids if ingredient_ids is not None else d.ingredient_ids)
+    if d.doc_type == "literature":
+        # A paper merges with nothing (compatible()): its own issue, without reading the ingredient's
+        # other issues (thousands of papers a year from PubMed Central).
+        return MergeResult(_new_issue(store, d, ingredients), True, "anchor", "auto", None)
     mah_list = list(mahs if mahs is not None else store.mah_names(ingredients))
     when = d.published or date.today()
     if d.is_anchor:

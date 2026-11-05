@@ -127,6 +127,46 @@ class Store:
                                 {"s": source_id})
         return {r["external_id"] for r in rows}
 
+    def literature_known_ids(self, source_id: str) -> set[str]:
+        """The source's stored ids plus the PMC id of every stored paper (NCBI literature)."""
+        rows = self.db.fetchall(
+            "select external_id, structured->>'pmcid' as pmcid from document where source_id = %(s)s",
+            {"s": source_id})
+        return {r["external_id"] for r in rows} | {r["pmcid"] for r in rows if r["pmcid"]}
+
+    def literature_searches(self) -> dict[tuple[str, str], dict]:
+        """Every NCBI search run so far (migration 0035), by (database, words)."""
+        rows = self.db.fetchall(
+            """select db, query, kind, look_back_from, history_until, look_back_done_at, last_searched_at
+                 from literature_search""")
+        return {(r["db"], r["query"]): r for r in rows}
+
+    def save_literature_searches(self, rows: list[dict]) -> None:
+        """Record this run's searches. A look-back finished once keeps its first finishing time; a new
+        look-back (another start) starts unfinished."""
+        if not rows:
+            return
+        self.db.execute(
+            """insert into literature_search as ls (db, query, kind, look_back_from, history_until,
+                 look_back_done_at, last_searched_at)
+               select x.db, x.query, x.kind, x.look_back_from, x.history_until,
+                      case when x.done then now() end, now()
+                 from jsonb_to_recordset(%(rows)s) as x(db text, query text, kind text, look_back_from date,
+                                                        history_until date, done boolean)
+               on conflict (db, query) do update set
+                 kind = excluded.kind,
+                 look_back_from = excluded.look_back_from,
+                 history_until = excluded.history_until,
+                 look_back_done_at = case
+                   when excluded.look_back_done_at is null then null
+                   when ls.look_back_done_at is not null and ls.look_back_from = excluded.look_back_from
+                     then ls.look_back_done_at
+                   else excluded.look_back_done_at end,
+                 last_searched_at = excluded.last_searched_at""",
+            {"rows": jsonb([{**r, "look_back_from": r["look_back_from"].isoformat(),
+                             "history_until": r["history_until"].isoformat(), "done": bool(r["done"])}
+                            for r in rows])})
+
     def insert_document(self, doc: dict) -> str | None:
         row = self.db.fetchone(
             """insert into document (source_id, external_id, url, title_orig, lang, doc_type,
@@ -196,6 +236,20 @@ class Store:
         return self.db.fetchall(
             "select id, inn_en, atc_code from ingredient where active order by inn_en")
 
+    def class_words(self, lang: str = "en") -> dict[str, list[str]]:
+        """Each active ingredient's drug-class words in ``lang``, by its English INN."""
+        rows = self.db.fetchall(
+            """select i.inn_en, ct.term
+                 from ingredient i
+                 join ingredient_class ic on ic.ingredient_id = i.id
+                 join class_term ct on ct.class_id = ic.class_id and ct.lang = %(l)s
+                where i.active
+                order by i.inn_en, ct.term""", {"l": lang})
+        out: dict[str, list[str]] = {}
+        for r in rows:
+            out.setdefault(r["inn_en"], []).append(r["term"])
+        return out
+
     def ingredients_without_spc(self) -> list[str]:
         rows = self.db.fetchall(
             """select i.id from ingredient i
@@ -225,6 +279,7 @@ class Store:
                       i.anchor_document_id
                  from issue i
                 where i.first_date between %(f)s and %(t)s
+                  and i.doc_type <> 'literature'      -- a paper merges with nothing (merge.compatible)
                   and exists (select 1 from issue_ingredient ii
                                where ii.issue_id = i.id and ii.ingredient_id = any(%(ids)s::uuid[]))""",
             {"f": date_from, "t": date_to, "ids": ids})

@@ -3,7 +3,8 @@
 #
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
-#   daily    02:31                       large JSON files (EMA medicines, Health Canada recalls …), the EURD list
+#   daily    02:31                       large JSON files (EMA medicines, Health Canada recalls …), the EURD list,
+#                                        NCBI literature (PubMed and PubMed Central)
 #   weekly   Monday 03:23                SPC / label watch, EMA's literature monitoring list
 #   monthly  the 1st at 01:41            monthly sources (the report itself is report.yml)
 #
