@@ -361,3 +361,28 @@ def test_a_misread_future_date_never_becomes_the_source_last_item():
              SimpleNamespace(published=today + timedelta(days=35))]
     assert latest_published(items) == today - timedelta(days=3)
     assert latest_published([SimpleNamespace(published=None)]) is None
+
+
+def test_an_attachment_behind_a_bot_check_is_skipped_not_the_source(tmp_path):
+    # 5 Nov 2026: an ANSM vaccine notice linked a PDF on sante.gouv.fr, whose bot check marked the whole
+    # ANSM source "blocked" and stopped the notices behind it.
+    from collectors.core.context import SourceBlocked
+    from collectors.core.models import Fetched, Item
+
+    class Ctx:
+        def get(self, url, accept=None):
+            if "sante.gouv.fr" in url:
+                raise SourceBlocked(f"bot check at {url} (HTTP 200)")
+            return Fetched(200, url, b"<html><body><main>Lornoxicam lettre</main></body></html>",
+                           "text/html; charset=utf-8")
+
+    store = MemoryStore()
+    runner = Runner(store, Ctx(), Notifier(store, store.settings(), telegram=ExplodingTelegram()),
+                    store.settings())
+    item = Item(external_id="x", url="https://ansm.sante.fr/x", title="x", published=None,
+                doc_type="safety_alert", lang="fr",
+                attachment_urls=["https://sante.gouv.fr/IMG/pdf/recommandations_voyageurs.pdf",
+                                 "https://ansm.sante.fr/uploads/lettre.html"])
+    atts = runner._attachments(item, "fr")
+    assert [a["url"] for a in atts] == ["https://ansm.sante.fr/uploads/lettre.html"]
+    assert "Lornoxicam" in atts[0]["text"]
