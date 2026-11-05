@@ -582,13 +582,30 @@ SFDA = "https://www.sfda.gov.sa/ar/warnings"
 def test_sfda_warning_cards():
     src = source("sfda-sa", SFDA, languages=["ar"])
     opts = generic_html.options_for(src)["pages"][0]
-    items = generic_html.extract(fixture("sfda-sa/warnings.html"), SFDA, src, opts)
+    shape = {k: v for k, v in opts.items() if k != "include_tags"}
+    items = generic_html.extract(fixture("sfda-sa/warnings.html"), SFDA, src, shape)
     first = items[0]
     assert first.title.startswith("\"الغذاء والدواء\" تحذّر من منتجات بروتين البودينغ")
     assert first.published == date(2026, 10, 27)
     assert first.external_id == "sfda-sa:19788"
     assert first.structured["tag"] == "غذاء"
     assert first.url == "https://www.sfda.gov.sa/ar/warnings/19788"
+
+
+def test_sfda_warnings_keep_drug_cards_only():
+    # Audit: the warnings list is mostly food; only cards tagged دواء (drug) are kept, also when a
+    # card carries both tags (the drug tag second).
+    src = source("sfda-sa", SFDA, languages=["ar"])
+    opts = generic_html.options_for(src)["pages"][0]
+    assert generic_html.extract(fixture("sfda-sa/warnings.html"), SFDA, src, opts) == []
+    both = generic_html.extract(fixture("sfda-sa/warnings_drug.html"), SFDA, src, opts)
+    assert [i.external_id for i in both] == ["sfda-sa:6491"]
+    assert both[0].structured["tag"] == "غذاء, دواء"
+    # an all-food page is not a broken page: the source still reads it without failing
+    ctx = FakeCtx({SFDA: "sfda-sa/warnings.html",
+                   "https://www.sfda.gov.sa/ar/drugs_circulars_withdrawal": "sfda-sa/drugs_circulars_withdrawal.html"})
+    got = generic_html.list_items(ctx, src)
+    assert got and all(i.doc_type == "recall" for i in got)
 
 
 def test_sfda_recall_table():
