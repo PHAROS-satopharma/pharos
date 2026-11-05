@@ -66,16 +66,37 @@ export function SignIn() {
         <PharosMark variant="stacked" height={240} className="signin-mark" />
         <div className="signin-words">
           <h1 className="signin-title">Safety notifications from every regulator we watch.</h1>
-          <p className="signin-lede">
-            Read in the language each one publishes in, kept with the original, and reviewed by name.
-          </p>
+          <ol className="signin-facts">
+            <li className="signin-fact">
+              <span className="signin-fact-index">01</span>
+              <span>
+                <strong>Read in its own language.</strong> Each regulator is screened as it publishes; nothing is
+                translated.
+              </span>
+            </li>
+            <li className="signin-fact">
+              <span className="signin-fact-index">02</span>
+              <span>
+                <strong>Kept with the original.</strong> Every page and PDF is archived exactly as it was found.
+              </span>
+            </li>
+            <li className="signin-fact">
+              <span className="signin-fact-index">03</span>
+              <span>
+                <strong>Reviewed by name.</strong> Each notice is marked relevant or not by a named reviewer.
+              </span>
+            </li>
+          </ol>
         </div>
         <span className="micro signin-by">by Sato Pharma</span>
       </section>
 
       <section className="signin-main">
         <form className="signin-form" onSubmit={(e) => void submit(e)} noValidate>
-          <span className="micro soft">Sign in</span>
+          <div className="signin-form-head">
+            <span className="micro soft">PHAROS</span>
+            <h2 className="signin-form-title">Sign in</h2>
+          </div>
           <div className="tabs" role="tablist" aria-label="How to sign in">
             <button
               type="button"
