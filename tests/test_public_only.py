@@ -253,6 +253,16 @@ def test_the_probe_and_the_scheduled_run_turn_public_only_on(tmp_path, monkeypat
     assert len(made) == 2 and all(kw.get("public_only") is True for kw in made)
 
 
+def test_a_probe_that_reports_a_failure_keeps_the_job_green(tmp_path, monkeypatch):
+    from collectors import run as run_mod
+    import collectors.probe as probe_mod
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(probe_mod, "run_probe", lambda store, ctx, pid: {
+        "status": "failed", "error": "ConnectError: [Errno 104] Connection reset by peer"})
+    assert run_mod.main(["--no-db", "--probe-id", "p1"]) == 0
+
+
 def test_the_browser_blocks_the_pages_own_requests_into_a_private_network(tmp_path):
     ctx, _ = make_ctx(tmp_path, ok)
     meta = "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
