@@ -8,14 +8,21 @@
   ``(source_id, external_id)`` dedupe makes a re-read cheap and safe;
 * every 200 response is archived (R2, or ``./.archive``) and the result carries its sha256/key;
 * ``browser_get`` drives one shared headless Chromium (Playwright), launched lazily. It never solves or
-  bypasses a bot check: a challenge page raises ``SourceBlocked``.
+  bypasses a bot check: a challenge page raises ``SourceBlocked``;
+* ``public_only=True`` (the scheduled runs and the admin's "Test this link" probe) refuses, with
+  ``UnsafeAddress``, any request — the first one and every redirect hop — whose host resolves to an
+  address that is not on the public internet (loopback, private, link-local such as the cloud metadata
+  endpoint 169.254.169.254, 0.0.0.0, odd numeric forms such as http://2130706433/).
 """
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re
+import socket
 import time
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
@@ -113,6 +120,70 @@ class FetchError(Exception):
         self.url = redact(url)
 
 
+PRIVATE_NETWORK_MESSAGE = "That address points inside a private network, so it cannot be read."
+
+
+class UnsafeAddress(FetchError):
+    """A URL (or a redirect hop) whose host is not on the public internet. Never requested; counts as
+    an ordinary source failure."""
+
+    def __init__(self, url: str, detail: str) -> None:
+        super().__init__(0, url, f"{PRIVATE_NETWORK_MESSAGE} ({detail})")
+
+
+# ───────────────────────────── public addresses only ─────────────────────────────
+_NUMERIC_LABEL = re.compile(r"^(?:0x[0-9a-f]*|[0-9]+)$", re.I)
+
+
+def _default_resolve(host: str) -> list[str]:
+    """Every address ``host`` resolves to (the same lookup httpx's connection makes)."""
+    return [info[4][0] for info in socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)]
+
+
+def _is_public(address: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(address.split("%", 1)[0])
+    except ValueError:
+        return False
+    if isinstance(ip, ipaddress.IPv6Address):
+        # an IPv4 address carried inside IPv6 is judged as that IPv4 address
+        inner = ip.ipv4_mapped or ip.sixtofour
+        if inner is not None:
+            ip = inner
+    return ip.is_global and not ip.is_multicast
+
+
+def check_public_host(url: str, host: str | None,
+                      resolve: Callable[[str], list[str]] = _default_resolve) -> None:
+    """Raise ``UnsafeAddress`` unless ``host`` is a name or address on the public internet. A name that
+    does not resolve raises ``httpx.ConnectError`` (what the request itself would have raised)."""
+    host = (host or "").strip().rstrip(".").lower()
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    if not host:
+        raise UnsafeAddress(url, "no host")
+    try:
+        literal = ipaddress.ip_address(host.split("%", 1)[0])
+    except ValueError:
+        literal = None
+    if literal is not None:
+        if not _is_public(host):
+            raise UnsafeAddress(url, f"{host} is not a public address")
+        return
+    if _NUMERIC_LABEL.match(host.rsplit(".", 1)[-1]):
+        # 2130706433, 0x7f.1, 017700000001, 127.1: resolvers read these as IP addresses
+        raise UnsafeAddress(url, f"{host} is an unusual numeric address")
+    try:
+        addresses = resolve(host)
+    except (OSError, UnicodeError) as exc:
+        raise httpx.ConnectError(f"cannot resolve {host}: {exc}") from None
+    if not addresses:
+        raise httpx.ConnectError(f"cannot resolve {host}")
+    bad = [a for a in addresses if not _is_public(a)]
+    if bad:
+        raise UnsafeAddress(url, f"{host} resolves to {bad[0]}")
+
+
 # Markers of Cloudflare / bot-management interstitials, checked on the first 64 KB of a page.
 # Strong markers only ever appear on an interstitial. Weak ones (the challenge script, a captcha
 # iframe) are also injected into ordinary pages behind Cloudflare, so they count only on an error
@@ -151,17 +222,23 @@ class FetchContext:
     def __init__(self, db: "Db | None", run_id: str, *, backfill: bool = False,
                  archive: Archive | None = None, dry_run: bool = False,
                  transport: httpx.BaseTransport | None = None,
-                 host_gap_s: float = HOST_GAP_S) -> None:
+                 host_gap_s: float = HOST_GAP_S, public_only: bool = False) -> None:
         self.db = db
         self.run_id = run_id
         self.backfill = backfill
         self.dry_run = dry_run
         self.archiver = archive if archive is not None else Archive()
         self.host_gap_s = host_gap_s
+        # Refuse hosts that are not on the public internet (see the module docstring); the resolver is
+        # replaceable so tests never reach real DNS.
+        self.public_only = public_only
+        self._resolve: Callable[[str], list[str]] = _default_resolve
         self._client = httpx.Client(
             follow_redirects=True, timeout=httpx.Timeout(TIMEOUT_S),
             headers={"User-Agent": USER_AGENT, "Accept-Language": "*;q=0.5"},
             transport=transport, http2=False,
+            # httpx calls request hooks before EVERY request it sends, each redirect hop included
+            event_hooks={"request": [self._guard_request]},
         )
         self._last_hit: dict[str, float] = {}
         self._host_gap: dict[str, float] = {}
@@ -187,6 +264,23 @@ class FetchContext:
         self.requests += 1
         if self.first_status is None:
             self.first_status = status
+
+    def _guard_request(self, request: httpx.Request) -> None:
+        if not self.public_only:
+            return
+        url = str(request.url)
+        if request.url.scheme not in ("http", "https"):
+            raise UnsafeAddress(url, f"{request.url.scheme}: links are not read")
+        check_public_host(url, request.url.host, self._resolve)
+
+    def _check_url(self, url: str) -> None:
+        """The public-only check for a URL fetched outside httpx (the browser)."""
+        if not self.public_only:
+            return
+        parts = urlsplit(url)
+        if parts.scheme.lower() not in ("http", "https"):
+            raise UnsafeAddress(url, f"{parts.scheme or 'no'} scheme: links are not read")
+        check_public_host(url, parts.hostname, self._resolve)
 
     def _polite(self, url: str) -> None:
         host = urlsplit(url).hostname or ""
@@ -300,6 +394,7 @@ class FetchContext:
 
     def browser_get(self, url: str, *, wait_selector: str | None = None,
                     timeout_ms: int = 45000) -> Fetched:
+        self._check_url(url)
         browser = self._ensure_browser()
         self._polite(url)
         page = browser.new_page(user_agent=USER_AGENT, locale="en-GB")
@@ -329,6 +424,10 @@ class FetchContext:
             final_url = page.url
         finally:
             page.close()
+        # The browser follows redirects itself: a page that ended up inside a private network is not
+        # handed back (the request was made; its content is never read).
+        if self.public_only and urlsplit(final_url).scheme.lower() in ("http", "https"):
+            check_public_host(final_url, urlsplit(final_url).hostname, self._resolve)
         self._note_status(status)
         if looks_like_challenge(html, status):
             raise SourceBlocked(f"bot check at {final_url} (HTTP {status})")

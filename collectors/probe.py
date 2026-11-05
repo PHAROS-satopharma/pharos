@@ -14,7 +14,8 @@ import traceback
 from datetime import datetime, timezone
 from typing import Any
 
-from collectors.core.context import FetchContext, SourceBlocked
+from collectors.core.context import (PRIVATE_NETWORK_MESSAGE, FetchContext, SourceBlocked,
+                                     UnsafeAddress)
 from collectors.core.models import Fetched, SourceConfig
 from collectors.core.registry import load_parser
 
@@ -71,6 +72,8 @@ def run_probe(store: Any, ctx: FetchContext, probe_id: str) -> dict:
             items = module.list_items(ctx, source)
             result.update(status="ok", items=serialise(items), error=None if items else
                           "The page loaded but no items were recognised.")
+    except UnsafeAddress:
+        result.update(status="failed", error=PRIVATE_NETWORK_MESSAGE)
     except SourceBlocked as exc:
         result.update(status="failed", error=f"Blocked by a bot check: {exc}")
     except Exception as exc:  # noqa: BLE001 - every failure is reported to the admin screen
