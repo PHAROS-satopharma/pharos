@@ -2,7 +2,8 @@
 
 * polite: one request at a time per host, at least 1 s apart, a real browser User-Agent, 40 s timeout;
   a 429 or 503 ("slow down") is waited out (its Retry-After, else 30 s, then 60 s) and retried twice,
-  and that host's gap is doubled for the rest of the run (up to 8 s);
+  and that host's gap is doubled for the rest of the run (up to 8 s); a GET that stalls (read timeout,
+  connection reset) is tried again after 15 s and then after 35 s;
 * conditional GET (ETag / Last-Modified) for URLs already fetched in this run — a repeat returns
   status 304 with empty content. Validators are kept in memory per run only: across runs, the
   ``(source_id, external_id)`` dedupe makes a re-read cheap and safe;
@@ -51,9 +52,13 @@ MAX_BYTES = 80 * 1024 * 1024  # a single original larger than this is refused
 SLOW_DOWN = (429, 503)
 RETRY_WAITS_S = (30.0, 60.0)    # without Retry-After; one entry per retry
 MAX_RETRY_WAIT_S = 120.0
-# A GET whose read timed out or whose connection broke is tried once more after this wait: one stall
-# at a site (bfarm.de, 5 Nov 2026 15:34 Cairo, both readers) is not yet a failed check.
-STALL_RETRY_WAIT_S = 15.0
+# A GET whose read timed out or whose connection broke is tried again after each of these waits: one
+# stall at a site (bfarm.de, 5 Nov 2026 15:34 Cairo, both readers) is not yet a failed check. The last
+# wait outlasts a 30 s DNS answer: www.sfda.gov.sa is an F5 load-balanced name (www.wideip.sfda.gov.sa,
+# TTL 30) handing out two servers, 195.189.212.79 and 195.189.213.79, so the last try asks again and may
+# reach the other one. Its two failed checks on 5 Nov 2026 were one such stall each, on the first page:
+# a 40 s read timeout (16:58 Cairo) and a reset during the TLS handshake (18:25 Cairo).
+STALL_RETRY_WAITS_S = (15.0, 35.0)
 _STALLS = (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError)
 MAX_HOST_GAP_S = 8.0
 # A refusal that is not a challenge page but means the same: the site will not serve this network.
@@ -399,20 +404,22 @@ class FetchContext:
                 hdrs["If-None-Match"] = etag
             if modified:
                 hdrs["If-Modified-Since"] = modified
-        stalled = False
+        stalls = 0
         for attempt in range(len(RETRY_WAITS_S) + 1):
             self._polite(url)
-            try:
-                resp, content = self._read(method, url, hdrs, data, json)
-            except _STALLS as exc:
-                if method != "GET" or stalled:
-                    raise           # a POST is never sent twice; a second stall is the site, not luck
-                stalled = True
-                log.info("%s from %s: waiting %.0f s, then trying once more", type(exc).__name__,
-                         redact(url), STALL_RETRY_WAIT_S)
-                self._sleep(STALL_RETRY_WAIT_S)
-                self._polite(url)
-                resp, content = self._read(method, url, hdrs, data, json)
+            while True:
+                try:
+                    resp, content = self._read(method, url, hdrs, data, json)
+                    break
+                except _STALLS as exc:
+                    if method != "GET" or stalls == len(STALL_RETRY_WAITS_S):
+                        raise       # a POST is never sent twice; a third stall is the site, not luck
+                    wait = STALL_RETRY_WAITS_S[stalls]
+                    stalls += 1
+                    log.info("%s from %s: waiting %.0f s, then trying again (%d of %d)",
+                             type(exc).__name__, redact(url), wait, stalls, len(STALL_RETRY_WAITS_S))
+                    self._sleep(wait)
+                    self._polite(url)
             status = resp.status_code
             ctype = resp.headers.get("content-type", "")
             final_url = str(resp.url)
