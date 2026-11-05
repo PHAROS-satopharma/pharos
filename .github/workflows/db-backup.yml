@@ -1,6 +1,9 @@
 # PHAROS — nightly database backup to R2, and the weekly archive integrity check.
 #
-# backup          every night 00:13 UTC (02:13 / 03:13 Cairo): pg_dump → gzip → R2 backups/<date>.sql.gz.
+# backup          every night 00:13 UTC (02:13 / 03:13 Cairo): pg_dump → gzip → age → R2
+#                 backups/<date>.sql.gz.age, encrypted to the public key(s) in the BACKUP_AGE_RECIPIENT secret
+#                 (the dump holds the sign-in accounts' password hashes). Without that secret it still backs
+#                 up, as plain backups/<date>.sql.gz, and the run shows a warning.
 #                 The R2 lifecycle rule on the backups/ prefix deletes copies after 90 days, so 90 are kept.
 # verify-archive  Sunday 00:43 UTC: re-downloads 50 random archived originals and recomputes their sha256
 #                 against the database, checks that an overwrite is refused (bucket lock), and records the
@@ -50,10 +53,13 @@ jobs:
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-17
+          sudo apt-get install -y -qq postgresql-client-17 age
           /usr/lib/postgresql/17/bin/pg_dump --version
+          age --version
 
-      - name: Dump, compress, upload
+      - name: Dump, compress, encrypt, upload
+        env:
+          AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
         run: |
           set -euo pipefail
           PGD=/usr/lib/postgresql/17/bin/pg_dump
@@ -70,9 +76,24 @@ jobs:
           size=$(stat -c %s "$out")
           echo "backup size: $size bytes"
           [ "$size" -gt 2048 ] || { echo "backup is suspiciously small"; exit 1; }
-          aws s3 cp "$out" "s3://$R2_BUCKET/backups/$day.sql.gz" --endpoint-url "$R2_ENDPOINT" \
-            --content-type application/gzip --only-show-errors
-          echo "stored backups/$day.sql.gz"
+          if [ -n "${AGE_RECIPIENT:-}" ]; then
+            # One public key per line (age1... or ssh-ed25519 ...); only the matching private key can read it.
+            # Tolerate a key pasted with Windows line ends or stray spaces.
+            printf '%s\n' "$AGE_RECIPIENT" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+              > "$RUNNER_TEMP/recipients.txt"
+            age -R "$RUNNER_TEMP/recipients.txt" -o "$out.age" "$out" \
+              || { echo "::error::age could not encrypt the backup; is BACKUP_AGE_RECIPIENT a valid age public key?"; exit 1; }
+            [ "$(head -n 1 "$out.age")" = "age-encryption.org/v1" ] || { echo "not an age file"; exit 1; }
+            echo "encrypted size: $(stat -c %s "$out.age") bytes"
+            aws s3 cp "$out.age" "s3://$R2_BUCKET/backups/$day.sql.gz.age" --endpoint-url "$R2_ENDPOINT" \
+              --content-type application/octet-stream --only-show-errors
+            echo "stored backups/$day.sql.gz.age (encrypted)"
+          else
+            echo "::warning title=Backup not encrypted::BACKUP_AGE_RECIPIENT is not set, so backups/$day.sql.gz is stored unencrypted (it holds password hashes). See docs/setup.md, Backup encryption."
+            aws s3 cp "$out" "s3://$R2_BUCKET/backups/$day.sql.gz" --endpoint-url "$R2_ENDPOINT" \
+              --content-type application/gzip --only-show-errors
+            echo "stored backups/$day.sql.gz"
+          fi
 
   verify-archive:
     if: github.event.schedule == '43 0 * * 0' || (github.event_name == 'workflow_dispatch' && inputs.job == 'verify-archive')

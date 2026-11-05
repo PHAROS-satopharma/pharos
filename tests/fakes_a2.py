@@ -107,6 +107,7 @@ class SpcDb:
         self.changes: list[dict] = []
         self.links: list[tuple] = []
         self.matches: list[dict] = []
+        self.products: dict[tuple[str, str], dict] = {}
 
     @contextmanager
     def transaction(self):
@@ -119,6 +120,12 @@ class SpcDb:
     def fetchone(self, sql: str, params=None):
         q = self._sql(sql)
         p = dict(params or {})
+        if q.startswith("insert into spc_product"):
+            row = self.products.setdefault((p["src"], p["nid"]), {"id": str(uuid.uuid4())})
+            row.update(ingredient_id=p["ing"], source_id=p["src"], country_code=p["cc"],
+                       national_id=p["nid"], product_name=p["name"], mah=p["mah"], url=p["url"],
+                       extra=_load(p["extra"]), active=True)
+            return dict(row)
         if q.startswith("insert into spc_snapshot"):
             row = {"id": str(uuid.uuid4()), "spc_product_id": p["p"], "doc_date": p["d"],
                    "sha256": p["s"], "r2_key": p["k"], "section_hashes": _load(p["h"])}
@@ -140,6 +147,11 @@ class SpcDb:
         raise AssertionError(f"unexpected fetchone: {q[:80]}")
 
     def fetchall(self, sql: str, params=None):
+        q = self._sql(sql)
+        p = dict(params or {})
+        if q.startswith("select id, sha256, r2_key, section_hashes from spc_snapshot"):
+            rows = [dict(r) for r in self.snapshots if r["spc_product_id"] == p["p"]]
+            return list(reversed(rows))[:p.get("n", len(rows))]
         raise AssertionError(f"unexpected fetchall: {self._sql(sql)[:80]}")
 
     def execute(self, sql: str, params=None) -> None:
@@ -151,6 +163,10 @@ class SpcDb:
             self.links.append((q.split()[2], p))
         elif q.startswith("insert into match"):
             self.matches.append(p)
+        elif q.startswith("update spc_product set active = false"):
+            for (src, nid), row in self.products.items():
+                if src == p["s"] and row["ingredient_id"] == p["i"] and nid not in p["k"]:
+                    row["active"] = False
         else:
             raise AssertionError(f"unexpected execute: {q[:80]}")
 

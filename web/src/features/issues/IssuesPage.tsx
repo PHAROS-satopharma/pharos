@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { describeFilters, fetchAllIssues, useIngredientNames, useIssues, type IssueFilters } from './queries';
+import {
+  describeFilters,
+  fetchAllIssues,
+  useIngredientNames,
+  useIssues,
+  useStatusCounts,
+  type IssueFilters,
+} from './queries';
 import { useCountryIndex } from '../../lib/regulators';
 import { useDebounced } from '../../lib/useDebounced';
 import { exportIssues } from '../../lib/excel';
 import { errorMessage } from '../../lib/api';
-import { formatDate, formatNumber } from '../../lib/format';
+import { safeHref } from '../../lib/safeHref';
+import { formatNumber } from '../../lib/format';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from '../../lib/labels';
 import { DOC_TYPES, ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatus } from '../../lib/types';
 import { Button } from '../../ui/Button';
@@ -13,6 +21,8 @@ import { Field, Input, Toggle } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { StatusPill } from '../../ui/Tag';
 import { Country } from '../../ui/Flag';
+import { DateStamp } from '../../ui/DateStamp';
+import { Stat, StatRow } from '../../ui/Stat';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { PageHead } from '../../ui/Text';
 import { cx } from '../../ui/cx';
@@ -51,10 +61,12 @@ export function IssuesPage() {
   const [active, setActive] = useState(-1);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportNote, setExportNote] = useState<string | null>(null);
   const navigate = useNavigate();
   const countries = useCountryIndex();
   const ingredients = useIngredientNames();
   const issues = useIssues(filters, limit);
+  const counts = useStatusCounts(filters);
   const rows = useMemo(() => issues.data?.rows ?? [], [issues.data]);
   const total = issues.data?.total ?? 0;
   const tableRef = useRef<HTMLTableSectionElement>(null);
@@ -105,9 +117,15 @@ export function IssuesPage() {
   async function onExport() {
     setExporting(true);
     setExportError(null);
+    setExportNote(null);
     try {
-      const all = await fetchAllIssues(filters);
-      await exportIssues(all, describeFilters(filters));
+      const { rows: all, total: matching } = await fetchAllIssues(filters);
+      await exportIssues(all, describeFilters(filters), matching);
+      if (matching > all.length) {
+        setExportNote(
+          `Exported the first ${formatNumber(all.length)} of ${formatNumber(matching)} notices. Narrow the filters to export the rest.`,
+        );
+      }
     } catch (e) {
       setExportError(errorMessage(e));
     } finally {
@@ -133,6 +151,21 @@ export function IssuesPage() {
           <Button onClick={() => void onExport()} busy={exporting} disabled={!rows.length}>
             {exporting ? 'Preparing the file' : 'Export to Excel'}
           </Button>
+        }
+        foot={
+          <StatRow label="Notifications by status: choose one to show only those">
+            {ISSUE_STATUSES.map((s) => (
+              <Stat
+                key={s}
+                tone={s}
+                label={STATUS_LABEL[s]}
+                value={counts.data?.[s]}
+                active={filters.status === s}
+                title={filters.status === s ? 'Show every status again' : `Show only ${STATUS_LABEL[s].toLowerCase()}`}
+                onClick={() => setParam('status', filters.status === s ? '' : s)}
+              />
+            ))}
+          </StatRow>
         }
       />
 
@@ -211,6 +244,7 @@ export function IssuesPage() {
       </div>
 
       {exportError ? <Notice tone="error">The export did not finish: {exportError}</Notice> : null}
+      {exportNote ? <Notice tone="info">{exportNote}</Notice> : null}
 
       {issues.isPending ? (
         <Loading label="Reading the notifications" />
@@ -250,10 +284,7 @@ export function IssuesPage() {
                     Date
                   </th>
                   <th scope="col" className="col-country">
-                    Country
-                  </th>
-                  <th scope="col" className="col-regulator">
-                    Regulator
+                    Published by
                   </th>
                   <th scope="col" className="col-ingredient">
                     Ingredient
@@ -263,7 +294,7 @@ export function IssuesPage() {
                     Status
                   </th>
                   <th scope="col" className="col-link">
-                    Link
+                    <span className="visually-hidden">Original</span>
                   </th>
                 </tr>
               </thead>
@@ -275,25 +306,37 @@ export function IssuesPage() {
                     <tr
                       key={r.id}
                       data-row={i}
-                      className={cx('issue-row', i === active && 'is-active')}
+                      className={cx('issue-row', i === active && 'is-active', r.status === 'new' && 'is-new')}
                       onClick={() => navigate(`/issue/${r.id}`)}
                     >
                       <td data-label="Date" className="col-date nowrap">
-                        {formatDate(r.first_date)}
+                        <DateStamp value={r.first_date} />
                       </td>
-                      <td data-label="Country" className="col-country">
-                        <Country name={anchor} />
-                        {others.length > 0 ? (
-                          <span className="more" title={`Also published in ${others.join(', ')}`}>
-                            +{others.length}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td data-label="Regulator" className="col-regulator">
-                        {r.anchor_regulator ?? '—'}
+                      <td data-label="Published by" className="col-country">
+                        <span className="cell-line">
+                          <Country name={anchor} />
+                          {others.length > 0 ? (
+                            <span className="more" title={`Also published in ${others.join(', ')}`}>
+                              +{others.length}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="cell-sub">{r.anchor_regulator ?? '—'}</span>
                       </td>
                       <td data-label="Ingredient" className="col-ingredient">
-                        {(r.ingredients ?? []).join(', ') || (r.class_only ? 'Class-wide' : '—')}
+                        {(r.ingredients ?? []).length > 0 ? (
+                          <span className="chips">
+                            {(r.ingredients ?? []).map((n) => (
+                              <span key={n} className="chip">
+                                {n}
+                              </span>
+                            ))}
+                          </span>
+                        ) : r.class_only ? (
+                          <span className="chip chip-quiet">Class-wide</span>
+                        ) : (
+                          <span className="soft">—</span>
+                        )}
                       </td>
                       <td data-label="Safety notification" className="col-title">
                         <Link
@@ -305,24 +348,25 @@ export function IssuesPage() {
                           {r.title}
                         </Link>
                         <span className="title-meta">
-                          {DOC_TYPE_LABEL[r.doc_type]}
-                          {r.is_backfill ? ' · history' : ''}
+                          <span>{DOC_TYPE_LABEL[r.doc_type]}</span>
+                          {r.is_backfill ? <span className="tag tag-quiet">History</span> : null}
                         </span>
                       </td>
                       <td data-label="Status" className="col-status">
                         <StatusPill status={r.status} />
                       </td>
                       <td data-label="Link" className="col-link">
-                        {r.link ? (
+                        {safeHref(r.link) ? (
                           <a
-                            href={r.link}
+                            href={safeHref(r.link) ?? undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ext-link"
+                            className="open-link"
                             onClick={(e) => e.stopPropagation()}
                             aria-label={`Open on the regulator’s site: ${r.title}`}
+                            title="Open on the regulator’s site"
                           >
-                            Open <span aria-hidden>↗</span>
+                            <span aria-hidden>↗</span>
                           </a>
                         ) : (
                           <span className="soft">—</span>

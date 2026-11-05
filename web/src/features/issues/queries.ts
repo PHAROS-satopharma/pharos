@@ -1,7 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { escapeLike, fetchAllPages, unwrap } from '../../lib/api';
-import type { DocType, IssueRow, IssueStatus } from '../../lib/types';
+import { escapeLike, unwrap } from '../../lib/api';
+import { ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatus } from '../../lib/types';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from '../../lib/labels';
 
 export interface IssueFilters {
@@ -30,21 +30,74 @@ function issueQuery(f: IssueFilters, withCount: boolean) {
   return q.order('first_date', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
 }
 
+/** The API returns at most 1,000 rows per request, so longer lists are read in pages of this size. */
+const API_PAGE = 1000;
+
+/** The Excel export stops here; the screen then says how many matched. */
+export const EXPORT_CAP = 20000;
+
+/**
+ * The first `limit` rows that match the filters, read in pages of at most 1,000, and how many match in all
+ * (counted on the first page).
+ */
+async function readIssues(f: IssueFilters, limit: number): Promise<{ rows: IssueRow[]; total: number }> {
+  const rows: IssueRow[] = [];
+  let total = 0;
+  for (let from = 0; from < limit; from += API_PAGE) {
+    const to = Math.min(from + API_PAGE, limit) - 1;
+    const res = await issueQuery(f, from === 0).range(from, to);
+    const page = unwrap<IssueRow[] | null>(res) ?? [];
+    if (from === 0) total = res.count ?? page.length;
+    rows.push(...page);
+    if (page.length < to - from + 1) break;
+  }
+  return { rows, total: Math.max(total, rows.length) };
+}
+
 export function useIssues(f: IssueFilters, limit: number) {
   return useQuery({
     queryKey: ['issues', f, limit],
     placeholderData: keepPreviousData,
+    queryFn: () => readIssues(f, limit),
+  });
+}
+
+/**
+ * How many notifications of each status match every filter except the status: the figures in the masthead.
+ * One count-only request per status. The key sits under 'issues' so a recorded decision refreshes it too.
+ */
+export function useStatusCounts(f: IssueFilters) {
+  const base: IssueFilters = { ...f, status: '' };
+  return useQuery({
+    queryKey: ['issues', 'status-counts', base],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
-      const res = await issueQuery(f, true).range(0, limit - 1);
-      const rows = unwrap<IssueRow[] | null>(res) ?? [];
-      return { rows, total: res.count ?? rows.length };
+      const pairs = await Promise.all(
+        ISSUE_STATUSES.map(async (status) => {
+          let q = supabase.from('v_issue_table').select('id', { count: 'exact', head: true }).eq('status', status);
+          if (!base.history) q = q.eq('is_backfill', false);
+          if (!base.classWide) q = q.eq('class_only', false);
+          if (base.type) q = q.eq('doc_type', base.type);
+          if (base.country) q = q.contains('countries', [base.country]);
+          if (base.ingredient) q = q.contains('ingredients', [base.ingredient]);
+          const text = base.q.trim();
+          if (text) q = q.ilike('title', `%${escapeLike(text)}%`);
+          const res = await q;
+          unwrap<null>(res);
+          return [status, res.count ?? 0] as const;
+        }),
+      );
+      return Object.fromEntries(pairs) as Record<IssueStatus, number>;
     },
   });
 }
 
-/** Every row that matches the filters, for the Excel export. */
-export function fetchAllIssues(f: IssueFilters): Promise<IssueRow[]> {
-  return fetchAllPages<IssueRow>(async (from, to) => await issueQuery(f, false).range(from, to), 1000, 20000);
+/**
+ * Every row that matches the filters, up to EXPORT_CAP, for the Excel export. `total` is how many match in
+ * all, so the caller can say when the file holds only the first EXPORT_CAP.
+ */
+export function fetchAllIssues(f: IssueFilters): Promise<{ rows: IssueRow[]; total: number }> {
+  return readIssues(f, EXPORT_CAP);
 }
 
 export function describeFilters(f: IssueFilters): string {

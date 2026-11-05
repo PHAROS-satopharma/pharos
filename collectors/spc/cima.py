@@ -13,17 +13,26 @@ Source ``spc-cima``; country ES; Spanish. Verified 4 Nov 2026 with lornoxicam (7
   ``/cima/rest/docSegmentado/contenido/1?nregistro=<n>&seccion=4.4`` → the section as HTML.
 
 Only the watched sections (4.1–4.9 and their sub-sections) and section 10 are fetched: about nine
-requests per product, one per second. Products without a segmented ficha técnica (``secc`` false)
-are snapshotted from the full HTML ``urlHtml`` split by section number.
+requests per product, one per second. Products without a segmented ficha técnica (``secc`` false),
+or whose section list does not answer, are snapshotted from the full HTML ``urlHtml`` split by
+section number. The two ways give different keys and texts, so the snapshot records its ``method``
+(``"sections"`` or ``"html"``) and ``run.py`` only diffs it against a snapshot read the same way —
+a fallback week and the week the API recovers are never label changes. A section that is listed but
+cannot be read raises ``SnapshotError`` (a partial snapshot would read as removed sections).
+A product found for two ingredients is read twice in one run; the second read gets 304 from the
+context and reuses the first answer (``common.get_reusing``).
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
+import logging
+
+from collectors.core.context import ParseError
 from collectors.parsers._html_util import block_text
 from collectors.parsers.base import soup
-from collectors.spc.common import Product, Snapshot, terms_for
+from collectors.spc.common import Product, Snapshot, SnapshotError, get_reusing, terms_for
 from collectors.spc.sections import WATCHED_EU, split_numbered
 
 SOURCE_ID = "spc-cima"
@@ -31,6 +40,10 @@ COUNTRY = "ES"
 LANG = "es"
 API = "https://cima.aemps.es/cima/rest"
 PAGE_SIZE = 200
+SECTIONS = "sections"        # Snapshot.method: the per-section API
+FULL_HTML = "html"           # Snapshot.method: the full ficha técnica HTML split by number
+
+log = logging.getLogger(__name__)
 
 
 def _ms_date(ms) -> date | None:
@@ -67,7 +80,8 @@ def discover(ctx, ingredient: dict) -> list[Product]:
     for q in queries:
         page = 1
         while True:
-            f = ctx.get(f"{API}/medicamentos?{q}&pagina={page}", accept="application/json")
+            f = get_reusing(ctx, f"{API}/medicamentos?{q}&pagina={page}",
+                            accept="application/json")
             if f.status != 200:
                 break
             data = f.json()
@@ -89,33 +103,47 @@ def section_text(html: str) -> str:
     return block_text(soup(f"<div>{html}</div>"))
 
 
+def segmented_sections(ctx, n: str) -> dict[str, str] | None:
+    """The watched sections from the per-section API, or None when it has no section list."""
+    f = get_reusing(ctx, f"{API}/docSegmentado/secciones/1?nregistro={n}",
+                    accept="application/json")
+    if f.status != 200 or not f.content.strip().startswith(b"["):
+        return None
+    sections: dict[str, str] = {}
+    for s in f.json():
+        key = str(s.get("seccion") or "")
+        if not key or not wanted(key):
+            continue
+        c = get_reusing(ctx, f"{API}/docSegmentado/contenido/1?nregistro={n}&seccion={key}",
+                        accept="text/html")
+        if c.status != 200:
+            raise SnapshotError(f"CIMA {n} section {key}: HTTP {c.status}")
+        sections[key] = section_text(c.text)
+    return sections or None
+
+
 def snapshot(ctx, product: dict) -> Snapshot | None:
     n = product["national_id"]
     extra = product.get("extra") or {}
-    f = ctx.get(f"{API}/docSegmentado/secciones/1?nregistro={n}", accept="application/json")
-    sections: dict[str, str] = {}
-    if f.status == 200 and f.content.strip().startswith(b"["):
-        for s in f.json():
-            key = str(s.get("seccion") or "")
-            if not key or not wanted(key):
-                continue
-            c = ctx.get(f"{API}/docSegmentado/contenido/1?nregistro={n}&seccion={key}",
-                        accept="text/html")
-            if c.status == 200:
-                sections[key] = section_text(c.text)
+    method, source_url = SECTIONS, f"{API}/docSegmentado/secciones/1?nregistro={n}"
+    sections = segmented_sections(ctx, n)
     if not sections:
+        method = FULL_HTML
+        if extra.get("segmented"):
+            log.warning("CIMA %s: no section list; the full ficha técnica is read instead", n)
         html_url = extra.get("ft_html") or f"https://cima.aemps.es/cima/dochtml/ft/{n}/FT_{n}.html"
-        g = ctx.get(html_url)
+        g = get_reusing(ctx, html_url)
+        source_url = html_url
         if g.status != 200:
-            return None
+            raise SnapshotError(f"CIMA {n} ficha técnica: HTTP {g.status}")
         sections = {k: v for k, v in split_numbered(block_text(soup(g))).items() if wanted(k)}
         if not sections:
-            return None
+            raise ParseError(f"CIMA {n}: no numbered section in the ficha técnica HTML")
     doc_date = None
     if extra.get("ft_date"):
         try:
             doc_date = date.fromisoformat(extra["ft_date"])
         except ValueError:
             doc_date = None
-    return Snapshot(sections=sections, doc_date=doc_date, lang=LANG,
-                    source_url=f"{API}/docSegmentado/secciones/1?nregistro={n}")
+    return Snapshot(sections=sections, doc_date=doc_date, lang=LANG, method=method,
+                    source_url=source_url)

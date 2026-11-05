@@ -12,6 +12,7 @@ import { Select } from '../../ui/Select';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
 import { PageHead } from '../../ui/Text';
+import { Monogram } from '../../ui/Monogram';
 import { SubscriptionEditor } from './Subscriptions';
 
 interface PersonWithSubs extends Person {
@@ -145,9 +146,14 @@ export function PeoplePage() {
               return (
                 <tr key={p.id} className={p.active ? undefined : 'is-off'}>
                   <td>
-                    <div className="strong">{p.full_name}</div>
-                    <div className="small muted">{p.email ?? 'No email'}</div>
-                    {!p.auth_user_id ? <div className="small muted">Invitation not accepted yet</div> : null}
+                    <div className="person-cell">
+                      <Monogram name={p.full_name} large />
+                      <div>
+                        <div className="strong">{p.full_name}</div>
+                        <div className="small muted">{p.email ?? 'No email'}</div>
+                        {!p.auth_user_id ? <div className="small muted">Invitation not accepted yet</div> : null}
+                      </div>
+                    </div>
                   </td>
                   <td>
                     <Select

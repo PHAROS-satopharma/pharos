@@ -10,7 +10,9 @@ import type { SubscriptionRow } from '../../lib/types';
 import { Button } from '../../ui/Button';
 import { Field, Input } from '../../ui/Input';
 import { ErrorNote, Loading, Notice } from '../../ui/States';
+import { Tag } from '../../ui/Tag';
 import { PageHead, SectionHead } from '../../ui/Text';
+import { ThemeSwitch } from '../../ui/ThemeSwitch';
 import { SubscriptionEditor } from '../people/Subscriptions';
 import { RealMessages } from './RealMessages';
 
@@ -68,11 +70,17 @@ function TelegramLink() {
       {justLinked ? (
         <Notice tone="ok">Telegram is connected. Messages now go to that chat.</Notice>
       ) : linkedAt ? (
-        <p>
-          Connected on <span className="mono">{formatCairoDate(linkedAt)}</span>. Messages go to that chat.
+        <p className="telegram-status">
+          <Tag tone="success">Connected</Tag>
+          <span>
+            Since <span className="mono">{formatCairoDate(linkedAt)}</span>. Messages go to that chat.
+          </span>
         </p>
       ) : (
-        <p>Not connected. Until you connect, PHAROS cannot send you anything.</p>
+        <p className="telegram-status">
+          <Tag tone="warning">Not connected</Tag>
+          <span>Until you connect, PHAROS cannot send you anything.</span>
+        </p>
       )}
 
       {code && !justLinked ? (
@@ -170,7 +178,7 @@ export function PasswordForm({ onDone }: { onDone?: () => void }) {
 }
 
 export function MePage() {
-  const { person, isAdmin } = useAuth();
+  const { person, isAdmin, signOut } = useAuth();
   const personId = person?.id ?? '';
   const subs = useQuery({
     queryKey: ['my-subs', personId],
@@ -227,6 +235,20 @@ export function MePage() {
         <SectionHead index={isAdmin ? '04' : '03'} title="Password" />
         <p className="small muted">Set or change the password you sign in with. The email link keeps working too.</p>
         <PasswordForm />
+      </section>
+
+      <section className="section">
+        <SectionHead index={isAdmin ? '05' : '04'} title="This device" />
+        <div className="device-row">
+          <div className="device-item">
+            <span className="field-label">Light or dark</span>
+            <ThemeSwitch className="theme-switch-page" />
+          </div>
+          <div className="device-item">
+            <span className="field-label">Session</span>
+            <Button onClick={() => void signOut()}>Sign out</Button>
+          </div>
+        </div>
       </section>
     </div>
   );

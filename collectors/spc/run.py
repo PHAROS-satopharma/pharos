@@ -14,8 +14,17 @@ For every active ingredient (or the ones given) and every enabled ``kind: spc`` 
    a ``document`` (doc_type ``label_change``) is stored for the new snapshot and an ``issue`` is
    opened with it as anchor, linked to the ingredient; ``spc_change.issue_id`` points at it.
 
-The first snapshot of a product is a baseline: no change, no issue. Returns the ids of the issues
+The first snapshot of a product is a baseline: no change, no issue. A snapshot is diffed only
+against the last one read the same way (``Snapshot.method``; CIMA reads a label per section or, as
+a fallback, from the full HTML); with none, it is a new baseline. Returns the ids of the issues
 created, which the runner alerts on.
+
+Every SPC source gets a ``source_run`` row per run (products seen, new snapshots, issues, and the
+errors: a discovery or a label that failed, labels with no text), and its health: ``ok`` after a run
+that read labels, ``blocked`` on a bot check, ``degraded`` after ``DEGRADED_AFTER`` failed runs in a
+row (no discovery answered, or not one label could be read) — the admins get the usual health
+alert on the change. (SPC sources have no ``expected_max_gap_days``: labels may rightly stay the
+same for years, so quiet is not a symptom; failures are.)
 
 Module per source: spc-cima → cima, spc-bdpm → bdpm, spc-ema-epar → ema_epar,
 spc-dailymed → dailymed, spc-mhra → mhra, spc-pmda → pmda_pi.
@@ -26,9 +35,12 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import time
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
+from collectors.core.context import SourceBlocked, redact
 from collectors.spc.common import Product, Snapshot
 from collectors.spc.diff import diff_sections
 from collectors.spc.sections import hashes, normalize, watched_changes
@@ -43,19 +55,50 @@ MODULES = {
     "spc-mhra": "mhra",
     "spc-pmda": "pmda_pi",
 }
+DEGRADED_AFTER = 2          # failed SPC runs in a row (weekly) before the source is 'degraded'
+RECENT_SNAPSHOTS = 10       # how far back a snapshot read the same way is looked for
+
+
+@dataclass
+class SpcStats:
+    products: int = 0            # products found (items_seen)
+    snapshots: int = 0           # new snapshot rows (items_new)
+    issues: int = 0              # label-change issues opened (items_matched)
+    labels_read: int = 0
+    no_label: int = 0
+    discover_ok: int = 0
+    errors: list[str] = field(default_factory=list)
+
+    def failed(self, ingredients: int) -> bool:
+        """Nothing worked: no discovery answered, or products were found and no label was read."""
+        if ingredients and not self.discover_ok:
+            return True
+        return self.products > 0 and self.labels_read == 0
+
+    def error_text(self) -> str | None:
+        notes = []
+        if self.errors:
+            notes.append(f"{len(self.errors)} error(s); first: {self.errors[0]}")
+        if self.no_label:
+            notes.append(f"{self.no_label} product(s) without label text")
+        return redact("; ".join(notes))[:1000] or None
 
 
 # ───────────────────────────── archive ─────────────────────────────
 
 def canonical(snapshot: Snapshot) -> bytes:
-    """The archived form of a snapshot. Only the texts and their language go in, so a PDF that is
-    regenerated with identical text gives the same sha256 (no new snapshot row)."""
+    """The archived form of a snapshot. Only the texts, their language and (when the source has
+    more than one) the way they were read go in, so a PDF that is regenerated with identical text
+    gives the same sha256 (no new snapshot row)."""
     body = {"sections": {k: snapshot.sections[k] for k in sorted(snapshot.sections)},
             "lang": snapshot.lang}
+    if snapshot.method:
+        body["method"] = snapshot.method
     return json.dumps(body, ensure_ascii=False, sort_keys=True).encode("utf-8")
 
 
-def load_sections(ctx, r2_key: str | None) -> dict[str, str] | None:
+def load_archived(ctx, r2_key: str | None) -> dict | None:
+    """``{"sections": {…}, "method": str | None}`` of an archived snapshot, or None if unreadable."""
     if not r2_key:
         return None
     archiver = getattr(ctx, "archiver", None)
@@ -65,9 +108,15 @@ def load_sections(ctx, r2_key: str | None) -> dict[str, str] | None:
     if not raw:
         return None
     try:
-        return dict(json.loads(raw.decode("utf-8")).get("sections") or {})
+        body = json.loads(raw.decode("utf-8"))
+        return {"sections": dict(body.get("sections") or {}), "method": body.get("method")}
     except (ValueError, UnicodeDecodeError, AttributeError):
         return None
+
+
+def load_sections(ctx, r2_key: str | None) -> dict[str, str] | None:
+    body = load_archived(ctx, r2_key)
+    return body["sections"] if body is not None else None
 
 
 # ───────────────────────────── database ─────────────────────────────
@@ -126,6 +175,30 @@ def last_snapshot(db, product_id: str) -> dict | None:
     return db.fetchone(
         """select id, sha256, r2_key, section_hashes from spc_snapshot
             where spc_product_id = %(p)s order by fetched_at desc limit 1""", {"p": product_id})
+
+
+def recent_snapshots(db, product_id: str, limit: int = RECENT_SNAPSHOTS) -> list[dict]:
+    return db.fetchall(
+        """select id, sha256, r2_key, section_hashes from spc_snapshot
+            where spc_product_id = %(p)s order by fetched_at desc limit %(n)s""",
+        {"p": product_id, "n": limit})
+
+
+def comparable(ctx, rows: list[dict], method: str | None) -> tuple[dict | None, dict | None]:
+    """(row, its archived sections) of the newest snapshot read the same way as the new one.
+
+    The newest snapshot whose archive cannot be read is compared by its section hashes, as before
+    (``(row, None)``). An older snapshot read another way is skipped; ``(None, None)`` when no
+    snapshot was read this way — the new one is then a baseline."""
+    for i, row in enumerate(rows):
+        body = load_archived(ctx, row.get("r2_key"))
+        if body is None:
+            if i == 0:
+                return row, None
+            continue
+        if body.get("method") == method:
+            return row, body["sections"]
+    return None, None
 
 
 def _json(value: Any):
@@ -193,16 +266,25 @@ def record_change(db, ctx, source_id: str, product: dict, ingredient: dict, snap
     return issue_id
 
 
-def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: dict) -> str | None:
+def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: dict,
+                  stats: SpcStats | None = None) -> str | None:
+    stats = stats if stats is not None else SpcStats()
     snap = module.snapshot(ctx, product)
+    if snap is not None:
+        snap.sections = {k: v for k, v in (snap.sections or {}).items() if normalize(v)}
     if snap is None or not snap.sections:
+        stats.no_label += 1
         return None
-    snap.sections = {k: v for k, v in snap.sections.items() if normalize(v)}
+    stats.labels_read += 1
     raw = canonical(snap)
     sha, key = ctx.archive(raw, "application/json")
-    prev = last_snapshot(db, product["id"])
-    if prev is not None and prev.get("sha256") == sha:
+    rows = recent_snapshots(db, product["id"])
+    if rows and rows[0].get("sha256") == sha:
         return None
+    prev, before = comparable(ctx, rows, snap.method)
+    if rows and prev is None:
+        log.info("SPC %s %s: first snapshot read as %r; a new baseline, not a change",
+                 source_id, product["national_id"], snap.method)
     with db.transaction():
         row = db.fetchone(
             """insert into spc_snapshot (spc_product_id, doc_date, sha256, r2_key, section_hashes)
@@ -210,9 +292,11 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
             {"p": product["id"], "d": snap.doc_date, "s": sha, "k": key,
              "h": _json(hashes(snap.sections))})
         snap_id = str(row["id"])
+        stats.snapshots += 1
         if prev is None:
             return None                        # baseline
-        before = load_sections(ctx, prev.get("r2_key"))
+        if prev.get("sha256") == sha:
+            return None                        # back to the text last read this way
         if before is None:
             # The previous texts are unreadable: compare hashes only, without word diff.
             old_h = prev.get("section_hashes") or {}
@@ -230,29 +314,100 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
                              str(prev["id"]), sha, key, len(raw), changes)
 
 
-def run_spc(ctx, db, ingredient_ids: list[str] | None = None) -> list[str]:
+def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stats: SpcStats,
+                  created: list[str]) -> None:
+    """Appends to ``created`` as it goes, so issues opened before a bot check are still alerted."""
+    for ing in ingredients:
+        try:
+            found = module.discover(ctx, ing)
+        except SourceBlocked:
+            raise
+        except Exception as exc:  # noqa: BLE001 - one ingredient failing never stops the rest
+            stats.errors.append(redact(f"discover {ing['inn_en']}: {type(exc).__name__}: {exc}"))
+            log.warning("SPC %s discover %s: %s", source_id, ing["inn_en"], redact(exc))
+            continue
+        stats.discover_ok += 1
+        stats.products += len(found)
+        products = []
+        with db.transaction():
+            for p in found:
+                products.append(upsert_product(db, source_id, ing["id"], p))
+            if found:
+                deactivate_missing(db, source_id, ing["id"], [p.national_id for p in found])
+        for product in products:
+            try:
+                issue = watch_product(db, ctx, module, source_id, product, ing, stats)
+            except SourceBlocked:
+                raise
+            except Exception as exc:  # noqa: BLE001 - recorded, next product
+                stats.errors.append(redact(f"{product['national_id']}: {type(exc).__name__}: {exc}"))
+                log.warning("SPC %s %s: %s", source_id, product["national_id"], redact(exc))
+                continue
+            if issue:
+                stats.issues += 1
+                created.append(issue)
+
+
+def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict]) -> list[str]:
+    """One SPC source for every ingredient, with its source_run row and health (see the top)."""
+    stats = SpcStats()
+    prev = dict(store.get_source(source_id) or {})
+    failures = int(prev.get("consecutive_failures") or 0)
+    sr_id = store.start_source_run(getattr(ctx, "run_id", None), source_id)
+    if hasattr(ctx, "begin_source"):
+        ctx.begin_source()
+    t0 = time.monotonic()
+    created: list[str] = []
+    alert: tuple[str, str] | None = None
+    error: str | None = None
+    try:
+        module = importlib.import_module(f"collectors.spc.{MODULES[source_id]}")
+        _watch_source(ctx, db, module, source_id, ingredients, stats, created)
+        if stats.failed(len(ingredients)):
+            failures += 1
+            health = "degraded" if failures >= DEGRADED_AFTER else (prev.get("health") or "unknown")
+            store.set_source_state(source_id, health=health, consecutive_failures=failures)
+            if health == "degraded" and prev.get("health") != "degraded":
+                alert = ("degraded", f"{failures} label-watch runs in a row read no label: "
+                                     f"{stats.error_text() or 'no product found'}")
+        else:
+            store.set_source_state(source_id, health="ok", consecutive_failures=0, ok=True)
+        error = stats.error_text()
+    except SourceBlocked as exc:
+        error = redact(f"blocked: {exc}")
+        store.set_source_state(source_id, health="blocked", consecutive_failures=failures + 1)
+        if prev.get("health") != "blocked":
+            alert = ("blocked", redact(exc))
+    except Exception as exc:  # noqa: BLE001 - the module itself failed: a failed run of the source
+        failures += 1
+        error = redact(f"{type(exc).__name__}: {exc}")[:1000]
+        log.warning("SPC %s failed: %s", source_id, error)
+        health = "degraded" if failures >= DEGRADED_AFTER else (prev.get("health") or "unknown")
+        store.set_source_state(source_id, health=health, consecutive_failures=failures)
+        if health == "degraded" and prev.get("health") != "degraded":
+            alert = ("degraded", error)
+    finally:
+        store.finish_source_run(
+            sr_id, http_status=getattr(ctx, "first_status", None), items_seen=stats.products,
+            items_new=stats.snapshots, items_matched=stats.issues,
+            error=error,
+            duration_ms=int((time.monotonic() - t0) * 1000))
+    if alert is not None and notifier is not None:
+        try:
+            notifier.health_alert(source_id, *alert)
+        except Exception:  # noqa: BLE001 - an alert failure never fails the run
+            log.warning("SPC %s health alert failed", source_id, exc_info=True)
+    return created
+
+
+def run_spc(ctx, db, ingredient_ids: list[str] | None = None, *, store=None,
+            notifier=None) -> list[str]:
+    if store is None:
+        from collectors.core.store import Store
+
+        store = Store(db)
     created: list[str] = []
     ingredients = _ingredients(db, ingredient_ids)
     for source_id in _sources(db):
-        module = importlib.import_module(f"collectors.spc.{MODULES[source_id]}")
-        for ing in ingredients:
-            try:
-                found = module.discover(ctx, ing)
-            except Exception as exc:  # noqa: BLE001 - one country failing never stops the rest
-                log.warning("SPC %s discover %s: %s", source_id, ing["inn_en"], exc)
-                continue
-            products = []
-            with db.transaction():
-                for p in found:
-                    products.append(upsert_product(db, source_id, ing["id"], p))
-                if found:
-                    deactivate_missing(db, source_id, ing["id"], [p.national_id for p in found])
-            for product in products:
-                try:
-                    issue = watch_product(db, ctx, module, source_id, product, ing)
-                except Exception as exc:  # noqa: BLE001 - logged, next product
-                    log.warning("SPC %s %s: %s", source_id, product["national_id"], exc)
-                    continue
-                if issue:
-                    created.append(issue)
+        created += run_source(ctx, db, store, notifier, source_id, ingredients)
     return created

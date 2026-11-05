@@ -7,7 +7,9 @@ import { MatchedText } from './MatchedText';
 import { PdfViewer } from './PdfViewer';
 import { SpcDiff } from './SpcDiff';
 import { ReviewHistory, WhoWasNotified } from './History';
+import { useAuth } from '../../lib/auth';
 import { formatDate } from '../../lib/format';
+import { safeHref } from '../../lib/safeHref';
 import { DOC_TYPE_LABEL } from '../../lib/labels';
 import { Country } from '../../ui/Flag';
 import { Select } from '../../ui/Select';
@@ -37,6 +39,7 @@ export function DetailPage() {
   const spc = useSpcChanges(id);
   const reviews = useReviews(id);
   const notified = useNotified(id);
+  const { isAdmin } = useAuth();
   const [pdfKey, setPdfKey] = useState<string>('');
 
   const pdfs = useMemo<PdfFile[]>(() => {
@@ -71,16 +74,16 @@ export function DetailPage() {
   const anchor = documents.find((d) => (copies.data ?? []).some((c) => c.link === 'anchor' && c.document?.id === d.id));
   const shownPdf = pdfs.find((p) => p.key === pdfKey) ?? pdfs[0] ?? null;
   const isLabelChange = row.doc_type === 'label_change' || (spc.data?.length ?? 0) > 0;
+  const link = safeHref(row.link);
   let n = 0;
   const idx = () => String(++n).padStart(2, '0');
 
   return (
     <div className="page detail">
-      <Link to="/" className="back-link">
-        <span aria-hidden>←</span> All notifications
-      </Link>
-
-      <header className="detail-head">
+      <header className="detail-head masthead">
+        <Link to="/" className="back-link">
+          <span aria-hidden>←</span> All notifications
+        </Link>
         <div className="detail-eyebrow">
           <span className="eyebrow">
             <span className="eyebrow-rule" aria-hidden />
@@ -93,17 +96,51 @@ export function DetailPage() {
         <h1 className="detail-title" dir="auto" lang={anchor?.lang ?? undefined}>
           {row.title}
         </h1>
-        <div className="detail-meta">
-          <StatusPill status={row.status} />
-          <Country name={row.anchor_country} />
-          <span>{row.anchor_regulator}</span>
-          {(row.ingredients ?? []).length > 0 ? <span>· {(row.ingredients ?? []).join(', ')}</span> : null}
-          {row.link ? (
-            <a href={row.link} target="_blank" rel="noopener noreferrer">
-              Open on the regulator’s site <span aria-hidden>↗</span>
-            </a>
-          ) : null}
-        </div>
+        <dl className="detail-facts">
+          <div className="detail-fact">
+            <dt>Status</dt>
+            <dd>
+              <StatusPill status={row.status} />
+            </dd>
+          </div>
+          <div className="detail-fact">
+            <dt>First published by</dt>
+            <dd>
+              <Country name={row.anchor_country} />
+              <span className="detail-fact-sub">{row.anchor_regulator ?? '—'}</span>
+            </dd>
+          </div>
+          <div className="detail-fact">
+            <dt>Ingredient</dt>
+            <dd>
+              {(row.ingredients ?? []).length > 0 ? (
+                <span className="chips">
+                  {(row.ingredients ?? []).map((n) => (
+                    <span key={n} className="chip">
+                      {n}
+                    </span>
+                  ))}
+                </span>
+              ) : row.class_only ? (
+                <span className="chip chip-quiet">Class-wide</span>
+              ) : (
+                '—'
+              )}
+            </dd>
+          </div>
+          <div className="detail-fact">
+            <dt>Original</dt>
+            <dd>
+              {link ? (
+                <a href={link} target="_blank" rel="noopener noreferrer" className="ext-link">
+                  On the regulator’s site <span aria-hidden>↗</span>
+                </a>
+              ) : (
+                '—'
+              )}
+            </dd>
+          </div>
+        </dl>
       </header>
 
       <div className="detail-grid">
@@ -163,11 +200,11 @@ export function DetailPage() {
             ) : (
               <p className="soft">
                 No PDF is archived for this notification. The notice itself is on the regulator’s site
-                {row.link ? (
+                {link ? (
                   <>
                     {' '}
                     (
-                    <a href={row.link} target="_blank" rel="noopener noreferrer">
+                    <a href={link} target="_blank" rel="noopener noreferrer">
                       open it
                     </a>
                     )
@@ -207,13 +244,13 @@ export function DetailPage() {
           </section>
 
           <section className="panel">
-            <h2 className="panel-title">Who was notified</h2>
+            <h2 className="panel-title">{isAdmin ? 'Who was notified' : 'Messages to you'}</h2>
             {notified.isPending ? (
               <Loading />
             ) : notified.isError ? (
               <ErrorNote error={notified.error} />
             ) : (
-              <WhoWasNotified rows={notified.data} />
+              <WhoWasNotified rows={notified.data} mine={!isAdmin} />
             )}
           </section>
         </aside>

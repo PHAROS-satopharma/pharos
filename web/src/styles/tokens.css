@@ -31,19 +31,40 @@
   --bar-text: #02224c;
   --bar-muted: #4f5d69;
   --bar-rule: #d9d5cc;
+  /* accent text on the always-light bar and sign-in panel; the dark themes never override it */
+  --bar-accent: #8a5a0b;
 
   --btn-primary-bg: #02224c;
   --btn-primary-hover: #1f4e5f;
   --btn-primary-text: #ffffff;
 
+  /* The masthead: the navy head of every page, the footer and the sign-in side. Navy in both themes
+     (a lifted navy in dark), so the white serif titles and the beacon read the same everywhere. */
+  --masthead-bg: #02224c;
+  --masthead-raise: #0b3163;
+  --masthead-text: #ffffff;
+  --masthead-muted: #b4c0cf;
+  --masthead-rule: #23446f;
+  --masthead-accent: #e3a336;
+
   --font-sans: 'IBM Plex Sans', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Arabic', system-ui, -apple-system,
     'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  /* Titles and figures: the serif of the same IBM Plex family. Japanese, Korean and Arabic originals fall
+     through to their Noto faces glyph by glyph. */
+  --font-display: 'IBM Plex Serif', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Arabic', Georgia, serif;
+
+  /* The navy band over the top bar: the logo's own navy, the same in both themes. */
+  --ink-fixed: #02224c;
+  --band: 3px;
 
   --radius: 0;
   --max: 1280px;
   --gutter: 24px;
-  --bar-h: 56px;
+  --bar-h: 64px;
+  --main-pt: 36px;
+  /* Colour changes only (never movement): quick, and switched off for reduced motion. */
+  --ease: 140ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -75,6 +96,11 @@
     --btn-primary-bg: #ece9e2;
     --btn-primary-hover: #ffffff;
     --btn-primary-text: #0b151c;
+    --masthead-bg: #0f2747;
+    --masthead-raise: #16335a;
+    --masthead-text: #f4f1ea;
+    --masthead-muted: #a7b4c4;
+    --masthead-rule: #26436b;
   }
 }
 
@@ -106,4 +132,9 @@
   --btn-primary-bg: #ece9e2;
   --btn-primary-hover: #ffffff;
   --btn-primary-text: #0b151c;
+  --masthead-bg: #0f2747;
+  --masthead-raise: #16335a;
+  --masthead-text: #f4f1ea;
+  --masthead-muted: #a7b4c4;
+  --masthead-rule: #26436b;
 }
