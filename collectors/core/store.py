@@ -371,15 +371,17 @@ class Store:
         return row["at"] if row else None
 
     def refused_people(self, kind: str, since: datetime) -> list[str]:
-        """People whose ``kind`` message was refused since ``since`` and who have had none delivered
-        since then."""
+        """People with a ``kind`` message refused since ``since`` whose issue has not reached them since
+        (per issue: a digest delivered only partway still owes them the rest)."""
         rows = self.db.fetchall(
             """select distinct n.person_id from notification n
-                where n.kind = %(k)s and n.error is not null and n.sent_at >= %(s)s
-                  and n.person_id is not null
+                where n.kind = %(k)s and n.error is not null and n.tg_message_id is null
+                  and n.sent_at >= %(s)s and n.person_id is not null
                   and not exists (select 1 from notification m
                                    where m.kind = n.kind and m.person_id = n.person_id
-                                     and m.error is null and m.sent_at >= %(s)s)""",
+                                     and m.issue_id is not distinct from n.issue_id
+                                     and (m.error is null or m.tg_message_id is not null)
+                                     and m.sent_at >= %(s)s)""",
             {"k": kind, "s": since})
         return [str(r["person_id"]) for r in rows]
 

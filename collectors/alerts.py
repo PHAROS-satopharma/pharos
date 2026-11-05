@@ -235,18 +235,22 @@ class Notifier:
                 or bool(self.store.refused_people("digest", due_at)))
 
     @staticmethod
-    def digest_messages(header: str, entries: list[str], more: int) -> list[str]:
-        """Split the digest on entry boundaries, so no message is cut inside a tag or a link."""
+    def digest_parts(header: str, entries: list[tuple[str, str]],
+                     more: int) -> list[tuple[str, list[str]]]:
+        """Split the digest on entry boundaries, so no message is cut inside a tag or a link. Each part
+        keeps the issue ids it carries, so a part that fails is retried without the ones delivered."""
         tail = f"… and {more} more in PHAROS" if more else ""
-        messages: list[str] = []
-        current = header + "\n"   # a blank line under the heading
-        for entry in entries + ([tail] if tail else []):
+        parts: list[tuple[str, list[str]]] = []
+        current, ids = header + "\n", []   # a blank line under the heading
+        for issue_id, entry in entries + ([(None, tail)] if tail else []):
             if len(current) + 1 + len(entry) > MAX_MESSAGE_CHARS:
-                messages.append(current)
-                current = f"{header} (continued)\n"
+                parts.append((current, ids))
+                current, ids = f"{header} (continued)\n", []
             current += "\n" + entry
-        messages.append(current)
-        return messages
+            if issue_id is not None:
+                ids.append(issue_id)
+        parts.append((current, ids))
+        return parts
 
     def digest_if_due(self) -> int:
         """One daily digest of class-only issues to class_digest subscribers."""
@@ -273,21 +277,23 @@ class Notifier:
                     if not self.store.notified(person["person_id"], iss["id"], "digest")]
             if not mine:
                 continue
-            messages = self.digest_messages(header, [entries[iss["id"]] for iss in mine],
-                                            len(all_ids) - len(issue_ids))
-            message_id, error = None, None
-            if not self.dry_run:
-                try:
-                    for text in messages:
+            parts = self.digest_parts(header, [(iss["id"], entries[iss["id"]]) for iss in mine],
+                                      len(all_ids) - len(issue_ids))
+            # each issue is recorded against the part that carried it: when part 2 is refused, part 1's
+            # issues count as delivered and only the rest wait for the retry
+            failed = None
+            for text, ids in parts:
+                message_id, error = None, failed
+                if not self.dry_run and failed is None:
+                    try:
                         message_id = self.telegram.send_message(int(person["telegram_chat_id"]), text)
-                except (TelegramError, httpx.HTTPError) as exc:
-                    error = str(exc)[:500]
-                    log.warning("digest send failed for %s: %s", person.get("person_id"), error)
-            for iss in mine:
-                self.store.insert_notification(person_id=person["person_id"], issue_id=iss["id"],
-                                               kind="digest", dry_run=self.dry_run,
-                                               tg_message_id=message_id, error=error,
-                                               summary="\n".join(messages))
+                    except (TelegramError, httpx.HTTPError) as exc:
+                        error = failed = str(exc)[:500]
+                        log.warning("digest send failed for %s: %s", person.get("person_id"), error)
+                for issue_id in ids:
+                    self.store.insert_notification(person_id=person["person_id"], issue_id=issue_id,
+                                                   kind="digest", dry_run=self.dry_run,
+                                                   tg_message_id=message_id, error=error, summary=text)
             sent += 1
         return sent
 

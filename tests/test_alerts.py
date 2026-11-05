@@ -369,6 +369,38 @@ def test_a_retry_skips_a_person_whose_two_days_are_over(monkeypatch):
     assert len(tg.messages) == 1 and not s.notified(old, iid, "immediate")
 
 
+class SecondPartRefusedTelegram(RecordingTelegram):
+    """Delivers the first message to chat 111 and refuses the next ones while ``refuse`` is set."""
+
+    refuse = True
+
+    def send_message(self, chat_id: int, text: str) -> int:
+        from collectors.alerts import TelegramError
+
+        if self.refuse and chat_id == 111 and any(c == 111 for c, _ in self.messages):
+            raise TelegramError("Too Many Requests: retry after 5")
+        return super().send_message(chat_id, text)
+
+
+def test_a_digest_refused_partway_resends_only_what_did_not_arrive(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = many_class_issues(40)
+    tg = SecondPartRefusedTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: nine_ten)
+    n.digest_if_due()
+    first = [t for c, t in tg.messages if c == 111]
+    assert len(first) == 1 and 0 < first[0].count("<a href=") < 40
+    tg.refuse = False
+    later = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                     now=lambda: nine_ten + timedelta(hours=2))
+    assert later.digest_due()                                # part 2 still waits
+    later.digest_if_due()
+    to_p1 = [t for c, t in tg.messages if c == 111]
+    assert len(to_p1) > 1
+    assert sum(t.count("<a href=") for t in to_p1) == 40     # each notice once: none lost, none twice
+    assert not later.digest_due()
+
+
 def test_a_digest_refused_for_one_person_is_retried_for_that_person_only(monkeypatch):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
     s, nine_ten = many_class_issues(3)
