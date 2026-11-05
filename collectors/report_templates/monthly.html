@@ -61,11 +61,21 @@
   .comment { color: var(--muted); }
 
   footer { position: fixed; bottom: -12mm; left: 0; right: 0; display: flex; justify-content: space-between;
-           font: 400 7pt/1 var(--mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 2mm; }
+           align-items: center; font: 400 7pt/1 var(--mono); color: var(--muted); border-top: 1px solid var(--rule);
+           padding-top: 2mm; }
+  footer .credit { display: inline-flex; align-items: center; gap: 2mm; }
+  /* Sato Pharma's own logo, small: it credits the maker; PHAROS stays the identity of the report. */
+  .sato { display: block; height: 3.4mm; width: auto; }
+  .closing { margin-top: 12mm; padding-top: 4mm; border-top: 1px solid var(--ink); display: flex;
+             align-items: center; gap: 4mm; break-inside: avoid; }
+  .closing .sato { height: 7mm; }
+  .closing .rule { align-self: stretch; width: 1px; background: var(--rule); }
+  .closing .text { display: flex; flex-direction: column; gap: 1mm; }
+  .closing strong { font: 600 8.5pt/1.3 var(--sans); }
 </style>
 </head>
 <body>
-<footer><span>PHAROS · {{ month.label }} · generated {{ generated }} (Cairo)</span><span>by Sato Pharma</span></footer>
+<footer><span>PHAROS · {{ month.label }} · generated {{ generated }} (Cairo)</span><span class="credit"><img class="sato" src="{{ sato_src }}" alt="Sato Pharma">{{ copyright }}</span></footer>
 
 <header class="masthead">
   <img class="logo" src="{{ logo_src }}" alt="PHAROS — Pharmaceutical Alerts &amp; Regulatory Observation System">
@@ -146,5 +156,11 @@
 {% else %}
 <div class="empty">No review decision was recorded this month.</div>
 {% endif %}
+
+<section class="closing">
+  <img class="sato" src="{{ sato_src }}" alt="Sato Pharma">
+  <span class="rule"></span>
+  <div class="text"><strong>{{ credit }}</strong><span class="micro">{{ copyright }}</span></div>
+</section>
 </body>
 </html>
