@@ -238,6 +238,8 @@ _STRONG = [re.compile(p, re.I) for p in (
     r"Verify you are human",
     # F5 BIG-IP ASM "TSPD" JavaScript interstitial (famhp.be / afmps.be / fagg.be, Nov 2026)
     r"href=\"/TSPD/\?type=", r"window\[\"bobcmn\"\]",
+    # Fortinet firewall captcha, served as HTTP 200 after a burst of reads (infarmed.pt, 5 Nov 2026)
+    r"<title>\s*Firewall Captcha Authentication\s*</title>",
 )]
 _WEAK = [re.compile(p, re.I) for p in (
     r"cf-chl", r"cf_chl_opt", r"challenge-platform",
@@ -337,6 +339,11 @@ class FetchContext:
             if wait > 0:
                 self._sleep(wait)
         self._last_hit[host] = time.monotonic()
+
+    def pace(self, host: str, seconds: float) -> None:
+        """At least ``seconds`` between two requests to ``host`` for the rest of the run (a site whose
+        firewall challenges a burst of reads)."""
+        self._host_gap[host] = max(self._host_gap.get(host, self.host_gap_s), seconds)
 
     def _slow_down(self, url: str, attempt: int, retry_after: str | None) -> float:
         """The host asked us to slow down: double its gap, and say how long to wait before retrying."""
