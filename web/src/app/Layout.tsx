@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL } from '../lib/labels';
 import { Monogram } from '../ui/Monogram';
@@ -22,24 +23,40 @@ export function Layout() {
   ];
   if (isAdmin) nav.push({ to: '/people', label: 'People' });
 
+  // On a phone the sections fold behind a Menu button; any move to another page folds them again.
+  const { pathname } = useLocation();
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const menuOpen = openOn === pathname;
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenOn(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   return (
     <div className="app">
       <a href="#main" className="skip">
         Skip to content
       </a>
-      <header className="topbar">
+      <header className={cx('topbar', menuOpen && 'is-menu-open')}>
         <div className="topbar-inner">
           <Link to="/" className="brand" aria-label="PHAROS, home">
             <PharosMark height={50} />
           </Link>
-          <nav className="nav" aria-label="Main">
-            {nav.map((n) => (
+          <nav id="main-nav" className="nav" aria-label="Main">
+            {nav.map((n, i) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) => cx('nav-link', isActive && 'is-active')}
               >
+                <span className="nav-index" aria-hidden="true">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
                 {n.label}
               </NavLink>
             ))}
@@ -59,6 +76,16 @@ export function Layout() {
             <ThemeSwitch className="bar-only" />
             <button type="button" className="bar-button bar-only" onClick={() => void signOut()}>
               Sign out
+            </button>
+            <button
+              type="button"
+              className="menu-button"
+              aria-expanded={menuOpen}
+              aria-controls="main-nav"
+              onClick={() => setOpenOn(menuOpen ? null : pathname)}
+            >
+              <span className="menu-icon" aria-hidden="true" />
+              {menuOpen ? 'Close' : 'Menu'}
             </button>
           </div>
         </div>

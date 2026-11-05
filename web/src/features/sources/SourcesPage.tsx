@@ -12,6 +12,7 @@ import { Toggle } from '../../ui/Input';
 import { Country } from '../../ui/Flag';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
+import { cx } from '../../ui/cx';
 import { HealthMark, Tag } from '../../ui/Tag';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
@@ -27,6 +28,8 @@ const HEALTH_TONE: Record<SourceHealth, string> = {
   unknown: 'quiet',
 };
 const WINDOW_H = 48;
+// Being read but not reading cleanly: the count a country's head flags.
+const NEEDS_A_LOOK: SourceHealth[] = ['down', 'blocked', 'degraded'];
 
 export function SourcesPage() {
   const { isAdmin } = useAuth();
@@ -110,104 +113,128 @@ export function SourcesPage() {
           <p>The catalogue of regulators is loaded with the first collector run.</p>
         </Empty>
       ) : (
-        groups.map((g) => (
-          <section key={g.country} className="source-group">
-            <h2 className="group-title">
-              <Country name={g.country} code={g.code} />
-              <span className="group-count">
-                {g.list.length} {g.list.length === 1 ? 'source' : 'sources'}
-              </span>
-            </h2>
-            <Table className="sources">
-              <thead>
-                <tr>
-                  <th scope="col">Regulator</th>
-                  <th scope="col">What it reads</th>
-                  <th scope="col">Languages</th>
-                  <th scope="col">Health</th>
-                  <th scope="col">Last checked</th>
-                  <th scope="col">Last published</th>
-                  <th scope="col">Last {WINDOW_H} h</th>
-                  <th scope="col">Read</th>
-                </tr>
-              </thead>
-              <tbody>
-                {g.list.map((s) => {
-                  const t = totals.get(s.id);
-                  const lastChecked = t?.lastRun ?? s.last_ok_at;
-                  return (
-                    <tr key={s.id} className={s.enabled ? undefined : 'is-off'}>
-                      <td>
-                        {s.regulator?.name ?? '—'}
-                        {s.origin === 'user' ? (
-                          <>
-                            {' '}
-                            <Tag tone="quiet">Added by hand</Tag>
-                          </>
-                        ) : null}
-                      </td>
-                      <td>
-                        <div>{KIND_LABEL[s.kind]}</div>
-                        <div className="small muted">
-                          {CHANNEL_LABEL[s.channel]} ·{' '}
-                          <a href={safeHref(s.url) ?? undefined} target="_blank" rel="noopener noreferrer">
-                            {hostOf(s.url)}
-                          </a>
-                        </div>
-                      </td>
-                      <td className="small">{(s.languages ?? []).map(languageName).join(', ')}</td>
-                      <td>
-                        <HealthMark health={s.health} />
-                        {s.consecutive_failures > 0 ? (
-                          <div className="small muted">
-                            {s.consecutive_failures} failed {s.consecutive_failures === 1 ? 'check' : 'checks'} in a row
-                          </div>
-                        ) : null}
-                        {t?.lastError ? (
-                          <div className="small muted clip" title={t.lastError}>
-                            {t.lastError}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="small" title={formatDateTime(lastChecked)}>
-                        {timeAgo(lastChecked)}
-                      </td>
-                      <td className="small mono" title={formatDateTime(s.last_item_at)}>
-                        {s.last_item_at ? formatCairoDate(s.last_item_at) : '—'}
-                      </td>
-                      <td className="small">
-                        {t ? (
-                          <span className="mono">
-                            {formatNumber(t.runs)} runs
-                            {t.failed ? <span className="danger"> · {formatNumber(t.failed)} failed</span> : null}
-                            <br />
-                            {formatNumber(t.seen)} seen · {formatNumber(t.fresh)} new · {formatNumber(t.matched)} matched
+        groups.map((g) => {
+          const attention = g.list.filter((s) => s.enabled && NEEDS_A_LOOK.includes(s.health)).length;
+          return (
+            <section key={g.country} className="source-group">
+              <h2 className="group-title">
+                <Country name={g.country} code={g.code} />
+                <span className="group-count">
+                  {g.list.length} {g.list.length === 1 ? 'source' : 'sources'}
+                  {attention > 0 ? <span className="group-alert"> · {attention} {attention === 1 ? 'needs' : 'need'} a look</span> : null}
+                </span>
+              </h2>
+              <Table className="sources">
+                <thead>
+                  <tr>
+                    <th scope="col">Source</th>
+                    <th scope="col">Health</th>
+                    <th scope="col">Activity</th>
+                    <th scope="col">Last {WINDOW_H} hours</th>
+                    <th scope="col">Read</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.list.map((s) => {
+                    const t = totals.get(s.id);
+                    const lastChecked = t?.lastRun ?? s.last_ok_at;
+                    const languages = (s.languages ?? []).map(languageName).join(', ');
+                    return (
+                      <tr key={s.id} className={cx('source-row', !s.enabled && 'is-off')}>
+                        <td className="col-source">
+                          <span className="cell-line">
+                            <span className="source-name">{s.regulator?.name ?? '—'}</span>
+                            {s.origin === 'user' ? <Tag tone="quiet">Added by hand</Tag> : null}
                           </span>
-                        ) : runs.isPending ? (
-                          '…'
-                        ) : (
-                          <span className="muted">No run</span>
-                        )}
-                      </td>
-                      <td>
-                        {isAdmin ? (
-                          <Toggle
-                            checked={s.enabled}
-                            disabled={toggle.isPending}
-                            onChange={(v) => toggle.mutate({ id: s.id, enabled: v })}
-                            label={s.enabled ? 'On' : 'Off'}
-                          />
-                        ) : (
-                          <span>{s.enabled ? 'On' : 'Off'}</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
-          </section>
-        ))
+                          <span className="source-kind">{KIND_LABEL[s.kind]}</span>
+                          <span className="cell-sub">
+                            {CHANNEL_LABEL[s.channel]} ·{' '}
+                            <a href={safeHref(s.url) ?? undefined} target="_blank" rel="noopener noreferrer">
+                              {hostOf(s.url)}
+                            </a>
+                            {languages ? <> · {languages}</> : null}
+                          </span>
+                        </td>
+                        <td className="col-health">
+                          <HealthMark health={s.health} />
+                          {s.consecutive_failures > 0 ? (
+                            <span className="cell-sub">
+                              {s.consecutive_failures} failed {s.consecutive_failures === 1 ? 'check' : 'checks'} in a row
+                            </span>
+                          ) : null}
+                          {t?.lastError ? (
+                            <span className="cell-sub clip" title={t.lastError}>
+                              {t.lastError}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="col-when">
+                          <dl className="when">
+                            <div>
+                              <dt>Checked</dt>
+                              <dd title={formatDateTime(lastChecked)}>{timeAgo(lastChecked)}</dd>
+                            </div>
+                            <div>
+                              <dt>Last published</dt>
+                              <dd className="mono" title={formatDateTime(s.last_item_at)}>
+                                {s.last_item_at ? formatCairoDate(s.last_item_at) : '—'}
+                              </dd>
+                            </div>
+                          </dl>
+                        </td>
+                        <td className="col-runs">
+                          {t ? (
+                            <>
+                              <dl className="figures">
+                                <div>
+                                  <dt>Runs</dt>
+                                  <dd>{formatNumber(t.runs)}</dd>
+                                </div>
+                                <div>
+                                  <dt>Seen</dt>
+                                  <dd>{formatNumber(t.seen)}</dd>
+                                </div>
+                                <div>
+                                  <dt>New</dt>
+                                  <dd>{formatNumber(t.fresh)}</dd>
+                                </div>
+                                <div className={t.matched ? 'is-hit' : undefined}>
+                                  <dt>Matched</dt>
+                                  <dd>{formatNumber(t.matched)}</dd>
+                                </div>
+                              </dl>
+                              {t.failed ? (
+                                <span className="cell-sub danger">
+                                  {formatNumber(t.failed)} of {formatNumber(t.runs)} runs failed
+                                </span>
+                              ) : null}
+                            </>
+                          ) : runs.isPending ? (
+                            <span className="muted">…</span>
+                          ) : (
+                            <span className="muted">No run</span>
+                          )}
+                        </td>
+                        <td className="col-read">
+                          {isAdmin ? (
+                            <Toggle
+                              checked={s.enabled}
+                              disabled={toggle.isPending}
+                              onChange={(v) => toggle.mutate({ id: s.id, enabled: v })}
+                              label={s.enabled ? 'On' : 'Off'}
+                            />
+                          ) : (
+                            <span>{s.enabled ? 'On' : 'Off'}</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </section>
+          );
+        })
       )}
     </div>
   );
