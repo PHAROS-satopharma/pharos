@@ -2226,25 +2226,32 @@ mark.hl {
 
 /* ───────── sign in ─────────
    The light side carries the logo and the three promises; the navy side holds the form on a white card. */
+/* Three blocks: the mark and promise top left, the facts beneath them, the form filling the right. */
 .signin {
   display: grid;
   grid-template-columns: minmax(340px, 5fr) 7fr;
+  grid-template-rows: auto 1fr;
   min-height: 100vh;
 }
-.signin-side {
+.signin-side,
+.signin-about {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 48px;
-  padding: 56px;
   background: var(--bar-bg);
   color: var(--bar-text);
+}
+.signin-side {
+  gap: 48px;
+  padding: 56px 56px 0;
   border-top: var(--band) solid var(--ink-fixed);
 }
-.signin-words {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
+.signin-about {
+  justify-content: space-between;
+  gap: 48px;
+  padding: 28px 56px 56px;
+}
+.signin-side > *,
+.signin-about > * {
   max-width: 460px;
 }
 .signin-title {
@@ -2287,6 +2294,8 @@ mark.hl {
 }
 .signin-main {
   position: relative;
+  grid-column: 2;
+  grid-row: 1 / span 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2968,7 +2977,10 @@ mark.hl {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .signin-side {
-    padding: 40px 32px;
+    padding: 40px 32px 0;
+  }
+  .signin-about {
+    padding: 24px 32px 40px;
   }
 }
 
@@ -3193,18 +3205,28 @@ mark.hl {
   }
   .signin {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
   }
   .signin-side {
-    gap: 28px;
-    padding: 28px var(--gutter);
+    gap: 16px;
+    padding: 22px var(--gutter) 24px;
+  }
+  .signin-mark {
+    width: 190px;
   }
   .signin-title {
-    font-size: 26px;
+    font-size: 23px;
   }
   .signin-main {
-    padding: 28px var(--gutter) 40px;
+    grid-column: auto;
+    grid-row: auto;
+    padding: 24px var(--gutter) 32px;
     border-left: 0;
     border-top: 3px solid var(--beacon);
+  }
+  .signin-about {
+    gap: 24px;
+    padding: 28px var(--gutter) 32px;
   }
   .signin-form {
     padding: 26px 22px 22px;
