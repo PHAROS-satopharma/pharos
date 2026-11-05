@@ -221,6 +221,10 @@ class FetchContext:
         """(sha256, r2_key, mime, bytes) of the 200 response this run got for ``url``, if any."""
         return self.archived.get(url)
 
+    def forget(self, url: str) -> None:
+        """Ask for ``url`` in full next time: a reader that needs the body again must not get a bare 304."""
+        self._validators.pop(url, None)
+
     # ───────────────────────────── HTTP ─────────────────────────────
     def get(self, url: str, *, accept: str | None = None, headers: dict | None = None,
             raise_for_status: bool = True) -> Fetched:
