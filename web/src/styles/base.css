@@ -3712,3 +3712,11 @@ mark.hl {
   flex-direction: column;
   gap: 8px;
 }
+
+/* ───────────── inspection pack ───────────── */
+.inspection-pack-form {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 14px 0;
+}
