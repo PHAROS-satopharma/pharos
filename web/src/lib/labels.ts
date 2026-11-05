@@ -6,6 +6,10 @@ import type {
   MatchMode,
   NotifKind,
   PersonRole,
+  SignalOutcome,
+  SignalPriority,
+  SignalStage,
+  SignalStep,
   SourceChannel,
   SourceHealth,
   SourceKind,
@@ -19,6 +23,43 @@ export const STATUS_LABEL: Record<IssueStatus, string> = {
   reviewed: 'Reviewed',
   relevant: 'Relevant',
   not_relevant: 'Not relevant',
+};
+
+export const SIGNAL_STAGE_LABEL: Record<SignalStage, string> = {
+  validation: 'Validation',
+  assessment: 'Assessment',
+  action: 'Action',
+  closed: 'Closed',
+};
+
+export const SIGNAL_PRIORITY_LABEL: Record<SignalPriority, string> = {
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
+
+export const SIGNAL_OUTCOME_LABEL: Record<SignalOutcome, { label: string; hint: string }> = {
+  not_validated: { label: 'Not validated', hint: 'The evidence does not support a new risk or a changed known risk.' },
+  refuted: { label: 'Refuted', hint: 'Assessed: no causal link with our product.' },
+  monitor: { label: 'Keep monitoring', hint: 'Not confirmed yet. Watch it in routine screening and the next PSUR.' },
+  no_action: { label: 'No action needed', hint: 'Confirmed, but already covered by our product information.' },
+  label_update: { label: 'Update our label', hint: 'Change the leaflet / SmPC through a variation.' },
+  rmp_update: { label: 'Update the RMP', hint: 'Add or change a safety concern or a risk-minimisation measure.' },
+  dhpc: { label: 'Send a DHPC', hint: 'A letter to healthcare professionals, agreed with the authority.' },
+  psur_input: { label: 'Report in the next PSUR', hint: 'Present and discuss it in the next periodic report.' },
+};
+
+export const SIGNAL_STEP_LABEL: Record<SignalStep, string> = {
+  opened: 'Opened the signal',
+  notice_linked: 'Added a notice',
+  validated: 'Validated',
+  not_validated: 'Closed as not validated',
+  prioritised: 'Changed the priority',
+  assigned: 'Assigned an owner',
+  assessed: 'Recorded the assessment',
+  action_done: 'Closed with the action done',
+  reopened: 'Reopened',
+  note: 'Added a note',
 };
 
 export const DOC_TYPE_LABEL: Record<DocType, string> = {

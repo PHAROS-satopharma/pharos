@@ -27,6 +27,28 @@ export type MatchConf = 'high' | 'possible';
 export type SubKind = 'ingredient' | 'class_digest' | 'admin_health';
 export type NotifKind = 'immediate' | 'digest' | 'health' | 'report';
 export type ExtractionKind = 'html' | 'text' | 'ocr' | 'none';
+export type SignalStage = 'validation' | 'assessment' | 'action' | 'closed';
+export type SignalPriority = 'high' | 'medium' | 'low';
+export type SignalOutcome =
+  | 'not_validated'
+  | 'refuted'
+  | 'monitor'
+  | 'no_action'
+  | 'label_update'
+  | 'rmp_update'
+  | 'dhpc'
+  | 'psur_input';
+export type SignalStep =
+  | 'opened'
+  | 'notice_linked'
+  | 'validated'
+  | 'not_validated'
+  | 'prioritised'
+  | 'assigned'
+  | 'assessed'
+  | 'action_done'
+  | 'reopened'
+  | 'note';
 
 export const ISSUE_STATUSES: IssueStatus[] = ['new', 'reviewed', 'relevant', 'not_relevant'];
 export const DOC_TYPES: DocType[] = [
@@ -47,6 +69,11 @@ export const SOURCE_SCHEDULES: SourceSchedule[] = ['4h', '12h', 'daily', 'weekly
 export const TERM_KINDS: TermKind[] = ['inn', 'salt', 'brand', 'code', 'synonym'];
 export const MATCH_MODES: MatchMode[] = ['stem', 'exact', 'substring'];
 export const ROLES: PersonRole[] = ['admin', 'reviewer', 'reader'];
+export const SIGNAL_STAGES: SignalStage[] = ['validation', 'assessment', 'action', 'closed'];
+export const SIGNAL_PRIORITIES: SignalPriority[] = ['high', 'medium', 'low'];
+/** Outcomes of an assessment that open an action with a due date; the others close the signal. */
+export const ACTION_OUTCOMES: SignalOutcome[] = ['label_update', 'rmp_update', 'dhpc', 'psur_input'];
+export const CLOSING_OUTCOMES: SignalOutcome[] = ['refuted', 'monitor', 'no_action'];
 
 /** One row of the view v_issue_table. */
 export interface IssueRow {
@@ -264,4 +291,42 @@ export interface LookupTerm {
   kind: TermKind;
   mode: MatchMode;
   source: string | null;
+}
+
+/** One row of the view v_signal_table. */
+export interface SignalRow {
+  id: string;
+  ref: string;
+  title: string;
+  stage: SignalStage;
+  priority: SignalPriority | null;
+  outcome: SignalOutcome | null;
+  ingredient_id: string | null;
+  ingredient: string | null;
+  owner_id: string | null;
+  owner: string | null;
+  opened_at: string;
+  closed_at: string | null;
+  updated_at: string;
+  validation_due: string;
+  assessment_due: string | null;
+  action_due: string | null;
+  next_due: string | null;
+  overdue: boolean;
+  notices: number;
+}
+
+export interface SignalEventRow {
+  id: string;
+  step: SignalStep;
+  from_stage: SignalStage | null;
+  to_stage: SignalStage;
+  priority: SignalPriority | null;
+  outcome: SignalOutcome | null;
+  due: string | null;
+  comment: string | null;
+  created_at: string;
+  person: { full_name: string } | null;
+  owner: { full_name: string } | null;
+  issue_id: string | null;
 }
