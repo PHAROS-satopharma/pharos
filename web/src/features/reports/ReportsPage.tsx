@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { downloadArchived, errorMessage, unwrap } from '../../lib/api';
-import { cairoThisMonth, formatDateTime, formatMonth, formatNumber, formatYearMonth } from '../../lib/format';
+import {
+  PHAROS_START_MONTH,
+  cairoThisMonth,
+  formatDateTime,
+  formatMonth,
+  formatNumber,
+  formatYearMonth,
+  isScreenedMonth,
+} from '../../lib/format';
 import { CHANNEL_LABEL, KIND_LABEL } from '../../lib/labels';
 import type { MonthlyReport } from '../../lib/types';
 import { Button } from '../../ui/Button';
@@ -23,10 +31,13 @@ function MonthlyReports() {
   const [openError, setOpenError] = useState<string | null>(null);
   const reports = useQuery({
     queryKey: ['monthly-reports'],
+    // A report for a month before PHAROS started would read as "screened, nothing found"; it is not offered.
     queryFn: async () =>
-      unwrap<MonthlyReport[] | null>(
-        await supabase.from('monthly_report').select('*').order('month', { ascending: false }),
-      ) ?? [],
+      (
+        unwrap<MonthlyReport[] | null>(
+          await supabase.from('monthly_report').select('*').order('month', { ascending: false }),
+        ) ?? []
+      ).filter((r) => isScreenedMonth(r.month)),
   });
 
   async function save(key: string, filename: string) {
@@ -144,7 +155,13 @@ function ScreeningLog() {
     <>
       <div className="inline-form">
         <Field label="Month">
-          <Input type="month" value={month} max={cairoThisMonth()} onChange={(e) => e.target.value && setMonth(e.target.value)} />
+          <Input
+            type="month"
+            value={month}
+            min={PHAROS_START_MONTH}
+            max={cairoThisMonth()}
+            onChange={(e) => e.target.value && isScreenedMonth(e.target.value) && setMonth(e.target.value)}
+          />
         </Field>
         <p className="small muted">
           Every check of every source in {formatYearMonth(month)} (Cairo time), including checks that found nothing.
