@@ -47,6 +47,7 @@ export interface RunTotals {
   fresh: number;
   matched: number;
   lastRun: string | null;
+  /** The newest run's note when that run failed; null once a later run is clean. */
   lastError: string | null;
 }
 
@@ -63,10 +64,12 @@ export function totalsBySource(runs: RunSlice[]): Map<string, RunTotals> {
       t = { runs: 0, failed: 0, seen: 0, fresh: 0, matched: 0, lastRun: null, lastError: null };
       out.set(r.source_id, t);
     }
+    const newest = t.runs === 0;
     t.runs += 1;
     if (isFailed(r)) {
       t.failed += 1;
-      if (t.lastError === null) t.lastError = r.error ?? `HTTP ${r.http_status ?? ''}`.trim();
+      // only the newest run's own note: an older failure no longer describes the source
+      if (newest) t.lastError = r.error ?? `HTTP ${r.http_status ?? ''}`.trim();
     }
     t.seen += r.items_seen ?? 0;
     t.fresh += r.items_new ?? 0;
