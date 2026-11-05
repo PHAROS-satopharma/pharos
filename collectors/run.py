@@ -434,7 +434,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.probe_id:
         from collectors.probe import run_probe
 
-        with FetchContext(db, "probe", archive=Archive(enabled=False), dry_run=True) as ctx:
+        # public_only: an admin-typed link (and every redirect from it) never reaches a private network
+        with FetchContext(db, "probe", archive=Archive(enabled=False), dry_run=True,
+                          public_only=True) as ctx:
             result = run_probe(store, ctx, args.probe_id)
         print(json.dumps({k: v for k, v in result.items() if k != "items"}, default=str))
         return 0 if result.get("status") == "ok" else 1
@@ -447,8 +449,9 @@ def main(argv: list[str] | None = None) -> int:
     t_start = time.monotonic()
     ok = False
     completed = False  # a run that raised is never recorded as successful
+    # public_only: a saved user-added source is read on every run; it never reaches a private network
     with FetchContext(db, run_id, backfill=args.backfill, archive=archive,
-                      dry_run=args.dry_run) as ctx:
+                      dry_run=args.dry_run, public_only=True) as ctx:
         try:
             ctx.watchlist = [r["inn_en"] for r in store.active_ingredients()]
             ctx.backfill_months = int(settings.get("backfill_months", 12) or 12)
