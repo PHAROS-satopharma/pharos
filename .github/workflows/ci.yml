@@ -303,6 +303,20 @@ jobs:
           select pg_temp.ci_assert(:'wd3' = 'logged (dry run)', 'a finished run with no source read still alerts');
           select pg_temp.ci_assert(:'wd4' = 'ok', 'a source read in the last 6 hours is healthy');
 
+          -- Audit fix: the watchdog goes live only on the JSON boolean false, like the collector and the switch guard.
+          update source set last_ok_at = null where id = 'ci-test';
+          update app_setting set value = '"false"' where key = 'telegram_dry_run';
+          delete from ops_state where key = 'watchdog_last_alert_at';
+          select ops_watchdog() as wd5 \gset
+          update app_setting set value = '"maybe"' where key = 'telegram_dry_run';
+          delete from ops_state where key = 'watchdog_last_alert_at';
+          select ops_watchdog() as wd6 \gset
+          update app_setting set value = 'true' where key = 'telegram_dry_run';
+          update source set last_ok_at = now() where id = 'ci-test';
+          delete from ops_state where key = 'watchdog_last_alert_at';
+          select pg_temp.ci_assert(:'wd5' = 'logged (dry run)', 'the text "false" keeps the watchdog in dry run');
+          select pg_temp.ci_assert(:'wd6' = 'logged (dry run)', 'an unreadable switch keeps the watchdog in dry run');
+
           -- Audit fix: the screening log counts a run in its CAIRO month (31 Oct 2026 is UTC+2 in Cairo).
           insert into source_run (run_id, source_id, started_at)
             select r.id, 'ci-test', t
