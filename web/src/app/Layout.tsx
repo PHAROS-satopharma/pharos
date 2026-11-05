@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL } from '../lib/labels';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Monogram } from '../ui/Monogram';
 import { PharosMark } from '../ui/PharosMark';
 import { ThemeSwitch } from '../ui/ThemeSwitch';
@@ -91,7 +92,10 @@ export function Layout() {
         </div>
       </header>
       <main id="main" className="main" tabIndex={-1}>
-        <Outlet />
+        {/* A page that fails to render keeps the header and footer; moving to another page starts fresh. */}
+        <ErrorBoundary key={pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
       <footer className="footer">
         <div className="footer-inner">

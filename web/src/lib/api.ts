@@ -11,6 +11,18 @@ export function unwrap<T>(res: DbResult): T {
   return res.data as T;
 }
 
+/**
+ * Like unwrap, for an update or delete chained with .select(…). Row-level security does not raise an error
+ * when it refuses an update or delete: the statement simply touches no rows. An empty result is therefore
+ * a refusal (or a row that has gone), and is thrown as one so the screen does not show success.
+ */
+export function unwrapChanged<T = unknown>(res: DbResult, what: string): T[] {
+  if (res.error) throw new Error(res.error.message);
+  const rows = Array.isArray(res.data) ? (res.data as T[]) : [];
+  if (rows.length === 0) throw new Error(`You are not allowed to change ${what}, or it no longer exists.`);
+  return rows;
+}
+
 export function errorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
@@ -79,7 +91,11 @@ export async function openArchived(r2Key: string): Promise<void> {
   }
 }
 
-/** Escapes the wildcard characters of a LIKE pattern. */
+/**
+ * Escapes the wildcard characters of a LIKE pattern. The API also reads `*` as `%` and offers no escape
+ * for it, so a typed `*` becomes `_` (exactly one character, which includes a real `*`) and never
+ * matches every title.
+ */
 export function escapeLike(s: string): string {
-  return s.replace(/[\\%_]/g, (c) => `\\${c}`);
+  return s.replace(/[\\%_]/g, (c) => `\\${c}`).replace(/\*/g, '_');
 }
