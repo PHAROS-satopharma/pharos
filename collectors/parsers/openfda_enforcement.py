@@ -5,6 +5,11 @@ window, 100 at a time (openFDA allows ``skip`` up to 25,000). openFDA answers 40
 found" for an empty window — that is a genuine empty result. ``OPENFDA_API_KEY`` raises the daily
 quota when present.
 
+openFDA's servers pass through bad moments: on 5 Nov 2026 the 21:17 Cairo backfill got HTTP 500 on its
+first page, the same query answered 200 straight after, and from Cairo 11 of 12 first pages answered in
+4–14 s while one connection dropped. A page that gets 500, 502 or 504 is asked again after 15 s and
+then 45 s; a failure that remains carries openFDA's own error message.
+
 Options:
   lookback_days  int  default 45
   page_size      int  default 100
@@ -16,6 +21,7 @@ exactly the record stored in ``document.structured``.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from datetime import date, timedelta
 from urllib.parse import quote
@@ -26,6 +32,10 @@ STRUCTURED_FIELDS = ["openfda.generic_name", "openfda.substance_name", "openfda.
                      "product_description"]
 
 MAX_SKIP = 25000
+OPENFDA_RETRY_WAITS_S = (15.0, 45.0)
+OPENFDA_FLAKY = (500, 502, 504)
+
+log = logging.getLogger(__name__)
 
 
 def _window(ctx: FetchContext, source: SourceConfig, today: date | None = None) -> tuple[date, date]:
@@ -67,6 +77,26 @@ def record_to_item(rec: dict, base_url: str) -> Item:
     )
 
 
+def _get_page(ctx: FetchContext, query: str):
+    """One page of results, asked again while openFDA answers a passing server error."""
+    for wait in (*OPENFDA_RETRY_WAITS_S, None):
+        fetched = ctx.get(query, accept="application/json", raise_for_status=False)
+        if wait is None or fetched.status not in OPENFDA_FLAKY:
+            return fetched
+        log.info("openFDA HTTP %s: waiting %.0f s, then retrying", fetched.status, wait)
+        ctx._sleep(wait)
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+def _api_message(fetched) -> str:
+    """openFDA's own words for an error ({"error": {"code", "message"}}), or ""."""
+    try:
+        err = (fetched.json() or {}).get("error") or {}
+    except (ValueError, AttributeError):
+        return ""
+    return " ".join(str(err.get(k) or "") for k in ("code", "message")).strip()[:300]
+
+
 def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
     start, end = _window(ctx, source)
     size = int(source.options.get("page_size", 100))
@@ -79,13 +109,15 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
                  f"&sort=report_date:desc&limit={size}&skip={skip}")
         if key:
             query += f"&api_key={key}"
-        fetched = ctx.get(query, accept="application/json", raise_for_status=False)
+        fetched = _get_page(ctx, query)
         if fetched.status == 404:
             break  # "No matches found"
         if fetched.status != 200:
             from collectors.core.context import FetchError
 
-            raise FetchError(fetched.status, base)
+            said = _api_message(fetched)
+            raise FetchError(fetched.status, base,
+                             f"HTTP {fetched.status} for {base}" + (f" (openFDA: {said})" if said else ""))
         try:
             data = fetched.json()
         except ValueError as exc:

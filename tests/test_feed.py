@@ -153,6 +153,43 @@ def test_openfda_record_without_recall_number_is_kept():
     assert a.title.startswith("Amitriptyline Hydrochloride")
 
 
+def openfda_ctx(tmp_path, answers: list[int]):
+    """openFDA answering ``answers`` in turn (then 200 with the five saved records)."""
+    calls: list[str] = []
+    down = b'{"error": {"code": "SERVER_ERROR", "message": "Check your request and try again"}}'
+    data = json.loads(fixture("fda-enforcement/enforcement-limit5.json"))
+    data["meta"]["results"]["total"] = len(data["results"])     # one page
+    page = json.dumps(data).encode()
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(str(req.url))
+        status = answers[len(calls) - 1] if len(calls) <= len(answers) else 200
+        body = page if status == 200 else down
+        return httpx.Response(status, headers={"content-type": "application/json"}, content=body)
+
+    ctx = FetchContext(None, "run", archive=Archive(tmp_path / "archive"),
+                       transport=httpx.MockTransport(handler), host_gap_s=0)
+    sleeps: list[float] = []
+    ctx._sleep = sleeps.append
+    return ctx, calls, sleeps
+
+
+def test_openfda_server_error_is_asked_again(tmp_path):
+    # 5 Nov 2026 21:17 Cairo: openFDA answered the backfill's first page with HTTP 500; the same query
+    # answered 200 straight after.
+    ctx, calls, sleeps = openfda_ctx(tmp_path, [500, 502])
+    items = openfda_enforcement.list_items(ctx, CFG["fda-enforcement"])
+    assert len(items) == 5 and len(calls) == 3 and sleeps == [15.0, 45.0]
+
+
+def test_openfda_still_down_fails_with_its_own_message(tmp_path):
+    ctx, calls, _ = openfda_ctx(tmp_path, [500, 500, 500])
+    with pytest.raises(FetchError) as err:
+        openfda_enforcement.list_items(ctx, CFG["fda-enforcement"])
+    assert len(calls) == 3 and err.value.status == 500
+    assert "openFDA: SERVER_ERROR Check your request and try again" in str(err.value)
+
+
 def test_health_canada_keeps_health_products():
     rows = json.loads(fixture("hc-recalls/HCRSAMOpenData-slice.json"))
     items = hc_recalls.parse_records(rows, CFG["hc-recalls"])
