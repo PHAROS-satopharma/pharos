@@ -306,11 +306,13 @@ jobs:
           -- 0022: a backslash in the term is literal, never a LIKE escape.
           insert into document (id, source_id, external_id, url, title_orig, lang) values
             ('00000000-0000-0000-0000-0000000000d5', 'ci-test', 'x5', 'https://example.test/5', 'Saved under C:\temp here', 'en'),
-            ('00000000-0000-0000-0000-0000000000d6', 'ci-test', 'x6', 'https://example.test/6', 'Saved under C:temp here', 'en');
+            ('00000000-0000-0000-0000-0000000000d6', 'ci-test', 'x6', 'https://example.test/6', 'Saved under C:temp here', 'de');
           set role authenticated;
-          select archive_hit_count('c:\temp', null) as hits_bs \gset
+          select archive_hit_count('c:\temp', 'en') as hits_bs \gset
+          select archive_hit_count('c:\temp', 'de') as hits_nobs \gset
           reset role;
-          select pg_temp.ci_assert(:hits_bs = 1, 'a backslash in the term is literal (' || :hits_bs || ')');
+          select pg_temp.ci_assert(:hits_bs = 1 and :hits_nobs = 0,
+            'a backslash in the term is literal (' || :hits_bs || ', ' || :hits_nobs || ')');
           delete from document where id in ('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000d6');
           delete from attachment where id = '00000000-0000-0000-0000-0000000000f1';
 
