@@ -79,7 +79,11 @@ export async function openArchived(r2Key: string): Promise<void> {
   }
 }
 
-/** Escapes the wildcard characters of a LIKE pattern. */
+/**
+ * Escapes the wildcard characters of a LIKE pattern. The API also reads `*` as `%` and offers no escape
+ * for it, so a typed `*` becomes `_` (exactly one character, which includes a real `*`) and never
+ * matches every title.
+ */
 export function escapeLike(s: string): string {
-  return s.replace(/[\\%_]/g, (c) => `\\${c}`);
+  return s.replace(/[\\%_]/g, (c) => `\\${c}`).replace(/\*/g, '_');
 }

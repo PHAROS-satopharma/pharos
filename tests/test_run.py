@@ -286,3 +286,9 @@ def test_a_secret_in_a_failure_never_reaches_the_screening_log_or_alert(tmp_path
     health = [n for n in store.notification if n["kind"] == "health"]
     assert health and all(secret not in str(n) for n in health)
     ctx.close()
+
+
+def test_each_run_records_the_slot_it_served(tmp_path):
+    store = MemoryStore()
+    rid = store.create_run("cron", "sha", "12h")
+    assert store.run[rid]["schedule"] == "12h"

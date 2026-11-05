@@ -120,7 +120,7 @@ export function DecisionPanel({ issue }: { issue: IssueRow }) {
           <fieldset className="choices">
             <legend className="field-label">Record a decision</legend>
             {CHOICES.filter((c) => c.to !== issue.status).map((c) => (
-              <label key={c.to} className={cx('choice', target === c.to && 'is-selected')}>
+              <label key={c.to} className={cx('choice', `choice-${c.to}`, target === c.to && 'is-selected')}>
                 <input
                   type="radio"
                   name="decision"

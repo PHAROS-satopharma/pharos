@@ -108,10 +108,10 @@ class MemoryStore:
         return (self.regulator.get(regulator_id) or {}).get("country_code")
 
     # ───────────────────────────── runs ─────────────────────────────
-    def create_run(self, trigger: str, git_sha: str | None) -> str:
+    def create_run(self, trigger: str, git_sha: str | None, schedule: str | None = None) -> str:
         rid = _id()
-        self.run[rid] = {"id": rid, "trigger": trigger, "git_sha": git_sha, "started_at": _now(),
-                         "finished_at": None, "ok": None}
+        self.run[rid] = {"id": rid, "trigger": trigger, "git_sha": git_sha, "schedule": schedule,
+                         "started_at": _now(), "finished_at": None, "ok": None}
         return rid
 
     def finish_run(self, run_id: str, ok: bool) -> None:
