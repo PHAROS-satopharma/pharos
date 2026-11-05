@@ -227,6 +227,7 @@ class Runner:
         prev = dict(self.store.get_source(src.id) or {})
         sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
         self.ctx.begin_source()
+        self.ctx.last_ok_at = prev.get("last_ok_at")
         t0 = time.monotonic()
         started = self.clock()
         failures = int(prev.get("consecutive_failures") or 0)

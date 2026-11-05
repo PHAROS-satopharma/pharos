@@ -32,6 +32,8 @@ from collectors.core.archive import Archive
 from collectors.core.models import Fetched
 
 if TYPE_CHECKING:  # pragma: no cover
+    from datetime import datetime
+
     from collectors.core.db import Db
 
 log = logging.getLogger(__name__)
@@ -255,6 +257,8 @@ class FetchContext:
         self.watchlist: list[str] = []
         # How far back a backfill reads (app_setting backfill_months or --backfill N).
         self.backfill_months: int = 12
+        # When the current source was last read completely (set by the runner before each source).
+        self.last_ok_at: datetime | None = None
         # Per-source bookkeeping the runner reads (http_status of the first request).
         self.first_status: int | None = None
         self.requests = 0
