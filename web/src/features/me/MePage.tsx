@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase, telegramBotUsername } from '../../lib/supabase';
+import { passwordChosen, supabase, telegramBotUsername } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatCairoDate } from '../../lib/format';
@@ -109,7 +109,7 @@ function TelegramLink() {
   );
 }
 
-function PasswordForm() {
+export function PasswordForm({ onDone }: { onDone?: () => void }) {
   const [pw, setPw] = useState('');
   const [again, setAgain] = useState('');
   const [busy, setBusy] = useState(false);
@@ -134,6 +134,8 @@ function PasswordForm() {
       setPw('');
       setAgain('');
       setMsg({ tone: 'ok', text: 'Your password is set. You can sign in with it from now on.' });
+      passwordChosen();
+      onDone?.();
     }
   }
 

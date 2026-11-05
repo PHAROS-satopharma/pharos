@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { supabaseConfigured } from '../lib/supabase';
+import { mustChoosePassword, supabaseConfigured } from '../lib/supabase';
 import { Layout } from './Layout';
 import { SignIn } from '../features/signin/SignIn';
 import { IssuesPage } from '../features/issues/IssuesPage';
@@ -9,7 +9,7 @@ import { DetailPage } from '../features/detail/DetailPage';
 import { IngredientsPage } from '../features/ingredients/IngredientsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
-import { MePage } from '../features/me/MePage';
+import { MePage, PasswordForm } from '../features/me/MePage';
 import { ReportsPage } from '../features/reports/ReportsPage';
 import { Button } from '../ui/Button';
 import { Empty, Loading } from '../ui/States';
@@ -55,6 +55,21 @@ function NotInvited() {
   );
 }
 
+function ChoosePassword({ onDone }: { onDone: () => void }) {
+  const { session } = useAuth();
+  return (
+    <Bare>
+      <Empty title="Choose your password.">
+        <p>
+          You opened PHAROS from an email link as {session?.user.email ?? 'your work email'}. Choose the password you
+          will sign in with from now on.
+        </p>
+        <PasswordForm onDone={onDone} />
+      </Empty>
+    </Bare>
+  );
+}
+
 function NotFound() {
   return (
     <Empty title="There is nothing at this address." action={<Link to="/">Back to the notifications</Link>}>
@@ -65,12 +80,14 @@ function NotFound() {
 
 export function AppRoutes() {
   const { ready, session, person, personLoading, isAdmin } = useAuth();
+  const [choosePassword, setChoosePassword] = useState(mustChoosePassword);
 
   if (!supabaseConfigured) return <NotConfigured />;
   if (!ready) return <Loading label="Opening PHAROS" />;
   if (!session) return <SignIn />;
   if (personLoading) return <Loading label="Opening PHAROS" />;
   if (!person || !person.active) return <NotInvited />;
+  if (choosePassword) return <ChoosePassword onDone={() => setChoosePassword(false)} />;
 
   return (
     <Routes>
