@@ -218,3 +218,17 @@ notice shows our section to read side by side.
   07:00, the late signals and notices go to every active administrator with Telegram linked, as notification
   kind "Late items". Nothing goes when nothing is late. While `telegram_dry_run` is on, the message is only
   written to the notification log.
+
+## Electronic sign-off
+
+- **Who signs what.** An administrator approves each monthly report (Reports, the "Sign-off" column). A
+  reviewer or administrator reviews or approves a signal once it is closed (the signal's page, "Sign-off").
+- **How.** The signer chooses what the signature means, types their password and may add a comment. The page
+  signs in again with that password; `sign_record()` accepts the signature only when the token shows a password
+  sign-in in the last five minutes, and stores the name and role at that moment, the meaning, the database
+  time and `record_fingerprint()` — the SHA-256 of the report's two files, or of the signal with its steps and
+  notices.
+- **Never changed.** `sign_off` is append-only (a trigger refuses any update or delete, even by the database
+  owner). When a record changes after it was signed — a report made again, a signal reopened — the page marks
+  the signature "The record changed after this signature" and the record can be signed again.
+- The inspection pack lists every signature of the period (sheet "Sign-offs").

@@ -361,6 +361,7 @@ export async function buildInspectionPack(from: string, to: string, by: string, 
     ['Alerts', 'People who subscribe receive a Telegram message for each new notice on their ingredients, and a daily digest of class-wide notices (sheet "Alerts").'],
     ['Access', 'By invitation only. Readers see everything; reviewers also record decisions and signal steps; administrators also manage the watchlist, sources and people (sheet "People"). Row-level security in the database enforces this for every request.'],
     ['Audit trail', 'Every change to the watchlist, sources, people, settings, notice links and signals is recorded with the old and new values, who made it and when (sheet "Audit trail").'],
+    ['Sign-off', 'A monthly report is approved by an administrator, and a closed signal reviewed or approved by a reviewer or administrator, by entering their password again. The signature records the name, role, meaning, time and the SHA-256 of the record as signed, and can never be changed or removed (sheet "Sign-offs").'],
     ['Coverage', 'Sheet "Coverage" shows, for each source and each day, the reads that succeeded (✓ and their number) or only failed (✗). A blank day is a day the source was not due, or the run that would have read it did not start; weekly and monthly sources are blank on most days.'],
     ['Backups and changes', 'The database is backed up every night, encrypted, to separate storage. Every change to PHAROS goes through a reviewed pull request with automated checks before it reaches the live system.'],
   ];
@@ -610,6 +611,42 @@ export async function buildInspectionPack(from: string, to: string, by: string, 
   }
   if (audit.length >= 20000) au.addRow({ when: 'The first 20,000 changes of the period are listed. Choose a shorter period for the rest.' });
   ruled(au);
+
+  // ── 8b. Sign-offs ───────────────────────────────────────────────────────────────────────────────────
+  const signOffs = await fetchAllPages<{ record_kind: string; record_id: string; record_sha256: string; meaning: string; signed_name: string; signed_role: PersonRole; comment: string | null; signed_at: string }>(
+    async (a, b) =>
+      await supabase
+        .from('sign_off')
+        .select('record_kind,record_id,record_sha256,meaning,signed_name,signed_role,comment,signed_at')
+        .gte('signed_at', fromUtc)
+        .lt('signed_at', toUtc)
+        .order('signed_at')
+        .range(a, b),
+  );
+  const sg = wb.addWorksheet('Sign-offs');
+  headRow(sg, [
+    { header: 'Signed', key: 'when', width: 18 },
+    { header: 'Name', key: 'name', width: 24 },
+    { header: 'Role', key: 'role', width: 14 },
+    { header: 'Meaning', key: 'meaning', width: 12 },
+    { header: 'Record', key: 'kind', width: 16 },
+    { header: 'Record id', key: 'id', width: 38 },
+    { header: 'SHA-256 of the record as signed', key: 'sha', width: 66 },
+    { header: 'Comment', key: 'comment', width: 40 },
+  ]);
+  for (const s of signOffs) {
+    sg.addRow({
+      when: formatDateTime(s.signed_at),
+      name: s.signed_name,
+      role: ROLE_LABEL[s.signed_role] ?? s.signed_role,
+      meaning: s.meaning === 'approved' ? 'Approved' : 'Reviewed',
+      kind: s.record_kind === 'monthly_report' ? 'Monthly report' : 'Signal',
+      id: s.record_id,
+      sha: s.record_sha256,
+      comment: s.comment ?? '',
+    });
+  }
+  ruled(sg);
 
   // ── 9. Archive checks ───────────────────────────────────────────────────────────────────────────────
   const ac = wb.addWorksheet('Archive checks');

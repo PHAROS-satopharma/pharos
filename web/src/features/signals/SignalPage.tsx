@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useSignal, useSignalEvents, useSignalNotices } from './queries';
 import { DueNote, PriorityTag, StagePill, StageSteps } from './SignalUi';
 import { StepForm } from './StepForm';
+import { SignOff } from '../signoff/SignOff';
 import { useAuth } from '../../lib/auth';
 import { formatCairoDate, formatDate, formatDateTime } from '../../lib/format';
 import { DOC_TYPE_LABEL, SIGNAL_OUTCOME_LABEL, SIGNAL_PRIORITY_LABEL, SIGNAL_STEP_LABEL } from '../../lib/labels';
@@ -175,6 +176,14 @@ export function SignalPage() {
               <p className="soft small">You can read every step. Recording one needs a reviewer or administrator account.</p>
             )}
           </section>
+          {s.stage === 'closed' ? (
+            <section className="panel" aria-labelledby="signal-sign-title">
+              <h2 id="signal-sign-title" className="panel-title">
+                Sign-off
+              </h2>
+              <SignOff kind="signal" id={s.id} canSign={canReview} />
+            </section>
+          ) : null}
         </aside>
       </div>
     </div>
