@@ -172,3 +172,22 @@ def test_select_sources_and_args():
     assert parse_args(["--backfill", "12"]).backfill == 12
     assert parse_args([]).backfill is None
     assert parse_args(["--schedule", "daily", "--dry-run"]).dry_run
+
+
+def test_an_old_notice_found_by_a_regular_run_is_history(tmp_path):
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    runner.run_source(SRC)
+    old = copy.deepcopy(PSUSA)
+    row = copy.deepcopy(next(r for r in PSUSA["data"] if r["procedure_number"] == "PSUSA/00001911/202412"))
+    row["procedure_number"] = "PSUSA/00001911/201506"
+    row["first_published_date"] = "15/06/2015"
+    row["psusa_url"] = "https://www.ema.europa.eu/en/medicines/psusa/psusa-00001911-201506"
+    old["data"].insert(0, row)
+    server.reply = (200, json.dumps(old).encode(), "application/json")
+    stats = runner.run_source(SRC)
+    assert (stats.new, stats.matched) == (1, 1) and stats.alerts == []
+    doc = next(d for d in store.document.values() if d["external_id"] == "PSUSA/00001911/201506")
+    assert doc["is_backfill"]
+    assert all(i["is_backfill"] for i in store.issue.values())
+    ctx.close()
