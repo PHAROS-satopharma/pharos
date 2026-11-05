@@ -562,7 +562,24 @@ jobs:
             exception when insufficient_privilege then refused := sqlerrm like 'Real messages stay off%'; end;
             if not refused then raise exception 'FAIL: another admin''s delivered test unlocked real messages'; end if;
           end $$;
+          -- 0024: deleting the switch and inserting it again, or renaming another row to it, is guarded too.
+          do $$ declare refused boolean := false; begin
+            begin
+              delete from app_setting where key = 'telegram_dry_run';
+              insert into app_setting (key, value) values ('telegram_dry_run', 'false');
+            exception when insufficient_privilege then refused := sqlerrm like 'Real messages stay off%'; end;
+            if not refused then raise exception 'FAIL: delete and insert turned real messages on without a test'; end if;
+            refused := false;
+            begin
+              delete from app_setting where key = 'telegram_dry_run';
+              update app_setting set key = 'telegram_dry_run', value = 'false' where key = 'backfill_months';
+            exception when insufficient_privilege then refused := sqlerrm like 'Real messages stay off%'; end;
+            if not refused then raise exception 'FAIL: renaming a row turned real messages on without a test'; end if;
+          end $$;
           reset role;
+          select pg_temp.ci_assert((select value from app_setting where key = 'telegram_dry_run') = 'true'::jsonb
+              and exists (select 1 from app_setting where key = 'backfill_months'),
+            'a refused switch leaves the settings as they were');
           select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d4","role":"authenticated"}', false);
           set role authenticated;
           select telegram_test_delivered() ->> 'state' as tg_delivered \gset

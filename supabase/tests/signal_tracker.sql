@@ -1,4 +1,4 @@
--- PHAROS CI — the signal tracker (0024). Runs after every migration and the acceptance checks in ci.yml,
+-- PHAROS CI — the signal tracker (0025). Runs after every migration and the acceptance checks in ci.yml,
 -- on the same database: the people CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3) and the source ci-test exist.
 
 create function pg_temp.sig_assert(ok boolean, msg text) returns void language plpgsql as $$
