@@ -1,4 +1,4 @@
-# PHAROS — build the web app and publish it to Cloudflare Pages (project "pharos") on every push to main
+# PHAROS — build the web app and publish it to Cloudflare Pages (project "pharos-satopharma") on every push to main
 # that touches web/. The site is built here, so the Cloudflare Pages project needs no environment variables.
 name: PHAROS deploy web
 
