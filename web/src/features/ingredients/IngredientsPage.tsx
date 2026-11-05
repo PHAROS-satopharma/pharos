@@ -18,6 +18,8 @@ import { cx } from '../../ui/cx';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
+import { ClassLine } from './ClassLine';
+import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
 
 interface IngredientWithTerms extends Ingredient {
   confirmed_by_person: { full_name: string } | null;
@@ -85,6 +87,17 @@ export function IngredientsPage() {
         const name = r.confirmed_by ? names.get(r.confirmed_by) : undefined;
         return { ...r, confirmed_by_person: name ? { full_name: name } : null };
       });
+    },
+  });
+
+  // The drug classes and their words (classes from the ATC code are made by the daily job).
+  const classes = useQuery({
+    queryKey: ['drug-classes'],
+    queryFn: async () => {
+      const rows =
+        unwrap<DrugClass[] | null>(await supabase.from('drug_class').select(DRUG_CLASS_SELECT).order('name_en')) ?? [];
+      const names = await personNames(rows.map((r) => r.confirmed_by));
+      return rows.map((r) => ({ ...r, confirmed_by_name: r.confirmed_by ? (names.get(r.confirmed_by) ?? null) : null }));
     },
   });
 
@@ -201,6 +214,7 @@ export function IngredientsPage() {
                   .map((c) => idx.nameOf(c))
                   .sort();
                 const isOpen = open === i.id;
+                const ofClass = classesOf(i.id, classes.data ?? []);
                 return (
                   <Fragment key={i.id}>
                     <tr className={cx('ingredient-row', !i.active && 'is-off', isOpen && 'is-open')}>
@@ -223,6 +237,7 @@ export function IngredientsPage() {
                           ) : (
                             'No ATC code'
                           )}
+                          {ofClass.length ? ` · ${ofClass.map((c) => c.name_en).join(', ')}` : ''}
                         </span>
                       </td>
                       <td className="col-names">
@@ -282,6 +297,27 @@ export function IngredientsPage() {
                     {isOpen ? (
                       <tr className="row-detail">
                         <td colSpan={5}>
+                          <section className="dc-section" aria-label={`Drug class of ${i.inn_en}`}>
+                            <h3 className="dc-section-head">
+                              <span className="micro">Drug class</span>
+                            </h3>
+                            {ofClass.length ? (
+                              ofClass.map((c) => (
+                                <ClassLine key={c.id} cls={c} isAdmin={isAdmin} languages={idx.languages} />
+                              ))
+                            ) : classes.isError ? (
+                              <p className="small danger">The drug classes could not be loaded.</p>
+                            ) : (
+                              <p className="small muted">
+                                {i.atc_code
+                                  ? 'Its drug class is added from the ATC code in the next daily run.'
+                                  : 'No ATC code, so no drug class.'}
+                              </p>
+                            )}
+                          </section>
+                          <h3 className="dc-section-head">
+                            <span className="micro">Names looked for</span>
+                          </h3>
                           <TermsList terms={i.ingredient_term} />
                         </td>
                       </tr>

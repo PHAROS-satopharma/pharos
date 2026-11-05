@@ -9,7 +9,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) |
-| `collect.yml`, schedule **daily** | 02:31 | Large JSON files (EMA medicines, Health Canada recalls) |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), the EURD list, then up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
@@ -18,8 +18,9 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source, flagged as backfill, no alerts |
+| `rematch.yml` | by hand | The check of the past for up to 45 minutes at once (after adding an ingredient) |
 
-`collect.yml` and `backfill.yml` share one concurrency group, so two of them never run at once.
+`collect.yml`, `backfill.yml` and `rematch.yml` share one concurrency group, so two of them never run at once.
 A run that starts while another is running waits. If a third run arrives while one is already waiting,
 GitHub drops the waiting one; the next schedule picks up its sources. `report.yml` has its own group, so a
 collection can never drop the monthly report. GitHub can start scheduled runs late at busy times (hours, on
@@ -40,7 +41,7 @@ GitHub rounds each job up to a whole minute.
 |---|---|---|---|
 | collect 4h | 6 a day × 30 = 180 | 2 | 360 |
 | collect 12h (Playwright) | 2 a day × 30 = 60 | 4 | 240 |
-| collect daily | 30 | 3 | 90 |
+| collect daily | 30 | 4 | 120 |
 | collect weekly (SPC) | 4.35 | 10 | 44 |
 | collect monthly | 1 | 4 | 4 |
 | report (one real run, one run that skips) | 2 | 6 + 1 | 7 |
@@ -50,10 +51,11 @@ GitHub rounds each job up to a whole minute.
 | CI (only the changed parts are checked) | about 40 | 3 | 120 |
 | deploy Supabase | about 10 | 3 | 30 |
 | deploy web | about 10 | 2 | 20 |
-| **Total** | | | **about 1,014** |
+| **Total** | | | **about 1,044** |
 
-That is about 233 minutes a week, inside acceptance test 13's limit of 300. A backfill is a one-off, at most
-300 minutes. Run it in a month with headroom.
+That is about 240 minutes a week, inside acceptance test 13's limit of 300. A backfill is a one-off, at most
+300 minutes. Run it in a month with headroom. The check of the past adds up to 15 minutes to a daily run only
+while one is open (a few days after an ingredient or words are added); with nothing due it ends in seconds.
 
 To check the real figure: *GitHub organisation → Settings → Billing → Usage*. If a month goes over 1,100,
 the first thing to cut is the 4h schedule, to every 6 h.
@@ -157,6 +159,39 @@ messages* (admins only):
    names.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
+7. The next daily run adds its drug class from the ATC code (see below) and starts the check of the past for
+   its names. To have the past checked sooner, run *Actions -> PHAROS check of the past -> Run workflow*.
+
+## Drug classes and the check of the past
+
+- **Drug classes from the ATC code.** The daily run starts with `python -m collectors.classes`. For each
+  watched ingredient with an ATC code, its level-4 group (levofloxacin J01MA12 -> J01MA Fluoroquinolones) is
+  made a drug class once: the name from WHO's ATC index (atcddd.fhi.no), the words from Wikidata (the item
+  with that ATC code, or else the drug class Wikidata names exactly as WHO does), in the 15 regulator
+  languages. Junk is dropped, plurals are cut to a stem that finds singular and plural, and a word another
+  word already finds is dropped. A class that exists is never changed; the ingredient is only linked to it.
+  If WHO or Wikidata does not answer, nothing is made and the ingredient is tried again the next day (a
+  warning in the run). `python -m collectors.classes --dry-run` prints what it would make.
+- **On the Ingredients page** (open an ingredient): "Fluoroquinolones (J01MA) · 17 words in 12 languages ·
+  from the ATC code", then **Confirm**, which records the administrator's name and the date. Opening the
+  class lists its words by language; each can be tested against the archive, and an administrator adds or
+  removes words. Check the words before confirming: Wikidata has gaps (no Japanese or Portuguese word for
+  fluoroquinolones, and German only as "Fluorchinolonantibiotikum", from which "Fluorchinolon" is made).
+- **How class words match.** A class word is looked for only in notices in its own language. A notice that
+  names the class but none of the watched ingredients is a class-only issue: the daily digest, never an
+  immediate message.
+- **The check of the past** (`python -m collectors.rematch`). Notices are matched as they arrive, so a word
+  saved later (a new ingredient, a new or changed name, an ingredient watched again after a pause, a new
+  class word) is "due" until the stored notices of the last 12 months have been checked with it. The daily
+  run gives it 15 minutes after the EURD list; `rematch.yml` runs it by hand for up to 45 minutes. It reads
+  each notice's kept text, or its original again from R2 (page, PDF with OCR, attachments), skips words that
+  already matched that notice, and files what it finds as history: no Telegram message, no digest. Its
+  progress is the `rematch_job` row (one open at a time): the next run continues from
+  `cursor_document_id`; when it reaches the end its words are marked checked, and a word changed meanwhile
+  waits for the next check. A list page shared by several notices is not read as any one notice's text.
+  Literature has its own search and is not checked here.
+- **After the 0034 deployment** the words the 12-month backfill already covered are marked checked;
+  everything added after it (levofloxacin, added 5 November 2026) is due, so the first daily run starts on it.
 
 ## Signals
 
