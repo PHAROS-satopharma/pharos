@@ -10,7 +10,8 @@ Builds on ``collectors.parsers.base`` (A1) and adds what the national regulators
 * ``clean`` / ``node_text`` — whitespace-normalised text, titles kept exactly as published.
 * ``pages_to_read(ctx, source)`` — ``options.max_pages`` (default 1) on a normal run,
   ``options.backfill_pages`` (default 5) on a backfill.
-* ``keep(source, title, body)`` — ``options.include_keywords`` / ``options.exclude_keywords``.
+* ``keep(source, title, body, lang=)`` — ``options.include_keywords`` / ``options.exclude_keywords``,
+  each a list, or ``{lang: [...]}`` for a source that reads pages in several languages.
 * ``require(rows, fetched, marker)`` — the "never return a silently empty list" rule: no rows and no
   marker of an empty listing means the page changed shape → ``ParseError``.
 
@@ -151,11 +152,22 @@ def pages_to_read(ctx: FetchContext, source: SourceConfig, *, default: int = 1,
     return max(1, int(opts.get("max_pages", default)))
 
 
-def keep(source: SourceConfig, *texts: str | None) -> bool:
-    """``options.include_keywords`` (any must appear) and ``options.exclude_keywords`` (none may)."""
+def _for_lang(keywords, lang: str | None):
+    """A keyword list, or the list for ``lang`` from ``{lang: [...]}`` (a language not listed: none)."""
+    if isinstance(keywords, dict):
+        return keywords.get((lang or "").split("-")[0]) or []
+    return keywords
+
+
+def keep(source: SourceConfig, *texts: str | None, lang: str | None = None) -> bool:
+    """``options.include_keywords`` (any must appear) and ``options.exclude_keywords`` (none may).
+
+    A source reading French and Dutch pages gives ``{"fr": [...], "nl": [...]}``: one list for both
+    would drop every item of the other language without a word."""
     opts = source.options or {}
     joined = " ".join(t for t in texts if t)
-    return keyword_ok(joined, opts.get("include_keywords"), opts.get("exclude_keywords"))
+    return keyword_ok(joined, _for_lang(opts.get("include_keywords"), lang),
+                      _for_lang(opts.get("exclude_keywords"), lang))
 
 
 def require(rows: Iterable, fetched: Fetched, *, marker: str | None = None,

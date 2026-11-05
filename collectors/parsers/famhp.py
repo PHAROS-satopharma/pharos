@@ -18,11 +18,14 @@ word are ``safety_alert``; titles with « DHPC » / « communication directe » 
 « terugroeping » are ``recall``; others ``other`` (the matcher still screens every one).
 
 Options: ``urls`` (``{lang: url}``), ``link_pattern``, ``wait_selector`` (``main a[href*='/news/']``),
-``detail_selector`` (``main``), ``include_keywords`` / ``exclude_keywords``.
+``detail_selector`` (``main``), ``include_keywords`` / ``exclude_keywords`` — per language
+(``{"fr": [...], "nl": [...]}``): one list for both pages would drop the other language's news. A
+page whose news links are all dropped by the filter is logged, never silent.
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from collectors.core.context import looks_like_challenge
@@ -30,6 +33,7 @@ from collectors.parsers import generic_html
 from collectors.parsers.base import Item, SourceBlocked, SourceConfig
 
 _LANG = re.compile(r"/(fr|nl|de|en)/")
+log = logging.getLogger(__name__)
 
 DOC_TYPE_RULES = [
     {"match": r"\bDHPC\b|communication directe|directe communicatie", "doc_type": "dhpc"},
@@ -75,7 +79,10 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
         f = generic_html.read_page(ctx, url, opts)   # ctx raises SourceBlocked on known challenges
         check_not_interstitial(f)
         got = generic_html.extract(f, f.final_url, source, opts)
-        generic_html.require(got or generic_html.raw_nodes(f, opts), f, marker="/news/")
+        links = generic_html.raw_nodes(f, opts)
+        generic_html.require(got or links, f, marker="/news/")
+        if links and not got:
+            log.warning("famhp-news %s: %d news link(s), none kept by the keyword filter", lang, len(links))
         out.extend(got)
     return out
 
