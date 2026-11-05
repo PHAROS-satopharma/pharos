@@ -16,7 +16,7 @@ set search_path = public as $$
   select p.telegram_chat_id::text
     from person p
    where p.role = 'admin' and p.active and p.telegram_chat_id is not null
-     -- TEMPORARY: subscription check removed
+     and exists (select 1 from subscription s where s.person_id = p.id and s.kind = 'admin_health')
    order by p.created_at
    limit 1
 $$;
