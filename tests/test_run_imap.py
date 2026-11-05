@@ -16,11 +16,21 @@ from collectors.core.memstore import MemoryStore
 from collectors.core.registry import load_catalogue, sync_catalogue
 from collectors.run import Runner
 
-EML = (Path(__file__).resolve().parent / "fixtures" / "imap-inbox" / "fimea-newsletter.eml").read_bytes()
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "imap-inbox"
+EML = (FIXTURES / "fimea-newsletter.eml").read_bytes()
 OTHER = (b"From: Someone <news@example.com>\r\nSubject: Not ours\r\n"
          b"Date: Tue, 03 Nov 2026 10:00:00 +0000\r\n\r\nhello\r\n")
 ALLOW = {"fimea-email": ["fimea.fi"], "tga-email": ["tga.gov.au"]}
 YAHOO = ["yahoo.com"]
+# Constructed and DKIM-signed for these tests with a throwaway key (selector pharos-test); only its public
+# half is kept, as the DNS record. Yahoo's IMAP gave GovDelivery's real FDA mail no Authentication-Results.
+FDA_SIGNED = (FIXTURES / "fda-dkim-signed.eml").read_bytes()
+FDA_DNS_TXT = (FIXTURES / "fda-dkim-dns.txt").read_bytes().strip()
+FDA_ALLOW = {"fda-email": ["public.govdelivery.com"]}
+
+
+def fda_dns(name, timeout=5):
+    return FDA_DNS_TXT if name == b"pharos-test._domainkey.public.govdelivery.com." else None
 # Anyone can write "From: …@fimea.fi", and Fimea's DMARC is p=none, so such a message is delivered. The
 # forger may add a passing Authentication-Results of their own, but it sits BELOW the receiving server's
 # real verdict, which here says the forged message failed.
@@ -49,8 +59,7 @@ class FakeIMAP:
         if command == "FETCH":
             uid, what = args
             raw = self.messages[uid]
-            if "HEADER.FIELDS (FROM AUTHENTICATION-RESULTS)" in what:
-                # the header block (a real server would send only those two fields, in order)
+            if "BODY.PEEK[HEADER]" in what:
                 head = raw.replace(b"\r\n", b"\n").split(b"\n\n", 1)[0] + b"\n\n"
                 return "OK", [(b"1 (UID " + uid + b")", head), b")"]
             assert "BODY.PEEK[]" in what          # never a plain BODY[] fetch (that marks Seen)
@@ -209,3 +218,43 @@ def test_held_mail_log_names_the_servers_verdicts_without_addresses():
     assert "dkim=pass(public.govdelivery.com)" in got and "dmarc=pass(public.govdelivery.com)" in got
     assert "usfda@" not in got
     assert auth_summary(b"From: FDA <usfda@public.govdelivery.com>\r\n\r\n") == "no Authentication-Results header"
+
+
+def test_no_server_verdict_accepts_a_valid_dkim_signature_from_the_sender(tmp_path):
+    server = FakeIMAP({b"10": FDA_SIGNED})
+    rows: list[dict] = []
+    counts = imap_inbox.collect(ctx_with_archive(tmp_path), FDA_ALLOW, connect=lambda: server,
+                                insert=rows.append, source_exists=lambda sid: True,
+                                authserv_domains=YAHOO, dkim_dns=fda_dns)
+    assert counts == {"fda-email": 1} and server.seen == {b"10"}
+    assert rows[0]["from_addr"] == "usfda@public.govdelivery.com"
+
+
+def test_no_server_verdict_and_no_valid_signature_is_held(tmp_path):
+    tampered = FDA_SIGNED.replace(b"The FDA did not send it.", b"The FDA sent it.")
+    unsigned = FDA_SIGNED[FDA_SIGNED.index(b"From: "):]
+    for raw in (tampered, unsigned):
+        server = FakeIMAP({b"10": raw})
+        held: dict[str, int] = {}
+        counts = imap_inbox.collect(ctx_with_archive(tmp_path), FDA_ALLOW, connect=lambda s=server: s,
+                                    insert=lambda row: None, source_exists=lambda sid: True,
+                                    authserv_domains=YAHOO, held=held, dkim_dns=fda_dns)
+        assert counts == {"fda-email": 0} and held == {"fda-email": 1} and server.seen == set()
+
+
+def test_valid_dkim_from_another_domain_proves_nothing():
+    assert imap_inbox.dkim_verified(FDA_SIGNED, ["public.govdelivery.com"], fda_dns) == "public.govdelivery.com"
+    assert imap_inbox.dkim_verified(FDA_SIGNED, ["fda.gov"], fda_dns) is None
+
+
+def test_a_failing_server_verdict_is_never_overridden_by_our_own_check(tmp_path):
+    failing = (b"Authentication-Results: atlas7.mail.bf1.yahoo.com; dkim=fail; spf=softfail "
+               b"smtp.mailfrom=evil.example; dmarc=fail(p=NONE) header.from=public.govdelivery.com\r\n"
+               + FDA_SIGNED)
+    server = FakeIMAP({b"10": failing})
+    held: dict[str, int] = {}
+    counts = imap_inbox.collect(ctx_with_archive(tmp_path), FDA_ALLOW, connect=lambda: server,
+                                insert=lambda row: None, source_exists=lambda sid: True,
+                                authserv_domains=YAHOO, held=held, dkim_dns=fda_dns)
+    assert counts == {"fda-email": 0} and held == {"fda-email": 1}
+    assert not any(c[0] == "FETCH" and "BODY.PEEK[]" in c[2] for c in server.commands)
