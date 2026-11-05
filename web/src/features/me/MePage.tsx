@@ -4,6 +4,7 @@ import { passwordChosen, supabase, telegramBotUsername } from '../../lib/supabas
 import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatCairoDate } from '../../lib/format';
+import { PASSWORD_HINT, PASSWORD_MIN_LENGTH, passwordProblem } from '../../lib/password';
 import { ROLE_LABEL } from '../../lib/labels';
 import type { SubscriptionRow } from '../../lib/types';
 import { Button } from '../../ui/Button';
@@ -126,8 +127,9 @@ export function PasswordForm({ onDone }: { onDone?: () => void }) {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setMsg(null);
-    if (pw.length < 10) {
-      setMsg({ tone: 'error', text: 'Use at least 10 characters.' });
+    const problem = passwordProblem(pw);
+    if (problem) {
+      setMsg({ tone: 'error', text: problem });
       return;
     }
     if (pw !== again) {
@@ -149,8 +151,14 @@ export function PasswordForm({ onDone }: { onDone?: () => void }) {
 
   return (
     <form className="form-grid" onSubmit={(e) => void submit(e)}>
-      <Field label="New password">
-        <Input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+      <Field label="New password" hint={PASSWORD_HINT}>
+        <Input
+          type="password"
+          autoComplete="new-password"
+          minLength={PASSWORD_MIN_LENGTH}
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+        />
       </Field>
       <Field label="The same again">
         <Input type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} />

@@ -61,8 +61,9 @@ jobs:
           cat "$GITHUB_OUTPUT"
 
       # ───────────── collectors: ruff + pytest ─────────────
+      # Python is also set up when only migrations changed: the Store SQL test below needs it.
       - name: Python 3.12
-        if: steps.changes.outputs.py == 'true' && hashFiles('collectors/requirements.txt') != ''
+        if: (steps.changes.outputs.py == 'true' || steps.changes.outputs.sql == 'true') && hashFiles('collectors/requirements.txt') != ''
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
@@ -74,11 +75,14 @@ jobs:
         with:
           packages: poppler-utils tesseract-ocr tesseract-ocr-jpn tesseract-ocr-kor tesseract-ocr-fin
           version: "1"
-      - name: Ruff and pytest
-        if: steps.changes.outputs.py == 'true' && hashFiles('collectors/requirements.txt') != ''
+      - name: Python dependencies
+        if: (steps.changes.outputs.py == 'true' || steps.changes.outputs.sql == 'true') && hashFiles('collectors/requirements.txt') != ''
         run: |
           python -m pip install --upgrade pip
           pip install -r collectors/requirements.txt ruff pytest
+      - name: Ruff and pytest
+        if: steps.changes.outputs.py == 'true' && hashFiles('collectors/requirements.txt') != ''
+        run: |
           ruff check .
           set +e
           python -m pytest
@@ -108,8 +112,9 @@ jobs:
           npm run build
 
       # ───────────── migrations against Postgres 16 with a minimal auth stub ─────────────
+      # Also when only Python changed: the Store SQL test after this step needs the schema.
       - name: Apply migrations and run database acceptance checks
-        if: steps.changes.outputs.sql == 'true'
+        if: steps.changes.outputs.sql == 'true' || steps.changes.outputs.py == 'true'
         env:
           PGHOST: localhost
           PGUSER: postgres
@@ -459,7 +464,31 @@ jobs:
             'a skipped slot without the dispatch token logs why');
           select pg_temp.ci_assert(not has_function_privilege('authenticated', 'public.ops_kick_collect(text)', 'execute'),
             'signed-in users cannot start collections through the timer');
+
+          -- 0010: a manual link is recorded as the person who made it, at the database's time.
+          insert into issue (id, doc_type, title) values ('00000000-0000-0000-0000-0000000000e9', 'dhpc', 'CI link issue');
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+          set role authenticated;
+          insert into issue_document (issue_id, document_id, link, method, linked_by, linked_at)
+            select '00000000-0000-0000-0000-0000000000e9', '00000000-0000-0000-0000-0000000000d1', 'copy', 'manual',
+                   id, '2000-01-01 00:00+00' from person where email = 'reader@example.test';
+          reset role;
+          select pg_temp.ci_assert((select linked_by = (select id from person where email = 'admin@example.test')
+                                           and linked_at > now() - interval '1 hour'
+                                      from issue_document where issue_id = '00000000-0000-0000-0000-0000000000e9'),
+            'a link names the signed-in person who made it and the database time, never what the browser sent');
           SQL
+
+      # ───────────── the collectors' real SQL (collectors/core/store.py) on the migrated schema ─────────────
+      - name: Store SQL against Postgres
+        if: (steps.changes.outputs.sql == 'true' || steps.changes.outputs.py == 'true') && hashFiles('collectors/requirements.txt') != ''
+        env:
+          PHAROS_TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: |
+          set -o pipefail
+          python -m pytest -p no:cacheprovider -rs tests/test_store_pg.py | tee store-pg.log
+          # A skip here would mean the database URL never arrived: that is a failure, not a pass.
+          if grep -q "skipped" store-pg.log; then echo "::error::test_store_pg.py was skipped"; exit 1; fi
 
       # ───────────── Edge Functions: deno check ─────────────
       - name: Deno

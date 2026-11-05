@@ -1,4 +1,4 @@
-# PHAROS — build the web app and publish it to Cloudflare Pages (project "pharos") after "PHAROS CI" has
+# PHAROS — build the web app and publish it to Cloudflare Pages (project "pharos-satopharma") after "PHAROS CI" has
 # passed on a push to main that touches web/. Never from another branch: a run started by hand works on
 # main only. The site is built here, so the Cloudflare Pages project needs no environment variables.
 name: PHAROS deploy web

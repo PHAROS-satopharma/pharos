@@ -4,7 +4,8 @@ Builds on ``collectors.parsers.base`` (A1) and adds what the national regulators
 
 * ``local_date(text, lang)`` — dates as each regulator writes them, in its own language:
   "PUBLIÉ LE 04/11/2026", "02.november 2026", "8. oktober 2026", "Október 2026", "29 September 2026",
-  "October 27, 2026", "Nov-2026", "Jan - 2026", "05/2026", "2026年10月27日", "2026年4月", "2026-11-04".
+  "October 27, 2026", "Nov-2026", "Jan - 2026", "05/2026", "2026年10月27日", "2026年4月", "2026-11-04",
+  "12 ott 2026", "3 févr. 2026", "out 2026" (pt), and Japanese era dates "令和7年10月1日", "R7.10.1".
   A month-and-year date becomes the 1st of that month.
 * ``clean`` / ``node_text`` — whitespace-normalised text, titles kept exactly as published.
 * ``pages_to_read(ctx, source)`` — ``options.max_pages`` (default 1) on a normal run,
@@ -23,7 +24,7 @@ from datetime import date
 from typing import Iterable
 
 from collectors.parsers.base import (FetchContext, Fetched, ParseError, SourceConfig, absolute,
-                                     keyword_ok, parse_date)
+                                     era_date, keyword_ok, parse_date)
 
 __all__ = ["MONTHS", "absolute", "block_text", "clean", "column", "fill_detail", "keep", "links_in",
            "local_date", "node_text", "pages_to_read", "require", "slug_id", "table_records"]
@@ -31,28 +32,39 @@ __all__ = ["MONTHS", "absolute", "block_text", "clean", "column", "fill_detail",
 # Month names (lower-case, accents kept) → month number, for every language A2 reads.
 _MONTH_NAMES: dict[int, tuple[str, ...]] = {
     1: ("january", "jan", "janvier", "janv", "gennaio", "januar", "jänner", "janúar", "janeiro",
-        "januari", "enero", "tammikuu", "tammikuuta"),
-    2: ("february", "feb", "février", "fevrier", "févr", "febbraio", "februar", "febrúar",
-        "fevereiro", "februari", "febrero", "helmikuu", "helmikuuta"),
+        "januari", "enero", "ene", "tammikuu", "tammikuuta"),
+    2: ("february", "feb", "février", "fevrier", "févr", "fevr", "febbraio", "februar", "febrúar",
+        "fevereiro", "fev", "februari", "febrero", "helmikuu", "helmikuuta"),
     3: ("march", "mar", "mars", "marzo", "märz", "marts", "mars", "março", "marco", "maart",
         "maaliskuu", "maaliskuuta"),
-    4: ("april", "apr", "avril", "aprile", "apríl", "abril", "huhtikuu", "huhtikuuta"),
+    4: ("april", "apr", "avril", "avr", "aprile", "apríl", "abril", "abr", "huhtikuu",
+        "huhtikuuta"),
     5: ("may", "mai", "maggio", "maí", "maio", "maj", "mei", "mayo", "toukokuu", "toukokuuta"),
-    6: ("june", "jun", "juin", "giugno", "juni", "júní", "junho", "junio", "kesäkuu", "kesäkuuta"),
-    7: ("july", "jul", "juillet", "luglio", "juli", "júlí", "julho", "julio", "heinäkuu",
-        "heinäkuuta"),
+    6: ("june", "jun", "juin", "giugno", "giu", "juni", "júní", "junho", "junio", "kesäkuu",
+        "kesäkuuta"),
+    7: ("july", "jul", "juillet", "juil", "luglio", "lug", "juli", "júlí", "julho", "julio",
+        "heinäkuu", "heinäkuuta"),
     8: ("august", "aug", "août", "aout", "agosto", "ágúst", "augusti", "augustus", "elokuu",
         "elokuuta"),
     9: ("september", "sep", "sept", "septembre", "settembre", "setembro", "septiembre", "syyskuu",
         "syyskuuta"),
-    10: ("october", "oct", "octobre", "ottobre", "oktober", "október", "outubro", "octubre", "okt",
-         "lokakuu", "lokakuuta"),
+    10: ("october", "oct", "octobre", "ottobre", "ott", "oktober", "október", "outubro", "octubre",
+         "okt", "lokakuu", "lokakuuta"),
     11: ("november", "nov", "novembre", "nóvember", "novembro", "noviembre", "marraskuu",
          "marraskuuta"),
-    12: ("december", "dec", "décembre", "decembre", "dicembre", "dezember", "desember", "desember",
-         "dezembro", "diciembre", "dez", "des", "joulukuu", "joulukuuta"),
+    12: ("december", "dec", "décembre", "decembre", "déc", "dicembre", "dic", "dezember",
+         "desember", "desember", "dezembro", "diciembre", "dez", "des", "joulukuu", "joulukuuta"),
 }
 MONTHS: dict[str, int] = {name: num for num, names in _MONTH_NAMES.items() for name in names}
+
+# Abbreviations that are also ordinary English (or other) words — "out", "set", "ago", "gen", "mag"
+# — count as a month only on a page in the language that uses them, so "carried out 2026" on an
+# English page is never read as October 2026.
+_LANG_MONTHS: dict[str, dict[str, int]] = {
+    "it": {"gen": 1, "mag": 5, "ago": 8, "set": 9},
+    "es": {"ago": 8},
+    "pt": {"ago": 8, "set": 9, "out": 10},
+}
 
 _WORD = r"([A-Za-zÀ-ÿ]+)\.?"
 _D_MON_Y = re.compile(r"\b(\d{1,2})\s*\.?\s*" + _WORD + r"\s*,?\s*(\d{4})\b")      # 8. oktober 2026
@@ -63,9 +75,12 @@ _JA_YM = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月(?!\s*\d)")                
 _KO_YM = re.compile(r"(\d{4})\s*년\s*(\d{1,2})\s*월(?!\s*\d)")
 
 
-def _month(word: str) -> int | None:
+def _month(word: str, lang: str | None = None) -> int | None:
     w = word.casefold().rstrip(".")
-    return MONTHS.get(w)
+    if w in MONTHS:
+        return MONTHS[w]
+    primary = (lang or "").split("-")[0].casefold()
+    return _LANG_MONTHS.get(primary, {}).get(w)
 
 
 def _safe(y: int, m: int, d: int) -> date | None:
@@ -80,6 +95,11 @@ def local_date(text: str | None, lang: str | None = None) -> date | None:
     if not text:
         return None
     s = clean(text)
+    # Japanese era dates (令和7年10月1日, 令和元年5月) before anything else; the short form
+    # (R7.10.1) only on a Japanese page and only when no Gregorian date is there.
+    d = era_date(s, short=(lang or "").startswith("ja") and not re.search(r"\d{4}", s))
+    if d:
+        return d
     # Full numeric and CJK dates first (base.parse_date covers d/m/Y, Y-m-d, 年月日, 년월일).
     if re.search(r"\d{4}\s*[年년]\s*\d{1,2}\s*[月월]\s*\d{1,2}", s) or re.search(
             r"\b\d{1,2}[./-]\d{1,2}[./-]\d{4}\b|\b\d{4}[./-]\d{1,2}[./-]\d{1,2}\b", s):
@@ -87,14 +107,17 @@ def local_date(text: str | None, lang: str | None = None) -> date | None:
         if d:
             return d
     for m in _D_MON_Y.finditer(s):
-        if _month(m.group(2)):
-            return _safe(int(m.group(3)), _month(m.group(2)), int(m.group(1)))
+        mon = _month(m.group(2), lang)
+        if mon:
+            return _safe(int(m.group(3)), mon, int(m.group(1)))
     for m in _MON_D_Y.finditer(s):
-        if _month(m.group(1)):
-            return _safe(int(m.group(3)), _month(m.group(1)), int(m.group(2)))
+        mon = _month(m.group(1), lang)
+        if mon:
+            return _safe(int(m.group(3)), mon, int(m.group(2)))
     for m in _MON_Y.finditer(s):
-        if _month(m.group(1)):
-            return _safe(int(m.group(2)), _month(m.group(1)), 1)
+        mon = _month(m.group(1), lang)
+        if mon:
+            return _safe(int(m.group(2)), mon, 1)
     for rx in (_JA_YM, _KO_YM):
         m = rx.search(s)
         if m:

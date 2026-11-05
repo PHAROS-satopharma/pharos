@@ -41,7 +41,9 @@ from collectors.parsers._html_util import (absolute, clean, keep, links_in, loca
 from collectors.parsers.base import Item, ParseError, SourceConfig, soup
 
 _SIZE = re.compile(r"\s*[\[［]\s*[\d.,]+\s*[KMG]?B\s*[\]］]\s*$", re.I)
-_JA_DATE = re.compile(r"\d{4}\s*年\s*\d{1,2}\s*月(?:\s*\d{1,2}\s*日)?")
+# Gregorian (2026年10月27日) or era (令和7年10月27日, 令和元年5月) — an era-dated cell is still a date cell.
+_JA_DATE = re.compile(r"(?:\d{4}|(?:令和|平成)\s*(?:元|\d{1,2}))\s*年\s*\d{1,2}\s*月"
+                      r"(?:\s*\d{1,2}\s*日)?")
 _FY = re.compile(r"(\d{4})\s*年度指示分")
 _FILE = re.compile(r"/files/(\d+)\.pdf", re.I)
 _BLUE = re.compile(r"224\s*,\s*255\s*,\s*255|#e0ffff", re.I)
