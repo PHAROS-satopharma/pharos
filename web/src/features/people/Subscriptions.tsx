@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, unwrap } from '../../lib/api';
+import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
 import { SUB_KIND_LABEL } from '../../lib/labels';
 import type { SubKind, SubscriptionRow } from '../../lib/types';
 import { useIngredientList } from './useIngredientList';
@@ -54,7 +54,7 @@ export function SubscriptionEditor({
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      unwrap<null>(await supabase.from('subscription').delete().eq('id', id));
+      unwrapChanged(await supabase.from('subscription').delete().eq('id', id).select('id'), 'this alert');
     },
     onSuccess: refresh,
   });

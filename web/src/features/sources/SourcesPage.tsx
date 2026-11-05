@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, unwrap } from '../../lib/api';
+import { errorMessage, unwrapChanged } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatCairoDate, formatDateTime, formatNumber, timeAgo } from '../../lib/format';
 import { CHANNEL_LABEL, HEALTH_LABEL, KIND_LABEL, hostOf, languageName } from '../../lib/labels';
@@ -41,7 +41,7 @@ export function SourcesPage() {
 
   const toggle = useMutation({
     mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
-      unwrap<null>(await supabase.from('source').update({ enabled }).eq('id', id));
+      unwrapChanged(await supabase.from('source').update({ enabled }).eq('id', id).select('id'), 'this source');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sources'] }),
   });

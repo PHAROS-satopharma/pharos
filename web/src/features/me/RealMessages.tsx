@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, unwrap } from '../../lib/api';
+import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatDateTime } from '../../lib/format';
 import { Button } from '../../ui/Button';
@@ -108,7 +108,10 @@ export function RealMessages() {
     setSwitching(true);
     setSwitchError(null);
     try {
-      unwrap(await supabase.from('app_setting').update({ value: next }).eq('key', 'telegram_dry_run').select('key').single());
+      unwrapChanged(
+        await supabase.from('app_setting').update({ value: next }).eq('key', 'telegram_dry_run').select('key'),
+        'the sending switch',
+      );
       setApproved(false);
       await qc.invalidateQueries({ queryKey: ['telegram-sending'] });
     } catch (e) {

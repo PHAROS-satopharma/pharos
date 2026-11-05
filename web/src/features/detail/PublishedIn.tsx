@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, unwrap } from '../../lib/api';
+import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatDate, formatDateTime } from '../../lib/format';
 import { DOC_TYPE_LABEL, METHOD_LABEL } from '../../lib/labels';
@@ -30,12 +30,14 @@ function CopyActions({ issueId, copy }: { issueId: string; copy: IssueCopy }) {
 
   const confirm = useMutation({
     mutationFn: async () => {
-      unwrap<null>(
+      unwrapChanged(
         await supabase
           .from('issue_document')
           .update({ method: 'manual', linked_by: person?.id ?? null, linked_at: new Date().toISOString() })
           .eq('issue_id', issueId)
-          .eq('document_id', docId),
+          .eq('document_id', docId)
+          .select('issue_id'),
+        'this copy',
       );
     },
     onSuccess: refresh,
