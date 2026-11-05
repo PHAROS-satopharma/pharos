@@ -319,6 +319,56 @@ def test_a_refused_alert_older_than_the_retry_window_is_left(monkeypatch):
     assert later.retry_refused_alerts() == 0 and tg.messages == []
 
 
+def test_a_refusal_is_retried_for_two_days_from_the_first_one_only(monkeypatch):
+    # Every retry writes a new refused row; the window must not restart from it, or a person who
+    # blocked the bot is retried on every run for ever.
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, iid = store_with_issue()
+    tg = RefusingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg)
+    n.issue_alert(iid)
+    for r in s.notification:
+        r["sent_at"] -= timedelta(days=3)
+    n.issue_alert(iid)                                       # yesterday's retry, refused again
+    assert n.retry_refused_alerts() == 0
+
+
+class TextOnlyTelegram(RecordingTelegram):
+    """Delivers the text but refuses the PDF after it."""
+
+    def send_document(self, chat_id: int, **doc) -> int:
+        from collectors.alerts import TelegramError
+
+        raise TelegramError("Bad Request: wrong file identifier/HTTP URL specified")
+
+
+def test_a_refused_pdf_never_sends_the_alert_text_again(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, iid = store_with_issue()
+    tg = TextOnlyTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg)
+    monkeypatch.setattr(n, "_pdf_for", lambda issue: {"filename": "n.pdf", "url": "https://x.test/n.pdf"})
+    n.issue_alert(iid)
+    assert len(tg.messages) == 2 and all(r["error"] for r in s.notification)
+    assert n.retry_refused_alerts() == 0 and len(tg.messages) == 2
+
+
+def test_a_retry_skips_a_person_whose_two_days_are_over(monkeypatch):
+    # Both refused; one of them three days ago. Retrying the issue for the other must not reach them.
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, iid = store_with_issue()
+    tg = RefusingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg)
+    n.issue_alert(iid)
+    old = s.notification[0]["person_id"]
+    for r in s.notification:
+        if r["person_id"] == old:
+            r["sent_at"] -= timedelta(days=3)
+    tg.refuse = False
+    assert n.retry_refused_alerts() == 1
+    assert len(tg.messages) == 1 and not s.notified(old, iid, "immediate")
+
+
 def test_a_digest_refused_for_one_person_is_retried_for_that_person_only(monkeypatch):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
     s, nine_ten = many_class_issues(3)

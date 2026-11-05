@@ -320,15 +320,15 @@ def test_refused_notifications_wait_for_a_retry(store, tag):
                               tg_message_id=None, error="Bad Gateway", summary=f"r {tag}")
     store.insert_notification(person_id=p, issue_id=issue, kind="digest", dry_run=False,
                               tg_message_id=None, error="Forbidden", summary=f"d {tag}")
-    assert issue in store.refused_alert_issues(since)
+    assert store.refused_alerts(since).get(issue) == {p}
     assert p in store.refused_people("digest", since)
     future = store.db.fetchone("select now() + interval '1 hour' as t")["t"]
-    assert issue not in store.refused_alert_issues(future)
+    assert issue not in store.refused_alerts(future)
     store.insert_notification(person_id=p, issue_id=issue, kind="immediate", dry_run=False,
                               tg_message_id=123456789012, error=None, summary=f"r ok {tag}")
     store.insert_notification(person_id=p, issue_id=issue, kind="digest", dry_run=False,
                               tg_message_id=123456789013, error=None, summary=f"d ok {tag}")
-    assert issue not in store.refused_alert_issues(since)
+    assert issue not in store.refused_alerts(since)
     assert p not in store.refused_people("digest", since)
     assert store.last_notification_at("digest", delivered_only=True, before=since) != \
         store.last_notification_at("digest", delivered_only=True)
