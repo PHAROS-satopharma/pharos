@@ -290,13 +290,15 @@ class MemoryStore:
     def insert_notification(self, **fields: Any) -> None:
         self.notification.append({**fields, "sent_at": _now()})
 
-    def last_notification_at(self, kind: str) -> datetime | None:
-        times = [n["sent_at"] for n in self.notification if n["kind"] == kind]
+    def last_notification_at(self, kind: str, *, delivered_only: bool = False) -> datetime | None:
+        times = [n["sent_at"] for n in self.notification
+                 if n["kind"] == kind and not (delivered_only and n.get("error"))]
         return max(times) if times else None
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
-        return [i for i, r in self.issue.items()
+        rows = [(r["created_at"], i) for i, r in self.issue.items()
                 if r["class_only"] and not r["is_backfill"] and r["created_at"] > since]
+        return [i for _, i in sorted(rows, reverse=True)]
 
     # ───────────────────────────── probe ─────────────────────────────
     def get_probe(self, probe_id: str) -> dict | None:

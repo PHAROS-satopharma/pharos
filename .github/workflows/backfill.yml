@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     env:
+      PHAROS_TIME_BUDGET_MIN: "285"   # stop cleanly before the timeout; the next run continues
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
