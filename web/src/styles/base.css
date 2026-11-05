@@ -2339,9 +2339,15 @@ mark.hl {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px 28px;
 }
+.terms-read-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--text);
+}
 .terms-read-group ul {
-  margin-top: 6px;
-  border-top: 1px solid var(--rule);
+  margin: 0;
 }
 .terms-read-group li {
   padding: 5px 0;
@@ -2349,6 +2355,106 @@ mark.hl {
 }
 .term-word {
   font-weight: 600;
+}
+
+/* ───────── ingredients ───────── */
+/* The name opens its row of names: a small ink triangle that turns down while open. */
+.ingredient-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.disclosure {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--muted);
+}
+.ingredient-toggle[aria-expanded='true'] .disclosure {
+  border-top: 7px solid var(--beacon);
+  border-right: 5px solid transparent;
+  border-bottom: 0;
+  border-left: 5px solid transparent;
+}
+.ingredient-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+}
+.ingredient-toggle:hover .ingredient-name {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.ingredient-toggle:hover .disclosure {
+  border-left-color: var(--text);
+}
+.ingredient-toggle[aria-expanded='true']:hover .disclosure {
+  border-left-color: transparent;
+}
+.ingredients .col-ingredient .cell-sub {
+  margin-left: 17px;
+}
+.ingredients th:nth-child(1) {
+  width: 26%;
+}
+.ingredients th:nth-child(5) {
+  width: 1%;
+}
+.names-figure {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+}
+.names-count {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ingredient-row.is-open td {
+  background: var(--surface-2);
+}
+.ingredient-row.is-open td:first-child {
+  box-shadow: inset 3px 0 0 var(--beacon);
+}
+.ingredient-row.is-off .ingredient-name,
+.ingredient-row.is-off .names-figure {
+  color: var(--muted);
+}
+.ingredients .row-detail td {
+  padding: 18px 20px 22px;
+}
+
+/* ───────── reports ───────── */
+.report-month {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+}
+.report-files {
+  justify-content: flex-end;
+}
+.screening th:first-child {
+  width: 30%;
+}
+.screening td.is-hit {
+  color: var(--beacon-deep);
+  font-weight: 600;
+}
+.screening tfoot th {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 /* ───────── sources, people, me ───────── */
@@ -2762,6 +2868,10 @@ mark.hl {
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* an odd last figure takes the whole row instead of leaving an empty square */
+  .stats > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
   .stat {
     padding: 12px 14px;
   }
@@ -2948,6 +3058,135 @@ mark.hl {
   }
   .figures > div:nth-child(n + 3) {
     border-top: 0;
+  }
+
+  /* Ingredients: one card per ingredient, its switch beside the confirmation. */
+  .ingredients thead,
+  .screening thead,
+  .reports thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .ingredients,
+  .ingredients tbody,
+  .ingredients td,
+  .screening,
+  .screening tbody,
+  .screening tfoot,
+  .reports,
+  .reports tbody {
+    display: block;
+    width: 100%;
+  }
+  .ingredients tr.ingredient-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ingredients .ingredient-row td {
+    width: auto;
+    padding: 0;
+    border: 0;
+  }
+  .ingredients .col-ingredient,
+  .ingredients .col-names,
+  .ingredients .col-countries {
+    grid-column: 1 / -1;
+  }
+  .ingredients .col-countries:has(> .muted) {
+    display: none;
+  }
+  .ingredients .col-watched {
+    grid-column: 2;
+    grid-row: 4;
+    align-self: center;
+  }
+  .ingredients .col-confirmed {
+    grid-row: 4;
+  }
+  .ingredient-row.is-open td,
+  .ingredient-row.is-open td:first-child {
+    box-shadow: none;
+  }
+  .ingredients tr.ingredient-row.is-open {
+    background: var(--surface-2);
+    box-shadow: inset 3px 0 0 var(--beacon);
+  }
+  .ingredients .row-detail {
+    display: block;
+  }
+  .ingredients .row-detail td {
+    padding: 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .terms-read {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Monthly reports: the month, then its two files. */
+  .reports tr.report-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .reports .report-row td {
+    padding: 0;
+    border: 0;
+  }
+
+  /* Screening log: the source across the top, its counts three by two under labels. */
+  .screening tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .screening td,
+  .screening th,
+  .screening td.num,
+  .screening tfoot th,
+  .screening tfoot td {
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+  }
+  .screening .col-source,
+  .screening .col-none,
+  .screening tfoot th {
+    grid-column: 1 / -1;
+  }
+  .screening td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .screening .col-last {
+    grid-column: span 3;
+  }
+  .screening tfoot tr {
+    border-top: 1px solid var(--text);
+    border-bottom: 0;
+    background: var(--surface-2);
+  }
+  .screening tfoot td:empty {
+    display: none;
   }
 }
 
