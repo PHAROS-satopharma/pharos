@@ -190,3 +190,18 @@ quarters or more of its content words are in one sentence of ours), *Partly in o
 US and Japanese sections are matched to the SmPC section they correspond to (adverse reactions → 4.8). The check
 compares words in one language only. When our label and the originator's text are in different languages, the
 notice shows our section to read side by side.
+
+## PSUR builder and the EURD list
+
+- **The EURD list.** The daily collection (02:31 UTC) ends with `python -m collectors.eurd`: it downloads EMA's
+  List of Union reference dates, keeps the original in the archive, and stores in `eurd_entry` every row that
+  names a watched ingredient, alone or in a combination (whole words only; a row's "except for …" is not a
+  match). A list already stored (same SHA-256) is not read again. A failure only warns; the page keeps the last
+  list. To read a saved copy by hand: `python -m collectors.eurd --file eurd.xlsx`.
+- **The page** (`/psur`, linked from Reports): choose an ingredient; the interval is set from its EURD row (the
+  day after the previous data lock point to the DLP) and can be changed. It shows §3 regulator actions, §4
+  label-change notices and originator label changes, §11 literature, §15–16 signals open in the interval, and
+  the screening annex (`screening_summary(from, to)`: each source, the Cairo days it was read, failed reads).
+  Notices judged not relevant are counted and listed in the Excel file only.
+- **Print or save as PDF** prints the page without the form; **Download Excel** saves the same sections as one
+  workbook. PHAROS began screening on 5 November 2026; the annex says so when the interval starts earlier.

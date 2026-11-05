@@ -3791,3 +3791,35 @@ a.btn {
   padding: 4px 0;
   border-top: 1px solid var(--rule);
 }
+
+/* PSUR builder (2026-11-05) */
+.psur-form {
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+.psur-interval {
+  margin-top: 0.75rem;
+}
+.psur-section .table-wrap + .table-wrap,
+.psur-section table + table {
+  margin-top: 1rem;
+}
+.row-chosen td {
+  background: var(--surface-2);
+}
+@media print {
+  .no-print,
+  .psur-form {
+    display: none !important;
+  }
+  .psur-section {
+    break-inside: auto;
+  }
+  .psur-section h2 {
+    break-after: avoid;
+  }
+  .psur-page .title-link {
+    color: #02224c;
+    text-decoration: none;
+  }
+}

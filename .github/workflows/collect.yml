@@ -3,7 +3,7 @@
 #
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
-#   daily    02:31                       large JSON files (EMA medicines, Health Canada recalls …)
+#   daily    02:31                       large JSON files (EMA medicines, Health Canada recalls …), the EURD list
 #   weekly   Monday 03:23                SPC / label watch
 #   monthly  the 1st at 01:41            monthly sources (the report itself is report.yml)
 #
@@ -136,3 +136,15 @@ jobs:
           fi
           [ -n "$DRY" ] && args+=(--dry-run)
           python -m collectors.run "${args[@]}"
+
+      # EMA's EURD list (PSUR frequencies and data lock points), once a day. A failure warns and never fails
+      # the collection; an unchanged list (same SHA-256) is not read again.
+      - name: EURD list
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python -m collectors.eurd || echo "::warning::The EURD list could not be read; the PSUR dates keep the last list."
