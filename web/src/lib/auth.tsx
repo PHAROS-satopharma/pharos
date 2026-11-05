@@ -12,6 +12,12 @@ interface AuthState {
   person: Person | null;
   personLoading: boolean;
   personError: string | null;
+  /** Your own person record could not be read at all (network or server error) — not the same as
+   * "no active person": the screen offers a retry instead of saying the account is not active. */
+  personFailed: boolean;
+  /** Reading the person record again after a failure is in progress. */
+  personRetrying: boolean;
+  retryPerson: () => void;
   role: PersonRole | null;
   isAdmin: boolean;
   /** Admins and reviewers record decisions and confirm or split copies. */
@@ -65,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void qc.invalidateQueries({ queryKey: ['me'] });
   }, [qc]);
 
+  const { refetch: refetchPerson } = personQ;
+  const retryPerson = useCallback(() => {
+    void refetchPerson();
+  }, [refetchPerson]);
+
   const value = useMemo<AuthState>(() => {
     const person = personQ.data ?? null;
     const role = person && person.active ? person.role : null;
@@ -74,13 +85,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       person,
       personLoading: userId !== null && personQ.isPending,
       personError: personQ.error ? personQ.error.message : null,
+      personFailed: userId !== null && personQ.isError && personQ.data === undefined,
+      personRetrying: personQ.isError && personQ.isFetching,
+      retryPerson,
       role,
       isAdmin: role === 'admin',
       canReview: role === 'admin' || role === 'reviewer',
       signOut,
       refreshPerson,
     };
-  }, [ready, session, userId, personQ.data, personQ.isPending, personQ.error, signOut, refreshPerson]);
+  }, [
+    ready,
+    session,
+    userId,
+    personQ.data,
+    personQ.isPending,
+    personQ.isError,
+    personQ.isFetching,
+    personQ.error,
+    signOut,
+    refreshPerson,
+    retryPerson,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

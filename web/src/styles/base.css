@@ -860,6 +860,17 @@ kbd {
 .state-action {
   margin-top: 16px;
 }
+.error-details {
+  margin-top: 12px;
+}
+.error-details summary {
+  cursor: pointer;
+}
+.error-details .mono {
+  margin-top: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .state-loading {
   display: flex;
   flex-direction: column;

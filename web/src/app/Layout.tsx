@@ -1,7 +1,8 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL } from '../lib/labels';
 import { useTheme } from '../lib/theme';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { PharosMark } from '../ui/PharosMark';
 import { cx } from '../ui/cx';
 
@@ -16,6 +17,7 @@ const THEME_LABEL = { system: 'Theme: system', light: 'Theme: light', dark: 'The
 export function Layout() {
   const { person, isAdmin, signOut } = useAuth();
   const theme = useTheme();
+  const { pathname } = useLocation();
   const nav: NavItem[] = [
     { to: '/', label: 'Notifications', end: true },
     { to: '/ingredients', label: 'Ingredients' },
@@ -61,7 +63,10 @@ export function Layout() {
         </div>
       </header>
       <main id="main" className="main" tabIndex={-1}>
-        <Outlet />
+        {/* A page that fails to render keeps the header and footer; moving to another page starts fresh. */}
+        <ErrorBoundary key={pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
       <footer className="footer">
         <div className="footer-inner">

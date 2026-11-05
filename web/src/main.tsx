@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './lib/auth';
 import { AppRoutes } from './app/routes';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import './styles/tokens.css';
 import './styles/base.css';
 
@@ -21,7 +22,9 @@ createRoot(root).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <ErrorBoundary className="bare">
+            <AppRoutes />
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
