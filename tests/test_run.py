@@ -292,6 +292,39 @@ def test_a_secret_in_a_failure_never_reaches_the_screening_log_or_alert(tmp_path
     ctx.close()
 
 
+def test_after_store_hears_only_items_now_in_the_database(tmp_path, monkeypatch):
+    # The mailbox marks a message processed from this set; a failed item must not be in it.
+    from collectors.core.models import Item
+
+    heard: list[set[str]] = []
+
+    class Parser:
+        @staticmethod
+        def list_items(ctx, src):
+            return [Item(external_id=x, url=f"https://example.org/{x}", title=x, published=date.today(),
+                         doc_type="newsletter", lang="en") for x in ("ok", "broken")]
+
+        @staticmethod
+        def after_store(ctx, src, items, stored):
+            heard.append(set(stored))
+
+    server = Server()
+    store, ctx, _, _ = setup(tmp_path, server)
+    runner = Runner(store, ctx, Notifier(store, store.settings()), store.settings(),
+                    parser_loader=lambda name: Parser)
+    real = runner.process_item
+
+    def process(src, module, item, **kw):
+        if item.external_id == "broken":
+            raise RuntimeError("could not store")
+        return real(src, module, item, **kw)
+
+    monkeypatch.setattr(runner, "process_item", process)
+    runner.run_source(SRC)
+    assert heard == [{"ok"}]
+    ctx.close()
+
+
 def test_each_run_records_the_slot_it_served(tmp_path):
     store = MemoryStore()
     rid = store.create_run("cron", "sha", "12h")

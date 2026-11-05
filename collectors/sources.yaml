@@ -631,7 +631,7 @@ sources:
     schedule: 4h
     expected_max_gap_days: 60
     notes: Fimea's web pages sit behind a Cloudflare check that is never bypassed; its newsletter is read from the mailbox instead.
-    options: {from_domains: [fimea.fi]}
+    options: {from_domains: [fimea.fi], web_domain: fimea.fi}
 
   - id: tga-email
     regulator: TGA
@@ -646,7 +646,7 @@ sources:
       TGA cuts the connection from datacenter addresses, so its Safety Information notifications are read
       from the mailbox. They are sent through the Department of Health's Swift Digital portal
       (tgacomms.health.gov.au), hence health.gov.au.
-    options: {from_domains: [tga.gov.au, health.gov.au]}
+    options: {from_domains: [tga.gov.au, health.gov.au], web_domain: tga.gov.au}
 
   - id: fda-email
     regulator: FDA
