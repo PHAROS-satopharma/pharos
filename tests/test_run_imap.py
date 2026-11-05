@@ -133,7 +133,8 @@ def test_runner_notes_imap_not_configured(tmp_path):
     sync_catalogue(store)
     _, sources, _ = load_catalogue()
     mail_sources = [s for s in sources if s.parser == "email_inbox"]
-    assert {s.id for s in mail_sources} == {"fimea-email", "tga-email"}
+    mail_ids = {"fimea-email", "tga-email", "fda-email", "famhp-email"}
+    assert {s.id for s in mail_sources} == mail_ids
     empty = types.SimpleNamespace(STRUCTURED_FIELDS=[], list_items=lambda ctx, src: [])
     ctx = types.SimpleNamespace(db=None, run_id=store.create_run("manual", None), first_status=None,
                                 begin_source=lambda: None, archiver=Archive(tmp_path / "a"))
@@ -141,4 +142,17 @@ def test_runner_notes_imap_not_configured(tmp_path):
                     parser_loader=lambda name: empty)
     assert runner.run(mail_sources)                  # not configured is not a failure
     errors = {r["source_id"]: r["error"] for r in store.source_run.values()}
-    assert errors == {"fimea-email": "imap not configured", "tga-email": "imap not configured"}
+    assert errors == dict.fromkeys(mail_ids, "imap not configured")
+
+
+def test_fda_and_famhp_mail_reach_their_own_sources():
+    _, sources, _ = load_catalogue()
+    allow = {s.id: s.options["from_domains"] for s in sources if s.parser == "email_inbox"}
+
+    def owner(domain):
+        return {sid for sid, doms in allow.items() if imap_inbox.domain_matches(domain, doms)}
+
+    assert owner("public.govdelivery.com") == {"fda-email"}     # the MedWatch e-mail list
+    assert owner("info.fda.gov") == {"fda-email"}
+    assert owner("afmps.be") == {"famhp-email"} and owner("fagg-afmps.be") == {"famhp-email"}
+    assert owner("health.gov.au") == {"tga-email"} and owner("fimea.fi") == {"fimea-email"}
