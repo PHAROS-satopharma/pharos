@@ -112,7 +112,9 @@ class Runner:
         return hits
 
     # ───────────────────────────── one item ─────────────────────────────
-    def _attachments(self, item: Item, lang: str | None) -> list[dict]:
+    def _attachments(self, item: Item, lang: str | None, *, columns: bool = False) -> list[dict]:
+        """``columns``: the parser's ``PDF_COLUMNS`` — its PDFs are printed in two columns and are read
+        column by column (``collectors.pdf.extract_text_by_columns``), not straight across."""
         out = []
         for url in item.attachment_urls[:MAX_ATTACHMENTS]:
             try:
@@ -123,7 +125,13 @@ class Runner:
             if f.status != 200:
                 continue
             text, method, words = "", "none", 0
-            if f.is_pdf:
+            if f.is_pdf and columns:
+                from collectors.pdf import extract_text_by_columns
+
+                text, method, words, by_columns = extract_text_by_columns(f.content, lang)
+                if not by_columns:
+                    log.warning("attachment %s: read straight across, the word boxes were unavailable", url)
+            elif f.is_pdf:
                 from collectors.pdf import extract_text
 
                 text, method, words = extract_text(f.content, lang)
@@ -148,7 +156,7 @@ class Runner:
             if detail != "matched_only" or self._match_item(module, item, lang):
                 item = module.fetch_detail(self.ctx, src, item)
                 lang = item.lang or src.lang
-        attachments = self._attachments(item, lang)
+        attachments = self._attachments(item, lang, columns=getattr(module, "PDF_COLUMNS", False))
         hits = self._match_item(module, item, lang)
         for k, att in enumerate(attachments):
             hits += self.matcher.match_text(att["text"], "attachment", lang=lang,

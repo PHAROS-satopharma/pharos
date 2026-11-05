@@ -17,6 +17,10 @@ Page structure relied on (checked 4 Nov 2026):
 doc_type: titles with 회수 / 속보 → ``safety_alert``; 서한 → ``dhpc``; otherwise ``safety_alert``.
 Many titles are generic ("안전성 서한 배포 알림"), so the 요약 summary is kept as ``body_text``.
 
+The letters are printed in two columns, so their PDFs are read column by column (``PDF_COLUMNS``,
+see ``collectors.pdf.extract_text_by_columns``); read straight across, a line of the left column ran
+into the line beside it on the right.
+
 Options: ``include_keywords`` / ``exclude_keywords``; ``max_pages`` (1) / ``backfill_pages`` (5);
 ``lang`` (``ko``).
 """
@@ -33,6 +37,7 @@ HOST = "https://nedrug.mfds.go.kr"
 DOWNLOAD = HOST + "/cmn/edms/down/"
 _NO = re.compile(r"safeLetterNo=(\d+)")
 _EDMS = re.compile(r"downEdmsFile\(\s*['\"]([^'\"]+)['\"]\s*\)")
+PDF_COLUMNS = True   # collectors/run.py reads the attachments column by column
 
 
 def doc_type_for(title: str) -> str:
