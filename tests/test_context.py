@@ -198,7 +198,24 @@ def test_a_read_timeout_is_tried_once_more_then_succeeds(tmp_path):
     assert got.status == 200 and len(calls) == 2 and 15.0 in sleeps
 
 
-def test_a_second_stall_is_reported_and_a_post_is_never_sent_twice(tmp_path):
+def test_sfda_reset_twice_is_read_on_the_third_try_after_the_dns_answer_expires(tmp_path):
+    # 5 Nov 2026 18:25 Cairo: www.sfda.gov.sa reset the TLS handshake on the first page. Its name is an
+    # F5 load balancer with a 30 s DNS answer, so the last try waits past it and may reach the other server.
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) < 3:
+            raise httpx.ConnectError("[Errno 104] Connection reset by peer", request=req)
+        return httpx.Response(200, headers={"content-type": "text/html"}, text="<html>warnings</html>")
+
+    ctx, sleeps = make_ctx(tmp_path, handler)
+    got = ctx.get("https://www.sfda.gov.sa/ar/warnings")
+    assert got.status == 200 and len(calls) == 3
+    assert 15.0 in sleeps and 35.0 in sleeps and max(sleeps) > 30
+
+
+def test_a_third_stall_is_reported_and_a_post_is_never_sent_twice(tmp_path):
     calls = []
 
     def handler(req: httpx.Request) -> httpx.Response:
@@ -208,7 +225,7 @@ def test_a_second_stall_is_reported_and_a_post_is_never_sent_twice(tmp_path):
     ctx, _ = make_ctx(tmp_path, handler)
     with pytest.raises(httpx.ConnectError):
         ctx.get("https://www.bfarm.de/a")
-    assert calls == ["GET", "GET"]
+    assert calls == ["GET", "GET", "GET"]
     calls.clear()
     with pytest.raises(httpx.ConnectError):
         ctx.post("https://www.bfarm.de/form", data={"q": "x"})
