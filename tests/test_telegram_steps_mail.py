@@ -88,3 +88,14 @@ def test_refuses_anyone_else(row, why, capsys):
 def test_refuses_a_bad_address_or_greeting(args):
     assert m.main(args, db=FakeDb(SAMA), smtp_factory=FakeSmtp) == 2
     assert FakeSmtp.sent == []
+
+
+def test_workflow_runs_only_on_main():
+    # A run started on a branch must not send real email with the production secrets.
+    import pathlib
+
+    import yaml
+
+    wf = pathlib.Path(__file__).resolve().parents[1] / ".github/workflows/telegram-steps-mail.yml"
+    job = yaml.safe_load(wf.read_text(encoding="utf-8"))["jobs"]["mail"]
+    assert job.get("if") == "github.ref == 'refs/heads/main'"

@@ -28,6 +28,9 @@ concurrency:
 
 jobs:
   mail:
+    # Main only, like the deploy workflows: a run started on a branch would send real email from
+    # pharos@ with the production database, using that branch's unreviewed script.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
