@@ -138,7 +138,7 @@ keeps httpx/httpcore at WARNING and redacts each log record.
 | mpa-news | lakemedelsverket | A2 |
 | tga-alerts, tga-updates | tga | A2 |
 | fimea-email, tga-email | email_inbox | A2 |
-| ema-prac, who-alerts, eda-eg, sfda-sa, jfda-jo, uae-mohap | prac / who_alerts / generic_html | A2 |
+| ema-prac, who-alerts, eda-eg, sfda-sa, jfda-jo, uae-mohap, uae-ede | prac / who_alerts / generic_html / ede | A2 |
 | (user-added sources) | feed or generic_html | A1 / A2 |
 
 The SPC sources are `spc-cima`, `spc-bdpm`, `spc-ema-epar`, `spc-dailymed`, `spc-mhra` and `spc-pmda`, with

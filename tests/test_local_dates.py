@@ -133,3 +133,19 @@ def test_english_words_are_not_months_on_an_english_page(text):
 ])
 def test_iso_timestamps_are_year_month_day(text, expected):
     assert parse_date(text) == expected
+
+
+# ───────────────────────────── Arabic month names ─────────────────────────────
+
+
+@pytest.mark.parametrize("text,expected", [
+    # EDE (UAE), 5 Nov 2026: Arabic digits and a Gregorian month name; no Arabic date was read before.
+    ("الأربعاء, ٠٤ نوفمبر ٢٠٢٦", date(2026, 11, 4)),
+    ("الخميس, 29 أكتوبر 2026", date(2026, 10, 29)),
+    ("15 إبريل 2025", date(2025, 4, 15)),
+    ("3 ابريل 2026", date(2026, 4, 3)),
+    ("12 آب 2026", date(2026, 8, 12)),
+    ("1 يونيه 2026", date(2026, 6, 1)),
+])
+def test_arabic_month_names(text, expected):
+    assert local_date(text, "ar") == expected

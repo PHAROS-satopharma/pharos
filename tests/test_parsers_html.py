@@ -11,7 +11,7 @@ from datetime import date
 
 import pytest
 
-from collectors.parsers import (aifa, ansm, bfarm_risk, cbg, dkma, email_inbox, famhp,
+from collectors.parsers import (aifa, ansm, bfarm_risk, cbg, dkma, ede, email_inbox, famhp,
                                 generic_html, hpra, ima_is, infarmed, lakemedelsverket, lu_sante,
                                 medsafe, mfds, noma, pmda, prac, swissmedic, tga, who_alerts)
 from collectors.core.models import Fetched, Item
@@ -989,3 +989,39 @@ def test_catalogue_urls_match_the_pages_the_parsers_read():
     _, sources, _ = load_catalogue()
     urls = {s.id: s.url for s in sources}
     assert urls["infarmed-circulares"] == "https://www.infarmed.pt/web/infarmed/alertas"
+
+
+# ───────────────────────────── United Arab Emirates (EDE) ─────────────────────────────
+
+EDE_AR, EDE_EN = "https://www.ede.gov.ae/ar/news", "https://www.ede.gov.ae/en/news"
+
+
+def test_ede_reads_the_arabic_and_english_news_each_in_its_own_language():
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    src = next(s for s in sources if s.id == "uae-ede")
+    assert src.enabled
+    ctx = FakeCtx({EDE_AR: "uae-ede/news_ar_2026-11-05.html", EDE_EN: "uae-ede/news_en_2026-11-05.html"})
+    items = ede.list_items(ctx, src)
+    ar = [i for i in items if i.lang == "ar"]
+    en = [i for i in items if i.lang == "en"]
+    assert len(ar) == 12 and len(en) == 12
+    assert all(i.published for i in items)
+    assert all(i.url.startswith("https://www.ede.gov.ae/ar/w/") for i in ar)
+    assert all(i.url.startswith("https://www.ede.gov.ae/en/w/") for i in en)
+    assert len({i.external_id for i in items}) == 24
+    cipro_ar = next(i for i in ar if "ciprofloxacin" in i.url)
+    assert cipro_ar.title.startswith('"الإمارات للدواء" تحظر استخدام "سيبروفلوكساسين"')
+    assert cipro_ar.published == date(2026, 10, 20) and cipro_ar.doc_type == "safety_alert"
+    cipro_en = next(i for i in en if "ciprofloxacin" in i.url)
+    assert cipro_en.title == "Emirates Drug Establishment bans veterinary use of ciprofloxacin from November 1"
+    assert not any(i.title.startswith(("Published", "تاريخ النشر")) for i in items)
+
+
+def test_ede_detail_reads_the_article_body():
+    src = source("uae-ede", EDE_AR, languages=["ar", "en"])
+    item = Item(external_id="x", url="https://www.ede.gov.ae/en/w/x", title="t", published=None,
+                doc_type="other", lang="en")
+    out = ede.fetch_detail(FakeCtx({"*": "uae-ede/article_en_ciprofloxacin.html"}), src, item)
+    assert "ban on the use of ciprofloxacin" in out.body_text
