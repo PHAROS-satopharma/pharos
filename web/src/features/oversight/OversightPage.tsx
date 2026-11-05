@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSources } from '../sources/queries';
 import { unwrap } from '../../lib/api';
-import { formatCairoDate, formatDate, formatMonth } from '../../lib/format';
+import { cairoToday, formatCairoDate, formatDate, formatMonth } from '../../lib/format';
 import { HEALTH_LABEL } from '../../lib/labels';
 import { supabase } from '../../lib/supabase';
 import { ErrorNote, Loading } from '../../ui/States';
@@ -10,6 +10,7 @@ import { Stat, StatRow } from '../../ui/Stat';
 import { Table } from '../../ui/Table';
 import { Tag } from '../../ui/Tag';
 import { PageHead, SectionHead } from '../../ui/Text';
+import type { CaseReportRow } from '../detail/CaseReport';
 
 export interface OverdueItem {
   kind: 'signal' | 'review' | 'psur';
@@ -46,6 +47,20 @@ function useCounts() {
       };
     },
   });
+}
+
+function useOpenCaseReports() {
+  return useQuery({
+    queryKey: ['case-reports-open'],
+    queryFn: async () =>
+      unwrap<CaseReportRow[] | null>(
+        await supabase.from('v_case_report').select('*').in('status', ['new', 'reviewed', 'relevant']).order('day_zero', { ascending: false }).limit(50),
+      ) ?? [],
+  });
+}
+
+function daysTo(day: string, today: string): number {
+  return Math.round((Date.parse(day) - Date.parse(today)) / 86_400_000);
 }
 
 function late(days: number): string {
@@ -93,6 +108,9 @@ export function OversightPage() {
   const overdue = useOverdue();
   const counts = useCounts();
   const sources = useSources();
+  const cases = useOpenCaseReports();
+  const today = cairoToday();
+  const liveCases = (cases.data ?? []).filter((c) => c.nonserious_due >= today);
 
   const rows = overdue.data ?? [];
   const lateRows = rows.filter((r) => r.kind !== 'psur');
@@ -133,7 +151,66 @@ export function OversightPage() {
       </section>
 
       <section className="section">
-        <SectionHead index="02" title="PSUR dates in the next 90 days" aside={<Link to="/psur">PSUR builder</Link>} />
+        <SectionHead index="02" title="Literature case reports" />
+        <p className="soft small">
+          Papers that look like individual case reports, with day zero (the day PHAROS found them) and the dates to report a
+          valid case: 15 days if serious, 90 if not. Shown until the 90 days pass, unless judged not relevant.
+        </p>
+        {cases.isPending ? (
+          <Loading label="Reading the case reports" />
+        ) : cases.isError ? (
+          <ErrorNote error={cases.error} onRetry={() => void cases.refetch()} />
+        ) : liveCases.length === 0 ? (
+          <p className="soft">No literature case report is within its reporting time.</p>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th scope="col">Paper</th>
+                <th scope="col">Day zero</th>
+                <th scope="col">Serious by</th>
+                <th scope="col">Non-serious by</th>
+                <th scope="col">EMA monitors</th>
+              </tr>
+            </thead>
+            <tbody>
+              {liveCases.map((c) => {
+                const daysLeft = daysTo(c.serious_due, today);
+                return (
+                  <tr key={c.issue_id}>
+                    <td>
+                      <Link to={`/issue/${c.issue_id}`} className="title-link" dir="auto" lang={c.lang ?? undefined}>
+                        {c.title}
+                      </Link>
+                      <span className="cell-sub">{(c.ingredients ?? []).join(', ')}</span>
+                    </td>
+                    <td>{formatDate(c.day_zero)}</td>
+                    <td>
+                      {formatDate(c.serious_due)}
+                      {daysLeft >= 0 ? (
+                        <span className="cell-sub">{daysLeft === 0 ? 'Today' : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}</span>
+                      ) : (
+                        <span className="cell-sub">Passed</span>
+                      )}
+                    </td>
+                    <td>{formatDate(c.nonserious_due)}</td>
+                    <td>
+                      {(c.not_monitored ?? []).length > 0 ? (
+                        <Tag tone="danger">No: {c.not_monitored?.join(', ')}</Tag>
+                      ) : (
+                        <Tag tone="success">Yes</Tag>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        )}
+      </section>
+
+      <section className="section">
+        <SectionHead index="03" title="PSUR dates in the next 90 days" aside={<Link to="/psur">PSUR builder</Link>} />
         {overdue.isPending ? null : psur.length === 0 ? (
           <p className="soft">No EURD data lock point or submission date of a watched ingredient falls in the next 90 days.</p>
         ) : (
@@ -163,7 +240,7 @@ export function OversightPage() {
       </section>
 
       <section className="section">
-        <SectionHead index="03" title="Sources needing a look" aside={<Link to="/sources">All sources</Link>} />
+        <SectionHead index="04" title="Sources needing a look" aside={<Link to="/sources">All sources</Link>} />
         {sources.isPending ? (
           <Loading label="Reading the sources" />
         ) : sources.isError ? (
@@ -202,7 +279,7 @@ export function OversightPage() {
       </section>
 
       <section className="section">
-        <SectionHead index="04" title="Monthly report" aside={<Link to="/reports">Reports</Link>} />
+        <SectionHead index="05" title="Monthly report" aside={<Link to="/reports">Reports</Link>} />
         {counts.isPending ? null : counts.data?.lastReport ? (
           <p>
             The latest is <strong>{formatMonth(counts.data.lastReport.month)}</strong>, made{' '}

@@ -3849,3 +3849,19 @@ a.btn {
   display: grid;
   gap: 0.35rem;
 }
+
+/* Literature case report panel (2026-11-05) */
+.case-report-dates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.case-report-dates dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.case-report-dates dd {
+  margin: 0;
+  font-weight: 600;
+}

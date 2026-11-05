@@ -232,3 +232,20 @@ notice shows our section to read side by side.
   owner). When a record changes after it was signed — a report made again, a signal reopened — the page marks
   the signature "The record changed after this signature" and the record can be signed again.
 - The inspection pack lists every signature of the period (sheet "Sign-offs").
+
+## Literature case reports and PRAC agendas
+
+- **Case reports.** A literature notice is flagged "Possible case report" when PubMed lists it as Case Reports or
+  its title says "case report", "case series" or "a case of" (`v_case_report`). The notice page shows day zero
+  (the Cairo day PHAROS found the paper) and the dates to report a valid case: 15 days if serious, 90 if not.
+  Oversight lists every flagged paper until its 90 days pass, unless it was judged not relevant.
+- **EMA's literature monitoring.** `python -m collectors.mlm` (weekly, after the label watch) reads EMA's medical
+  literature monitoring list and keeps in `mlm_entry` the group of each watched ingredient EMA monitors (a group
+  named after it, or one where it stands alone; a combination does not count). The notice page and Oversight
+  say "Not monitored by EMA" for an ingredient with no row: its literature cases are ours to report. On the
+  list valid from 1 June 2020, ibuprofen, diclofenac and meloxicam are monitored; lornoxicam is not.
+- **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings
+  (`/en/committees/prac/prac-agendas-minutes-highlights`). An agenda names each substance PRAC will discuss,
+  weeks before a recommendation, so a watched ingredient on it becomes a notice (Safety update, "Agenda of the
+  PRAC meeting …") with the page where it is named. If that page stops listing documents, the run warns and the
+  signal recommendations are still read.

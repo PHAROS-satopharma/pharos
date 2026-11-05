@@ -15,16 +15,24 @@ Source: ``ema-prac`` (English; EMA translates the signal recommendations into ev
    ``https://www.ema.europa.eu/en/committees/pharmacovigilance-risk-assessment-committee-prac``) —
    ``h3.teaser-title a[href^="/en/news/"]`` whose text has "highlights", with the date in the card's
    ``div.metadata-item`` ("30 October 2026"). doc_type ``safety_update``; detail body ``main``.
+3. ``options.meetings_url`` (default: ``…/en/committees/prac/prac-agendas-minutes-highlights``) — the
+   agendas and minutes of PRAC meetings, ``div.bcl-file[data-ema-document-type="agenda"|"minutes"]`` with
+   ``.file-title`` ("Agenda of the PRAC meeting 26 - 29 October 2026"), the Reference Number, the English PDF
+   and ``time[datetime]``. An agenda names every substance PRAC will discuss, weeks before a recommendation:
+   the early warning. One item per PDF, doc_type ``safety_update``, ``structured.kind`` ``prac_agenda`` or
+   ``prac_minutes``; the PDF is screened as the attachment. An agenda is published as a draft and may be
+   replaced under the same address: the URL is the identity.
 
-(checked 4 Nov 2026)
+(checked 4 Nov 2026; agendas 5 Nov 2026)
 
-Options: ``highlights_url`` (``""`` switches it off), ``attach_languages`` — translation languages
+Options: ``highlights_url`` / ``meetings_url`` (``""`` switches either off), ``attach_languages`` — translation languages
 whose PDFs are also downloaded as attachments (default none: the English original is screened),
 ``include_keywords`` / ``exclude_keywords``.
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from collectors.parsers._html_util import (absolute, clean, fill_detail, keep, local_date,
@@ -33,9 +41,12 @@ from collectors.parsers.base import Item, SourceConfig, soup
 
 HOST = "https://www.ema.europa.eu"
 COMMITTEE = HOST + "/en/committees/pharmacovigilance-risk-assessment-committee-prac"
+MEETINGS = HOST + "/en/committees/prac/prac-agendas-minutes-highlights"
+_MEETING_KIND = {"agenda": "prac_agenda", "minutes": "prac_minutes"}
 _PDF_LANG = re.compile(r"_([a-z]{2})\.pdf$", re.I)
 _PATH_LANG = re.compile(r"^/([a-z]{2})/documents/")
 _REF = re.compile(r"EMA/PRAC/\d+/\d{4}")
+log = logging.getLogger(__name__)
 
 
 def _lang_of(href: str) -> str | None:
@@ -101,6 +112,30 @@ def parse_highlights(html, base_url: str, source: SourceConfig) -> list[Item]:
     return items
 
 
+def parse_meetings(html, base_url: str, source: SourceConfig) -> list[Item]:
+    doc = soup(html)
+    items: list[Item] = []
+    seen: set[str] = set()
+    for block in doc.select("div.bcl-file[data-ema-document-type]"):
+        kind = _MEETING_KIND.get(block.get("data-ema-document-type", ""))
+        if kind is None:
+            continue
+        title = node_text(block.select_one(".file-title"))
+        pdf = next((absolute(a["href"], base_url) for a in block.select("a[href]")
+                    if a["href"].lower().split("?")[0].endswith("_en.pdf")), None)
+        if not title or not pdf or pdf in seen or not keep(source, title):
+            continue
+        seen.add(pdf)
+        t = block.select_one("time[datetime]")
+        ref = _REF.search(node_text(block))
+        items.append(Item(
+            external_id=pdf, url=pdf, title=title,
+            published=local_date((t["datetime"] if t else "")[:10], "en"), doc_type="safety_update",
+            lang="en", attachment_urls=[pdf],
+            structured={"reference": ref.group(0) if ref else None, "kind": kind}))
+    return items
+
+
 def list_items(ctx, source: SourceConfig) -> list[Item]:
     out: list[Item] = []
     f = ctx.get(source.url)
@@ -114,6 +149,15 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
         g = ctx.get(hl)
         if g.status != 304:
             out.extend(parse_highlights(g, g.final_url, source))
+    meetings = (source.options or {}).get("meetings_url", MEETINGS)
+    if meetings:
+        m = ctx.get(meetings)
+        if m.status != 304:
+            got = parse_meetings(m, m.final_url, source)
+            if not got:
+                # never fail the signals over the agendas page: warn, and the signals still count
+                log.warning("ema-prac: no PRAC agenda or minutes found on %s", meetings)
+            out.extend(got)
     return out
 
 
@@ -123,4 +167,4 @@ def fetch_detail(ctx, source: SourceConfig, item: Item) -> Item:
     return fill_detail(item, ctx.get(item.url), "main", patterns=(".pdf",))
 
 
-__all__ = ["clean", "fetch_detail", "list_items", "parse_highlights", "parse_signals"]
+__all__ = ["clean", "fetch_detail", "list_items", "parse_highlights", "parse_meetings", "parse_signals"]

@@ -6,3 +6,5 @@
 * `committee_page.html` — https://www.ema.europa.eu/en/committees/pharmacovigilance-risk-assessment-committee-prac
 * `highlight_detail.html` — one PRAC meeting-highlights news page.
 English; translations are linked per language in `div.file-translations`.
+* `meetings.html` — https://www.ema.europa.eu/en/committees/prac/prac-agendas-minutes-highlights, saved
+  5 November 2026: the three latest agendas (`data-ema-document-type="agenda"`, "Draft") and minutes.

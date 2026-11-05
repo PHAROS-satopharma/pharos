@@ -4,7 +4,7 @@
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
 #   daily    02:31                       large JSON files (EMA medicines, Health Canada recalls …), the EURD list
-#   weekly   Monday 03:23                SPC / label watch
+#   weekly   Monday 03:23                SPC / label watch, EMA's literature monitoring list
 #   monthly  the 1st at 01:41            monthly sources (the report itself is report.yml)
 #
 # Telegram dry-run is NOT set here: the collectors read app_setting.telegram_dry_run (true until the owner
@@ -162,3 +162,15 @@ jobs:
           args=()
           [ -n "$DRY" ] && args+=(--dry-run)
           python -m collectors.escalate "${args[@]}" || echo "::warning::The escalation could not be sent."
+
+      # EMA's medical literature monitoring list (which watched ingredients EMA screens itself), weekly. A
+      # failure warns and never fails the collection; an unchanged list (same SHA-256) is not read again.
+      - name: Literature monitoring list
+        if: steps.which.outputs.schedule == 'weekly' || steps.which.outputs.schedule == 'all'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python -m collectors.mlm || echo "::warning::EMA's literature monitoring list could not be read; the last one is kept."
