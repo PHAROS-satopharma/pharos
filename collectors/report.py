@@ -278,8 +278,7 @@ def _env():
 def render_footer(month: Month) -> str:
     """The running foot Chromium prints on every page: the month, the Sato Pharma credit and the page number."""
     return _env().get_template("footer.html").render(
-        month=month, generated=cairo(datetime.now(timezone.utc)), sato_src=logo_data_uri(SATO_LOGO),
-        copyright=copyright_line())
+        month=month, sato_src=logo_data_uri(SATO_LOGO), copyright=copyright_line())
 
 
 def render_html(data: dict, month: Month) -> str:
