@@ -179,6 +179,7 @@ archive_hit_count(p_term text, p_lang text) returns int   -- how many archived t
 | `SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` | deploy-supabase |
 | `SITE_URL`, `CONTACT_EMAIL` | auth redirects; HTTP contact |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_TELEGRAM_BOT_USERNAME` | web build (from the GitHub secrets SUPABASE_URL, SUPABASE_ANON_KEY, TELEGRAM_BOT_USERNAME) |
+| `BACKUP_AGE_RECIPIENT` | db-backup (optional age public key(s); the nightly backup is encrypted to it) |
 | `DISPATCH_TOKEN` | GitHub forbids secret names starting `GITHUB_`; deploy-supabase copies it into the function secret `GITHUB_DISPATCH_TOKEN` |
 
 `SUPABASE_DB_URL` is the **session-pooler** URI, because GitHub runners have no IPv6.

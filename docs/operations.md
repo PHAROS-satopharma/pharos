@@ -13,7 +13,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
-| `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → R2 `backups/<date>.sql.gz` |
+| `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals; checks the bucket lock |
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
@@ -86,8 +86,13 @@ GitHub job, and GitHub emails the repository admins.
 
 ## Backups and restore
 
-- Each nightly file in R2 `backups/<date>.sql.gz` holds two parts: the sign-in accounts (`auth.users`,
-  `auth.identities`, data only), then the whole `public` schema, with structure and data.
+- Each nightly file in R2 `backups/<date>.sql.gz.age` holds two parts: the sign-in accounts (`auth.users`,
+  `auth.identities`, data only, including the password hashes), then the whole `public` schema, with
+  structure and data.
+- The file is gzip, then encrypted with [age](https://age-encryption.org) to the public key in the GitHub
+  secret `BACKUP_AGE_RECIPIENT` (docs/setup.md, "Backup encryption"). Only the private key, kept offline,
+  can read it. If that secret is not set, the backup still runs but is stored unencrypted as
+  `backups/<date>.sql.gz`, and every run shows the warning "Backup not encrypted".
 - Bucket lock rules keep each backup for 90 days, and a lifecycle rule then deletes it. That leaves 90 days
   of copies.
 - The originals (`sha256/`), the inbound mail (`inbound/`) and the reports (`reports/`) are locked for good.
@@ -96,14 +101,18 @@ GitHub job, and GitHub emails the repository admins.
 **Restore** (the lead does this):
 
 1. Download the backup from *Cloudflare → R2 → pharos-archive → backups/*.
-2. Use the same Supabase project, or a new one in Frankfurt. In the SQL editor, run
+2. If it ends in `.age`, decrypt it on the machine that holds the private key (never upload the key):
+   `age -d -i key.txt -o <date>.sql.gz <date>.sql.gz.age`, then check it with `gzip -t <date>.sql.gz`.
+   A file ending in `.sql.gz` (from before encryption was set up) needs no decryption.
+3. Use the same Supabase project, or a new one in Frankfurt. In the SQL editor, run
    `drop schema public cascade; create schema public; grant usage on schema public to anon, authenticated, service_role;`.
-3. Run `gunzip -c <date>.sql.gz | psql "<session pooler URI>"`. Ignore "already exists" notices.
-4. Mark the migrations as applied: `supabase migration repair --status applied 0001 0002 0003`, plus any later
+4. Run `gunzip -c <date>.sql.gz | psql "<session pooler URI>"`. Ignore "already exists" notices.
+   In one step without writing the plain file: `age -d -i key.txt <date>.sql.gz.age | gunzip -c | psql "<session pooler URI>"`.
+5. Mark the migrations as applied: `supabase migration repair --status applied 0001 0002 0003`, plus any later
    migration numbers.
-5. Re-run **PHAROS deploy Supabase** by hand. It re-creates the watchdog schedule (pg_cron jobs are not in
-   the dump), the Vault secrets and the Telegram webhook.
-6. Check that the app shows the issues and that the next collection run writes a `run` row.
+6. Re-run **PHAROS deploy Supabase** by hand (from `main`). It re-creates the watchdog schedule (pg_cron jobs
+   are not in the dump), the Vault secrets and the Telegram webhook.
+7. Check that the app shows the issues and that the next collection run writes a `run` row.
 
 ## First administrator
 
