@@ -557,6 +557,67 @@ a,
 .footer .muted {
   color: var(--masthead-muted);
 }
+/* The base line under the footer: the copyright, and the time zone every date is shown in. */
+.footer-base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 24px;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 12px var(--gutter) 16px;
+  border-top: 1px solid var(--masthead-rule);
+  color: var(--masthead-muted);
+}
+.footer-base .micro {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* The maker's credit: Sato Pharma's logo, a hairline, then whom PHAROS was made for. Small, at the foot. */
+.sato-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.sato-mark {
+  display: block;
+  flex: none;
+  height: 22px;
+  width: auto;
+}
+.sato-credit-rule {
+  align-self: stretch;
+  width: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+.sato-credit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+}
+.sato-credit-text .micro {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+}
+.sato-credit-dept {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.sato-credit-reverse {
+  color: var(--masthead-muted);
+}
+.sato-credit-reverse .sato-credit-dept {
+  color: var(--masthead-text);
+}
+.sato-credit-dark {
+  color: var(--bar-muted);
+}
+.sato-credit-dark .sato-credit-dept {
+  color: var(--bar-text);
+}
 .bare {
   max-width: 640px;
   margin: 0 auto;
@@ -2290,7 +2351,15 @@ mark.hl {
   font-weight: 600;
 }
 .signin-by {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   color: var(--bar-muted);
+}
+.signin-copy {
+  font-size: 10px;
+  font-weight: 500;
 }
 .signin-main {
   position: relative;

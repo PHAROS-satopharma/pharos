@@ -5,6 +5,7 @@ import { Field, Input } from '../../ui/Input';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { PharosMark } from '../../ui/PharosMark';
+import { SatoCopyright, SatoCredit } from '../../ui/SatoCredit';
 
 type Mode = 'password' | 'link';
 
@@ -169,7 +170,10 @@ export function SignIn() {
             </span>
           </li>
         </ol>
-        <span className="micro signin-by">by Sato Pharma</span>
+        <div className="signin-by">
+          <SatoCredit tone="dark" />
+          <SatoCopyright className="signin-copy" />
+        </div>
       </section>
     </div>
   );
