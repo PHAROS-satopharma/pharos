@@ -115,6 +115,15 @@ export function cairoThisMonth(): string {
   return cairoToday().slice(0, 7);
 }
 
+/** The first month PHAROS screened: its first check ran on 5 November 2026. A month before it was never
+ *  watched, so a report or log for it would read as "screened, nothing found". */
+export const PHAROS_START_MONTH = '2026-11';
+
+/** Whether PHAROS was screening in a month ("2026-11" or a "2026-11-01" date). */
+export function isScreenedMonth(month: string): boolean {
+  return month.slice(0, 7) >= PHAROS_START_MONTH;
+}
+
 /** The UTC bounds of a Cairo calendar month ("2026-10"), as ISO strings: [from, to). */
 export function cairoMonthRange(month: string): { from: string; to: string } {
   const m = /^(\d{4})-(\d{2})$/.exec(month);
