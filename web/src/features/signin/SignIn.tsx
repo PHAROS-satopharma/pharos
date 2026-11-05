@@ -6,6 +6,7 @@ import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { PharosMark } from '../../ui/PharosMark';
 import { SatoCopyright, SatoCredit } from '../../ui/SatoCredit';
+import { linkAnswer } from './linkAnswer';
 
 type Mode = 'password' | 'link';
 
@@ -13,9 +14,6 @@ function friendly(message: string): string {
   const m = message.toLowerCase();
   if (m.includes('invalid login credentials')) {
     return 'That email and password do not match. Try again, or ask for a sign-in link instead.';
-  }
-  if (m.includes('signups not allowed') || m.includes('user not found')) {
-    return 'This address has not been invited to PHAROS. Ask an administrator for an invitation.';
   }
   if (m.includes('email not confirmed')) {
     return 'This address has not accepted its invitation yet. Open the invitation email first.';
@@ -53,8 +51,9 @@ export function SignIn() {
           email: address,
           options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
         });
-        if (err) setError(friendly(err.message));
-        else setSentTo(address);
+        // an address that was never invited gets the same answer as an invited one
+        if (linkAnswer(err?.message) === 'sent') setSentTo(address);
+        else if (err) setError(friendly(err.message));
       }
     } finally {
       setBusy(false);
@@ -133,8 +132,8 @@ export function SignIn() {
           {error ? <Notice tone="error">{error}</Notice> : null}
           {sentTo ? (
             <Notice tone="ok">
-              A sign-in link is on its way to {sentTo}. It works once; if it does not arrive in a few minutes, check the
-              spam folder.
+              If {sentTo} has been invited to PHAROS, a sign-in link is on its way. It works once; if nothing arrives in a
+              few minutes, check the spam folder or ask an administrator for an invitation.
             </Notice>
           ) : null}
 
