@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
-import { archiveUrl, errorMessage, openArchived } from '../../lib/api';
+import { archiveUrl, downloadArchived, errorMessage } from '../../lib/api';
 import { Button } from '../../ui/Button';
 import { Loading, Notice } from '../../ui/States';
 
@@ -48,7 +48,7 @@ function PdfPage({ doc, pageNumber }: { doc: PDFDocumentProxy; pageNumber: numbe
 }
 
 /** The archived original PDF, drawn page by page with pdf.js, with a download beside it. */
-export function PdfViewer({ r2Key, label }: { r2Key: string; label: string }) {
+export function PdfViewer({ r2Key, label, filename }: { r2Key: string; label: string; filename: string }) {
   const urlQ = useQuery({
     queryKey: ['archive-url', r2Key],
     queryFn: () => archiveUrl(r2Key),
@@ -92,7 +92,7 @@ export function PdfViewer({ r2Key, label }: { r2Key: string; label: string }) {
   async function download() {
     setOpenError(null);
     try {
-      await openArchived(r2Key);
+      await downloadArchived(r2Key, filename);
     } catch (e) {
       setOpenError(errorMessage(e));
     }
@@ -111,12 +111,12 @@ export function PdfViewer({ r2Key, label }: { r2Key: string; label: string }) {
           Download the original
         </Button>
       </div>
-      {openError ? <Notice tone="error">The file could not be opened: {openError}</Notice> : null}
+      {openError ? <Notice tone="error">The file could not be downloaded: {openError}</Notice> : null}
       {urlQ.isError ? (
         <Notice tone="error">The archive did not give a link to this file: {errorMessage(urlQ.error)}</Notice>
       ) : loadError ? (
         <Notice tone="error">
-          The PDF could not be shown here ({loadError}). Use “Download the original” to open it in a new tab.
+          The PDF could not be shown here ({loadError}). Use “Download the original” to save it and open it on your computer.
         </Notice>
       ) : !doc ? (
         <Loading label="Opening the PDF" />

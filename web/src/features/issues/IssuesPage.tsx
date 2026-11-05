@@ -19,7 +19,7 @@ import { DOC_TYPES, ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatu
 import { Button } from '../../ui/Button';
 import { Field, Input, Toggle } from '../../ui/Input';
 import { Select } from '../../ui/Select';
-import { StatusPill } from '../../ui/Tag';
+import { IngredientChips, StatusPill } from '../../ui/Tag';
 import { Country } from '../../ui/Flag';
 import { DateStamp } from '../../ui/DateStamp';
 import { Stat, StatRow } from '../../ui/Stat';
@@ -70,6 +70,8 @@ export function IssuesPage() {
   const rows = useMemo(() => issues.data?.rows ?? [], [issues.data]);
   const total = issues.data?.total ?? 0;
   const tableRef = useRef<HTMLTableSectionElement>(null);
+  // The list's own address (with its filters) travels to the notification, so its back link returns here.
+  const listState = useMemo(() => ({ back: params.toString() ? `/?${params.toString()}` : '/' }), [params]);
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(params);
@@ -101,12 +103,12 @@ export function IssuesPage() {
       } else if (e.key === 'Enter' && active >= 0 && active < rows.length) {
         if (target?.closest('a, button')) return;
         e.preventDefault();
-        navigate(`/issue/${rows[active].id}`);
+        navigate(`/issue/${rows[active].id}`, { state: listState });
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [rows, active, navigate]);
+  }, [rows, active, navigate, listState]);
 
   useEffect(() => {
     if (active < 0 || active >= rows.length) return;
@@ -267,10 +269,18 @@ export function IssuesPage() {
             <p>Try fewer filters, or include the history from before the watch started.</p>
           </Empty>
         ) : (
-          <Empty title="Nothing has been found yet.">
+          <Empty
+            title="Nothing new has been found yet."
+            action={
+              <Button onClick={() => setParam('history', '1')} variant="secondary">
+                Show the history
+              </Button>
+            }
+          >
             <p>
               When a regulator publishes a notice that names an ingredient on the watchlist, it appears here within a
-              few hours, with a link to the original.
+              few hours, with a link to the original. Notices published before the watch started are kept as history
+              and hidden from this list until you ask for them.
             </p>
           </Empty>
         )
@@ -307,7 +317,7 @@ export function IssuesPage() {
                       key={r.id}
                       data-row={i}
                       className={cx('issue-row', i === active && 'is-active', r.status === 'new' && 'is-new')}
-                      onClick={() => navigate(`/issue/${r.id}`)}
+                      onClick={() => navigate(`/issue/${r.id}`, { state: listState })}
                     >
                       <td data-label="Date" className="col-date nowrap">
                         <DateStamp value={r.first_date} />
@@ -324,23 +334,12 @@ export function IssuesPage() {
                         <span className="cell-sub">{r.anchor_regulator ?? '—'}</span>
                       </td>
                       <td data-label="Ingredient" className="col-ingredient">
-                        {(r.ingredients ?? []).length > 0 ? (
-                          <span className="chips">
-                            {(r.ingredients ?? []).map((n) => (
-                              <span key={n} className="chip">
-                                {n}
-                              </span>
-                            ))}
-                          </span>
-                        ) : r.class_only ? (
-                          <span className="chip chip-quiet">Class-wide</span>
-                        ) : (
-                          <span className="soft">—</span>
-                        )}
+                        <IngredientChips ingredients={r.ingredients} classOnly={r.class_only} />
                       </td>
                       <td data-label="Safety notification" className="col-title">
                         <Link
                           to={`/issue/${r.id}`}
+                          state={listState}
                           className="title-link"
                           dir="auto"
                           lang={r.lang ?? undefined}

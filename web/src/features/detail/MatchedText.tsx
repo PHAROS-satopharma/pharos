@@ -101,6 +101,16 @@ function TextBlock({
   );
 }
 
+/** Each matched word once (a data file can name the ingredient in many fields), in first-seen order. */
+function distinctWords(ms: MatchRow[]): string[] {
+  const seen = new Map<string, string>();
+  for (const m of ms) {
+    const key = m.matched_text.trim().toLocaleLowerCase();
+    if (key && !seen.has(key)) seen.set(key, m.matched_text.trim());
+  }
+  return [...seen.values()];
+}
+
 export function MatchedText({
   documents,
   matches,
@@ -155,13 +165,14 @@ export function MatchedText({
             {structuredMs.length > 0 ? (
               <p className="small">
                 <span className="micro soft">{FIELD_LABEL.structured}</span>{' '}
-                {structuredMs.map((m) => (
-                  <span key={m.id}>
+                {distinctWords(structuredMs).map((w) => (
+                  <span key={w}>
                     <mark className="hl" dir="auto">
-                      {m.matched_text}
+                      {w}
                     </mark>{' '}
                   </span>
                 ))}
+                {structuredMs.length > 1 ? <span className="evidence-count">{structuredMs.length} fields</span> : null}
               </p>
             ) : null}
             {bodyMs.length > 0 ? (

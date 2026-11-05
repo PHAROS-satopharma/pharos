@@ -18,7 +18,7 @@ from collectors.core.archive import Archive
 from collectors.core.context import RETRY_WAITS_S, FetchContext
 from collectors.core.memstore import MemoryStore
 from collectors.core.registry import load_catalogue, sync_catalogue
-from collectors.run import DOWN_AFTER, Runner, parse_args, select_sources
+from collectors.run import DOWN_AFTER, Runner, latest_published, parse_args, select_sources
 
 FIX = Path(__file__).resolve().parent / "fixtures"
 PSUSA = json.loads((FIX / "ema-psusa/psusa-slice.json").read_text(encoding="utf-8"))
@@ -349,3 +349,15 @@ def test_each_run_records_the_slot_it_served(tmp_path):
     store = MemoryStore()
     rid = store.create_run("cron", "sha", "12h")
     assert store.run[rid]["schedule"] == "12h"
+
+
+def test_a_misread_future_date_never_becomes_the_source_last_item():
+    # last_item_at only moves forward, so one future date (a day/month misread) would stick for good
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    today = date.today()
+    items = [SimpleNamespace(published=today - timedelta(days=3)), SimpleNamespace(published=None),
+             SimpleNamespace(published=today + timedelta(days=35))]
+    assert latest_published(items) == today - timedelta(days=3)
+    assert latest_published([SimpleNamespace(published=None)]) is None

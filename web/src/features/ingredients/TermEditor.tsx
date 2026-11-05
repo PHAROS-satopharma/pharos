@@ -148,8 +148,8 @@ export function TermEditor({
                         {h.error
                           ? `Test failed: ${h.error}`
                           : h.count === 0
-                            ? 'No archived text contains it'
-                            : `${h.count} archived ${h.count === 1 ? 'text contains' : 'texts contain'} it`}
+                            ? 'No archived notice contains it'
+                            : `${h.count} archived ${h.count === 1 ? 'notice contains' : 'notices contain'} it`}
                       </span>
                     ) : null}
                   </div>

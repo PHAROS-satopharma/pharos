@@ -94,6 +94,20 @@ export function IngredientsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
   });
 
+  // Confirming saves the ingredient as it stands, with no new terms: the database records who confirmed
+  // it and when (save_ingredient sets both from the signed-in admin; terms and classes are only added).
+  const confirm = useMutation({
+    mutationFn: async (i: IngredientWithTerms) => {
+      const id = unwrap<string>(
+        await supabase.rpc('save_ingredient', {
+          p: { inn_en: i.inn_en, atc_code: i.atc_code, wikidata_qid: i.wikidata_qid, rxcui: i.rxcui, terms: [] },
+        }),
+      );
+      if (id !== i.id) throw new Error(`the database matched a different ingredient to ${i.inn_en}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
+  });
+
   const figures = useMemo(() => {
     const all = list.data ?? [];
     const terms = all.flatMap((i) => i.ingredient_term);
@@ -142,6 +156,7 @@ export function IngredientsPage() {
       ) : null}
       {saved && !adding ? <Notice tone="ok">The watchlist is up to date.</Notice> : null}
       {setActive.isError ? <Notice tone="error">Not changed: {errorMessage(setActive.error)}</Notice> : null}
+      {confirm.isError ? <Notice tone="error">Not confirmed: {errorMessage(confirm.error)}</Notice> : null}
 
       {list.isPending ? (
         <Loading label="Reading the watchlist" />
@@ -231,6 +246,16 @@ export function IngredientsPage() {
                             <span className="cell-line">{i.confirmed_by_person?.full_name ?? 'Someone'}</span>
                             <span className="cell-sub mono">{formatCairoDate(i.confirmed_at)}</span>
                           </>
+                        ) : isAdmin && i.active ? (
+                          <Button
+                            size="sm"
+                            disabled={confirm.isPending}
+                            onClick={() => confirm.mutate(i)}
+                            aria-label={`Confirm ${i.inn_en}`}
+                            title="Records that you have checked this ingredient and its search terms."
+                          >
+                            Confirm
+                          </Button>
                         ) : (
                           <Tag tone="quiet">Not confirmed</Tag>
                         )}

@@ -2,6 +2,7 @@ import type { IssueRow } from './types';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from './labels';
 import { cairoToday } from './format';
 import { safeHref } from './safeHref';
+import { downloadBlob } from './download';
 
 type ExcelModule = typeof import('exceljs');
 
@@ -11,17 +12,6 @@ async function loadExcel(): Promise<ExcelModule> {
   const mod = await import('exceljs');
   const withDefault = mod as unknown as { default?: ExcelModule };
   return withDefault.default ?? mod;
-}
-
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 function dayToDate(d: string | null): Date | null {
@@ -61,7 +51,10 @@ export async function exportIssues(rows: IssueRow[], filterNote: string, matchin
       country: anchor,
       also: (r.countries ?? []).filter((c) => c !== anchor).join(', '),
       regulator: r.anchor_regulator ?? '',
-      ingredient: (r.ingredients ?? []).join(', ') || (r.class_only ? 'Class-wide' : ''),
+      // A class-wide notice names the class only, never the watched ingredient itself.
+      ingredient: r.class_only
+        ? `Class-wide${(r.ingredients ?? []).length ? ` (covers ${(r.ingredients ?? []).join(', ')})` : ''}`
+        : (r.ingredients ?? []).join(', '),
       title: r.title,
       type: DOC_TYPE_LABEL[r.doc_type] ?? r.doc_type,
       status: STATUS_LABEL[r.status] ?? r.status,

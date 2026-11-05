@@ -34,3 +34,35 @@ export function HealthMark({ health }: { health: SourceHealth }) {
     </span>
   );
 }
+
+/**
+ * The ingredients a notification concerns. A class-wide notice names only the class (for example
+ * "NSAIDs"), so it says so instead of listing the watched ingredient as if the notice named it.
+ */
+export function IngredientChips({ ingredients, classOnly }: { ingredients: string[] | null; classOnly: boolean }) {
+  const names = ingredients ?? [];
+  if (classOnly) {
+    return (
+      <span
+        className="chip chip-quiet"
+        title={
+          names.length > 0
+            ? `Names the drug class only, not ${names.join(', ')} by name`
+            : 'Names the drug class only, not an ingredient by name'
+        }
+      >
+        Class-wide
+      </span>
+    );
+  }
+  if (names.length === 0) return <span className="soft">—</span>;
+  return (
+    <span className="chips">
+      {names.map((n) => (
+        <span key={n} className="chip">
+          {n}
+        </span>
+      ))}
+    </span>
+  );
+}
