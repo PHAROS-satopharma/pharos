@@ -1,0 +1,5 @@
+60025403	EFFERALGAN 1000 mg, comprimé pelliculé	comprimé pelliculé	orale	Autorisation active	Procédure nationale	Commercialisée	12/08/2004			 UPSA	Non
+62611169	IBUPROFENE ALMUS 400 mg, comprimé pelliculé	comprimé pelliculé	orale	Autorisation abrogée	Procédure nationale	Non commercialisée	10/07/2006	Warning disponibilité		 BIOGARAN	Non
+60073914	IBUPROFENE BIOGARAN CONSEIL 400 mg, comprimé pelliculé	comprimé pelliculé	orale	Autorisation active	Procédure nationale	Commercialisée	10/07/2006			 BIOGARAN	Non
+64481322	IBUPROFENE ZENTIVA FRANCE 400 mg, comprimé pelliculé	comprimé pelliculé	orale	Autorisation active	Procédure décentralisée	Commercialisée	23/05/2025			 ZENTIVA FRANCE	Non
+67747504	PEDEA 5 mg/ml, solution injectable	solution injectable	intraveineuse	Autorisation active	Procédure centralisée	Commercialisée	29/07/2004		EU/1/04/284	 RECORDATI RARE DISEASES	Non

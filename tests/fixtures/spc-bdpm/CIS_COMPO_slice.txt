@@ -1,0 +1,6 @@
+60025403	comprimé	02202	PARACÉTAMOL	1000 mg	un comprimé	SA	1
+60073914	comprimé	02092	IBUPROFÈNE	400 mg	un comprimé	SA	1
+62611169	comprimé	02092	IBUPROFÈNE	400 mg	un comprimé	SA	1
+64481322	comprimé	02092	IBUPROFÈNE	400 mg	un comprimé	FT	1
+64481322	comprimé	29909	LYSINATE D'IBUPROFÈNE	683,2 mg	un comprimé	SA	1
+67747504	solution	02092	IBUPROFÈNE	5 mg	1 ml	SA	1

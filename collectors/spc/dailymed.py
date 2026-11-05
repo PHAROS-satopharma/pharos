@@ -2,10 +2,12 @@
 
 Source ``spc-dailymed``; country US; English.
 
-* Discovery: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name=<INN>&pagesize=100&page=<n>``
+* Discovery: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name=<INN>&doctype=34391-3&pagesize=100&page=<n>``
   → ``{"data": [{"setid", "title", "spl_version", "published_date"}], "metadata": {"total_pages"}}``.
-  Only human prescription labels are wanted; titles containing "[" + labeler are kept as published.
-  (An ingredient with no US product, such as lornoxicam, simply yields none.)
+  ``doctype`` 34391-3 (LOINC "human prescription drug label") keeps out veterinary and OTC labels
+  (meloxicam, 5 Nov 2026: 186 labels instead of 209); titles are kept as published.
+  (An ingredient with no US product, such as lornoxicam, simply yields none.) A page that does not
+  answer 200 fails the discovery: a partial list would switch off the products it missed.
 * Snapshot: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls/<setid>.xml`` (HL7 SPL,
   namespace ``urn:hl7-org:v3``). Sections are found by LOINC code
   (``section/code/@code``, mapped in ``sections.US_LOINC``) and their text is every ``text``
@@ -19,6 +21,7 @@ from datetime import date
 from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
+from collectors.core.context import FetchError
 from collectors.spc.common import Product, Snapshot, terms_for
 from collectors.spc.sections import US_LOINC
 
@@ -27,6 +30,7 @@ COUNTRY = "US"
 LANG = "en"
 API = "https://dailymed.nlm.nih.gov/dailymed/services/v2"
 NS = {"v3": "urn:hl7-org:v3"}
+HUMAN_RX = "34391-3"  # LOINC document type: human prescription drug label
 MAX_PAGES = 5
 
 
@@ -35,10 +39,10 @@ def discover(ctx, ingredient: dict) -> list[Product]:
     for term in terms_for(ingredient, "en")[:3]:
         page = 1
         while page <= MAX_PAGES:
-            f = ctx.get(f"{API}/spls.json?drug_name={quote(term)}&pagesize=100&page={page}",
-                        accept="application/json")
+            url = f"{API}/spls.json?drug_name={quote(term)}&doctype={HUMAN_RX}&pagesize=100&page={page}"
+            f = ctx.get(url, accept="application/json")
             if f.status != 200:
-                break
+                raise FetchError(f.status, url, f"DailyMed label list {url}: HTTP {f.status}")
             data = f.json()
             for row in data.get("data") or []:
                 setid = row.get("setid")
