@@ -10,3 +10,10 @@ describe('health alerts on the People page', () => {
     expect(subscriptionKinds(getsHealthAlerts('admin'))).toContain('admin_health');
   });
 });
+
+describe("new items on the authorities' pages", () => {
+  it('are offered to everyone on the team, once a day', () => {
+    expect(subscriptionKinds(false)).toContain('new_items_digest');
+    expect(subscriptionKinds(true)).toContain('new_items_digest');
+  });
+});

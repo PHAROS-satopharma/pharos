@@ -1,0 +1,396 @@
+/* ───────── Sources: the horizontal pass ─────────
+   One card per country: her pages, what is new since she last looked, and the week's reading folded away.
+   Flat colour, square corners, 1px rules; the beacon marks only what is new or matched. */
+
+.hz-tab-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--beacon);
+  background: var(--beacon-tint);
+  color: var(--beacon-deep);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.hz-lede-new {
+  margin: -6px 0 16px;
+  color: var(--muted);
+}
+.hz-lede-new strong {
+  color: var(--text);
+}
+
+.hz-section-title {
+  margin: 48px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.hz-card {
+  margin: 0 0 20px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.hz-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.hz-country {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+}
+.hz-country .cc {
+  font-family: var(--font-mono);
+}
+.hz-regs {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.hz-block {
+  padding: 14px 18px;
+}
+.hz-block + .hz-block {
+  border-top: 1px solid var(--rule);
+}
+.hz-block-title {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* Her pages: the name is the link; under it whether the app reads it. */
+.hz-pages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hz-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  padding: 9px 0 9px 12px;
+  border-left: 3px solid var(--rule);
+}
+.hz-page + .hz-page {
+  margin-top: 6px;
+}
+.hz-page.is-read {
+  border-left-color: var(--sea);
+}
+.hz-page.is-partial {
+  border-left-color: var(--beacon);
+}
+.hz-page-link {
+  color: var(--text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hz-page-kind {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.hz-read {
+  grid-column: 1 / -1;
+  font-size: 13px;
+}
+.hz-page.is-read .hz-read {
+  color: var(--sea);
+}
+.hz-page.is-partial .hz-read {
+  color: var(--beacon-deep);
+}
+.hz-page.is-unread .hz-read {
+  color: var(--text);
+  font-weight: 600;
+}
+.hz-note {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* New since you last looked */
+.hz-new-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+}
+.hz-new-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.hz-new-title .hz-n {
+  color: var(--beacon-deep);
+  font-family: var(--font-mono);
+}
+.hz-since {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+.hz-nothing {
+  margin: 0;
+  color: var(--muted);
+}
+.hz-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.hz-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.hz-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.hz-item-date {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+.hz-item-title {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.hz-item-title a {
+  color: var(--text);
+}
+.hz-item.is-hit {
+  padding-left: 10px;
+  border-left: 3px solid var(--beacon);
+}
+.hz-mail {
+  margin-top: 8px;
+}
+.hz-mail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hz-mail-body {
+  max-height: 420px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The week's reading, folded. */
+.hz-week > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 36px;
+  cursor: pointer;
+  list-style: none;
+}
+.hz-week > summary::-webkit-details-marker {
+  display: none;
+}
+.hz-week > summary::before {
+  content: '+';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.hz-week[open] > summary::before {
+  content: '−';
+}
+.hz-week-sum {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.hz-runs {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.hz-run {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.hz-run.is-off .hz-run-name,
+.hz-run.is-off .hz-figs dd {
+  color: var(--muted);
+}
+.hz-run-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hz-run-name a {
+  color: var(--text);
+}
+.hz-figs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(64px, auto));
+  margin: 0;
+  border: 1px solid var(--rule);
+}
+.hz-figs > div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 1px;
+  padding: 5px 10px;
+}
+.hz-figs > div + div {
+  border-left: 1px solid var(--rule);
+}
+.hz-figs dt {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.hz-figs dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+.hz-figs .is-failed dd {
+  color: var(--danger);
+}
+.hz-figs .is-hit dd,
+.hz-figs .is-hit .hz-fig-btn {
+  color: var(--beacon-deep);
+}
+.hz-fig-btn {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: none;
+  color: var(--sea);
+  font: inherit;
+  cursor: pointer;
+}
+.hz-fig-btn[aria-pressed='true'] {
+  border-bottom-width: 3px;
+  border-bottom-color: var(--beacon);
+}
+.hz-run-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hz-tech {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.hz-opened {
+  margin-top: 12px;
+}
+.hz-opened-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .hz-head,
+  .hz-block {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+  .hz-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hz-page-link {
+    display: inline-block;
+    min-height: 32px;
+    padding-top: 4px;
+  }
+  .hz-new-head .btn,
+  .hz-mail-actions .btn {
+    min-height: 44px;
+  }
+  .hz-new-head .btn {
+    width: 100%;
+  }
+  .hz-week > summary {
+    min-height: 44px;
+  }
+  .hz-run {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hz-figs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .hz-figs > div:nth-child(4) {
+    border-left: 0;
+  }
+  .hz-figs > div:nth-child(n + 4) {
+    border-top: 1px solid var(--rule);
+  }
+  .hz-fig-btn {
+    min-height: 32px;
+    min-width: 44px;
+    text-align: left;
+  }
+  .hz-item-title a {
+    display: inline-block;
+    padding: 4px 0;
+  }
+}

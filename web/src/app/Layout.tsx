@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NewCount } from '../features/sources/NewCount';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL } from '../lib/labels';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -62,6 +63,7 @@ export function Layout() {
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 {n.label}
+                {n.to === '/sources' ? <NewCount /> : null}
               </NavLink>
             ))}
           </nav>
