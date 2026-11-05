@@ -589,12 +589,13 @@ sources:
   - id: mpa-news
     regulator: MPA
     kind: safety
-    channel: browser
-    url: https://www.lakemedelsverket.se/sv/nyheter?c=225
+    channel: api
+    url: https://www.lakemedelsverket.se/sv/nyheter
     parser: lakemedelsverket
     languages: [sv]
     schedule: 12h
     expected_max_gap_days: 45
+    notes: Read from the site's own news API (/api/newslist), four categories; the link is the news page for people.
 
   - id: tga-alerts
     regulator: TGA
