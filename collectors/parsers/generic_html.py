@@ -132,7 +132,7 @@ def extract(html, base_url: str, source: SourceConfig, opts: dict | None = None)
             if opts.get("id_attr") and node.get(opts["id_attr"]):
                 ext = f"{source.id}:{node[opts['id_attr']]}"
             key = ext or url
-            if key in seen or not title or not keep(source, title, summary):
+            if key in seen or not title or not keep(source, title, summary, lang=lang):
                 continue
             seen.add(key)
             items.append(_make(url, title, when, opts, lang, ext=ext, summary=summary, tag=tag,
@@ -160,7 +160,7 @@ def extract(html, base_url: str, source: SourceConfig, opts: dict | None = None)
             when = _date_from(node_text(node), lang)
             if when:
                 break
-        if not keep(source, title):
+        if not keep(source, title, lang=lang):
             continue
         seen.add(url)
         items.append(_make(url, title, when, opts, lang))

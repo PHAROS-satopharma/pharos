@@ -694,6 +694,42 @@ def test_famhp_normal_page_with_f5_script_is_not_blocked():
                                          "text/html; charset=utf-8"))
 
 
+def _famhp_pages() -> dict:
+    fr = ("<main><a href='/fr/news/securite-ibuprofene'>Sécurité : ibuprofène</a> 04/11/2026"
+          "<a href='/fr/news/journee-portes-ouvertes'>Journée portes ouvertes</a> 03/11/2026</main>")
+    nl = ("<main><a href='/nl/news/veiligheid-ibuprofen'>Veiligheid: ibuprofen</a> 04/11/2026"
+          "<a href='/nl/news/opendeurdag'>Opendeurdag</a> 03/11/2026</main>")
+    return {"https://www.afmps.be/fr/news": fr.encode(), "https://www.fagg.be/nl/news": nl.encode()}
+
+
+def test_famhp_keywords_per_language(caplog):
+    # Audit: one include list for the French and Dutch pages dropped the other language silently.
+    urls = {"fr": "https://www.afmps.be/fr/news", "nl": "https://www.fagg.be/nl/news"}
+    per_lang = source("famhp-news", urls["fr"], languages=["fr", "nl"], channel="browser", urls=urls,
+                      include_keywords={"fr": ["sécurité"], "nl": ["veiligheid"]})
+    items = famhp.list_items(FakeCtx(_famhp_pages()), per_lang)
+    assert [(i.lang, i.title) for i in items] == [("fr", "Sécurité : ibuprofène"), ("nl", "Veiligheid: ibuprofen")]
+
+    one_list = source("famhp-news", urls["fr"], languages=["fr", "nl"], channel="browser", urls=urls,
+                      include_keywords=["sécurité"])
+    with caplog.at_level("WARNING", logger="collectors.parsers.famhp"):
+        items = famhp.list_items(FakeCtx(_famhp_pages()), one_list)
+    assert [i.lang for i in items] == ["fr"]
+    assert "famhp-news nl: 2 news link(s), none kept by the keyword filter" in caplog.text
+
+
+def test_keep_reads_a_keyword_list_per_language():
+    from collectors.parsers._html_util import keep
+
+    src = source("x", "https://x.invalid/", include_keywords={"fr": ["rappel"], "nl": ["terugroeping"]},
+                 exclude_keywords={"fr": ["vétérinaire"]})
+    assert keep(src, "Rappel de lot", lang="fr") and not keep(src, "Rappel de lot", lang="nl")
+    assert keep(src, "Terugroeping", lang="nl-BE")
+    assert not keep(src, "Rappel vétérinaire", lang="fr")
+    assert keep(src, "News", lang="de")            # a language with no list is not filtered
+    assert not keep(source("y", "https://x.invalid/", include_keywords=["rappel"]), "News", lang="fr")
+
+
 def test_famhp_reads_with_browser_and_stops_at_challenge():
     src = source("famhp-news", "https://www.afmps.be/fr/news", languages=["fr", "nl"],
                  channel="browser")
