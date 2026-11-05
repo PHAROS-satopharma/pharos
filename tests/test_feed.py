@@ -23,6 +23,7 @@ from collectors.parsers.feed import parse_feed
 FIX = Path(__file__).resolve().parent / "fixtures"
 _, SOURCES, _ = load_catalogue()
 CFG = {s.id: s for s in SOURCES}
+IRES = "https://www.accessdata.fda.gov/scripts/ires/index.cfm"
 
 
 def fixture(rel: str) -> bytes:
@@ -135,7 +136,7 @@ def test_openfda_enforcement_records():
     assert first.external_id == "D-0062-2027"
     assert first.published == date(2026, 10, 28)          # report_date 20261028
     assert first.doc_type == "recall" and first.lang == "en"
-    assert "recall_number:%22D-0062-2027%22" in first.url
+    assert first.url == f"{IRES}?Event=99849"            # FDA's own page for the recall's event
     assert "Reason for recall:" in first.body_text
     with pytest.raises(ParseError):
         openfda_enforcement.record_to_item({"product_description": "x"}, base)
@@ -149,8 +150,21 @@ def test_openfda_record_without_recall_number_is_kept():
     a = openfda_enforcement.record_to_item(rec, base)
     b = openfda_enforcement.record_to_item(dict(rec), base)
     assert a.external_id.startswith("event-100061-") and a.external_id == b.external_id
-    assert "event_id:%22100061%22" in a.url
+    assert a.url == f"{IRES}?Event=100061"
     assert a.title.startswith("Amitriptyline Hydrochloride")
+
+
+def test_openfda_item_opens_fdas_enforcement_report_page():
+    # Dr Sama's review, 6 Nov 2026: a recall's link opened raw JSON from api.fda.gov. FDA's Enforcement
+    # Report opens one event's products from ?Event=<event id> (the share link its own page builds).
+    data = json.loads(fixture("fda-enforcement/enforcement-limit5.json"))
+    base = CFG["fda-enforcement"].url
+    items = [openfda_enforcement.record_to_item(r, base) for r in data["results"]]
+    assert [i.url for i in items[:2]] == [f"{IRES}?Event=99849", f"{IRES}?Event=100072"]
+    assert not any("api.fda.gov" in i.url for i in items)
+    # a record without an event id opens the Enforcement Report itself, never the API
+    rec = dict(data["results"][0], event_id="")
+    assert openfda_enforcement.record_to_item(rec, base).url == IRES
 
 
 def openfda_ctx(tmp_path, answers: list[int]):

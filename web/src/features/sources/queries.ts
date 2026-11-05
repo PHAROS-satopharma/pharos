@@ -4,6 +4,8 @@ import { fetchAllPages, unwrap } from '../../lib/api';
 import type { Source, SourceRun } from '../../lib/types';
 
 export interface SourceWithRegulator extends Source {
+  /** The page a person opens (sources.yaml `page:`, 0032); null for a source added by hand. */
+  page_url: string | null;
   regulator: { id: string; name: string; country_code: string; country_name: string; languages: string[] } | null;
 }
 
@@ -16,7 +18,7 @@ export function useSources() {
           .from('source')
           .select(
             'id,regulator_id,kind,channel,url,parser,languages,schedule,enabled,origin,health,consecutive_failures,' +
-              'last_ok_at,last_item_at,expected_max_gap_days,notes,created_at,' +
+              'last_ok_at,last_item_at,expected_max_gap_days,notes,created_at,page_url,' +
               'regulator:regulator_id(id,name,country_code,country_name,languages)',
           )
           .order('id'),

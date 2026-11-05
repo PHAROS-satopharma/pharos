@@ -128,6 +128,45 @@ select id, 'Omar Gawish', email, 'admin' from auth.users where email = '<the inv
 
 After that, admins invite everyone else from the People screen (the `invite-person` function).
 
+## The Sources screen and the daily new-items message
+
+The Sources screen is a horizontal pass over the authorities: one card per country, Dr Sama's 25 countries
+first (A to Z, the European Union among them), then *Other authorities*. Each card shows:
+
+- **The pages you check**: her list (`regulator_page`, 0032), each marked *Read by the app*, *Partly read by
+  the app*, *Read by the app, by e-mail subscription* or *Not read by the app — open it yourself*. A page
+  counts as read only while one of its sources is switched on.
+- **New since you last looked (N)**: every item the country's authorities published since the person last
+  pressed **Mark as looked at** on that card, or since Sunday 00:00 Cairo when they never did, and never more
+  than 31 days back. Matched items carry *Matches a watched ingredient*. An item that came by e-mail with no
+  web page opens with **Read the e-mail** and **Save the original e-mail**.
+- **This week's reading** (folded): per source, checks, failed checks, new and matched items, and the last
+  check, from Sunday 00:00 Cairo. *New* and *Matched* open the items behind them.
+
+**Mark as looked at** stamps every authority of the country for the person pressing it (`mark_country_looked`),
+so Germany's two authorities clear together. Each person has their own looks. The *Sources* tab shows
+"N new" across every country. Feed and API addresses are never shown as links; an administrator sees them,
+with the parser, schedule, health and last error, under **Technical details**.
+
+Once a day, on the first collector run after the digest hour (`digest_hour_cairo`, 09:00 Cairo by default,
+within 4 h 30 min), every `new_items_digest` subscriber gets one Telegram message:
+
+```
+PHAROS · new items
+New on the authorities' pages since <Cairo time>:
+
+Germany: 3
+United Kingdom: 1
+
+https://pharos-satopharma.pages.dev/sources
+```
+
+The counts run from the last message delivered on an earlier day (a day back for the first one) and use the
+same list as the screen (`new_items()`). Nothing is sent on a day with nothing new. A refused message is
+tried again on the next run inside the window, to the people who did not get it. Anyone switches it on or
+off on the People screen: *New items on the authorities' pages, once a day*. Migration 0033 switches it on for
+Dr Sama only. While `telegram_dry_run` is on, the message is only written down.
+
 ## Turning real Telegram messages on
 
 `app_setting.telegram_dry_run` starts at `true`. Only the owner turns it off, on *My account → Real Telegram
@@ -142,8 +181,11 @@ messages* (admins only):
 ## Adding a source
 
 1. **Catalogue source** (lead, by pull request): add an entry to `collectors/sources.yaml` with its `id`,
-   regulator, `kind`, `channel`, `url`, `parser`, `languages`, `schedule` and `expected_max_gap_days`. Add a
-   real saved fixture under `tests/fixtures/<id>/` and a parser test. CI must pass before merge.
+   regulator, `kind`, `channel`, `url`, `page`, `parser`, `languages`, `schedule` and
+   `expected_max_gap_days`. `page` is the page a person opens (https, never a feed or an API); the
+   Sources screen links there. When the source reads one of Dr Sama's pages, add its id to that page's
+   `read_by` in `regulator_page` (by migration) so the page shows *Read by the app*. Add a real saved
+   fixture under `tests/fixtures/<id>/` and a parser test. CI must pass before merge.
 2. **User source** (admin, in the app): *Sources → Add → Test link*. The probe shows what PHAROS would read.
    Save only if the items look right. User sources use the `feed` or `generic_html` parser.
 3. **Newsletter-only source**: subscribe pharos@satopharma.com to the regulator's newsletter, then add an

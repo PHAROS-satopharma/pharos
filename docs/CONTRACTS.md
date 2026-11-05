@@ -147,6 +147,12 @@ keeps httpx/httpcore at WARNING and redacts each log record.
 The SPC sources are `spc-cima`, `spc-bdpm`, `spc-ema-epar`, `spc-dailymed`, `spc-mhra` and `spc-pmda`, with
 `kind: spc`. Their modules sit under `collectors/spc/` (A2); A1 lists them in `sources.yaml`.
 
+Every catalogue source also has `page:` (`SourceConfig.page_url`, stored in `source.page_url`, 0032): the
+https page a person opens for it, never a feed or an API address: `registry.py` refuses a page that is not a
+web address, and `tests/test_regulator_pages.py` refuses a feed or API page in any entry. The Sources screen
+links there, and `new_items()` uses it in place of a feed item's own link. A source added in the app has no
+page and links to its own address when that is not a feed.
+
 The `options` keys a parser reads (`include_categories`, `include_keywords`, `doc_type`, `lang`, `selector`
 …) are documented at the top of that parser's module.
 
@@ -163,6 +169,30 @@ create table probe_result (id uuid pk default gen_random_uuid(), url text not nu
 create_link_token() returns text                          -- one-time Telegram code for the caller
 archive_hit_count(p_term text, p_lang text) returns int   -- how many archived texts contain the term
 ```
+
+**Sources screen (0032).** Read by anyone signed in; written only as stated:
+
+```sql
+create table regulator_page (id uuid pk, regulator_id text references regulator(id), kind page_kind
+  -- 'database' | 'dhpc' | 'safety'
+  , sort int, label text, url text, read_by text[] -- source ids; empty = not read by the app
+  , partial boolean, note text, unique (regulator_id, url));   -- admins write; audited
+create table country_look (id bigserial pk, person_id uuid, regulator_id text, looked_at timestamptz);
+v_my_country_look (regulator_id, looked_at)                 -- the caller's latest look per authority
+mark_country_looked(p_regulator text) returns timestamptz   -- stamps every authority of that country
+  -- for the caller; 42501 without a person, 22023 for an unknown authority
+new_items(p_from timestamptz, p_to timestamptz default now()) returns table (document_id, source_id,
+  regulator_id, regulator_name, country_name, country_code, source_kind, title_orig, lang, link,
+  published_date, first_seen_at, doc_type, matched, r2_key, mime, email_id, email_r2_key)
+  -- security invoker; documents first seen in [p_from, p_to). link is a page a person opens: a feed
+  -- or API address becomes the source's page (else the authority's home page), an openFDA recall
+  -- links to FDA's Enforcement Report, and an e-mail item has no link (email_id / email_r2_key instead)
+```
+
+The feed rule (`(\.(xml|json|rss|atom)([?#]|$)|/(rss|feed|atom)(/|[?#]|$)|^https?://api\.)`, case-blind) is
+the same in `new_items()`, `web/src/features/sources/horizontal.ts` and `tests/test_regulator_pages.py`;
+the web test reads it from the migration. Subscription kind `new_items_digest` is the daily count of
+`new_items()` per country (`collectors/alerts.py`, `new_items_digest_if_due`).
 
 **Edge Functions** (all require a signed-in person; the web app calls them with `supabase.functions.invoke`):
 

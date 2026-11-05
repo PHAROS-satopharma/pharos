@@ -101,7 +101,7 @@ class MemoryStore:
         base.update(id=src.id, regulator_id=src.regulator_id, kind=src.kind, channel=src.channel,
                     url=src.url, parser=src.parser, languages=list(src.languages),
                     schedule=src.schedule, expected_max_gap_days=src.expected_max_gap_days,
-                    notes=notes)
+                    notes=notes, page_url=src.page_url)
         self.source[src.id] = base
 
     def list_sources(self) -> list[dict]:
@@ -306,6 +306,22 @@ class MemoryStore:
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind
                    and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+
+    def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
+        return any(n["person_id"] == person_id and n["kind"] == kind and n["sent_at"] >= since
+                   and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+
+    def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
+        """new_items() in memory: no history, no label watch, no literature."""
+        counts: dict[str, int] = {}
+        for d in self.document.values():
+            src = self.source.get(d["source_id"]) or {}
+            if (d.get("is_backfill") or src.get("kind") in ("spc", "literature")
+                    or not (since <= d["first_seen_at"] < until)):
+                continue
+            country = (self.regulator.get(src.get("regulator_id")) or {}).get("country_name")
+            counts[country] = counts.get(country, 0) + 1
+        return [{"country_name": c, "n": n} for c, n in sorted(counts.items(), key=lambda x: x[0] or "")]
 
     def insert_notification(self, **fields: Any) -> None:
         self.notification.append({**fields, "sent_at": _now()})

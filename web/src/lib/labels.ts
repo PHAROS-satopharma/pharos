@@ -150,6 +150,7 @@ export const ROLE_LABEL: Record<PersonRole, string> = {
 export const SUB_KIND_LABEL: Record<SubKind, string> = {
   ingredient: 'Ingredient notices, immediately',
   class_digest: 'Class-wide notices, daily digest',
+  new_items_digest: "New items on the authorities' pages, once a day",
   admin_health: 'Source health alerts',
 };
 
@@ -159,6 +160,7 @@ export const NOTIF_KIND_LABEL: Record<NotifKind, string> = {
   health: 'Source health',
   report: 'Monthly report',
   escalation: 'Late items',
+  new_items_digest: 'New items, daily',
 };
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });

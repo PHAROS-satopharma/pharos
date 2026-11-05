@@ -1,4 +1,5 @@
-"""PHAROS Telegram alerts: immediate notices, the daily class digest, health alerts, admin reports.
+"""PHAROS Telegram alerts: immediate notices, the daily class digest, the daily count of new items on the
+authorities' pages, health alerts, admin reports.
 
 Nothing real is sent while ``app_setting.telegram_dry_run`` is true (the default until the owner
 approves the first message), while the environment has ``DRY_RUN=1``, when the run was started with
@@ -31,6 +32,7 @@ ALERT_RETRY = timedelta(days=2)  # a refused immediate alert is tried again on e
 MAX_DIGEST_ITEMS = 60          # newest first; the rest are named as a count with a pointer to PHAROS
 MAX_MESSAGE_CHARS = 4000       # Telegram refuses a message over 4096 characters
 BRAND = "PHAROS"
+SOURCES_URL = "https://pharos-satopharma.pages.dev/sources"
 
 DOC_TYPE_LABEL = {
     "dhpc": "Direct healthcare professional communication",
@@ -67,6 +69,11 @@ def fmt_date(d: date | datetime | None) -> str:
     if isinstance(d, datetime):
         d = d.astimezone(CAIRO).date()
     return f"{d.day} {d:%b %Y}"
+
+
+def fmt_cairo_time(t: datetime) -> str:
+    t = t.astimezone(CAIRO)
+    return f"{t.day} {t:%b %Y}, {t:%H:%M} Cairo time"
 
 
 class TelegramError(Exception):
@@ -296,6 +303,39 @@ class Notifier:
                                                    tg_message_id=message_id, error=error, summary=text)
             sent += 1
         return sent
+
+    @staticmethod
+    def new_items_message(since: datetime, counts: list[dict]) -> str:
+        lines = [f"<b>{BRAND}</b> · new items",
+                 f"New on the authorities' pages since {esc(fmt_cairo_time(since))}:", ""]
+        lines += [f"{esc(c.get('country_name') or 'Unknown country')}: {int(c['n'])}" for c in counts]
+        lines += ["", SOURCES_URL]
+        return "\n".join(lines)
+
+    def new_items_digest_if_due(self) -> int:
+        """Once a day, on the first run after the digest hour: one message to each new_items_digest
+        subscriber with, per country, how many items its authorities published since the last such message
+        (new_items() in 0032, the list the Sources screen shows). Nothing is sent when nothing is new. A
+        refused message is tried again on the next run inside the window, to the people who did not get it.
+        Returns messages written."""
+        now = self.now()
+        due_at = self._digest_due_at()
+        if not (due_at <= now.astimezone(CAIRO) < due_at + DIGEST_WINDOW):
+            return 0
+        people = [p for p in self.store.subscribers("new_items_digest")
+                  if not self.store.notified_since(p["person_id"], "new_items_digest", due_at)]
+        if not people:
+            return 0
+        # since the last message of an earlier day: a retry today covers what today's first try did
+        last = self.store.last_notification_at("new_items_digest", delivered_only=True, before=due_at)
+        since = last or (now - timedelta(days=1))
+        counts = self.store.new_item_counts(since, now)
+        if not counts:
+            return 0
+        text = self.new_items_message(since, counts)
+        for person in people:
+            self._deliver(person, None, "new_items_digest", text)
+        return len(people)
 
     def health_alert(self, source_id: str, health: str, detail: str) -> int:
         """Source down / degraded / blocked → admins with an admin_health subscription only."""

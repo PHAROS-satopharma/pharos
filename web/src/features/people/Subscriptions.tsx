@@ -19,6 +19,7 @@ export function describeSub(s: SubscriptionRow): string {
 function subParts(s: SubscriptionRow): { what: string; when: string | null } {
   if (s.kind === 'ingredient') return { what: s.ingredient?.inn_en ?? 'Every ingredient', when: 'Immediately' };
   if (s.kind === 'class_digest') return { what: 'Class-wide notices', when: 'Daily digest' };
+  if (s.kind === 'new_items_digest') return { what: "New items on the authorities' pages", when: 'Once a day' };
   return { what: SUB_KIND_LABEL[s.kind], when: null };
 }
 

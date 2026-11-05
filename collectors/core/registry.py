@@ -60,12 +60,16 @@ def load_catalogue(path: str | Path = CATALOGUE) -> tuple[list[dict], list[Sourc
                              ("schedule", SOURCE_SCHEDULES)):
             if raw[key] not in allowed:
                 raise CatalogueError(f"{sid}: bad {key} {raw[key]!r}")
+        page = raw.get("page")
+        if page is not None and not (isinstance(page, str) and page.startswith(("https://", "http://"))):
+            raise CatalogueError(f"{sid}: page must be a web address, got {page!r}")
         sources.append(SourceConfig(
             id=sid, regulator_id=raw["regulator"], kind=raw["kind"], channel=raw["channel"],
             url=raw["url"], parser=raw["parser"], languages=list(raw["languages"]),
             schedule=raw["schedule"], enabled=bool(raw.get("enabled", True)),
             options=dict(raw.get("options") or {}),
             expected_max_gap_days=raw.get("expected_max_gap_days"),
+            page_url=page,
         ))
         notes[sid] = raw.get("notes")
     return regulators, sources, notes
@@ -110,5 +114,6 @@ def source_configs(store: Any, path: str | Path = CATALOGUE) -> list[SourceConfi
             enabled=bool(row["enabled"]),
             options=dict(opts if opts is not None else _options_from_notes(row.get("notes"))),
             expected_max_gap_days=row.get("expected_max_gap_days"),
+            page_url=row.get("page_url"),
         ))
     return out

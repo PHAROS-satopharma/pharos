@@ -433,3 +433,99 @@ def test_a_digest_refused_for_one_person_is_retried_for_that_person_only(monkeyp
     assert [c for c, _ in tg.messages] == [222, 111]         # p2 is not sent it twice
     assert sum(t.count("<a href=") for c, t in tg.messages if c == 111) == 3
     assert not later.digest_due()
+
+
+# ───────────────────────────── new items on the authorities' pages, once a day ─────────────────────────────
+
+def store_with_new_items() -> tuple[MemoryStore, datetime]:
+    """Germany (BfArM and the Paul-Ehrlich-Institut) and the United Kingdom published in the last day; a label
+    from the label watch, a history row and an older item are not counted."""
+    s, _ = store_with_issue()
+    nine_ten = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)
+    for d in s.document.values():
+        d["first_seen_at"] = nine_ten - timedelta(days=10)
+    s.upsert_regulator({"id": "PEI", "country_code": "DE", "country_name": "Germany",
+                        "name": "Paul-Ehrlich-Institut", "languages": ["de"], "homepage": None})
+    s.upsert_regulator({"id": "MHRA", "country_code": "GB", "country_name": "United Kingdom",
+                        "name": "MHRA", "languages": ["en"], "homepage": None})
+    s.source["bfarm-rhb"]["kind"] = "safety"
+    for sid, reg, kind in (("pei-rhb", "PEI", "safety"), ("mhra-dsu", "MHRA", "safety"),
+                           ("spc-mhra", "MHRA", "spc")):
+        s.source[sid] = {"id": sid, "regulator_id": reg, "kind": kind, "origin": "catalogue"}
+    for sid, ext, hours, backfill in (("bfarm-rhb", "a", 3, False), ("pei-rhb", "b", 5, False),
+                                      ("mhra-dsu", "c", 20, False), ("mhra-dsu", "old", 30, False),
+                                      ("spc-mhra", "label", 2, False), ("bfarm-rhb", "hist", 2, True)):
+        did = s.insert_document({"source_id": sid, "external_id": ext, "lang": "en",
+                                 "url": f"https://example.test/{ext}", "title_orig": ext,
+                                 "doc_type": "other", "published_date": None, "structured": None,
+                                 "is_backfill": backfill})
+        s.document[did]["first_seen_at"] = nine_ten - timedelta(hours=hours)
+    s.subscription.append({"person_id": "p1", "kind": "new_items_digest", "ingredient_id": None})
+    return s, nine_ten
+
+
+def test_new_items_message_once_a_day_with_a_count_per_country():
+    s, nine_ten = store_with_new_items()
+    early = Notifier(s, s.settings(), telegram=ExplodingTelegram(),
+                     now=lambda: nine_ten - timedelta(hours=1))
+    assert early.new_items_digest_if_due() == 0              # 08:10 Cairo: not yet
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: nine_ten)
+    assert n.new_items_digest_if_due() == 1                  # p1, the only subscriber
+    row = s.notification[-1]
+    assert (row["kind"], row["person_id"], row["issue_id"], row["dry_run"]) == \
+        ("new_items_digest", "p1", None, True)
+    assert row["summary"] == "\n".join([
+        "<b>PHAROS</b> · new items",
+        "New on the authorities' pages since 3 Nov 2026, 09:10 Cairo time:",
+        "",
+        "Germany: 2",                                        # BfArM and the Paul-Ehrlich-Institut
+        "United Kingdom: 1",                                 # not the label, not the 30-hour-old item
+        "",
+        "https://pharos-satopharma.pages.dev/sources",
+    ])
+    row["sent_at"] = nine_ten
+    later = Notifier(s, s.settings(), telegram=ExplodingTelegram(),
+                     now=lambda: nine_ten + timedelta(hours=2))
+    assert later.new_items_digest_if_due() == 0              # already sent today
+    assert [r["kind"] for r in s.notification].count("new_items_digest") == 1
+
+
+def test_no_new_items_message_when_nothing_is_new():
+    s, nine_ten = store_with_new_items()
+    for d in s.document.values():
+        d["first_seen_at"] = nine_ten - timedelta(days=3)
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: nine_ten)
+    assert n.new_items_digest_if_due() == 0
+    assert not [r for r in s.notification if r["kind"] == "new_items_digest"]
+
+
+def test_next_new_items_message_counts_from_the_last_one():
+    s, nine_ten = store_with_new_items()
+    Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: nine_ten).new_items_digest_if_due()
+    s.notification[-1]["sent_at"] = nine_ten
+    next_day = nine_ten + timedelta(days=1)
+    did = s.insert_document({"source_id": "mhra-dsu", "external_id": "d", "lang": "en",
+                             "url": "https://example.test/d", "title_orig": "d", "doc_type": "other",
+                             "published_date": None, "structured": None, "is_backfill": False})
+    s.document[did]["first_seen_at"] = next_day - timedelta(hours=1)
+    m = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: next_day)
+    assert m.new_items_digest_if_due() == 1
+    text = s.notification[-1]["summary"]
+    assert "since 4 Nov 2026, 09:10 Cairo time:" in text
+    assert "United Kingdom: 1" in text and "Germany" not in text
+
+
+def test_a_refused_new_items_message_is_tried_again_for_who_missed_it(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = store_with_new_items()
+    s.subscription.append({"person_id": "p2", "kind": "new_items_digest", "ingredient_id": None})
+    tg = PickyTelegram()                                     # refuses p1 (111) only
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: nine_ten)
+    assert n.new_items_digest_if_due() == 2
+    assert [c for c, _ in tg.messages] == [222]
+    tg.refuse = None
+    later = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                     now=lambda: nine_ten + timedelta(hours=2))
+    assert later.new_items_digest_if_due() == 1              # p1 now; p2 is not sent it twice
+    assert [c for c, _ in tg.messages] == [222, 111]
+    assert later.new_items_digest_if_due() == 0
