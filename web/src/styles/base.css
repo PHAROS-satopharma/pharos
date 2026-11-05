@@ -1523,6 +1523,17 @@ button.stat[aria-pressed='true'] {
 .state-action {
   margin-top: 20px;
 }
+.error-details {
+  margin-top: 12px;
+}
+.error-details summary {
+  cursor: pointer;
+}
+.error-details .mono {
+  margin-top: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .state-loading,
 .panel .state-loading {
   display: flex;

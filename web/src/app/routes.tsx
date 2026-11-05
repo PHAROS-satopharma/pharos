@@ -55,6 +55,30 @@ function NotInvited() {
   );
 }
 
+function CannotReach() {
+  const { personError, personRetrying, retryPerson, signOut } = useAuth();
+  return (
+    <Bare>
+      <Empty
+        title="Could not reach PHAROS. Check the connection."
+        action={
+          <>
+            <Button variant="primary" busy={personRetrying} onClick={retryPerson}>
+              Retry
+            </Button>{' '}
+            <Button variant="quiet" onClick={() => void signOut()}>
+              Sign out
+            </Button>
+          </>
+        }
+      >
+        <p>Your account could not be loaded, so PHAROS cannot tell yet what you may see.</p>
+        {personError ? <p className="soft">Details: {personError}</p> : null}
+      </Empty>
+    </Bare>
+  );
+}
+
 function ChoosePassword({ onDone }: { onDone: () => void }) {
   const { session } = useAuth();
   return (
@@ -79,13 +103,15 @@ function NotFound() {
 }
 
 export function AppRoutes() {
-  const { ready, session, person, personLoading, isAdmin } = useAuth();
+  const { ready, session, person, personLoading, personFailed, isAdmin } = useAuth();
   const [choosePassword, setChoosePassword] = useState(mustChoosePassword);
 
   if (!supabaseConfigured) return <NotConfigured />;
   if (!ready) return <Loading label="Opening PHAROS" />;
   if (!session) return <SignIn />;
   if (personLoading) return <Loading label="Opening PHAROS" />;
+  // A failed read is not an inactive account: say so, and offer to try again.
+  if (personFailed) return <CannotReach />;
   if (!person || !person.active) return <NotInvited />;
   if (choosePassword) return <ChoosePassword onDone={() => setChoosePassword(false)} />;
 
