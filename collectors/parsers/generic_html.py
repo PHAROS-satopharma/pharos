@@ -27,6 +27,8 @@ Options (all optional unless said):
   <value>}]``, first match wins;
 * ``browser`` — read the page with the shared headless browser (``ctx.browser_get``);
   ``wait_selector`` is then awaited (default: ``item_selector``);
+* ``next_selector`` — CSS of the pager's "next page" link (e.g. ``a[rel=next]``); it is followed
+  until the pager ends, at most ``max_pages`` pages (default 40), for a list in no date order;
 * ``extra_urls`` — more list pages read the same way; or ``pages`` — a list of option dicts, one
   per list page (each with its own ``url`` and any option above), for a source whose pages differ;
   ``{year}`` in a URL is the current year (and last year too in January and on a backfill — a
@@ -233,12 +235,38 @@ def list_with(ctx, source: SourceConfig, opts: dict) -> list[Item]:
                 require(got or raw_nodes(f, page), f, marker=page.get("item_selector"),
                         empty_markers=page.get("empty_markers") or ())
             checked = True
+            got += _follow_pager(ctx, source, page, f)
             for it in got:
                 if it.external_id not in seen:
                     seen.add(it.external_id)
                     out.append(it)
         if missing == len(urls):
             raise FetchError(404, urls[0])
+    return out
+
+
+def _follow_pager(ctx, source: SourceConfig, page: dict, first) -> list[Item]:
+    """The items of the pages after ``first``, following ``next_selector`` (none when unset).
+    A list in no date order (SFDA recalls) can hide its newest row on any page, so every page is
+    read; a page that fails to load fails the run rather than leaving the list half read."""
+    sel = page.get("next_selector")
+    if not sel:
+        return []
+    out: list[Item] = []
+    visited = {first.final_url}
+    f = first
+    for _ in range(int(page.get("max_pages") or 40) - 1):
+        nxt = soup(f).select_one(sel)
+        if nxt is None or not nxt.get("href"):
+            return out
+        url = absolute(nxt["href"], f.final_url)
+        if url in visited:
+            return out
+        visited.add(url)
+        f = read_page(ctx, url, page)
+        if f.status >= 400:
+            raise FetchError(f.status, url)
+        out += extract(f, f.final_url, source, page)
     return out
 
 
@@ -287,7 +315,9 @@ PRESETS: dict[str, dict] = {
          "doc_type": "recall",
          "url": _EDA + "منشورات-السحب-والغش-الدوائي-خطابات-التوعية/خطابات-توعية/{year}/"},
     ]},
-    # SFDA Saudi Arabia: warning cards (food and drug together) and the drug recall table.
+    # SFDA Saudi Arabia: warning cards (food and drug together, newest first) and the drug recall
+    # table, which is in no date order (17 pages on 5 Nov 2026; Sep and Oct recalls sat on pages
+    # 2, 7, 15 and 16), so every page of it is read.
     "sfda-sa": {"pages": [
         {"url": "https://www.sfda.gov.sa/ar/warnings", "item_selector": "div.node--type-warning",
          "title_selector": "p.head-subtitle", "date_selector": "div.text-primary span",
@@ -299,7 +329,8 @@ PRESETS: dict[str, dict] = {
          "item_selector": "table tbody tr",
          "title_selector": "td[headers=view-field-name-product-table-column]",
          "date_selector": "time", "tag_selector": "td[headers=view-field-recall-action-table-column]",
-         "link_selector": "a[href*='/drugs_circulars_withdrawal/']", "doc_type": "recall"},
+         "link_selector": "a[href*='/drugs_circulars_withdrawal/']", "doc_type": "recall",
+         "next_selector": "a[rel=next]"},
     ]},
     # JFDA Jordan: latest circulars, "name | description | date dd/mm/yyyy | PDF".
     "jfda-jo": {"url": "https://www.jfda.jo/AR/List/أحدث_التعاميم_الصادرة",

@@ -615,10 +615,32 @@ def test_sfda_warnings_keep_drug_cards_only():
     assert [i.external_id for i in both] == ["sfda-sa:6491"]
     assert both[0].structured["tag"] == "غذاء, دواء"
     # an all-food page is not a broken page: the source still reads it without failing
-    ctx = FakeCtx({SFDA: "sfda-sa/warnings.html",
-                   "https://www.sfda.gov.sa/ar/drugs_circulars_withdrawal": "sfda-sa/drugs_circulars_withdrawal.html"})
+    ctx = FakeCtx({SFDA: "sfda-sa/warnings.html", **SFDA_RECALL_PAGES})
     got = generic_html.list_items(ctx, src)
     assert got and all(i.doc_type == "recall" for i in got)
+
+
+SFDA_RECALLS = "https://www.sfda.gov.sa/ar/drugs_circulars_withdrawal"
+# page 1 as saved on 4 Nov, then the real last page (saved 5 Nov from ?page=16, no "next" link)
+SFDA_RECALL_PAGES = {SFDA_RECALLS: "sfda-sa/drugs_circulars_withdrawal.html",
+                     SFDA_RECALLS + "?page=1": "sfda-sa/drugs_circulars_withdrawal_last.html"}
+
+
+def test_sfda_recall_table_reads_every_page():
+    # The recall table is in no date order: on 5 Nov 2026 page 1 ended at 5 Aug while September
+    # and October recalls sat on later pages. Every page is read, until the pager has no "next".
+    src = source("sfda-sa", SFDA, languages=["ar"])
+    opts = generic_html.options_for(src)["pages"][1]
+    ctx = FakeCtx(SFDA_RECALL_PAGES)
+    items = generic_html.list_with(ctx, src, {"pages": [opts]})
+    urls = {i.url for i in items}
+    assert SFDA_RECALLS + "/18835" in urls                       # a page-1 row
+    assert SFDA_RECALLS + "/8505" in urls                        # the last page's only row
+    assert [r[1] for r in ctx.requests] == [SFDA_RECALLS, SFDA_RECALLS + "?page=1"]
+    # a page that fails to load fails the run, never a silently half-read list
+    with pytest.raises(FetchError):
+        generic_html.list_with(FakeCtx({SFDA_RECALLS: "sfda-sa/drugs_circulars_withdrawal.html"}),
+                               src, {"pages": [opts]})
 
 
 def test_sfda_recall_table():
