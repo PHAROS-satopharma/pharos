@@ -19,7 +19,8 @@ Options (all optional unless said):
 * ``item_selector``, ``link_selector``, ``title_selector``, ``date_selector``,
   ``summary_selector``, ``tag_selector`` — CSS selectors as above;
 * ``link_pattern`` — regex an href must match (required in link mode);
-* ``include_tags`` — keep only items whose tag text is one of these (e.g. ``["دواء"]``);
+* ``include_tags`` — keep only items with at least one tag among these (e.g. ``["دواء"]``); an
+  item may carry several tags (``tag_selector`` matches each), kept in ``structured.tag`` joined by ", ";
 * ``id_attr`` — attribute of the item node used as external id (e.g. ``data-history-node-id``);
   default: the absolute URL;
 * ``doc_type`` (``safety_alert``) and ``doc_type_rules`` — ``[{match: <regex on title>, doc_type:
@@ -123,8 +124,9 @@ def extract(html, base_url: str, source: SourceConfig, opts: dict | None = None)
             ssel = opts.get("summary_selector")
             summary = block_text(node.select_one(ssel)) if ssel else ""
             gsel = opts.get("tag_selector")
-            tag = node_text(node.select_one(gsel)) if gsel else ""
-            if include_tags and tag not in include_tags:
+            tags = [t for t in (node_text(n) for n in node.select(gsel)) if t] if gsel else []
+            tag = ", ".join(tags)
+            if include_tags and not include_tags.intersection(tags):
                 continue
             ext = None
             if opts.get("id_attr") and node.get(opts["id_attr"]):
@@ -290,6 +292,7 @@ PRESETS: dict[str, dict] = {
         {"url": "https://www.sfda.gov.sa/ar/warnings", "item_selector": "div.node--type-warning",
          "title_selector": "p.head-subtitle", "date_selector": "div.text-primary span",
          "summary_selector": "p:not(.head-subtitle)", "tag_selector": "div.tag",
+         "include_tags": ["دواء"],   # the list mixes food and drug warnings; a card may carry both
          "link_selector": "a[href*='/warnings/']", "id_attr": "data-history-node-id",
          "doc_type": "safety_alert"},
         {"url": "https://www.sfda.gov.sa/ar/drugs_circulars_withdrawal",
