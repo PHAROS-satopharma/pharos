@@ -22,6 +22,7 @@ A challenge page raises ``SourceBlocked`` from ``FetchContext.browser_get``; not
 
 from __future__ import annotations
 
+import logging
 import re
 from urllib.parse import quote
 
@@ -41,6 +42,12 @@ AGREE = "#agree-checkbox"
 RESULT_LINK = "a[href*='blob.core.windows.net']"
 MAX_PAGES = 5
 
+log = logging.getLogger(__name__)
+
+
+class DisclaimerNotAccepted(RuntimeError):
+    """The disclaimer was still on the page after Agree: the results could not be reached."""
+
 
 def accept_disclaimer(page) -> None:
     """Tick "I have read and understand the disclaimer." and press Agree, when it is shown."""
@@ -52,6 +59,10 @@ def accept_disclaimer(page) -> None:
         return
     page.check(AGREE)
     page.click(f"form:has({AGREE}) button[type=submit]")
+    try:
+        page.wait_for_selector(AGREE, state="detached", timeout=15000)
+    except Exception:  # noqa: BLE001 - still there: say so instead of reading it as "no results"
+        raise DisclaimerNotAccepted("MHRA disclaimer still shown after Agree; results not reached") from None
 
 
 def substances(line: str) -> list[str]:
@@ -103,9 +114,13 @@ def discover(ctx, ingredient: dict) -> list[Product]:
                                     wait_selector=RESULT_LINK, before_wait=accept_disclaimer)
             except ParseError:      # no (more) results: the selector never appeared
                 break
-            if not parse_results(f, f.final_url):
+            hits = parse_results(f, f.final_url)
+            if not hits:
                 break               # a page without results: the end of the list
-            for p in parse_results(f, f.final_url, terms):
+            mine = parse_results(f, f.final_url, terms)
+            log.info("SPC %s %r page %d: %d search hit(s), %d with it as an active substance",
+                     SOURCE_ID, term, page, len(hits), len(mine))
+            for p in mine:
                 found.setdefault(p.national_id, p)
     return list(found.values())
 

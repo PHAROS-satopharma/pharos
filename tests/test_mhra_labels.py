@@ -37,11 +37,13 @@ def test_a_combination_product_counts_for_each_of_its_substances():
 
 
 class _Page:
-    def __init__(self, disclaimer: bool) -> None:
-        self.disclaimer, self.actions = disclaimer, []
+    def __init__(self, disclaimer: bool, stays: bool = False) -> None:
+        self.disclaimer, self.stays, self.actions = disclaimer, stays, []
 
-    def wait_for_selector(self, selector, timeout=None):
-        self.actions.append(("wait", selector))
+    def wait_for_selector(self, selector, timeout=None, state=None):
+        self.actions.append(("wait", selector, state))
+        if state == "detached" and self.stays:
+            raise TimeoutError("still attached")
 
     def query_selector(self, selector):
         return object() if self.disclaimer and selector == mhra.AGREE else None
@@ -79,3 +81,26 @@ def test_discover_passes_the_disclaimer_step_to_the_browser():
     got = mhra.discover(_Ctx(), {"inn_en": "naproxen", "terms": {"en": ["naproxen"]}})
     assert len(got) == 3
     assert calls[0]["before_wait"] is mhra.accept_disclaimer
+
+
+def test_a_disclaimer_that_stays_after_agree_is_an_error_not_no_results():
+    import pytest
+    with pytest.raises(mhra.DisclaimerNotAccepted):
+        mhra.accept_disclaimer(_Page(disclaimer=True, stays=True))
+
+
+def test_discover_logs_the_hits_it_saw(caplog):
+    import logging
+
+    class _Ctx:
+        n = 0
+
+        def browser_get(self, url, **kw):
+            from collectors.core.context import Fetched
+            self.n += 1
+            body = _html("search_lornoxicam_agreed.html") if self.n == 1 else "<html></html>"
+            return Fetched(200, url, body.encode(), "text/html; charset=utf-8")
+
+    with caplog.at_level(logging.INFO, logger="collectors.spc.mhra"):
+        assert mhra.discover(_Ctx(), {"inn_en": "lornoxicam", "terms": {"en": ["lornoxicam"]}}) == []
+    assert "4 search hit(s), 0 with it as an active substance" in caplog.text
