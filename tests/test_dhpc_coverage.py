@@ -189,3 +189,16 @@ def test_every_dhpc_list_found_is_read():
                 "pmda-urgent", "pmda-company-letters", "hsa-announcements", "hc-recalls", "mhra-alerts"}
     assert expected <= {s.id for s in SOURCES if s.enabled}
     assert source("x", "https://example.invalid/").enabled            # the helper still builds
+
+
+# ─────────────────── EU signals: the PRAC signal recommendations are read ───────────────────
+
+def test_prac_signals_are_switched_on():
+    from pathlib import Path
+
+    assert CFG["ema-prac"].enabled and CFG["ema-prac"].parser == "prac"
+    # The catalogue's flag only applies to a new row: the row already in the database is switched on
+    # by a migration.
+    sql = (Path(__file__).resolve().parent.parent / "supabase/migrations/0021_prac_signals_on.sql").read_text(
+        encoding="utf-8")
+    assert "update source set enabled = true" in sql and "id = 'ema-prac'" in sql
