@@ -346,6 +346,15 @@ def test_a_fresh_anchor_clears_the_backfill_flag(store, tag):
     assert store.issue_for_alert(issue)["is_backfill"] is False
 
 
+def test_a_fresh_copy_marks_a_history_issue_current(store, tag):
+    src = _source(store, tag)
+    d1 = store.insert_document(_doc(src.id, "h1", is_backfill=True))
+    issue = store.create_issue(doc_type="dhpc", title="h", anchor_document_id=d1,
+                               first_date=None, class_only=False, is_backfill=True)
+    store.mark_issue_current(issue)
+    assert store.issue_for_alert(issue)["is_backfill"] is False
+
+
 @pytest.mark.parametrize("error, failed", [
     (None, False), ("imap not configured", False),
     ("imap: 2 message(s) held unread: sender not verified (no DMARC, DKIM or SPF pass) or too big", False),

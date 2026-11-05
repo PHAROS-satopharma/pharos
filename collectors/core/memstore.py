@@ -242,6 +242,9 @@ class MemoryStore:
         if first_date and (iss["first_date"] is None or first_date < iss["first_date"]):
             iss["first_date"] = first_date
 
+    def mark_issue_current(self, issue_id: str) -> None:
+        self.issue[issue_id]["is_backfill"] = False
+
     def add_issue_ingredients(self, issue_id: str, ingredient_ids: Iterable[str]) -> None:
         for g in ingredient_ids:
             if (issue_id, g) not in self.issue_ingredient:

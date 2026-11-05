@@ -145,3 +145,28 @@ def test_a_fresh_anchor_takes_an_old_issue_out_of_the_backfill():
     ra = merge_document(s, anchor, mahs=[])
     assert not ra.created and ra.issue_id == rn.issue_id and ra.alert
     assert s.issue[rn.issue_id]["is_backfill"] is False
+
+
+def test_a_fresh_copy_takes_a_history_issue_out_of_the_backfill():
+    # The EMA letter was stored on the source's seed run (history); a national copy that arrives fresh
+    # later is news: the issue must alert and show, not stay under "Show the history".
+    s = store_with_regulators()
+    anchor = add_doc(s, "ema-dhpc", "Xefo DHPC", date(2026, 10, 1), "", structured=EMA_STRUCT, url=EMA_URL)
+    anchor.is_backfill = True
+    r0 = merge_document(s, anchor, mahs=[])
+    assert s.issue[r0.issue_id]["is_backfill"]
+    copy = add_doc(s, "bfarm-rhb", "Rote-Hand-Brief zu Xefo", date(2026, 10, 3), "EMEA/H/A-31/1599 Xefo")
+    r = merge_document(s, copy, mahs=[])
+    assert not r.created and r.issue_id == r0.issue_id and r.link == "copy" and r.alert
+    assert s.issue[r0.issue_id]["is_backfill"] is False
+
+
+def test_a_history_copy_leaves_a_history_issue_in_the_history():
+    s = store_with_regulators()
+    anchor = add_doc(s, "ema-dhpc", "Xefo DHPC", date(2026, 10, 1), "", structured=EMA_STRUCT, url=EMA_URL)
+    anchor.is_backfill = True
+    r0 = merge_document(s, anchor, mahs=[])
+    copy = add_doc(s, "bfarm-rhb", "Rote-Hand-Brief zu Xefo", date(2026, 10, 3), "EMEA/H/A-31/1599 Xefo")
+    copy.is_backfill = True
+    merge_document(s, copy, mahs=[])
+    assert s.issue[r0.issue_id]["is_backfill"] is True
