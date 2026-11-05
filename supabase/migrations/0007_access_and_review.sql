@@ -210,7 +210,7 @@ begin
     v_reason := 'Telegram''s answer to this test can no longer be read. Send a new test message.';
   else
     begin
-      v_ok := v_status = 200 and coalesce((v_body::jsonb ->> 'ok')::boolean, false);
+      v_ok := coalesce(v_status = 200, false) and coalesce((v_body::jsonb ->> 'ok')::boolean, false);
     exception when others then
       v_ok := false;
     end;
