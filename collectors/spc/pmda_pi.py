@@ -7,10 +7,12 @@ Source ``spc-pmda``; country JP; Japanese, kept as published.
   ``tests/fixtures/spc-pmda/general_list_2190417.html``). Its product table has one ``tr`` per
   product: 販売名 | 製造販売業者等 | 添付文書 (``a[href="../ResultDataSetPDF/<package id>"]``
   "PDF(2026年10月27日)" — the revision date — and an HTML view) | IF | RMP …
-  The codes for an ingredient come from (1) the ``general_list`` links PHAROS already stored from
-  ``pmda-revisions`` documents matched to the ingredient, and (2) the environment variable
-  ``SPC_PMDA_GENERAL_CODES`` (``inn_en=code,code;inn_en=code``) for ingredients never named in a
-  revision. The package id ``<company>_<YJ code>_<version>`` minus its version suffix is the
+  The codes for an ingredient come from (1) its ``code`` terms for Japan on the Ingredients page
+  (country JP: the 7-character 一般名 code, or a 12-character YJ code whose first 7 characters are
+  it; lornoxicam = 1149036, ロルカム錠 and ロルノキシカム錠「KO」), (2) the ``general_list`` links
+  PHAROS already stored from ``pmda-revisions`` documents matched to the ingredient, and (3) the
+  environment variable ``SPC_PMDA_GENERAL_CODES`` (``inn_en=code,code;inn_en=code``). Without
+  any of them Japan watches nothing for that ingredient. The package id ``<company>_<YJ code>_<version>`` minus its version suffix is the
   national id, so a new revision of the same insert is the same product.
 * Snapshot: the PDF ``https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/<package id>``,
   text by ``collectors.pdf.extract_text_by_columns`` (``jpn`` OCR fallback), split by 添付文書 heading
@@ -50,6 +52,11 @@ SQL_CODES = """select distinct d.structured -> 'general_list' as links
                 where d.source_id = 'pmda-revisions' and m.ingredient_id = %(iid)s
                   and d.structured ? 'general_list'"""
 
+SQL_TERM_CODES = """select term from ingredient_term
+                     where ingredient_id = %(iid)s and kind = 'code' and country_code = 'JP'
+                     order by term"""
+_GENERAL_CODE = re.compile(r"^([0-9]{4}[0-9A-Z]{3})(?:[0-9A-Z]{5})?$")
+
 
 def stable_id(pid: str) -> str:
     m = _VERSION.match(pid)
@@ -69,6 +76,10 @@ def general_codes(ctx, ingredient: dict) -> list[str]:
     codes: list[str] = []
     db = getattr(ctx, "db", None)
     if db is not None and ingredient.get("id"):
+        for row in db.fetchall(SQL_TERM_CODES, {"iid": ingredient["id"]}):
+            m = _GENERAL_CODE.match(str(row.get("term") or "").strip().upper())
+            if m and m.group(1) not in codes:
+                codes.append(m.group(1))
         for row in db.fetchall(SQL_CODES, {"iid": ingredient["id"]}):
             for link in row.get("links") or []:
                 m = _CODE.search(str(link))
