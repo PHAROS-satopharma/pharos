@@ -47,12 +47,22 @@ export interface RunTotals {
   fresh: number;
   matched: number;
   lastRun: string | null;
-  /** The newest run's note when that run failed; null once a later run is clean. */
+  /** The newest run's note or failure reason; null once a later run is clean. */
   lastError: string | null;
 }
 
+/**
+ * Notes a COMPLETED run carries in source_run.error, mirroring source_run_failed() in
+ * supabase/migrations/0018_failed_runs_and_ingredient_lock.sql (keep the two lists the same). A Health
+ * Canada backfill that stopped at its 10-minute budget ("time budget reached: …") read the whole list;
+ * this page counted six of them as failed runs on 5 Nov 2026 while the Reports screen did not.
+ */
+const RUN_NOTE =
+  /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text)/;
+
 export function isFailed(r: RunSlice): boolean {
-  return Boolean(r.error) || (r.http_status != null && r.http_status >= 400);
+  if (r.http_status != null && r.http_status >= 400) return true;
+  return Boolean(r.error) && !RUN_NOTE.test(r.error ?? '');
 }
 
 /** Totals per source. Runs must be newest first. */
@@ -66,11 +76,10 @@ export function totalsBySource(runs: RunSlice[]): Map<string, RunTotals> {
     }
     const newest = t.runs === 0;
     t.runs += 1;
-    if (isFailed(r)) {
-      t.failed += 1;
-      // only the newest run's own note: an older failure no longer describes the source
-      if (newest) t.lastError = r.error ?? `HTTP ${r.http_status ?? ''}`.trim();
-    }
+    const failed = isFailed(r);
+    if (failed) t.failed += 1;
+    // only the newest run's own note: an older one no longer describes the source
+    if (newest && (failed || r.error)) t.lastError = r.error ?? `HTTP ${r.http_status ?? ''}`.trim();
     t.seen += r.items_seen ?? 0;
     t.fresh += r.items_new ?? 0;
     t.matched += r.items_matched ?? 0;
