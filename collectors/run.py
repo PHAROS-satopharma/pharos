@@ -130,6 +130,11 @@ class Runner:
             except (FetchError, httpx.HTTPError) as exc:
                 log.warning("attachment %s: %s", url, exc)
                 continue
+            except SourceBlocked as exc:
+                # One linked file behind a bot check (an ANSM notice links a PDF on sante.gouv.fr) is
+                # skipped, never bypassed; the source itself was read, so it is not "blocked".
+                log.warning("attachment %s: %s", url, exc)
+                continue
             if f.status != 200:
                 continue
             text, method, words = "", "none", 0
