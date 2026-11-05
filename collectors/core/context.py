@@ -111,6 +111,10 @@ class ParseError(Exception):
         super().__init__(redact(message))
 
 
+class NotSetUp(ParseError):
+    """The source has no reading rules yet (its page was never seen); nothing is fetched."""
+
+
 class FetchError(Exception):
     """An HTTP error status (4xx/5xx) that is not a bot check. Counts as a source failure."""
 

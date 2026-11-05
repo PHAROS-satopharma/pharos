@@ -325,6 +325,26 @@ def test_after_store_hears_only_items_now_in_the_database(tmp_path, monkeypatch)
     ctx.close()
 
 
+def test_a_source_not_set_up_is_reported_as_such(tmp_path):
+    from collectors.core.context import NotSetUp
+
+    class Parser:
+        @staticmethod
+        def list_items(ctx, src):
+            raise NotSetUp("uae-mohap has no reading rules yet.")
+
+    server = Server()
+    store, ctx, _, _ = setup(tmp_path, server)
+    runner = Runner(store, ctx, Notifier(store, store.settings()), store.settings(),
+                    parser_loader=lambda name: Parser)
+    stats = runner.run_source(SRC)
+    assert stats.failed
+    health = [n for n in store.notification if n["kind"] == "health"]
+    assert health and "Not set up yet: uae-mohap has no reading rules yet." in str(health[-1])
+    assert "changed shape" not in str(health[-1])
+    ctx.close()
+
+
 def test_each_run_records_the_slot_it_served(tmp_path):
     store = MemoryStore()
     rid = store.create_run("cron", "sha", "12h")
