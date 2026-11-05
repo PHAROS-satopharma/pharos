@@ -277,6 +277,7 @@ class Store:
         self.db.execute(
             """update issue set anchor_document_id = %(d)s, title = %(t)s, doc_type = %(dt)s,
                  first_date = least(first_date, %(f)s), is_backfill = is_backfill and %(b)s,
+                 current_since = case when is_backfill and not %(b)s then now() else current_since end,
                  updated_at = now() where id = %(i)s""",
             {"d": document_id, "t": title, "dt": doc_type, "f": first_date, "b": is_backfill,
              "i": issue_id})
@@ -284,7 +285,8 @@ class Store:
     def mark_issue_current(self, issue_id: str) -> None:
         """A fresh document joined a history issue: it leaves the history, so it alerts and shows."""
         self.db.execute(
-            "update issue set is_backfill = false, updated_at = now() where id = %(i)s and is_backfill",
+            """update issue set is_backfill = false, current_since = now(), updated_at = now()
+                where id = %(i)s and is_backfill""",
             {"i": issue_id})
 
     def add_issue_ingredients(self, issue_id: str, ingredient_ids: Iterable[str]) -> None:
@@ -403,8 +405,9 @@ class Store:
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = self.db.fetchall(
-            """select id from issue where class_only and not is_backfill and created_at > %(s)s
-                order by created_at desc""", {"s": since})
+            """select id from issue
+                where class_only and not is_backfill and (created_at > %(s)s or current_since > %(s)s)
+                order by coalesce(current_since, created_at) desc""", {"s": since})
         return [str(r["id"]) for r in rows]
 
     # ───────────────────────────── probe ─────────────────────────────
