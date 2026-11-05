@@ -6,6 +6,7 @@ import { PublishedIn } from './PublishedIn';
 import { MatchedText } from './MatchedText';
 import { PdfViewer } from './PdfViewer';
 import { SpcDiff } from './SpcDiff';
+import { CaseReport } from './CaseReport';
 import { ReviewHistory, WhoWasNotified } from './History';
 import { SignalPanel } from '../signals/SignalPanel';
 import { useAuth } from '../../lib/auth';
@@ -263,6 +264,8 @@ export function DetailPage() {
         </div>
 
         <aside className="detail-aside">
+          <CaseReport issueId={row.id} enabled={row.doc_type === 'literature'} />
+
           <DecisionPanel issue={row} />
 
           <SignalPanel issue={row} />

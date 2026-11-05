@@ -664,6 +664,24 @@ def test_prac_meeting_highlights():
     assert all(i.published is not None for i in items)
 
 
+def test_prac_agendas_and_minutes():
+    src = source("ema-prac", PRAC)
+    url = "https://www.ema.europa.eu/en/committees/prac/prac-agendas-minutes-highlights"
+    items = prac.parse_meetings(fixture("ema-prac/meetings.html"), url, src)
+    agendas = [i for i in items if i.structured["kind"] == "prac_agenda"]
+    minutes = [i for i in items if i.structured["kind"] == "prac_minutes"]
+    assert len(agendas) == 3 and len(minutes) == 3
+    first = agendas[0]
+    assert first.title == "Agenda of the PRAC meeting 26 - 29 October 2026"
+    assert first.url == "https://www.ema.europa.eu/en/documents/agenda/agenda-prac-meeting-26-29-october-2026_en.pdf"
+    assert first.external_id == first.url and first.attachment_urls == [first.url]
+    assert first.structured["reference"] == "EMA/PRAC/227255/2026"
+    assert first.published == date(2026, 10, 26)
+    assert first.doc_type == "safety_update" and first.lang == "en"
+    # the rules of procedure, the work plan and the meeting dates on the same page are not notices
+    assert all("/agenda/" in i.url or "/minutes/" in i.url for i in items)
+
+
 WHO = ("https://www.who.int/teams/regulation-prequalification/incidents-and-SF/"
        "full-list-of-who-medical-product-alerts")
 
