@@ -206,21 +206,6 @@ def test_health_canada_keeps_health_products():
     assert len(items) == wanted
 
 
-def test_pubmed_esummary():
-    search = json.loads(fixture("pubmed/esearch-lornoxicam.json"))
-    assert search["esearchresult"]["idlist"]
-    data = json.loads(fixture("pubmed/esummary.json"))
-    items = pubmed.parse_esummary(data, "lornoxicam")
-    assert [i.external_id for i in items] == ["42846100", "42770875", "42859397"]
-    first = items[0]
-    assert first.url == "https://pubmed.ncbi.nlm.nih.gov/42846100/"
-    assert first.doc_type == "literature"
-    assert first.published == date(2026, 10, 7)          # sortpubdate 2026/10/07
-    assert first.structured["query_term"] == "lornoxicam"
-    with pytest.raises(ParseError):
-        pubmed.parse_esummary({"error": "x"}, "lornoxicam")
-
-
 NCBI_DOWN = (b'{"header":{"type":"esearch","version":"0.3"},"esearchresult":{"ERROR":"Search Backend '
              b'failed: Search is temporarily unavailable. Please try again later. Details: Cannot connect '
              b'to SOLR"}}')
@@ -238,8 +223,12 @@ def ncbi_ctx(tmp_path, esearch_failures: int, last_ok_at=None, backend_down: boo
                 if backend_down:
                     return httpx.Response(200, headers={"content-type": "application/json"}, content=NCBI_DOWN)
                 return httpx.Response(500, headers={"content-type": "text/html"}, text="<html>Error</html>")
+            # PubMed's first page; PubMed Central, and every later page, have nothing more
+            q = parse_qs(urlsplit(str(req.url)).query)
+            first = q["db"] == ["pubmed"] and q["retstart"] == ["0"]
             return httpx.Response(200, headers={"content-type": "application/json"},
-                                  content=fixture("pubmed/esearch-lornoxicam.json"))
+                                  content=fixture("pubmed/esearch-lornoxicam.json" if first
+                                                  else "pubmed/esearch-empty.json"))
         return httpx.Response(200, headers={"content-type": "application/json"},
                               content=fixture("pubmed/esummary.json"))
 
@@ -250,6 +239,23 @@ def ncbi_ctx(tmp_path, esearch_failures: int, last_ok_at=None, backend_down: boo
     ctx.watchlist = ["lornoxicam"]
     ctx.last_ok_at = last_ok_at
     return ctx, calls, sleeps
+
+
+def test_pubmed_esummary(tmp_path):
+    search = json.loads(fixture("pubmed/esearch-lornoxicam.json"))
+    assert search["esearchresult"]["idlist"]
+    ctx, _, _ = ncbi_ctx(tmp_path, 0)
+    items = pubmed.list_items(ctx, CFG["pubmed"])
+    assert [i.external_id for i in items] == ["42846100", "42770875", "42859397"]
+    first = items[0]
+    assert first.url == "https://pubmed.ncbi.nlm.nih.gov/42846100/"
+    assert first.doc_type == "literature"
+    assert first.published == date(2026, 10, 7)          # sortpubdate 2026/10/07
+    assert first.structured["query_term"] == ["lornoxicam"]
+    assert first.structured["pmcid"] == "PMC13643229"    # its PubMed record names its full text
+    assert first.structured["pmc_url"] == "https://pmc.ncbi.nlm.nih.gov/articles/PMC13643229/"
+    with pytest.raises(ParseError):
+        pubmed.summaries({"error": "x"}, ["42846100"])
 
 
 def mindate(calls: list[str]) -> date:

@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import random
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -406,3 +406,69 @@ def test_a_class_issue_revived_from_history_is_in_the_digest(store, tag):
 def test_one_definition_of_a_failed_run(store, error, failed):
     got = store.db.fetchone("select source_run_failed(%(e)s) as f", {"e": error})["f"]
     assert got is failed
+
+
+# ───────────────────────────── NCBI literature (migration 0035) ─────────────────────────────
+
+
+def test_literature_searches_remember_their_look_back(store, tag):
+    q = f"testamine-{tag}"
+    assert ("pmc", q) not in store.literature_searches()
+    row = {"db": "pmc", "query": q, "kind": "name", "look_back_from": date(2025, 11, 6),
+           "history_until": date(2026, 11, 6), "done": False}
+    store.save_literature_searches([row, {**row, "db": "pubmed", "done": True}])
+    got = store.literature_searches()
+    assert got[("pmc", q)]["look_back_done_at"] is None
+    assert got[("pmc", q)]["look_back_from"] == date(2025, 11, 6)
+    assert got[("pmc", q)]["history_until"] == date(2026, 11, 6)
+    assert got[("pmc", q)]["last_searched_at"] is not None
+    first_done = got[("pubmed", q)]["look_back_done_at"]
+    assert first_done is not None and got[("pubmed", q)]["kind"] == "name"
+
+    store.save_literature_searches([{**row, "done": True}, {**row, "db": "pubmed", "done": True}])
+    got = store.literature_searches()
+    assert got[("pmc", q)]["look_back_done_at"] is not None
+    assert got[("pubmed", q)]["look_back_done_at"] == first_done      # finished once: kept
+
+    # searched again after months away: a new look-back, not finished yet
+    store.save_literature_searches([{**row, "db": "pubmed", "look_back_from": date(2026, 6, 1)}])
+    again = store.literature_searches()[("pubmed", q)]
+    assert again["look_back_done_at"] is None and again["look_back_from"] == date(2026, 6, 1)
+    store.save_literature_searches([])                                  # nothing to save: no error
+
+
+def test_class_words_and_known_paper_ids(store, tag):
+    ing = _ingredient(store, tag)
+    cls = str(store.db.fetchone(
+        "insert into drug_class (code, name_en) values (%(c)s, %(n)s) returning id",
+        {"c": f"T{tag}", "n": f"Testaminoids {tag}"})["id"])
+    store.db.execute("insert into ingredient_class (ingredient_id, class_id) values (%(i)s, %(c)s)",
+                     {"i": ing, "c": cls})
+    store.db.execute(
+        """insert into class_term (class_id, lang, term) values
+             (%(c)s, 'en', %(b)s), (%(c)s, 'en', %(a)s), (%(c)s, 'de', %(d)s)""",
+        {"c": cls, "a": f"atestaminoids {tag}", "b": f"btestaminoids {tag}", "d": f"Testaminoide {tag}"})
+    assert store.class_words("en")[f"testamine-{tag}"] == [f"atestaminoids {tag}", f"btestaminoids {tag}"]
+    assert store.class_words("de")[f"testamine-{tag}"] == [f"Testaminoide {tag}"]
+    store.db.execute("update ingredient set active = false where id = %(i)s", {"i": ing})
+    assert f"testamine-{tag}" not in store.class_words("en")
+
+    src = _source(store, tag)
+    store.insert_document(_doc(src.id, "42979212", structured={"pmid": "42979212", "pmcid": "PMC13730105"}))
+    store.insert_document(_doc(src.id, "PMC13727276", structured={"pmid": None, "pmcid": "PMC13727276"}))
+    store.insert_document(_doc(src.id, "42846100", structured={"pmid": "42846100"}))
+    assert store.literature_known_ids(src.id) == {"42979212", "PMC13730105", "PMC13727276", "42846100"}
+
+
+def test_issues_of_papers_are_never_merge_candidates(store, tag):
+    src = _source(store, tag)
+    ing = _ingredient(store, tag)
+    when = datetime(2026, 10, 1).date()
+    for n, doc_type in enumerate(("literature", "dhpc")):
+        doc = store.insert_document(_doc(src.id, f"m{n}", doc_type=doc_type))
+        issue = store.create_issue(doc_type=doc_type, title=f"t{n}", anchor_document_id=doc,
+                                   first_date=when, class_only=False, is_backfill=False)
+        store.link_document(issue, doc, link="anchor", method="auto", score=None)
+        store.add_issue_ingredients(issue, [ing])
+    got = store.candidate_issues([ing], when - timedelta(days=1), when + timedelta(days=1))
+    assert [i["doc_type"] for i in got] == ["dhpc"]
