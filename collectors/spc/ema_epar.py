@@ -4,7 +4,7 @@ Source ``spc-ema-epar``; country EU; English (the authoritative text; EMA publis
 language at ``…-epar-product-information_<xx>.pdf``, readable with ``SPC_EPAR_LANG``).
 
 * Discovery: EMA's medicines JSON report
-  ``https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-json-report_en.json``
+  ``https://www.ema.europa.eu/en/documents/report/medicines-output-medicines_json-report_en.json``
   (the same family of reports A1 reads for DHPCs and PSUSAs). Rows of category "Human" whose
   ``atc_code_human`` equals the ingredient's ATC code, or whose ``active_substance`` /
   ``inn_common_name`` contains its English INN, and whose ``medicine_status`` is "Authorised".
@@ -30,7 +30,7 @@ SOURCE_ID = "spc-ema-epar"
 COUNTRY = "EU"
 LANG = os.environ.get("SPC_EPAR_LANG", "en")
 REPORT = ("https://www.ema.europa.eu/en/documents/report/"
-          "medicines-output-medicines-json-report_en.json")
+          "medicines-output-medicines_json-report_en.json")
 PI_URL = "https://www.ema.europa.eu/en/documents/product-information/{slug}-epar-product-information_{lang}.pdf"
 
 _report: list[dict] | None = None
@@ -65,7 +65,8 @@ def products_from(rows: list[dict], ingredient: dict) -> list[Product]:
         if "authoris" not in _get(r, "medicine_status", "authorisation_status").casefold():
             continue
         row_atc = _get(r, "atc_code_human", "atc_code").upper()
-        subst = (_get(r, "active_substance") + " " + _get(r, "inn_common_name")).casefold()
+        subst = (_get(r, "active_substance") + " " + _get(
+            r, "international_non_proprietary_name_common_name", "inn_common_name")).casefold()
         if not ((atc and row_atc.startswith(atc)) or (inn and inn in subst)):
             continue
         url = _get(r, "medicine_url")

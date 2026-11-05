@@ -26,6 +26,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import time
 from datetime import date
 from typing import Any
 
@@ -230,17 +231,37 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
                              str(prev["id"]), sha, key, len(raw), changes)
 
 
-def run_spc(ctx, db, ingredient_ids: list[str] | None = None) -> list[str]:
+DOWN_AFTER = 3   # failed weekly checks in a row before a label source counts as down
+
+
+def record_check(store, source_id: str, sr_id: str, *, products: int,
+                 errors: list[str], started: float) -> None:
+    """The label watch's line in the screening log, and the source's health on the Sources page."""
+    prev = store.get_source(source_id) or {}
+    failures = int(prev.get("consecutive_failures") or 0) + 1 if errors else 0
+    health = "ok" if not errors else ("down" if failures >= DOWN_AFTER else "degraded")
+    store.set_source_state(source_id, health=health, consecutive_failures=failures, ok=not errors)
+    store.finish_source_run(sr_id, http_status=None, items_seen=products, items_new=0,
+                            items_matched=products, error="; ".join(errors)[:1000] or None,
+                            duration_ms=int((time.monotonic() - started) * 1000))
+
+
+def run_spc(ctx, db, ingredient_ids: list[str] | None = None, store: Any = None) -> list[str]:
+    """``store`` (optional) gets one screening-log row per label source, like every other source."""
     created: list[str] = []
     ingredients = _ingredients(db, ingredient_ids)
     for source_id in _sources(db):
         module = importlib.import_module(f"collectors.spc.{MODULES[source_id]}")
+        started, products_seen, errors = time.monotonic(), 0, []
+        sr_id = store.start_source_run(ctx.run_id, source_id) if store is not None else None
         for ing in ingredients:
             try:
                 found = module.discover(ctx, ing)
             except Exception as exc:  # noqa: BLE001 - one country failing never stops the rest
                 log.warning("SPC %s discover %s: %s", source_id, ing["inn_en"], exc)
+                errors.append(f"{ing['inn_en']}: {type(exc).__name__}: {exc}")
                 continue
+            products_seen += len(found)
             products = []
             with db.transaction():
                 for p in found:
@@ -252,7 +273,11 @@ def run_spc(ctx, db, ingredient_ids: list[str] | None = None) -> list[str]:
                     issue = watch_product(db, ctx, module, source_id, product, ing)
                 except Exception as exc:  # noqa: BLE001 - logged, next product
                     log.warning("SPC %s %s: %s", source_id, product["national_id"], exc)
+                    errors.append(f"{product['national_id']}: {type(exc).__name__}: {exc}")
                     continue
                 if issue:
                     created.append(issue)
+        if sr_id is not None:
+            record_check(store, source_id, sr_id, products=products_seen,
+                         errors=errors, started=started)
     return created

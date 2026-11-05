@@ -772,7 +772,7 @@ sources:
     regulator: EMA
     kind: spc
     channel: json
-    url: https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.json
+    url: https://www.ema.europa.eu/en/documents/report/medicines-output-medicines_json-report_en.json
     parser: spc_ema_epar
     languages: [en]
     schedule: weekly

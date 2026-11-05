@@ -475,7 +475,7 @@ def main(argv: list[str] | None = None) -> int:
                 try:
                     from collectors.spc.run import run_spc
 
-                    created = run_spc(ctx, db, spc_ids)
+                    created = run_spc(ctx, db, spc_ids, store=store)
                     for issue_id in created or []:
                         notifier.issue_alert(issue_id)
                 except Exception:  # noqa: BLE001 - SPC trouble is logged, the run continues
