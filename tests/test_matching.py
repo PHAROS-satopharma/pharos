@@ -123,6 +123,16 @@ def test_ocr_fuzzy_is_possible_only(matcher):
     assert not DocumentMatch(hits).has_high
 
 
+def test_class_term_does_not_lift_a_possible_ingredient_hit(matcher):
+    # An exact class term ("NSAR") next to an OCR near-miss of the ingredient: still no alert.
+    text = "Hinweis zu NSAR. Das Präparat enthält Lornoxicarn 8 mg."
+    hits = matcher.match_text(text, "attachment", lang="de", ocr=True)
+    assert any(h.term.is_class and h.confidence == "high" for h in hits)
+    assert ingredient_hits(hits) and all(h.confidence == "possible" for h in ingredient_hits(hits))
+    dm = DocumentMatch(hits)
+    assert not dm.class_only and not dm.has_high
+
+
 def test_structured_fields_are_high(matcher):
     row = {"active_substance": "lornoxicam", "active_substances_in_scope_of_procedure": "lornoxicam"}
     hits = matcher.match_structured(row, ["active_substance"])

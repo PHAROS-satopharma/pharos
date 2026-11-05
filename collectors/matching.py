@@ -394,7 +394,9 @@ class DocumentMatch:
 
     @property
     def has_high(self) -> bool:
-        return any(h.confidence == "high" for h in self.hits)
+        """A sure hit on a watched INGREDIENT. A class term ("NSAID") never makes an uncertain
+        ingredient hit (an OCR near-miss) alert-worthy: 'possible' never alerts on its own."""
+        return any(h.confidence == "high" and h.term.ingredient_id for h in self.hits)
 
     @property
     def brands(self) -> set[str]:

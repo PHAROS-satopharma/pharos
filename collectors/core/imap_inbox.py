@@ -7,6 +7,12 @@ allow-list (``options.from_domains`` in sources.yaml) is archived as raw ``messa
 to ``inbound_email`` and only then marked Seen. Other mail is never touched (read with BODY.PEEK).
 Never sends mail.
 
+The From line can be forged by anyone, and Fimea publishes DMARC p=none, so a From domain alone proves
+nothing. A message is accepted only when the receiving mail server's own verdict (the TOPMOST
+Authentication-Results header, written by a server under the IMAP host's domain) shows DMARC, DKIM or SPF
+passing for one of that source's allowed domains. Anything else is held: left unread, counted, and
+reported in the screening log. Bodies are capped so no message can fill the database.
+
 Environment: ``PHAROS_IMAP_HOST``, ``PHAROS_IMAP_PORT`` (993, SSL), ``PHAROS_IMAP_USER``,
 ``PHAROS_IMAP_PASSWORD``. Absent → skipped, and the caller records 'imap not configured'.
 """
@@ -17,6 +23,7 @@ import email
 import imaplib
 import logging
 import os
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -28,6 +35,12 @@ from typing import Any, Callable, Iterable
 log = logging.getLogger(__name__)
 
 NOT_CONFIGURED = "imap not configured"
+MAX_RAW_BYTES = 10 * 1024 * 1024   # a bigger message is held, never archived
+MAX_BODY_CHARS = 500_000           # per text/html body stored in the database
+
+_AR_RESULT = re.compile(r"(?<![\w.-])(dmarc|dkim|spf)\s*=\s*([a-z]+)", re.I)
+_AR_PROP = re.compile(r"(?<![\w.-])(header\.d|header\.i|header\.from|smtp\.mailfrom)\s*=\s*([^\s;()]+)",
+                      re.I)
 
 
 @dataclass
@@ -49,6 +62,47 @@ def domain_matches(domain: str, allowed: Iterable[str]) -> bool:
     return False
 
 
+def trusted_authserv_domains() -> list[str]:
+    """Servers whose Authentication-Results we believe: PHAROS_IMAP_AUTHSERV_DOMAINS (comma list), or the
+    parent domain of the IMAP host (imap.mail.yahoo.com → yahoo.com)."""
+    env = os.environ.get("PHAROS_IMAP_AUTHSERV_DOMAINS")
+    if env:
+        return [d.strip().lower() for d in env.split(",") if d.strip()]
+    host = (os.environ.get("PHAROS_IMAP_HOST") or "").lower().strip(".")
+    return [".".join(host.split(".")[-2:])] if host.count(".") >= 1 else []
+
+
+def _domain_of(value: str) -> str:
+    value = value.strip().strip("<>\"").lower()
+    return value.rsplit("@", 1)[-1] if "@" in value else value
+
+
+def sender_verified(raw_headers: bytes, allowed: Iterable[str],
+                    authserv_domains: Iterable[str]) -> bool:
+    """True when the topmost Authentication-Results, written by a trusted server, shows DMARC, DKIM or
+    SPF passing for an allowed domain."""
+    msg = email.message_from_bytes(raw_headers)
+    results = msg.get_all("Authentication-Results") or []
+    if not results:
+        return False
+    top = " ".join(str(results[0]).split())         # the receiving server's own header comes first
+    authserv = top.split(";", 1)[0].strip().split()[0].lower() if top.strip() else ""
+    if not domain_matches(authserv, list(authserv_domains)):
+        return False
+    allowed = list(allowed)
+    for clause in top.split(";")[1:]:
+        m = _AR_RESULT.search(clause)
+        if not m or m.group(2).lower() != "pass":
+            continue
+        props = {k.lower(): _domain_of(v) for k, v in _AR_PROP.findall(clause)}
+        method = m.group(1).lower()
+        keys = {"dmarc": ("header.from",), "dkim": ("header.d", "header.i"),
+                "spf": ("smtp.mailfrom",)}[method]
+        if any(props.get(k) and domain_matches(props[k], allowed) for k in keys):
+            return True
+    return False
+
+
 def parse_message(raw: bytes) -> ParsedEmail:
     msg: EmailMessage = email.message_from_bytes(raw, policy=policy.default)  # type: ignore[assignment]
     _, addr = parseaddr(str(msg.get("From", "")))
@@ -65,8 +119,8 @@ def parse_message(raw: bytes) -> ParsedEmail:
     return ParsedEmail(
         from_addr=addr, from_domain=domain, subject=str(msg.get("Subject", "")).strip(),
         received_at=received,
-        text_body=text_part.get_content() if text_part is not None else None,
-        html_body=html_part.get_content() if html_part is not None else None,
+        text_body=text_part.get_content()[:MAX_BODY_CHARS] if text_part is not None else None,
+        html_body=html_part.get_content()[:MAX_BODY_CHARS] if html_part is not None else None,
     )
 
 
@@ -100,8 +154,11 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
             connect: Callable[[], imaplib.IMAP4] | None = None,
             insert: Callable[[dict], None] | None = None,
             source_exists: Callable[[str], bool] | None = None,
-            mailbox: str = "INBOX") -> dict[str, int]:
+            mailbox: str = "INBOX", held: dict[str, int] | None = None,
+            authserv_domains: Iterable[str] | None = None) -> dict[str, int]:
     """Pull matching UNSEEN mail. ``allow`` maps source_id → From domains. Returns count per source.
+    ``held`` (if given) receives, per source, the messages left unread because the sender could not be
+    verified or the message was too big.
 
     ``connect``, ``insert`` and ``source_exists`` are injectable for tests; by default the
     environment and ``ctx.db``. A message whose source row is missing is skipped (left unread).
@@ -120,6 +177,8 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
             "select 1 from source where id = %(s)s", {"s": sid}) is not None
     skipped: list[str] = []
     counts = {sid: 0 for sid in allow}
+    held = held if held is not None else {}
+    authserv = list(authserv_domains) if authserv_domains is not None else trusted_authserv_domains()
     conn = connect()
     try:
         conn.select(mailbox)
@@ -127,7 +186,8 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
         if status != "OK":
             raise RuntimeError(f"IMAP search failed: {status}")
         for uid in (data[0] or b"").split():
-            status, hdr = conn.uid("FETCH", uid, "(BODY.PEEK[HEADER.FIELDS (FROM)])")
+            status, hdr = conn.uid("FETCH", uid,
+                                   "(BODY.PEEK[HEADER.FIELDS (FROM AUTHENTICATION-RESULTS)])")
             if status != "OK" or not hdr or not isinstance(hdr[0], tuple):
                 continue
             _, addr = parseaddr(email.message_from_bytes(hdr[0][1]).get("From", ""))
@@ -136,6 +196,11 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
                              None)
             if source_id is None:
                 continue  # not ours: left unread and untouched
+            if not sender_verified(hdr[0][1], allow[source_id], authserv):
+                log.warning("imap: message %s claims %s but the sender is not verified; left unread",
+                            uid, domain)
+                held[source_id] = held.get(source_id, 0) + 1
+                continue
             status, body = conn.uid("FETCH", uid, "(BODY.PEEK[])")
             if status != "OK" or not body or not isinstance(body[0], tuple):
                 continue
@@ -144,6 +209,10 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
                 skipped.append(source_id)
                 continue
             raw = body[0][1]
+            if len(raw) > MAX_RAW_BYTES:
+                log.warning("imap: message %s is %d bytes; left unread", uid, len(raw))
+                held[source_id] = held.get(source_id, 0) + 1
+                continue
             parsed = parse_message(raw)
             key = eml_key(parsed.received_at)
             _, key = ctx.archiver.put_named(key, raw, "message/rfc822")

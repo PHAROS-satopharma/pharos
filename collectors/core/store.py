@@ -339,15 +339,16 @@ class Store:
             {"p": person_id, "i": issue_id, "k": kind, "d": dry_run, "m": tg_message_id,
              "e": error, "s": summary})
 
-    def last_notification_at(self, kind: str) -> datetime | None:
-        row = self.db.fetchone("select max(sent_at) as at from notification where kind = %(k)s",
-                               {"k": kind})
+    def last_notification_at(self, kind: str, *, delivered_only: bool = False) -> datetime | None:
+        row = self.db.fetchone(
+            "select max(sent_at) as at from notification where kind = %(k)s"
+            + (" and error is null" if delivered_only else ""), {"k": kind})
         return row["at"] if row else None
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = self.db.fetchall(
             """select id from issue where class_only and not is_backfill and created_at > %(s)s
-                order by first_date nulls last, created_at""", {"s": since})
+                order by created_at desc""", {"s": since})
         return [str(r["id"]) for r in rows]
 
     # ───────────────────────────── probe ─────────────────────────────

@@ -18,8 +18,11 @@ on:
 permissions:
   contents: read
 
+# Its own group: in the shared "collectors" group a newer waiting collect run would cancel the waiting
+# report (GitHub keeps only one waiting run per group), and nothing would ever retry it. The report only
+# reads, so running beside a collection is safe.
 concurrency:
-  group: collectors
+  group: report
   cancel-in-progress: false
 
 jobs:

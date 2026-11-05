@@ -266,6 +266,31 @@ jobs:
           select ops_watchdog() as wd2 \gset
           select pg_temp.ci_assert(:'wd1' = 'logged (dry run)' and :'wd2' = 'suppressed', 'watchdog alerts once, then waits');
           select pg_temp.ci_assert((select count(*) from ops_alert_log where dry_run and not sent) = 1, 'dry-run alert is logged, not sent');
+          select pg_temp.ci_assert((select message from ops_alert_log order by id desc limit 1) like '%checked a source successfully yet%',
+            'the watchdog says no source has been read yet');
+
+          -- Audit fix: a run that merely finished (crashed, or every source failed) is not a healthy run.
+          insert into run (trigger, finished_at, ok) values ('cron', now(), false);
+          delete from ops_state where key = 'watchdog_last_alert_at';
+          select ops_watchdog() as wd3 \gset
+          update source set last_ok_at = now() where id = 'ci-test';
+          delete from ops_state where key = 'watchdog_last_alert_at';
+          select ops_watchdog() as wd4 \gset
+          select pg_temp.ci_assert(:'wd3' = 'logged (dry run)', 'a finished run with no source read still alerts');
+          select pg_temp.ci_assert(:'wd4' = 'ok', 'a source read in the last 6 hours is healthy');
+
+          -- Audit fix: the screening log counts a run in its CAIRO month (31 Oct 2026 is UTC+2 in Cairo).
+          insert into source_run (run_id, source_id, started_at)
+            select r.id, 'ci-test', t
+              from (select id from run where finished_at is not null limit 1) r,
+                   unnest(array['2026-10-31 22:30+00', '2026-10-31 21:30+00']::timestamptz[]) t;
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+          set role authenticated;
+          select runs as log_nov from monthly_screening_log('2026-11-01') where source_id = 'ci-test' \gset
+          select runs as log_oct from monthly_screening_log('2026-10-01') where source_id = 'ci-test' \gset
+          reset role;
+          select pg_temp.ci_assert(:log_nov = 1 and :log_oct = 1,
+            '00:30 on 1 Nov Cairo counts in November, 23:30 on 31 Oct Cairo in October');
 
           -- The admin's test message: admins only, only to his own linked chat, the reason when it cannot go.
           select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);

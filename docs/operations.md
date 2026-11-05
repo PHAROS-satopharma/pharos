@@ -15,14 +15,21 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → R2 `backups/<date>.sql.gz` |
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals; checks the bucket lock |
-| pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has finished in 6 h or the database is over 350 MB |
+| pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source, flagged as backfill, no alerts |
 
-`collect.yml`, `backfill.yml` and `report.yml` share one concurrency group, so two of them never run at once.
+`collect.yml` and `backfill.yml` share one concurrency group, so two of them never run at once.
 A run that starts while another is running waits. If a third run arrives while one is already waiting,
-GitHub drops the waiting one; the next schedule picks up its sources. GitHub can start scheduled runs 5 to
-30 minutes late at busy times. The minutes are chosen off the hour to reduce this.
+GitHub drops the waiting one; the next schedule picks up its sources. `report.yml` has its own group, so a
+collection can never drop the monthly report. GitHub can start scheduled runs late at busy times (hours, on
+a new repository). The minutes are chosen off the hour to reduce this.
+
+Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under the job's timeout), and in a
+normal run one source gets at most 10 minutes. When the budget runs out the run stops starting new notices
+and sources and ends cleanly; what is left waits for the next run, and the source checked longest ago goes
+first next time. The screening log shows "time budget reached" on a source that was cut short. A run that
+crashes is recorded as not ok.
 
 ## Actions minutes budget
 
@@ -68,8 +75,8 @@ default), they are only logged in `ops_alert_log` and `notification`.
 
 | Alert | Sent by | Meaning | What to do |
 |---|---|---|---|
-| "No collector run has finished for N hours" | Watchdog | GitHub Actions has not completed a collection for 6 hours or more: an Actions outage, a disabled workflow, a secret that expired, or minutes used up | Open *Actions → PHAROS collect* and read the last run |
-| "No collector run has finished yet" | Watchdog | Collection has never run (normal only before the first deploy) | Run *PHAROS collect* once by hand |
+| "No collector run has checked a source successfully for N hours" | Watchdog | No run has read even one source without an error for 6 hours or more: an Actions outage, a disabled workflow, a secret that expired, minutes used up, or every source failing | Open *Actions → PHAROS collect* and read the last run |
+| "No collector run has checked a source successfully yet" | Watchdog | Collection has never run (normal only before the first deploy) | Run *PHAROS collect* once by hand |
 | "The database is N MB" | Watchdog | Over 350 MB of the free plan's 500 MB | Ask the lead to prune text or move to a paid plan before 500 MB |
 | Source down | Collectors | A source failed 3 runs in a row | See Source health above |
 | Backfill summary | Backfill | How many documents and issues the backfill found | Review the backfill issues in the app |

@@ -20,6 +20,12 @@ EML = (Path(__file__).resolve().parent / "fixtures" / "imap-inbox" / "fimea-news
 OTHER = (b"From: Someone <news@example.com>\r\nSubject: Not ours\r\n"
          b"Date: Tue, 03 Nov 2026 10:00:00 +0000\r\n\r\nhello\r\n")
 ALLOW = {"fimea-email": ["fimea.fi"], "tga-email": ["tga.gov.au"]}
+YAHOO = ["yahoo.com"]
+# Anyone can write "From: …@fimea.fi", and Fimea's DMARC is p=none, so such a message is delivered. The
+# forger may add a passing Authentication-Results of their own, but it sits BELOW the receiving server's
+# real verdict, which here says the forged message failed.
+FORGED = (b"Authentication-Results: atlas7.mail.bf1.yahoo.com; dkim=none; "
+          b"spf=softfail smtp.mailfrom=evil.example; dmarc=fail(p=NONE) header.from=fimea.fi\r\n" + EML)
 
 
 class FakeIMAP:
@@ -43,9 +49,10 @@ class FakeIMAP:
         if command == "FETCH":
             uid, what = args
             raw = self.messages[uid]
-            if "HEADER.FIELDS (FROM)" in what:
-                head = next(line for line in raw.splitlines() if line.lower().startswith(b"from:"))
-                return "OK", [(b"1 (UID " + uid + b")", head + b"\r\n\r\n"), b")"]
+            if "HEADER.FIELDS (FROM AUTHENTICATION-RESULTS)" in what:
+                # the header block (a real server would send only those two fields, in order)
+                head = raw.replace(b"\r\n", b"\n").split(b"\n\n", 1)[0] + b"\n\n"
+                return "OK", [(b"1 (UID " + uid + b")", head), b")"]
             assert "BODY.PEEK[]" in what          # never a plain BODY[] fetch (that marks Seen)
             return "OK", [(b"1 (UID " + uid + b")", raw), b")"]
         if command == "STORE":
@@ -99,7 +106,7 @@ def test_collect_reads_only_allowed_unseen_mail(tmp_path):
     rows: list[dict] = []
     ctx = ctx_with_archive(tmp_path)
     counts = imap_inbox.collect(ctx, ALLOW, connect=lambda: server, insert=rows.append,
-                                source_exists=lambda sid: True)
+                                source_exists=lambda sid: True, authserv_domains=YAHOO)
     assert counts == {"fimea-email": 1, "tga-email": 0}
     assert server.seen == {b"7"}                     # the other message stays unread
     assert not any(c[0] == "FETCH" and c[1] == b"8" and "BODY.PEEK[]" in c[2] for c in server.commands)
@@ -118,8 +125,42 @@ def test_missing_source_row_leaves_mail_unread(tmp_path):
     server = FakeIMAP({b"7": EML})
     rows: list[dict] = []
     counts = imap_inbox.collect(ctx_with_archive(tmp_path), ALLOW, connect=lambda: server,
-                                insert=rows.append, source_exists=lambda sid: False)
+                                insert=rows.append, source_exists=lambda sid: False,
+                                authserv_domains=YAHOO)
     assert counts["fimea-email"] == 0 and rows == [] and server.seen == set()
+
+
+def test_forged_sender_is_held_unread(tmp_path):
+    server = FakeIMAP({b"7": FORGED})
+    rows: list[dict] = []
+    held: dict[str, int] = {}
+    counts = imap_inbox.collect(ctx_with_archive(tmp_path), ALLOW, connect=lambda: server,
+                                insert=rows.append, source_exists=lambda sid: True,
+                                authserv_domains=YAHOO, held=held)
+    assert counts["fimea-email"] == 0 and rows == [] and server.seen == set()
+    assert held == {"fimea-email": 1}
+    assert not any(c[0] == "FETCH" and "BODY.PEEK[]" in c[2] for c in server.commands)
+
+
+def test_sender_verdict_rules():
+    ok = (b"Authentication-Results: atlas1.mail.yahoo.com; dkim=pass header.i=@news.fimea.fi; "
+          b"spf=none\r\nFrom: x@fimea.fi\r\n\r\n")
+    assert imap_inbox.sender_verified(ok, ["fimea.fi"], YAHOO)
+    # a pass for another domain (the forger's own) proves nothing about fimea.fi
+    other = ok.replace(b"@news.fimea.fi", b"@fimea.fi.evil.example")
+    assert not imap_inbox.sender_verified(other, ["fimea.fi"], YAHOO)
+    # a verdict written by a server we do not trust is ignored
+    untrusted = ok.replace(b"atlas1.mail.yahoo.com", b"mx.evil.example")
+    assert not imap_inbox.sender_verified(untrusted, ["fimea.fi"], YAHOO)
+    # no verdict at all → held
+    assert not imap_inbox.sender_verified(b"From: x@fimea.fi\r\n\r\n", ["fimea.fi"], YAHOO)
+    # the IMAP host decides whose verdicts count when nothing else is set
+    assert imap_inbox.trusted_authserv_domains() == []
+
+
+def test_bodies_are_capped():
+    big = EML.replace(b"CONSTRUCTED TEST MESSAGE", b"A" * (imap_inbox.MAX_BODY_CHARS + 10), 1)
+    assert len(imap_inbox.parse_message(big).text_body) == imap_inbox.MAX_BODY_CHARS
 
 
 def test_not_configured_raises_quietly():

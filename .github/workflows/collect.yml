@@ -1,5 +1,5 @@
 # PHAROS — scheduled collection. ONE job per trigger; runs never overlap (shared "collectors" group with
-# backfill and the monthly report). Times are UTC; Cairo is UTC+2 in winter and UTC+3 in summer.
+# backfill). Times are UTC; Cairo is UTC+2 in winter and UTC+3 in summer.
 #
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
@@ -18,7 +18,7 @@ on:
     - cron: "31 2 * * *"
     - cron: "23 3 * * 1"
     - cron: "41 1 1 * *"
-  # The database's back-up timer (supabase/migrations/0006) for a slot GitHub's cron skipped.
+  # The database's back-up timer (supabase/migrations/0007) for a slot GitHub's cron skipped.
   repository_dispatch:
     types: [collect]
   workflow_dispatch:
@@ -49,6 +49,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || 40) }}
     env:
+      # The collectors stop starting new notices and sources this many minutes in, so the run ends
+      # cleanly (screening log, alerts, digest) instead of being killed by the timeout above.
+      # Setup takes about 3 minutes; keep this about 10 below timeout-minutes.
+      PHAROS_TIME_BUDGET_MIN: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 78 || (github.event_name == 'workflow_dispatch' && 108 || 28) }}
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -62,8 +66,6 @@ jobs:
       PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
       PHAROS_IMAP_PASSWORD: ${{ secrets.PHAROS_IMAP_PASSWORD }}
       GIT_SHA: ${{ github.sha }}
-      # Stop starting new sources ~8 minutes before the job limit, so the run finishes and is recorded.
-      PHAROS_TIME_BUDGET_MIN: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 80 || (github.event_name == 'workflow_dispatch' && 110 || 32) }}
     steps:
       - uses: actions/checkout@v6
 
