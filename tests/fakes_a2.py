@@ -149,7 +149,7 @@ class SpcDb:
     def fetchall(self, sql: str, params=None):
         q = self._sql(sql)
         p = dict(params or {})
-        if q.startswith("select id, sha256, r2_key, section_hashes from spc_snapshot"):
+        if q.startswith("select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot"):
             rows = [dict(r) for r in self.snapshots if r["spc_product_id"] == p["p"]]
             return list(reversed(rows))[:p.get("n", len(rows))]
         raise AssertionError(f"unexpected fetchall: {self._sql(sql)[:80]}")
