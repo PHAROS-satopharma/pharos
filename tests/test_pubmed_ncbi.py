@@ -365,6 +365,29 @@ def test_a_look_back_cut_short_continues_on_the_next_run(tmp_path):
     assert stats.alerts == []
 
 
+def test_new_papers_never_reach_telegram(tmp_path):
+    # Dr Sama reads papers on the Ingredients screen and in the weekly report: a new paper is never an
+    # immediate alert and never a line in the class digest, found by the name or by a class word.
+    store = live_like_store()
+    add_levofloxacin(store)
+    store.person["p1"] = {"id": "p1", "full_name": "Reviewer One", "telegram_chat_id": 111,
+                          "role": "reviewer", "active": True}
+    store.subscription += [{"person_id": "p1", "kind": "ingredient", "ingredient_id": LEVO_ID},
+                           {"person_id": "p1", "kind": "class_digest", "ingredient_id": None}]
+    assert not run_pubmed(store, tmp_path, Ncbi()).failed      # every word's look-back finds nothing
+    assert all(r["look_back_done_at"] for r in store.literature_searches().values())
+
+    stats = run_pubmed(store, tmp_path, Ncbi(LEVO))            # the next day: the papers are new
+    assert not stats.failed, stats.error
+    new = [d for k, d in docs(store).items() if k != "42846100"]
+    assert len(new) == 62 + 7 - 1 and not any(d["is_backfill"] for d in new)
+    by_name = [d for d in new if not d["structured"]["class_only"]]
+    by_class = [d for d in new if d["structured"]["class_only"]]
+    assert len(by_name) == 62 and len(by_class) == 6
+    assert stats.alerts == [] and store.notification == []
+    assert store.class_only_issues_since(datetime(2000, 1, 1, tzinfo=timezone.utc)) == []
+
+
 def test_plan_windows():
     ctx = FetchContext(None, "run", archive=Archive(enabled=False))
     ctx.last_ok_at = datetime.now(timezone.utc) - timedelta(days=1)

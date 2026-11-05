@@ -241,6 +241,27 @@ def test_class_only_issues_since_newest_first(store, tag):
                                                       + timedelta(hours=1))
 
 
+def test_a_class_paper_is_never_in_the_digest_nor_an_alert(store, tag):
+    # NCBI papers are read on the Ingredients screen and in the weekly report, never on Telegram.
+    src = _source(store, tag)
+    lit = SourceConfig(id=f"t-{tag}-lit", regulator_id=src.regulator_id, kind="literature", channel="api",
+                       url=f"https://example.test/{tag}/esearch", parser="pubmed", languages=["en"],
+                       schedule="daily", enabled=True, options={}, expected_max_gap_days=30)
+    store.upsert_catalogue_source(lit, "papers")
+    since = store.db.fetchone("select now() as t")["t"]
+    notice = store.create_issue(doc_type="dhpc", title=f"class notice {tag}",
+                                anchor_document_id=store.insert_document(_doc(src.id, "c1")),
+                                first_date=None, class_only=True, is_backfill=False)
+    paper = store.create_issue(doc_type="literature", title=f"class paper {tag}",
+                               anchor_document_id=store.insert_document(
+                                   _doc(lit.id, "p1", doc_type="literature", lang="en")),
+                               first_date=None, class_only=True, is_backfill=False)
+    got = store.class_only_issues_since(since)
+    assert notice in got and paper not in got
+    assert store.issue_for_alert(paper)["source_kind"] == "literature"
+    assert store.issue_for_alert(notice)["source_kind"] == "safety"
+
+
 # ───────────────────────────── alerts ─────────────────────────────
 
 
