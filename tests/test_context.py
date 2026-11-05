@@ -182,3 +182,34 @@ def test_log_redaction_quiets_httpx_and_redacts_records():
     text = "\n".join(seen)
     assert "AAH-secretTokenPart_xyz" not in text and NCBI_KEY not in text
     assert "api.telegram.org/bot<redacted>/sendMessage" in text
+
+
+def test_a_read_timeout_is_tried_once_more_then_succeeds(tmp_path):
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.ReadTimeout("The read operation timed out", request=req)
+        return httpx.Response(200, headers={"content-type": "application/rss+xml"}, text="<rss/>")
+
+    ctx, sleeps = make_ctx(tmp_path, handler)
+    got = ctx.get("https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/x.xml")
+    assert got.status == 200 and len(calls) == 2 and 15.0 in sleeps
+
+
+def test_a_second_stall_is_reported_and_a_post_is_never_sent_twice(tmp_path):
+    calls = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(req.method)
+        raise httpx.ConnectError("connection reset", request=req)
+
+    ctx, _ = make_ctx(tmp_path, handler)
+    with pytest.raises(httpx.ConnectError):
+        ctx.get("https://www.bfarm.de/a")
+    assert calls == ["GET", "GET"]
+    calls.clear()
+    with pytest.raises(httpx.ConnectError):
+        ctx.post("https://www.bfarm.de/form", data={"q": "x"})
+    assert calls == ["POST"]
