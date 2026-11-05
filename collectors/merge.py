@@ -225,6 +225,8 @@ def merge_document(store: Any, d: DocFacts, ingredient_ids: Iterable[str] | None
         s, iss, _ = best
         store.link_document(iss["id"], d.document_id, link="copy", method="auto", score=s)
         store.add_issue_ingredients(iss["id"], ingredients)
+        if not d.is_backfill:
+            store.mark_issue_current(iss["id"])  # a fresh copy of a history issue is news: it alerts
         return MergeResult(iss["id"], False, "copy", "auto", s, alert=True)
     issue_id = _new_issue(store, d, ingredients)
     suggested = []

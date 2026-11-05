@@ -281,6 +281,12 @@ class Store:
             {"d": document_id, "t": title, "dt": doc_type, "f": first_date, "b": is_backfill,
              "i": issue_id})
 
+    def mark_issue_current(self, issue_id: str) -> None:
+        """A fresh document joined a history issue: it leaves the history, so it alerts and shows."""
+        self.db.execute(
+            "update issue set is_backfill = false, updated_at = now() where id = %(i)s and is_backfill",
+            {"i": issue_id})
+
     def add_issue_ingredients(self, issue_id: str, ingredient_ids: Iterable[str]) -> None:
         for ing in ingredient_ids:
             self.db.execute(
