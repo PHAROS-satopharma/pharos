@@ -11,6 +11,7 @@ import { Country } from '../../ui/Flag';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
 import { PageHead, SectionHead } from '../../ui/Text';
+import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
 
 function MonthlyReports() {
@@ -138,76 +139,85 @@ function ScreeningLog() {
       ) : log.data.length === 0 ? (
         <Empty title="No sources are listed yet." />
       ) : (
-        <Table className="screening">
-          <thead>
-            <tr>
-              <th scope="col">Country</th>
-              <th scope="col">Regulator</th>
-              <th scope="col">What it reads</th>
-              <th scope="col" className="num">
-                Checks
-              </th>
-              <th scope="col" className="num">
-                Failed
-              </th>
-              <th scope="col" className="num">
-                Items read
-              </th>
-              <th scope="col" className="num">
-                New
-              </th>
-              <th scope="col" className="num">
-                Matched
-              </th>
-              <th scope="col">Last check</th>
-            </tr>
-          </thead>
-          <tbody>
-            {log.data.map((r) => {
-              const s = byId.get(r.source_id);
-              const off = s ? !s.enabled : false;
-              return (
-                <tr key={r.source_id} className={off ? 'is-off' : undefined}>
-                  <td>
-                    <Country name={r.country} code={s?.regulator?.country_code ?? null} />
-                  </td>
-                  <td>{r.regulator}</td>
-                  <td className="small">
-                    {s ? `${KIND_LABEL[s.kind]} · ${CHANNEL_LABEL[s.channel]}` : '—'}
-                    {off ? <span className="muted"> · switched off</span> : null}
-                  </td>
-                  {r.runs > 0 ? (
-                    <>
-                      <td className="num mono">{formatNumber(r.runs)}</td>
-                      <td className={r.failed_runs ? 'num mono danger' : 'num mono'}>{formatNumber(r.failed_runs)}</td>
-                      <td className="num mono">{formatNumber(r.items_seen)}</td>
-                      <td className="num mono">{formatNumber(r.items_new)}</td>
-                      <td className="num mono">{formatNumber(r.items_matched)}</td>
-                      <td className="small mono">{formatDateTime(r.last_run)}</td>
-                    </>
-                  ) : (
-                    <td colSpan={6} className={off ? 'muted small' : 'accent-text small'}>
-                      No check recorded this month
+        <>
+          <StatRow label={`Screening in ${formatYearMonth(month)}`}>
+            <Stat value={sum.runs} label="Checks" />
+            <Stat value={sum.failed} label="Failed" tone={sum.failed ? 'danger' : 'quiet'} />
+            <Stat value={sum.seen} label="Items read" />
+            <Stat value={sum.fresh} label="New" tone="new" />
+            <Stat value={sum.matched} label="Matched" tone="warning" />
+          </StatRow>
+          <Table className="screening">
+            <thead>
+              <tr>
+                <th scope="col">Country</th>
+                <th scope="col">Regulator</th>
+                <th scope="col">What it reads</th>
+                <th scope="col" className="num">
+                  Checks
+                </th>
+                <th scope="col" className="num">
+                  Failed
+                </th>
+                <th scope="col" className="num">
+                  Items read
+                </th>
+                <th scope="col" className="num">
+                  New
+                </th>
+                <th scope="col" className="num">
+                  Matched
+                </th>
+                <th scope="col">Last check</th>
+              </tr>
+            </thead>
+            <tbody>
+              {log.data.map((r) => {
+                const s = byId.get(r.source_id);
+                const off = s ? !s.enabled : false;
+                return (
+                  <tr key={r.source_id} className={off ? 'is-off' : undefined}>
+                    <td>
+                      <Country name={r.country} code={s?.regulator?.country_code ?? null} />
                     </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row" colSpan={3}>
-                All sources
-              </th>
-              <td className="num mono strong">{formatNumber(sum.runs)}</td>
-              <td className="num mono strong">{formatNumber(sum.failed)}</td>
-              <td className="num mono strong">{formatNumber(sum.seen)}</td>
-              <td className="num mono strong">{formatNumber(sum.fresh)}</td>
-              <td className="num mono strong">{formatNumber(sum.matched)}</td>
-              <td />
-            </tr>
-          </tfoot>
-        </Table>
+                    <td>{r.regulator}</td>
+                    <td className="small">
+                      {s ? `${KIND_LABEL[s.kind]} · ${CHANNEL_LABEL[s.channel]}` : '—'}
+                      {off ? <span className="muted"> · switched off</span> : null}
+                    </td>
+                    {r.runs > 0 ? (
+                      <>
+                        <td className="num mono">{formatNumber(r.runs)}</td>
+                        <td className={r.failed_runs ? 'num mono danger' : 'num mono'}>{formatNumber(r.failed_runs)}</td>
+                        <td className="num mono">{formatNumber(r.items_seen)}</td>
+                        <td className="num mono">{formatNumber(r.items_new)}</td>
+                        <td className="num mono">{formatNumber(r.items_matched)}</td>
+                        <td className="small mono">{formatDateTime(r.last_run)}</td>
+                      </>
+                    ) : (
+                      <td colSpan={6} className={off ? 'muted small' : 'accent-text small'}>
+                        No check recorded this month
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" colSpan={3}>
+                  All sources
+                </th>
+                <td className="num mono strong">{formatNumber(sum.runs)}</td>
+                <td className="num mono strong">{formatNumber(sum.failed)}</td>
+                <td className="num mono strong">{formatNumber(sum.seen)}</td>
+                <td className="num mono strong">{formatNumber(sum.fresh)}</td>
+                <td className="num mono strong">{formatNumber(sum.matched)}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </Table>
+        </>
       )}
     </>
   );

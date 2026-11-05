@@ -108,17 +108,21 @@ jobs:
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: supabase functions deploy --project-ref "$PROJECT_REF" --yes
 
-      - name: Vault secrets for the watchdog
+      - name: Vault secrets for the watchdog and the back-up timer
         if: steps.changes.outputs.deploy == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           TOK: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT: ${{ secrets.ADMIN_TELEGRAM_CHAT_ID }}
+          DISPATCH: ${{ secrets.DISPATCH_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           [ -n "$SUPABASE_DB_URL" ] || { echo "SUPABASE_DB_URL not set; skipped"; exit 0; }
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -v tok="$TOK" -v chat="$CHAT" <<'SQL'
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -v tok="$TOK" -v chat="$CHAT"                -v dispatch="$DISPATCH" -v repo="$REPO" <<'SQL'
           select public.ops_set_vault_secret('TELEGRAM_BOT_TOKEN', :'tok');
           select public.ops_set_vault_secret('ADMIN_TELEGRAM_CHAT_ID', :'chat');
+          select public.ops_set_vault_secret('GITHUB_DISPATCH_TOKEN', :'dispatch');
+          select public.ops_set_vault_secret('GITHUB_REPO', :'repo');
           SQL
 
       - name: Point the Telegram webhook at the function

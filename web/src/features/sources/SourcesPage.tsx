@@ -14,10 +14,18 @@ import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
 import { HealthMark, Tag } from '../../ui/Tag';
 import { PageHead } from '../../ui/Text';
+import { Stat, StatRow } from '../../ui/Stat';
 import { fetchRuns, totalsBySource, useSources, type SourceWithRegulator } from './queries';
 import { AddSource } from './AddSource';
 
 const HEALTH_ORDER: SourceHealth[] = ['down', 'blocked', 'degraded', 'unknown', 'ok'];
+const HEALTH_TONE: Record<SourceHealth, string> = {
+  ok: 'ok',
+  degraded: 'warning',
+  down: 'danger',
+  blocked: 'neutral',
+  unknown: 'quiet',
+};
 const WINDOW_H = 48;
 
 export function SourcesPage() {
@@ -57,8 +65,9 @@ export function SourcesPage() {
   const summary = useMemo(() => {
     const counts = new Map<SourceHealth, number>();
     for (const s of sources.data ?? []) if (s.enabled) counts.set(s.health, (counts.get(s.health) ?? 0) + 1);
-    return HEALTH_ORDER.filter((h) => counts.get(h)).map((h) => `${counts.get(h)} ${HEALTH_LABEL[h].label.toLowerCase()}`);
+    return HEALTH_ORDER.filter((h) => counts.get(h)).map((h) => ({ health: h, count: counts.get(h) ?? 0 }));
   }, [sources.data]);
+  const enabledCount = useMemo(() => (sources.data ?? []).filter((s) => s.enabled).length, [sources.data]);
 
   return (
     <div className="page">
@@ -75,7 +84,20 @@ export function SourcesPage() {
         }
       />
       {adding ? <AddSource onDone={() => setAdding(false)} /> : null}
-      {summary.length > 0 ? <p className="summary-line">{summary.join(' · ')}</p> : null}
+      {summary.length > 0 ? (
+        <StatRow label="Sources being read, by health">
+          <Stat value={enabledCount} label="Being read" />
+          {summary.map((h) => (
+            <Stat
+              key={h.health}
+              value={h.count}
+              label={HEALTH_LABEL[h.health].label}
+              tone={HEALTH_TONE[h.health]}
+              title={HEALTH_LABEL[h.health].explain}
+            />
+          ))}
+        </StatRow>
+      ) : null}
       {toggle.isError ? <Notice tone="error">Not changed: {errorMessage(toggle.error)}</Notice> : null}
       {runs.isError ? <Notice tone="error">The recent runs could not be read: {errorMessage(runs.error)}</Notice> : null}
 
@@ -92,6 +114,9 @@ export function SourcesPage() {
           <section key={g.country} className="source-group">
             <h2 className="group-title">
               <Country name={g.country} code={g.code} />
+              <span className="group-count">
+                {g.list.length} {g.list.length === 1 ? 'source' : 'sources'}
+              </span>
             </h2>
             <Table className="sources">
               <thead>

@@ -14,6 +14,7 @@ import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
 import { Tag } from '../../ui/Tag';
 import { PageHead } from '../../ui/Text';
+import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
 
 interface IngredientWithTerms extends Ingredient {
@@ -89,6 +90,17 @@ export function IngredientsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
   });
 
+  const figures = useMemo(() => {
+    const all = list.data ?? [];
+    const terms = all.flatMap((i) => i.ingredient_term);
+    return {
+      watched: all.filter((i) => i.active).length,
+      paused: all.filter((i) => !i.active).length,
+      names: terms.length,
+      languages: new Set(terms.map((t) => t.lang)).size,
+    };
+  }, [list.data]);
+
   const existingAtc = useMemo(
     () => new Set((list.data ?? []).map((i) => i.atc_code).filter((x): x is string => Boolean(x))),
     [list.data],
@@ -140,78 +152,86 @@ export function IngredientsPage() {
           </p>
         </Empty>
       ) : (
-        <Table className="ingredients">
-          <thead>
-            <tr>
-              <th scope="col">Ingredient</th>
-              <th scope="col">ATC code</th>
-              <th scope="col" className="num">
-                Terms
-              </th>
-              <th scope="col">Languages</th>
-              <th scope="col">Country-specific names</th>
-              <th scope="col">Confirmed</th>
-              <th scope="col">Watched</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.data.map((i) => {
-              const langs = [...new Set(i.ingredient_term.map((t) => t.lang))].map(languageName).sort();
-              const ctry = [...new Set(i.ingredient_term.map((t) => t.country_code).filter((c): c is string => Boolean(c)))]
-                .map((c) => idx.nameOf(c))
-                .sort();
-              const isOpen = open === i.id;
-              return (
-                <Fragment key={i.id}>
-                  <tr>
-                    <td>
-                      <button
-                        type="button"
-                        className="link-button strong"
-                        aria-expanded={isOpen}
-                        onClick={() => setOpen(isOpen ? null : i.id)}
-                      >
-                        {i.inn_en}
-                      </button>
-                    </td>
-                    <td className="mono">{i.atc_code ?? '—'}</td>
-                    <td className="num mono">{i.ingredient_term.length}</td>
-                    <td className="small">{langs.join(', ') || '—'}</td>
-                    <td className="small">{ctry.join(', ') || '—'}</td>
-                    <td className="small">
-                      {i.confirmed_at ? (
-                        <>
-                          {i.confirmed_by_person?.full_name ?? 'Someone'}, <span className="mono">{formatCairoDate(i.confirmed_at)}</span>
-                        </>
-                      ) : (
-                        <Tag tone="quiet">Not confirmed</Tag>
-                      )}
-                    </td>
-                    <td>
-                      {isAdmin ? (
-                        <Toggle
-                          checked={i.active}
-                          disabled={setActive.isPending}
-                          onChange={(v) => setActive.mutate({ id: i.id, active: v })}
-                          label={i.active ? 'Yes' : 'Paused'}
-                        />
-                      ) : (
-                        <span>{i.active ? 'Yes' : 'Paused'}</span>
-                      )}
-                    </td>
-                  </tr>
-                  {isOpen ? (
-                    <tr className="row-detail">
-                      <td colSpan={7}>
-                        <TermsList terms={i.ingredient_term} />
+        <>
+          <StatRow label="The watchlist in figures">
+            <Stat value={figures.watched} label="Watched" tone="ok" />
+            {figures.paused > 0 ? <Stat value={figures.paused} label="Paused" tone="quiet" /> : null}
+            <Stat value={figures.names} label="Names looked for" />
+            <Stat value={figures.languages} label="Languages" />
+          </StatRow>
+          <Table className="ingredients">
+            <thead>
+              <tr>
+                <th scope="col">Ingredient</th>
+                <th scope="col">ATC code</th>
+                <th scope="col" className="num">
+                  Terms
+                </th>
+                <th scope="col">Languages</th>
+                <th scope="col">Country-specific names</th>
+                <th scope="col">Confirmed</th>
+                <th scope="col">Watched</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.data.map((i) => {
+                const langs = [...new Set(i.ingredient_term.map((t) => t.lang))].map(languageName).sort();
+                const ctry = [...new Set(i.ingredient_term.map((t) => t.country_code).filter((c): c is string => Boolean(c)))]
+                  .map((c) => idx.nameOf(c))
+                  .sort();
+                const isOpen = open === i.id;
+                return (
+                  <Fragment key={i.id}>
+                    <tr>
+                      <td>
+                        <button
+                          type="button"
+                          className="link-button strong"
+                          aria-expanded={isOpen}
+                          onClick={() => setOpen(isOpen ? null : i.id)}
+                        >
+                          {i.inn_en}
+                        </button>
+                      </td>
+                      <td className="mono">{i.atc_code ?? '—'}</td>
+                      <td className="num mono">{i.ingredient_term.length}</td>
+                      <td className="small">{langs.join(', ') || '—'}</td>
+                      <td className="small">{ctry.join(', ') || '—'}</td>
+                      <td className="small">
+                        {i.confirmed_at ? (
+                          <>
+                            {i.confirmed_by_person?.full_name ?? 'Someone'}, <span className="mono">{formatCairoDate(i.confirmed_at)}</span>
+                          </>
+                        ) : (
+                          <Tag tone="quiet">Not confirmed</Tag>
+                        )}
+                      </td>
+                      <td>
+                        {isAdmin ? (
+                          <Toggle
+                            checked={i.active}
+                            disabled={setActive.isPending}
+                            onChange={(v) => setActive.mutate({ id: i.id, active: v })}
+                            label={i.active ? 'Yes' : 'Paused'}
+                          />
+                        ) : (
+                          <span>{i.active ? 'Yes' : 'Paused'}</span>
+                        )}
                       </td>
                     </tr>
-                  ) : null}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </Table>
+                    {isOpen ? (
+                      <tr className="row-detail">
+                        <td colSpan={7}>
+                          <TermsList terms={i.ingredient_term} />
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </Table>
+        </>
       )}
     </div>
   );

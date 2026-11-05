@@ -309,7 +309,7 @@ jobs:
             and exists (select 1 from ops_alert_log where kind = 'test' and not sent and error like '%TELEGRAM_BOT_TOKEN%'),
             'without the bot token nothing is sent and the reason is logged');
 
-          -- 0007 (1): a decision is taken against the notice's true status, at the database's own time.
+          -- 0008 (1): a decision is taken against the notice's true status, at the database's own time.
           insert into auth.users (id, email) values
             ('00000000-0000-0000-0000-0000000000c3', 'reviewer@example.test'),
             ('00000000-0000-0000-0000-0000000000d4', 'admin2@example.test');
@@ -348,7 +348,7 @@ jobs:
           select pg_temp.ci_assert((select status from issue where id = '00000000-0000-0000-0000-0000000000e1') = 'relevant',
             'a decision from the true status is applied');
 
-          -- 0007 (2): personal data. Own rows only for a reader; names of everyone through person_directory.
+          -- 0008 (2): personal data. Own rows only for a reader; names of everyone through person_directory.
           insert into subscription (person_id, kind)
             select id, case when role = 'admin' then 'admin_health' else 'class_digest' end::sub_kind
               from person where email in ('admin@example.test', 'reader@example.test');
@@ -393,7 +393,7 @@ jobs:
               and :ad_notif = (select count(*) from notification) and :ad_subs = (select count(*) from subscription),
             'an admin still reads every person, the audit log, every notification and every subscription');
 
-          -- 0007 (3): real messages unlock only on THIS admin's own delivered test (no pg_net here).
+          -- 0008 (3): real messages unlock only on THIS admin's own delivered test (no pg_net here).
           select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', false);
           set role authenticated;
           do $$ declare denied boolean := false; begin
@@ -440,6 +440,18 @@ jobs:
               and (select value from app_setting where key = 'telegram_dry_run') = 'false'::jsonb,
             'an admin whose own test was delivered can turn real messages on');
           update app_setting set value = 'true' where key = 'telegram_dry_run';
+
+          -- The back-up timer: a slot that already ran is left alone; a skipped one asks GitHub,
+          -- and without its Vault secrets the reason is logged. The app cannot call it.
+          insert into run (trigger, schedule, started_at) values ('cron', '4h', now() - interval '20 minutes');
+          select public.ops_kick_collect('4h') as k_ran \gset
+          select public.ops_kick_collect('12h') as k_novault \gset
+          select pg_temp.ci_assert(:'k_ran' = 'already ran', 'a slot GitHub ran is not started twice');
+          select pg_temp.ci_assert(:'k_novault' = 'not started: Vault secrets missing'
+            and exists (select 1 from ops_alert_log where kind = 'collect_kick' and not sent),
+            'a skipped slot without the dispatch token logs why');
+          select pg_temp.ci_assert(not has_function_privilege('authenticated', 'public.ops_kick_collect(text)', 'execute'),
+            'signed-in users cannot start collections through the timer');
           SQL
 
       # ───────────── Edge Functions: deno check ─────────────

@@ -234,6 +234,8 @@ sources:
     channel: rss
     url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml
     parser: feed
+    enabled: false
+    notes: "Off: FDA refuses GitHub's servers (abuse-detection page); MedWatch is read from its e-mail list (fda-email)."
     languages: [en]
     schedule: 4h
     expected_max_gap_days: 21
@@ -564,10 +566,11 @@ sources:
     channel: browser
     url: https://www.afmps.be/fr/news
     parser: famhp
+    enabled: false
     languages: [fr, nl]
     schedule: 12h
     expected_max_gap_days: 30
-    notes: Read in French and Dutch, one page each. Behind an F5 bot check from some networks (5 Nov 2026).
+    notes: "Off: famhp sits behind an F5 bot check that is never bypassed; its VIG-news is read from the mailbox (famhp-email). Switched on, it reads French and Dutch, one page each."
     options:
       urls:
         fr: https://www.afmps.be/fr/news
@@ -599,6 +602,8 @@ sources:
     channel: browser
     url: https://www.tga.gov.au/news/safety-alerts
     parser: tga
+    enabled: false
+    notes: "Off: TGA cuts connections from datacenter addresses; its alerts are read from the mailbox (tga-email)."
     languages: [en]
     schedule: 12h
     expected_max_gap_days: 30
@@ -609,6 +614,8 @@ sources:
     channel: browser
     url: https://www.tga.gov.au/news/safety-updates
     parser: tga
+    enabled: false
+    notes: "Off: TGA cuts connections from datacenter addresses; its alerts are read from the mailbox (tga-email)."
     languages: [en]
     schedule: 12h
     expected_max_gap_days: 60
@@ -640,6 +647,34 @@ sources:
       from the mailbox. They are sent through the Department of Health's Swift Digital portal
       (tgacomms.health.gov.au), hence health.gov.au.
     options: {from_domains: [tga.gov.au, health.gov.au]}
+
+  - id: fda-email
+    regulator: FDA
+    kind: safety
+    channel: email
+    url: https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program
+    parser: email_inbox
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 21
+    notes: >-
+      fda.gov answers GitHub's servers with its abuse-detection page, so the MedWatch Safety Alerts
+      e-mail list (sent through GovDelivery) is read from the mailbox instead.
+    options: {from_domains: [fda.gov, public.govdelivery.com], web_domain: fda.gov}
+
+  - id: famhp-email
+    regulator: FAMHP
+    kind: safety
+    channel: email
+    url: https://www.famhp.be/en/news
+    parser: email_inbox
+    languages: [fr, nl]
+    schedule: 4h
+    expected_max_gap_days: 120
+    notes: >-
+      famhp's site sits behind an F5 bot check that PHAROS never tries to pass, so its VIG-news and
+      Flash VIG-news bulletins (French and Dutch) are read from the mailbox instead.
+    options: {from_domains: [afmps.be, fagg-afmps.be, famhp.be, fagg.be], web_domain: afmps.be}
 
   # ───────────── Literature ─────────────
   - id: pubmed
