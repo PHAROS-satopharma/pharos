@@ -1,0 +1,92 @@
+{
+ "meta": {
+  "note": "real openFDA record with a blank recall_number, fetched 2026-11-05"
+ },
+ "results": [
+  {
+   "status": "Ongoing",
+   "city": "Pulaski",
+   "state": "TN",
+   "country": "United States",
+   "classification": "Class II",
+   "openfda": {
+    "application_number": [
+     "ANDA214548"
+    ],
+    "brand_name": [
+     "AMITRIPTYLINE HYDROCHLORIDE"
+    ],
+    "generic_name": [
+     "AMITRIPTYLINE HYDROCHLORIDE"
+    ],
+    "manufacturer_name": [
+     "AvPAK"
+    ],
+    "product_ndc": [
+     "50268-037",
+     "50268-038",
+     "50268-039",
+     "50268-040"
+    ],
+    "product_type": [
+     "HUMAN PRESCRIPTION DRUG"
+    ],
+    "route": [
+     "ORAL"
+    ],
+    "substance_name": [
+     "AMITRIPTYLINE HYDROCHLORIDE"
+    ],
+    "rxcui": [
+     "856783",
+     "856834",
+     "856845",
+     "856853"
+    ],
+    "spl_id": [
+     "2b489f9d-de0e-dd7a-e063-6394a90a8571"
+    ],
+    "spl_set_id": [
+     "fd771b4b-c7ae-8e69-e053-6294a90a2120"
+    ],
+    "package_ndc": [
+     "50268-037-11",
+     "50268-037-15",
+     "50268-038-11",
+     "50268-038-15",
+     "50268-039-11",
+     "50268-039-15",
+     "50268-040-11",
+     "50268-040-15"
+    ],
+    "original_packager_product_ndc": [
+     "29300-419",
+     "29300-420",
+     "29300-421",
+     "29300-422"
+    ],
+    "unii": [
+     "26LUD4JO9K"
+    ]
+   },
+   "product_type": "Drugs",
+   "event_id": "100061",
+   "recalling_firm": "AvKARE",
+   "address_1": "615 N 1st St",
+   "address_2": "",
+   "postal_code": "38478-2403",
+   "voluntary_mandated": "Voluntary: Firm initiated",
+   "initial_firm_notification": "E-Mail",
+   "distribution_pattern": "US Nationwide.",
+   "recall_number": "",
+   "product_description": "Amitriptyline Hydrochloride, Tablets, USP, 10 mg, 5 x 10 Unit dose cards in paper cartons,  Rx only, Manufactured for AvKARE, Pulaski, TN 38478, NDC 50268-037-15.",
+   "product_quantity": "3534 50-count cartons",
+   "reason_for_recall": "Failed dissolution specifications.",
+   "recall_initiation_date": "20261002",
+   "center_classification_date": "20261026",
+   "report_date": "20261028",
+   "code_info": "Lot # 48489, Expiry: 12/31/2026",
+   "more_code_info": ""
+  }
+ ]
+}

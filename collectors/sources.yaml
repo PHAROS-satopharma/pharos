@@ -399,11 +399,15 @@ sources:
     regulator: AIFA
     kind: safety
     channel: html
-    url: https://www.aifa.gov.it/sicurezza-dei-farmaci
+    # The site search filtered to « Note Informative Importanti » (the Italian DHPC); the landing page
+    # /sicurezza-dei-farmaci has no list the parser can read. 1960205 = AIFA/EMA communications.
+    url: https://www.aifa.gov.it/ricerca-aifa?searchKeywords=&structures=93604&adtCategories=1960204
     parser: aifa
     languages: [it]
     schedule: 4h
     expected_max_gap_days: 45
+    options:
+      extra_urls: ["https://www.aifa.gov.it/ricerca-aifa?searchKeywords=&structures=93604&adtCategories=1960205"]
 
   - id: hpra-notices
     regulator: HPRA
@@ -449,7 +453,8 @@ sources:
     regulator: INFARMED
     kind: safety
     channel: html
-    url: https://www.infarmed.pt/web/infarmed/circulares
+    # « Alertas »: the list the parser reads (#tituloADTAlertas). /circulares has no such list.
+    url: https://www.infarmed.pt/web/infarmed/alertas
     parser: infarmed
     languages: [pt]
     schedule: 4h
@@ -527,7 +532,7 @@ sources:
     parser: pmda
     languages: [ja]
     schedule: 4h
-    expected_max_gap_days: 90
+    expected_max_gap_days: 365
     notes: PMDA医療安全情報 — A2 confirms the URL.
 
   # ───────────── South Korea ─────────────
@@ -539,7 +544,7 @@ sources:
     parser: mfds
     languages: [ko]
     schedule: 4h
-    expected_max_gap_days: 45
+    expected_max_gap_days: 270
     notes: 의약품 안전성 서한 — A2 confirms the board URL.
 
   # ───────────── Browser-engine sources ─────────────
