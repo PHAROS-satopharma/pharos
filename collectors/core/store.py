@@ -336,9 +336,11 @@ class Store:
         return [{**r, "person_id": str(r["person_id"])} for r in rows]
 
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
+        """Delivered, or at least its text was: a PDF refused after the text went out still has a
+        message id, and sending the text again would repeat it."""
         return self.db.fetchone(
             """select 1 from notification where person_id = %(p)s and issue_id = %(i)s
-                 and kind = %(k)s and error is null limit 1""",
+                 and kind = %(k)s and (error is null or tg_message_id is not null) limit 1""",
             {"p": person_id, "i": issue_id, "k": kind}) is not None
 
     def insert_notification(self, *, person_id: str | None, issue_id: str | None, kind: str,
@@ -375,17 +377,21 @@ class Store:
             {"k": kind, "s": since})
         return [str(r["person_id"]) for r in rows]
 
-    def refused_alert_issues(self, since: datetime) -> list[str]:
-        """Issues whose immediate alert was refused since ``since`` for someone who never got it."""
+    def refused_alerts(self, since: datetime) -> dict[str, set[str]]:
+        """Issue -> the people whose immediate alert was first refused since ``since`` and who never got
+        it. The window counts from the FIRST refusal: every retry writes a new refused row, and counting
+        from the latest one would retry a blocked bot for ever."""
         rows = self.db.fetchall(
-            """select distinct n.issue_id from notification n
-                where n.kind = 'immediate' and n.error is not null and n.sent_at >= %(s)s
-                  and n.issue_id is not null
-                  and not exists (select 1 from notification m
-                                   where m.kind = 'immediate' and m.issue_id = n.issue_id
-                                     and m.person_id = n.person_id and m.error is null)""",
+            """select n.issue_id, n.person_id from notification n
+                where n.kind = 'immediate' and n.issue_id is not null and n.person_id is not null
+                group by n.issue_id, n.person_id
+               having bool_and(n.error is not null and n.tg_message_id is null)
+                  and min(n.sent_at) >= %(s)s""",
             {"s": since})
-        return [str(r["issue_id"]) for r in rows]
+        out: dict[str, set[str]] = {}
+        for r in rows:
+            out.setdefault(str(r["issue_id"]), set()).add(str(r["person_id"]))
+        return out
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = self.db.fetchall(

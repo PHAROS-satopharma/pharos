@@ -27,7 +27,7 @@ CAIRO = ZoneInfo("Africa/Cairo")
 API = "https://api.telegram.org"
 MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
 DIGEST_WINDOW = timedelta(hours=4, minutes=30)   # the digest goes out on the first run after the hour
-ALERT_RETRY = timedelta(days=2)  # a refused immediate alert is tried again on every run for this long
+ALERT_RETRY = timedelta(days=2)  # a refused immediate alert is tried again on every run for this long after the first refusal
 MAX_DIGEST_ITEMS = 60          # newest first; the rest are named as a count with a pointer to PHAROS
 MAX_MESSAGE_CHARS = 4000       # Telegram refuses a message over 4096 characters
 BRAND = "PHAROS"
@@ -187,8 +187,9 @@ class Notifier:
             return {"filename": name, "url": att.get("url")}
         return None
 
-    def issue_alert(self, issue_id: str) -> int:
-        """Immediate message for an ingredient-specific new issue. Returns messages written."""
+    def issue_alert(self, issue_id: str, only: set[str] | None = None) -> int:
+        """Immediate message for an ingredient-specific new issue (to ``only`` these people, when
+        given). Returns messages written."""
         issue = self.store.issue_for_alert(issue_id)
         if not issue or issue.get("class_only") or issue.get("is_backfill"):
             return 0
@@ -199,6 +200,8 @@ class Notifier:
         document = None if self.dry_run else self._pdf_for(issue)
         sent = 0
         for person in people:
+            if only is not None and person["person_id"] not in only:
+                continue
             if self.store.notified(person["person_id"], issue_id, "immediate"):
                 continue
             self._deliver(person, issue_id, "immediate", text, document)
@@ -206,12 +209,12 @@ class Notifier:
         return sent
 
     def retry_refused_alerts(self) -> int:
-        """Immediate alerts Telegram refused (or a network error stopped) in the last two days are sent
-        again to the people who never got them. Returns messages written."""
+        """Immediate alerts Telegram refused (or a network error stopped) are sent again, for two days
+        from the first refusal, to the people who never got them. Returns messages written."""
         sent = 0
-        for issue_id in self.store.refused_alert_issues(self.now() - ALERT_RETRY):
+        for issue_id, people in self.store.refused_alerts(self.now() - ALERT_RETRY).items():
             try:
-                sent += self.issue_alert(issue_id)
+                sent += self.issue_alert(issue_id, only=people)
             except Exception:  # noqa: BLE001 - one retry failing never stops the others
                 log.warning("alert retry for %s failed", issue_id, exc_info=True)
         return sent

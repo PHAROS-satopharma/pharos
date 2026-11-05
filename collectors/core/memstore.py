@@ -292,7 +292,7 @@ class MemoryStore:
 
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind
-                   and n["error"] is None for n in self.notification)
+                   and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
 
     def insert_notification(self, **fields: Any) -> None:
         self.notification.append({**fields, "sent_at": _now()})
@@ -310,12 +310,20 @@ class MemoryStore:
         return sorted({n["person_id"] for n in recent
                        if n.get("error") and n["person_id"] and n["person_id"] not in got})
 
-    def refused_alert_issues(self, since: datetime) -> list[str]:
-        rows = [n for n in self.notification if n["kind"] == "immediate"]
-        got = {(n["person_id"], n["issue_id"]) for n in rows if not n.get("error")}
-        return sorted({n["issue_id"] for n in rows
-                       if n.get("error") and n["issue_id"] and n["sent_at"] >= since
-                       and (n["person_id"], n["issue_id"]) not in got})
+    def refused_alerts(self, since: datetime) -> dict[str, set[str]]:
+        rows = [n for n in self.notification
+                if n["kind"] == "immediate" and n["issue_id"] and n["person_id"]]
+        got = {(n["person_id"], n["issue_id"]) for n in rows
+               if not n.get("error") or n.get("tg_message_id")}
+        first: dict[tuple, datetime] = {}
+        for n in rows:
+            key = (n["person_id"], n["issue_id"])
+            first[key] = min(first.get(key, n["sent_at"]), n["sent_at"])
+        out: dict[str, set[str]] = {}
+        for (person, issue), at in first.items():
+            if at >= since and (person, issue) not in got:
+                out.setdefault(issue, set()).add(person)
+        return out
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = [(r["created_at"], i) for i, r in self.issue.items()
