@@ -5,6 +5,7 @@ import { useCountryIndex } from '../../lib/regulators';
 import { useDebounced } from '../../lib/useDebounced';
 import { exportIssues } from '../../lib/excel';
 import { errorMessage } from '../../lib/api';
+import { safeHref } from '../../lib/safeHref';
 import { formatDate, formatNumber } from '../../lib/format';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from '../../lib/labels';
 import { DOC_TYPES, ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatus } from '../../lib/types';
@@ -51,6 +52,7 @@ export function IssuesPage() {
   const [active, setActive] = useState(-1);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportNote, setExportNote] = useState<string | null>(null);
   const navigate = useNavigate();
   const countries = useCountryIndex();
   const ingredients = useIngredientNames();
@@ -105,9 +107,15 @@ export function IssuesPage() {
   async function onExport() {
     setExporting(true);
     setExportError(null);
+    setExportNote(null);
     try {
-      const all = await fetchAllIssues(filters);
-      await exportIssues(all, describeFilters(filters));
+      const { rows: all, total: matching } = await fetchAllIssues(filters);
+      await exportIssues(all, describeFilters(filters), matching);
+      if (matching > all.length) {
+        setExportNote(
+          `Exported the first ${formatNumber(all.length)} of ${formatNumber(matching)} notices. Narrow the filters to export the rest.`,
+        );
+      }
     } catch (e) {
       setExportError(errorMessage(e));
     } finally {
@@ -211,6 +219,7 @@ export function IssuesPage() {
       </div>
 
       {exportError ? <Notice tone="error">The export did not finish: {exportError}</Notice> : null}
+      {exportNote ? <Notice tone="info">{exportNote}</Notice> : null}
 
       {issues.isPending ? (
         <Loading label="Reading the notifications" />
@@ -313,9 +322,9 @@ export function IssuesPage() {
                         <StatusPill status={r.status} />
                       </td>
                       <td data-label="Link" className="col-link">
-                        {r.link ? (
+                        {safeHref(r.link) ? (
                           <a
-                            href={r.link}
+                            href={safeHref(r.link) ?? undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="ext-link"

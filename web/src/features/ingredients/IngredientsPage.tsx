@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
+import { personNames } from '../../lib/people';
 import { useAuth } from '../../lib/auth';
 import { useCountryIndex } from '../../lib/regulators';
 import { formatCairoDate } from '../../lib/format';
@@ -61,17 +62,24 @@ export function IngredientsPage() {
 
   const list = useQuery({
     queryKey: ['ingredients'],
-    queryFn: async () =>
-      unwrap<IngredientWithTerms[] | null>(
-        await supabase
-          .from('ingredient')
-          .select(
-            'id,inn_en,atc_code,wikidata_qid,rxcui,active,confirmed_by,confirmed_at,created_at,' +
-              'confirmed_by_person:confirmed_by(full_name),' +
-              'ingredient_term(id,ingredient_id,lang,country_code,term,kind,mode,exclusions,source,verified_by,verified_at)',
-          )
-          .order('inn_en'),
-      ) ?? [],
+    queryFn: async () => {
+      const rows =
+        unwrap<Omit<IngredientWithTerms, 'confirmed_by_person'>[] | null>(
+          await supabase
+            .from('ingredient')
+            .select(
+              'id,inn_en,atc_code,wikidata_qid,rxcui,active,confirmed_by,confirmed_at,created_at,' +
+                'ingredient_term(id,ingredient_id,lang,country_code,term,kind,mode,exclusions,source,verified_by,verified_at)',
+            )
+            .order('inn_en'),
+        ) ?? [];
+      // Who confirmed it: from person_directory, because the person table shows a non-admin only their own row.
+      const names = await personNames(rows.map((r) => r.confirmed_by));
+      return rows.map((r): IngredientWithTerms => {
+        const name = r.confirmed_by ? names.get(r.confirmed_by) : undefined;
+        return { ...r, confirmed_by_person: name ? { full_name: name } : null };
+      });
+    },
   });
 
   const setActive = useMutation({

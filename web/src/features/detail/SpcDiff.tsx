@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { diffWords, type DiffPart } from '../../lib/wordDiff';
 import { formatDate, formatDateTime } from '../../lib/format';
+import { safeHref } from '../../lib/safeHref';
 import type { SpcChangeRow, SpcDiffSection } from './queries';
 import { Country } from '../../ui/Flag';
 
@@ -66,8 +67,8 @@ export function SpcDiff({ changes }: { changes: SpcChangeRow[] }) {
               {c.spc_product?.product_name ?? 'Product'}
             </span>
             {c.spc_product?.mah ? <span className="soft" dir="auto">{c.spc_product.mah}</span> : null}
-            {c.spc_product?.url ? (
-              <a href={c.spc_product.url} target="_blank" rel="noopener noreferrer" className="small">
+            {safeHref(c.spc_product?.url) ? (
+              <a href={safeHref(c.spc_product?.url) ?? undefined} target="_blank" rel="noopener noreferrer" className="small">
                 Product information <span aria-hidden>↗</span>
               </a>
             ) : null}

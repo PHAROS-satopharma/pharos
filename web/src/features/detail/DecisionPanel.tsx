@@ -23,6 +23,19 @@ const CHOICES: { to: IssueStatus; label: string; hint: string }[] = [
   { to: 'not_relevant', label: 'Not relevant', hint: 'It does not concern our products. Say why.' },
 ];
 
+/** The database refused the decision: the notice's status changed since this page read it (SQLSTATE PH409). */
+class StaleDecisionError extends Error {
+  constructor() {
+    super('Someone else recorded a decision on this notice a moment ago. It has been reloaded — please look again.');
+    this.name = 'StaleDecisionError';
+  }
+}
+
+function isStaleDecision(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === 'PH409' || (error.message ?? '').startsWith('STALE_DECISION');
+}
+
 export function DecisionPanel({ issue }: { issue: IssueRow }) {
   const { canReview, person } = useAuth();
   const qc = useQueryClient();
@@ -37,15 +50,27 @@ export function DecisionPanel({ issue }: { issue: IssueRow }) {
   const save = useMutation({
     mutationFn: async () => {
       if (!target || !person) throw new Error('Choose a decision first.');
-      unwrap<null>(
-        await supabase.from('review_event').insert({
-          issue_id: issue.id,
-          from_status: issue.status,
-          to_status: target,
-          comment: comment.trim() || null,
-          person_id: person.id,
-        }),
-      );
+      // The database stamps the time and checks from_status against the notice's status at this moment.
+      const res = await supabase.from('review_event').insert({
+        issue_id: issue.id,
+        from_status: issue.status,
+        to_status: target,
+        comment: comment.trim() || null,
+        person_id: person.id,
+      });
+      if (isStaleDecision(res.error)) throw new StaleDecisionError();
+      unwrap<null>(res);
+    },
+    onError: async (e) => {
+      if (!(e instanceof StaleDecisionError)) return;
+      // Show the notice as it is now; the comment stays typed in case it still applies.
+      setTarget(null);
+      setDone(null);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['issue', issue.id] }),
+        qc.invalidateQueries({ queryKey: ['issue-reviews', issue.id] }),
+        qc.invalidateQueries({ queryKey: ['issues'] }),
+      ]);
     },
     onSuccess: async () => {
       setDone(`Recorded as ${STATUS_LABEL[target ?? issue.status]}.`);
@@ -129,7 +154,13 @@ export function DecisionPanel({ issue }: { issue: IssueRow }) {
             </Field>
           ) : null}
 
-          {save.isError ? <Notice tone="error">Not recorded: {errorMessage(save.error)}</Notice> : null}
+          {save.isError ? (
+            save.error instanceof StaleDecisionError ? (
+              <Notice tone="info">{save.error.message}</Notice>
+            ) : (
+              <Notice tone="error">Not recorded: {errorMessage(save.error)}</Notice>
+            )
+          ) : null}
           {done ? <Notice tone="ok">{done}</Notice> : null}
 
           <Button

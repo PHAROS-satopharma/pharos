@@ -308,6 +308,138 @@ jobs:
           select pg_temp.ci_assert((:'t_novault'::jsonb ->> 'ok')::boolean = false
             and exists (select 1 from ops_alert_log where kind = 'test' and not sent and error like '%TELEGRAM_BOT_TOKEN%'),
             'without the bot token nothing is sent and the reason is logged');
+
+          -- 0007 (1): a decision is taken against the notice's true status, at the database's own time.
+          insert into auth.users (id, email) values
+            ('00000000-0000-0000-0000-0000000000c3', 'reviewer@example.test'),
+            ('00000000-0000-0000-0000-0000000000d4', 'admin2@example.test');
+          insert into person (auth_user_id, full_name, email, role, telegram_chat_id) values
+            ('00000000-0000-0000-0000-0000000000c3', 'CI Reviewer', 'reviewer@example.test', 'reviewer', 4343),
+            ('00000000-0000-0000-0000-0000000000d4', 'CI Admin Two', 'admin2@example.test', 'admin', 4444);
+          select pg_temp.ci_assert((select status from issue where id = '00000000-0000-0000-0000-0000000000e1') = 'reviewed',
+            'the CI notice is Reviewed before the stale-decision checks');
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', false);
+          set role authenticated;
+          do $$ declare refused boolean := false; begin
+            begin
+              insert into review_event (issue_id, from_status, to_status, person_id)
+              values ('00000000-0000-0000-0000-0000000000e1', 'new', 'relevant', my_person_id());
+            exception when sqlstate 'PH409' then refused := sqlerrm like 'STALE_DECISION:%'; end;
+            if not refused then raise exception 'FAIL: a decision made from a stale status was accepted'; end if;
+            refused := false;
+            begin
+              insert into review_event (issue_id, from_status, to_status, person_id)
+              values ('00000000-0000-0000-0000-0000000000e1', 'reviewed', 'new', my_person_id());
+            exception when invalid_parameter_value then refused := true; end;
+            if not refused then raise exception 'FAIL: a decision back to New was accepted'; end if;
+            refused := false;
+            begin
+              insert into review_event (issue_id, from_status, to_status, person_id)
+              values ('00000000-0000-0000-0000-0000000000e1', 'reviewed', 'reviewed', my_person_id());
+            exception when invalid_parameter_value then refused := true; end;
+            if not refused then raise exception 'FAIL: a decision that changes nothing was accepted'; end if;
+          end $$;
+          insert into review_event (issue_id, from_status, to_status, person_id, created_at)
+            values ('00000000-0000-0000-0000-0000000000e1', 'reviewed', 'relevant', my_person_id(), '2000-01-01 00:00+00');
+          reset role;
+          select pg_temp.ci_assert((select bool_and(created_at > now() - interval '1 hour') from review_event
+              where person_id = (select id from person where email = 'reviewer@example.test')),
+            'a decision is stamped with the database time, never the time the browser sent');
+          select pg_temp.ci_assert((select status from issue where id = '00000000-0000-0000-0000-0000000000e1') = 'relevant',
+            'a decision from the true status is applied');
+
+          -- 0007 (2): personal data. Own rows only for a reader; names of everyone through person_directory.
+          insert into subscription (person_id, kind)
+            select id, case when role = 'admin' then 'admin_health' else 'class_digest' end::sub_kind
+              from person where email in ('admin@example.test', 'reader@example.test');
+          insert into notification (person_id, issue_id, kind, dry_run, summary)
+            select id, '00000000-0000-0000-0000-0000000000e1', 'immediate', true, 'CI'
+              from person where email in ('admin@example.test', 'reader@example.test');
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+          set role authenticated;
+          select count(*) as rd_people from person \gset
+          select count(*) as rd_others from person where email <> 'reader@example.test' or telegram_chat_id is not null \gset
+          select count(*) as rd_audit from audit_log \gset
+          select count(*) as rd_notif from notification \gset
+          select count(*) as rd_notif_mine from notification where person_id = my_person_id() \gset
+          select count(*) as rd_subs from subscription \gset
+          select count(*) as rd_dir from person_directory \gset
+          select full_name as rd_dir_admin from person_directory where full_name = 'CI Admin' \gset
+          reset role;
+          select pg_temp.ci_assert(:rd_people = 1 and :rd_others = 0,
+            'a reader reads only his own person row: no one else''s email or Telegram chat id');
+          select pg_temp.ci_assert(:rd_audit = 0 and (select count(*) from audit_log) > 0, 'a reader cannot read the audit log');
+          select pg_temp.ci_assert(:rd_notif = 1 and :rd_notif_mine = 1 and :rd_subs = 1,
+            'a reader reads only his own notifications and subscriptions');
+          select pg_temp.ci_assert(:rd_dir = (select count(*) from person) and :'rd_dir_admin' = 'CI Admin',
+            'a reader reads every name through person_directory');
+          select pg_temp.ci_assert(not exists (select 1 from information_schema.columns
+              where table_name = 'person_directory' and column_name in ('email', 'telegram_chat_id', 'auth_user_id')),
+            'person_directory holds names, never contact details');
+          set role anon;
+          do $$ declare denied boolean := false; begin
+            begin perform 1 from person_directory; exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: anon can read person_directory'; end if;
+          end $$;
+          reset role;
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+          set role authenticated;
+          select count(*) as ad_people from person where email is not null \gset
+          select count(*) as ad_audit from audit_log \gset
+          select count(*) as ad_notif from notification \gset
+          select count(*) as ad_subs from subscription \gset
+          reset role;
+          select pg_temp.ci_assert(:ad_people = (select count(*) from person) and :ad_audit = (select count(*) from audit_log)
+              and :ad_notif = (select count(*) from notification) and :ad_subs = (select count(*) from subscription),
+            'an admin still reads every person, the audit log, every notification and every subscription');
+
+          -- 0007 (3): real messages unlock only on THIS admin's own delivered test (no pg_net here).
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', false);
+          set role authenticated;
+          do $$ declare denied boolean := false; begin
+            begin perform telegram_test_delivered(); exception when insufficient_privilege then denied := true; end;
+            if not denied then raise exception 'FAIL: a reviewer read a test result'; end if;
+          end $$;
+          reset role;
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d4","role":"authenticated"}', false);
+          set role authenticated;
+          select telegram_test_delivered() ->> 'state' as tg_never \gset
+          reset role;
+          -- Another admin's test that Telegram delivered must not unlock anything for admin a1.
+          insert into ops_alert_log (kind, message, dry_run, sent, request_id, person_id)
+            select 'test', 'CI', false, true, 99, id from person where email = 'admin2@example.test';
+          set role authenticated;
+          select telegram_test_delivered() ->> 'state' as tg_queued \gset
+          do $$ declare refused boolean := false; begin
+            begin update app_setting set value = 'false' where key = 'telegram_dry_run';
+            exception when insufficient_privilege then refused := sqlerrm like 'Real messages stay off%'; end;
+            if not refused then raise exception 'FAIL: real messages turned on while the test was only queued'; end if;
+          end $$;
+          reset role;
+          update ops_alert_log set delivered = true, tg_status = 200
+           where person_id = (select id from person where email = 'admin2@example.test');
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+          set role authenticated;
+          select telegram_test_delivered()::text as tg_a1 \gset
+          do $$ declare refused boolean := false; begin
+            begin update app_setting set value = 'false' where key = 'telegram_dry_run';
+            exception when insufficient_privilege then refused := sqlerrm like 'Real messages stay off%'; end;
+            if not refused then raise exception 'FAIL: another admin''s delivered test unlocked real messages'; end if;
+          end $$;
+          reset role;
+          select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d4","role":"authenticated"}', false);
+          set role authenticated;
+          select telegram_test_delivered() ->> 'state' as tg_delivered \gset
+          update app_setting set value = 'false' where key = 'telegram_dry_run';
+          reset role;
+          select pg_temp.ci_assert(:'tg_never' = 'none', 'an admin who never sent a test has nothing delivered');
+          select pg_temp.ci_assert(:'tg_queued' = 'pending', 'a test handed to pg_net is pending, not delivered');
+          select pg_temp.ci_assert(:'tg_a1'::jsonb ->> 'state' = 'failed' and :'tg_a1'::jsonb ->> 'reason' like '%TELEGRAM_BOT_TOKEN%',
+            'a test that never left is failed, with its reason');
+          select pg_temp.ci_assert(:'tg_delivered' = 'delivered'
+              and (select value from app_setting where key = 'telegram_dry_run') = 'false'::jsonb,
+            'an admin whose own test was delivered can turn real messages on');
+          update app_setting set value = 'true' where key = 'telegram_dry_run';
           SQL
 
       # ───────────── Edge Functions: deno check ─────────────
