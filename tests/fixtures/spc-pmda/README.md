@@ -9,3 +9,8 @@ https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/870276_2190417A10
 5 November 2026 (2026年10月改訂 第5版; 3 pages, A4, printed in two columns; sha256
 3fce0711785c1c4f655714e94c88c57001fb8c4198258b0e658cdf545f3aa0ed). Read straight across, sections
 3–8 were lost; `tests/test_pdf_columns.py` reads it column by column.
+
+`general_list_1149036.html` — https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/1149036
+(ロルノキシカム, lornoxicam), saved 5 November 2026: two products, ロルカム錠2mg／4mg (大正製薬,
+`400059_1149036F1025`) and ロルノキシカム錠2mg「KO」 (寿製薬, `270139_1149036F1033`).
+`tests/test_pmda_codes.py` reads it.
