@@ -60,12 +60,9 @@
   .empty { color: var(--muted); padding: 3mm 0; border-bottom: 1px solid var(--rule); }
   .comment { color: var(--muted); }
 
-  footer { position: fixed; bottom: -12mm; left: 0; right: 0; display: flex; justify-content: space-between;
-           align-items: center; font: 400 7pt/1 var(--mono); color: var(--muted); border-top: 1px solid var(--rule);
-           padding-top: 2mm; }
-  footer .credit { display: inline-flex; align-items: center; gap: 2mm; }
+  /* The running foot of every page is footer.html, printed by Chromium in the bottom margin. */
   /* Sato Pharma's own logo, small: it credits the maker; PHAROS stays the identity of the report. */
-  .sato { display: block; height: 3.4mm; width: auto; }
+  .sato { display: block; width: auto; }
   .closing { margin-top: 12mm; padding-top: 4mm; border-top: 1px solid var(--ink); display: flex;
              align-items: center; gap: 4mm; break-inside: avoid; }
   .closing .sato { height: 7mm; }
@@ -75,7 +72,6 @@
 </style>
 </head>
 <body>
-<footer><span>PHAROS · {{ month.label }} · generated {{ generated }} (Cairo)</span><span class="credit"><img class="sato" src="{{ sato_src }}" alt="Sato Pharma">{{ copyright }}</span></footer>
 
 <header class="masthead">
   <img class="logo" src="{{ logo_src }}" alt="PHAROS — Pharmaceutical Alerts &amp; Regulatory Observation System">

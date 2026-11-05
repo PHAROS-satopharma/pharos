@@ -1,0 +1,13 @@
+<!-- The running foot of every PDF page, printed by Chromium in the bottom page margin. It is rendered on its
+     own, without the report's stylesheet or web fonts, so every style is inline and the fonts are system ones.
+     One line only, never wrapping: the generation time is in the Summary table, not here. -->
+<div style="box-sizing: border-box; width: 100%; padding: 0 16mm; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 4mm; padding-top: 2mm;
+              border-top: 1px solid #D9D5CC; font: 400 7pt/1 monospace; color: #5B6670; white-space: nowrap;">
+    <span>PHAROS · Monthly screening report · {{ month.label }}</span>
+    <span style="display: flex; align-items: center; gap: 2mm;">
+      <img src="{{ sato_src }}" alt="Sato Pharma" style="display: block; height: 3.4mm; width: auto;">
+      <span>{{ copyright }} · Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+    </span>
+  </div>
+</div>

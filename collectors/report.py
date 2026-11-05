@@ -269,19 +269,27 @@ def _decision_at(row: dict) -> str:
 
 # ───────────────────────────── PDF ─────────────────────────────
 
-def render_html(data: dict, month: Month) -> str:
+def _env():
     from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES)),
-                      autoescape=select_autoescape(["html"]))
+    return Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html"]))
+
+
+def render_footer(month: Month) -> str:
+    """The running foot Chromium prints on every page: the month, the Sato Pharma credit and the page number."""
+    return _env().get_template("footer.html").render(
+        month=month, sato_src=logo_data_uri(SATO_LOGO), copyright=copyright_line())
+
+
+def render_html(data: dict, month: Month) -> str:
+    env = _env()
     env.filters["cairo"] = cairo
     env.filters["status"] = lambda s: STATUS_LABEL.get(s, s)
     env.filters["health"] = lambda s: HEALTH_LABEL.get(s, s)
     return env.get_template("monthly.html").render(
         title=TITLE, month=month, summary=summary_rows(data, month), sources=data["sources"],
         issues=data["issues"], reviews=data["reviews"], logo_src=logo_data_uri(),
-        sato_src=logo_data_uri(SATO_LOGO), credit=CREDIT, copyright=copyright_line(),
-        generated=cairo(datetime.now(timezone.utc)))
+        sato_src=logo_data_uri(SATO_LOGO), credit=CREDIT, copyright=copyright_line())
 
 
 def logo_data_uri(path: Path = LOGO) -> str:
@@ -291,7 +299,7 @@ def logo_data_uri(path: Path = LOGO) -> str:
     return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
-def build_pdf(html: str) -> bytes:
+def build_pdf(html: str, footer: str) -> bytes:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as pw:
@@ -299,8 +307,11 @@ def build_pdf(html: str) -> bytes:
         try:
             page = browser.new_page()
             page.set_content(html, wait_until="networkidle")
+            # The page margins come from the template's @page rule; Chromium prints the footer inside the bottom
+            # margin of every page (a position: fixed footer printed on the last page only).
             return page.pdf(format="A4", print_background=True, prefer_css_page_size=True,
-                            margin={"top": "0", "bottom": "0", "left": "0", "right": "0"})
+                            display_header_footer=True, header_template="<span></span>",
+                            footer_template=footer)
         finally:
             browser.close()
 
@@ -313,7 +324,7 @@ def make_report(db: Any, store: Any, month: Month, *, dry_run: bool = False) -> 
 
     data = gather(db, month)
     xlsx = build_xlsx(data, month)
-    pdf = build_pdf(render_html(data, month))
+    pdf = build_pdf(render_html(data, month), render_footer(month))
     archive = Archive()
     base = f"reports/{month.slug}/PHAROS-screening-{month.slug}"
     # A re-run for the same month never overwrites (bucket lock): it is stored as -r2, -r3 …
