@@ -15,7 +15,7 @@ markers = [
 [tool.ruff]
 target-version = "py312"
 line-length = 120
-extend-exclude = ["web", "workers", "supabase", "tests/fixtures", ".archive", "docs/handbook"]
+extend-exclude = ["web", "workers", "supabase", "tests/fixtures", ".archive"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B"]
@@ -23,3 +23,5 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
+# The handbook PDF script draws with the helpers of its kit.py, imported as a whole.
+"docs/handbook/build.py" = ["F403", "F405"]

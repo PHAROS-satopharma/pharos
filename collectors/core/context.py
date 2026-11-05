@@ -12,7 +12,10 @@
 * ``public_only=True`` (the scheduled runs and the admin's "Test this link" probe) refuses, with
   ``UnsafeAddress``, any request — the first one and every redirect hop — whose host resolves to an
   address that is not on the public internet (loopback, private, link-local such as the cloud metadata
-  endpoint 169.254.169.254, 0.0.0.0, odd numeric forms such as http://2130706433/).
+  endpoint 169.254.169.254, 0.0.0.0, odd numeric forms such as http://2130706433/). The connection is
+  then made to the very address that was checked (``_PinnedBackend``), so a name whose DNS answer
+  changes between the check and the connection (rebinding) cannot reach inside either; in the browser,
+  every request the page makes is checked too, and a page that was redirected inside is never read.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
+import httpcore
 import httpx
 
 from collectors.core.archive import Archive
@@ -164,9 +168,10 @@ def _is_public(address: str) -> bool:
 
 
 def check_public_host(url: str, host: str | None,
-                      resolve: Callable[[str], list[str]] = _default_resolve) -> None:
-    """Raise ``UnsafeAddress`` unless ``host`` is a name or address on the public internet. A name that
-    does not resolve raises ``httpx.ConnectError`` (what the request itself would have raised)."""
+                      resolve: Callable[[str], list[str]] = _default_resolve) -> list[str]:
+    """Raise ``UnsafeAddress`` unless ``host`` is a name or address on the public internet; else return
+    its addresses. A name that does not resolve raises ``httpx.ConnectError`` (what the request itself
+    would have raised)."""
     host = (host or "").strip().rstrip(".").lower()
     if host.startswith("[") and host.endswith("]"):
         host = host[1:-1]
@@ -179,7 +184,7 @@ def check_public_host(url: str, host: str | None,
     if literal is not None:
         if not _is_public(host):
             raise UnsafeAddress(url, f"{host} is not a public address")
-        return
+        return [host]
     if _NUMERIC_LABEL.match(host.rsplit(".", 1)[-1]):
         # 2130706433, 0x7f.1, 017700000001, 127.1: resolvers read these as IP addresses
         raise UnsafeAddress(url, f"{host} is an unusual numeric address")
@@ -192,6 +197,28 @@ def check_public_host(url: str, host: str | None,
     bad = [a for a in addresses if not _is_public(a)]
     if bad:
         raise UnsafeAddress(url, f"{host} resolves to {bad[0]}")
+    return addresses
+
+
+class _PinnedBackend(httpcore.SyncBackend):
+    """httpx's network layer for ``public_only``: the host is resolved and checked here, once, and the
+    socket goes to one of those checked addresses. TLS still names the host (SNI and the certificate
+    check use the request's host, not the address)."""
+
+    def __init__(self, resolve: Callable[[], Callable[[str], list[str]]]) -> None:
+        self._resolve = resolve   # read at connect time: the context's resolver is replaceable
+
+    def connect_tcp(self, host: str, port: int, timeout: float | None = None,
+                    local_address: str | None = None, socket_options: Any = None) -> Any:
+        addresses = check_public_host(f"tcp://{host}:{port}", host, self._resolve())
+        error: Exception | None = None
+        for address in dict.fromkeys(addresses):
+            try:
+                return super().connect_tcp(address, port, timeout=timeout, local_address=local_address,
+                                           socket_options=socket_options)
+            except (httpcore.ConnectError, httpcore.ConnectTimeout) as exc:
+                error = exc
+        raise error or httpcore.ConnectError(f"cannot connect to {host}")
 
 
 # Markers of Cloudflare / bot-management interstitials, checked on the first 64 KB of a page.
@@ -243,6 +270,9 @@ class FetchContext:
         # replaceable so tests never reach real DNS.
         self.public_only = public_only
         self._resolve: Callable[[str], list[str]] = _default_resolve
+        if transport is None and public_only:
+            transport = httpx.HTTPTransport(http2=False)
+            transport._pool._network_backend = _PinnedBackend(lambda: self._resolve)
         self._client = httpx.Client(
             follow_redirects=True, timeout=httpx.Timeout(TIMEOUT_S),
             headers={"User-Agent": USER_AGENT, "Accept-Language": "*;q=0.5"},
@@ -428,6 +458,10 @@ class FetchContext:
         browser = self._ensure_browser()
         self._polite(url)
         page = browser.new_page(user_agent=USER_AGENT, locale="en-GB")
+        inside: list[str] = []      # redirect hops into a private network (a route never sees those)
+        if self.public_only:
+            page.route("**/*", self._browser_guard)
+            page.on("request", lambda req: self._browser_hop(req, inside))
         try:
             try:
                 response = page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
@@ -456,8 +490,11 @@ class FetchContext:
             final_url = page.url
         finally:
             page.close()
-        # The browser follows redirects itself: a page that ended up inside a private network is not
-        # handed back (the request was made; its content is never read).
+        # The browser follows redirects itself: a page that ended up inside a private network, or whose
+        # own requests were redirected there, is not handed back (the request was made; its content is
+        # never read).
+        if inside:
+            raise UnsafeAddress(inside[0], "a redirect from the page led inside")
         if self.public_only and urlsplit(final_url).scheme.lower() in ("http", "https"):
             check_public_host(final_url, urlsplit(final_url).hostname, self._resolve)
         self._note_status(status)
@@ -471,6 +508,27 @@ class FetchContext:
         elif status >= 400:
             raise FetchError(status, final_url)
         return fetched
+
+    def _browser_safe(self, url: str) -> bool:
+        if urlsplit(url).scheme.lower() not in ("http", "https"):
+            return True   # data:, blob: and the like never leave the browser
+        try:
+            self._check_url(url)
+        except (UnsafeAddress, httpx.ConnectError):
+            return False
+        return True
+
+    def _browser_guard(self, route: Any) -> None:
+        """Every request the page makes (scripts, frames, fetch/XHR) passes the public-only check first."""
+        if self._browser_safe(route.request.url):
+            route.continue_()
+        else:
+            log.warning("browser: refused a request inside a private network: %s", redact(route.request.url))
+            route.abort("blockedbyclient")
+
+    def _browser_hop(self, request: Any, inside: list[str]) -> None:
+        if request.redirected_from is not None and not self._browser_safe(request.url):
+            inside.append(request.url)
 
     def close(self) -> None:
         try:

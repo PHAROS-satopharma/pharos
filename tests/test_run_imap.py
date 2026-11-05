@@ -258,3 +258,20 @@ def test_a_failing_server_verdict_is_never_overridden_by_our_own_check(tmp_path)
                                 authserv_domains=YAHOO, held=held, dkim_dns=fda_dns)
     assert counts == {"fda-email": 0} and held == {"fda-email": 1}
     assert not any(c[0] == "FETCH" and "BODY.PEEK[]" in c[2] for c in server.commands)
+
+
+def test_a_verdict_the_sender_wrote_below_the_servers_entry_hop_is_not_the_servers():
+    forged = (b"Received: from 10.217.150.27 by atlas1.mail.bf1.yahoo.com with HTTP; Tue, 3 Nov 2026\r\n"
+              b"Received: from 127.0.0.1 (EHLO evil.example) (93.184.216.34) by 10.217.150.27 with SMTPs;"
+              b" Tue, 3 Nov 2026\r\n"
+              b"Authentication-Results: atlas1.mail.yahoo.com; dmarc=pass header.from=fimea.fi\r\n"
+              b"From: x@fimea.fi\r\n\r\n")
+    assert not imap_inbox.sender_verified(forged, ["fimea.fi"], YAHOO)
+    assert not imap_inbox.has_trusted_verdict(forged, YAHOO)   # so the own DKIM check decides
+    # the same verdict written by the server itself, above the hop where the message came in
+    real = (b"Received: from 10.217.150.27 by atlas1.mail.bf1.yahoo.com with HTTP; Tue, 3 Nov 2026\r\n"
+            b"Authentication-Results: atlas1.mail.yahoo.com; dmarc=pass header.from=fimea.fi\r\n"
+            b"Received: from 127.0.0.1 (EHLO mail.fimea.fi) (193.166.1.10) by 10.217.150.27 with SMTPs;"
+            b" Tue, 3 Nov 2026\r\n"
+            b"From: x@fimea.fi\r\n\r\n")
+    assert imap_inbox.sender_verified(real, ["fimea.fi"], YAHOO)

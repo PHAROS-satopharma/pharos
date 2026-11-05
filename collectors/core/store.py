@@ -267,16 +267,19 @@ class Store:
             {"i": issue_id, "d": document_id, "l": link, "m": method, "s": score})
 
     def set_issue_anchor(self, issue_id: str, document_id: str, *, title: str, doc_type: str,
-                         first_date: date | None) -> None:
-        """An EMA anchor arrived after its national copies: it becomes the issue's anchor."""
+                         first_date: date | None, is_backfill: bool = True) -> None:
+        """An EMA anchor arrived after its national copies: it becomes the issue's anchor (a fresh one
+        takes the issue out of the backfill, so it alerts)."""
         self.db.execute(
             """update issue_document set link = 'copy'
                 where issue_id = %(i)s and link = 'anchor' and document_id <> %(d)s""",
             {"i": issue_id, "d": document_id})
         self.db.execute(
             """update issue set anchor_document_id = %(d)s, title = %(t)s, doc_type = %(dt)s,
-                 first_date = least(first_date, %(f)s), updated_at = now() where id = %(i)s""",
-            {"d": document_id, "t": title, "dt": doc_type, "f": first_date, "i": issue_id})
+                 first_date = least(first_date, %(f)s), is_backfill = is_backfill and %(b)s,
+                 updated_at = now() where id = %(i)s""",
+            {"d": document_id, "t": title, "dt": doc_type, "f": first_date, "b": is_backfill,
+             "i": issue_id})
 
     def add_issue_ingredients(self, issue_id: str, ingredient_ids: Iterable[str]) -> None:
         for ing in ingredient_ids:
@@ -348,11 +351,41 @@ class Store:
             {"p": person_id, "i": issue_id, "k": kind, "d": dry_run, "m": tg_message_id,
              "e": error, "s": summary})
 
-    def last_notification_at(self, kind: str, *, delivered_only: bool = False) -> datetime | None:
+    def last_notification_at(self, kind: str, *, delivered_only: bool = False,
+                             before: datetime | None = None) -> datetime | None:
+        params: dict[str, Any] = {"k": kind}
+        if before is not None:
+            params["b"] = before
         row = self.db.fetchone(
             "select max(sent_at) as at from notification where kind = %(k)s"
-            + (" and error is null" if delivered_only else ""), {"k": kind})
+            + (" and error is null" if delivered_only else "")
+            + (" and sent_at < %(b)s" if before is not None else ""), params)
         return row["at"] if row else None
+
+    def refused_people(self, kind: str, since: datetime) -> list[str]:
+        """People whose ``kind`` message was refused since ``since`` and who have had none delivered
+        since then."""
+        rows = self.db.fetchall(
+            """select distinct n.person_id from notification n
+                where n.kind = %(k)s and n.error is not null and n.sent_at >= %(s)s
+                  and n.person_id is not null
+                  and not exists (select 1 from notification m
+                                   where m.kind = n.kind and m.person_id = n.person_id
+                                     and m.error is null and m.sent_at >= %(s)s)""",
+            {"k": kind, "s": since})
+        return [str(r["person_id"]) for r in rows]
+
+    def refused_alert_issues(self, since: datetime) -> list[str]:
+        """Issues whose immediate alert was refused since ``since`` for someone who never got it."""
+        rows = self.db.fetchall(
+            """select distinct n.issue_id from notification n
+                where n.kind = 'immediate' and n.error is not null and n.sent_at >= %(s)s
+                  and n.issue_id is not null
+                  and not exists (select 1 from notification m
+                                   where m.kind = 'immediate' and m.issue_id = n.issue_id
+                                     and m.person_id = n.person_id and m.error is null)""",
+            {"s": since})
+        return [str(r["issue_id"]) for r in rows]
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = self.db.fetchall(

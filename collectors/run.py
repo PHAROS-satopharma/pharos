@@ -230,8 +230,8 @@ class Runner:
         if result.created:
             stats.issues_created += 1
             self.issues_created += 1
-            if not is_backfill and not dm.class_only and dm.has_high:
-                stats.alerts.append(result.issue_id)
+        if (result.created or result.alert) and not is_backfill and not dm.class_only and dm.has_high:
+            stats.alerts.append(result.issue_id)
 
     def _country(self, regulator_id: str) -> str | None:
         if regulator_id not in self._countries:
@@ -289,6 +289,8 @@ class Runner:
             tried = len(fresh) - waiting
             if tried and len(item_errors) == tried:
                 raise FetchError(0, src.url, f"every new item failed; first: {item_errors[0]}")
+            # Notes on a completed run; source_run_failed() (migration 0018) knows each of their
+            # beginnings, so a new kind of note is added there too.
             notes = [self.imap_note[src.id]] if src.id in self.imap_note else []
             if item_errors:
                 notes.append(f"{len(item_errors)} item(s) failed; first: {item_errors[0]}"[:500])
@@ -464,7 +466,9 @@ def main(argv: list[str] | None = None) -> int:
                           public_only=True) as ctx:
             result = run_probe(store, ctx, args.probe_id)
         print(json.dumps({k: v for k, v in result.items() if k != "items"}, default=str))
-        return 0 if result.get("status") == "ok" else 1
+        # A site that refuses, or a page with no reading rules, is the probe's answer and is already on
+        # the admin screen: the job stays green. Only a probe that could not be read or written fails it.
+        return 0
 
     sync_catalogue(store)
     slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
@@ -506,14 +510,22 @@ def main(argv: list[str] | None = None) -> int:
                     from collectors.spc.run import run_spc
 
                     created = run_spc(ctx, db, spc_ids, store=store, notifier=notifier)
-                    for issue_id in created or []:
-                        notifier.issue_alert(issue_id)
                 except Exception:  # noqa: BLE001 - SPC trouble is logged, the run continues
-                    ok = False
+                    ok, created = False, []
                     log.error("SPC watch failed: %s", traceback.format_exc())
+                for issue_id in created or []:
+                    try:
+                        notifier.issue_alert(issue_id)
+                    except Exception:  # noqa: BLE001 - one alert failing never stops the others
+                        log.warning("alert for %s failed: %s", issue_id, traceback.format_exc())
             if args.backfill:
                 notifier.admin_message(runner.summary.text(runner.issues_created))
             else:
+                try:
+                    # an immediate alert Telegram refused on an earlier run is tried again
+                    notifier.retry_refused_alerts()
+                except Exception:  # noqa: BLE001 - an alert failure never fails the run
+                    log.warning("alert retry failed: %s", traceback.format_exc())
                 notifier.digest_if_due()
             completed = True
         finally:

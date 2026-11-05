@@ -307,3 +307,57 @@ def test_admins_need_no_subscription(store, tag):
     reviewer = _person(store, tag, "Reviewer")
     mine = {qppv, gone, unlinked, reviewer}
     assert {r["person_id"] for r in store.admins()} & mine == {qppv}
+
+
+def test_refused_notifications_wait_for_a_retry(store, tag):
+    src = _source(store, tag)
+    doc = store.insert_document(_doc(src.id, "r1"))
+    issue = store.create_issue(doc_type="dhpc", title="r", anchor_document_id=doc,
+                               first_date=None, class_only=False, is_backfill=False)
+    p = _person(store, tag, "Refused")
+    since = store.db.fetchone("select now() - interval '1 minute' as t")["t"]
+    store.insert_notification(person_id=p, issue_id=issue, kind="immediate", dry_run=False,
+                              tg_message_id=None, error="Bad Gateway", summary=f"r {tag}")
+    store.insert_notification(person_id=p, issue_id=issue, kind="digest", dry_run=False,
+                              tg_message_id=None, error="Forbidden", summary=f"d {tag}")
+    assert issue in store.refused_alert_issues(since)
+    assert p in store.refused_people("digest", since)
+    future = store.db.fetchone("select now() + interval '1 hour' as t")["t"]
+    assert issue not in store.refused_alert_issues(future)
+    store.insert_notification(person_id=p, issue_id=issue, kind="immediate", dry_run=False,
+                              tg_message_id=123456789012, error=None, summary=f"r ok {tag}")
+    store.insert_notification(person_id=p, issue_id=issue, kind="digest", dry_run=False,
+                              tg_message_id=123456789013, error=None, summary=f"d ok {tag}")
+    assert issue not in store.refused_alert_issues(since)
+    assert p not in store.refused_people("digest", since)
+    assert store.last_notification_at("digest", delivered_only=True, before=since) != \
+        store.last_notification_at("digest", delivered_only=True)
+
+
+def test_a_fresh_anchor_clears_the_backfill_flag(store, tag):
+    src = _source(store, tag)
+    d1 = store.insert_document(_doc(src.id, "b1", is_backfill=True))
+    d2 = store.insert_document(_doc(src.id, "b2"))
+    issue = store.create_issue(doc_type="dhpc", title="b", anchor_document_id=d1,
+                               first_date=None, class_only=False, is_backfill=True)
+    store.set_issue_anchor(issue, d2, title="anchor", doc_type="dhpc", first_date=None)
+    assert store.issue_for_alert(issue)["is_backfill"] is True       # the default keeps it
+    store.set_issue_anchor(issue, d2, title="anchor", doc_type="dhpc", first_date=None, is_backfill=False)
+    assert store.issue_for_alert(issue)["is_backfill"] is False
+
+
+@pytest.mark.parametrize("error, failed", [
+    (None, False), ("imap not configured", False),
+    ("imap: 2 message(s) held unread: sender not verified (no DMARC, DKIM or SPF pass) or too big", False),
+    ("imap: ConnectionRefusedError: refused", False),
+    ("3 item(s) failed; first: x: ValueError: y", False),
+    ("time budget reached: 40 new item(s) wait for the next run", False),
+    ("imap not configured; time budget reached: 4 new item(s) wait for the next run", False),
+    ("2 error(s); first: HTTP 503", False), ("1 product(s) without label text", False),
+    ("blocked: bot check at https://x", True), ("parse: the page changed shape", True),
+    ("FetchError: every new item failed; first: x", True), ("ConnectError: timed out", True),
+    ("no label read: no product found", True),
+])
+def test_one_definition_of_a_failed_run(store, error, failed):
+    got = store.db.fetchone("select source_run_failed(%(e)s) as f", {"e": error})["f"]
+    assert got is failed

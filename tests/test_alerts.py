@@ -238,3 +238,99 @@ def test_refused_digest_is_retried_not_marked_sent(monkeypatch):
     again = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
                      now=lambda: nine_ten + timedelta(hours=3))
     assert not again.digest_due()
+
+
+class PickyTelegram(RecordingTelegram):
+    """Refuses one chat while ``refuse`` holds its id (a person who blocked the bot, say)."""
+
+    refuse: int | None = 111
+
+    def send_message(self, chat_id: int, text: str) -> int:
+        from collectors.alerts import TelegramError
+
+        if chat_id == self.refuse:
+            raise TelegramError("Forbidden: bot was blocked by the user")
+        return super().send_message(chat_id, text)
+
+
+def _broken_entity(text: str) -> bool:
+    import re
+
+    return re.search(r"&(?!amp;|lt;|gt;)", text) is not None
+
+
+def test_esc_cut_never_leaves_half_an_entity():
+    from collectors.alerts import esc_cut
+
+    for n in range(590, 610):
+        out = esc_cut("x" * n + "&" * 400, 600)
+        assert len(out) <= 600 and not _broken_entity(out) and out.endswith("…")
+    assert esc_cut("a & b", 600) == "a &amp; b"
+
+
+def test_health_alert_cuts_a_long_error_without_breaking_an_entity():
+    s, _ = store_with_issue()
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram())
+    n.health_alert("bfarm-rhb", "down", "GET https://x.example/?" + "a=1&b=2&" * 200)
+    assert not _broken_entity(s.notification[-1]["summary"])
+
+
+def test_a_long_admin_message_is_split_under_telegrams_limit():
+    s, _ = store_with_issue()
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram())
+    lines = [f"- source-{k}: {'HTTP 503 <html> & more ' * 5}"[:130] for k in range(60)]
+    assert n.admin_message("Backfill finished.\n" + "\n".join(lines)) == 1
+    rows = [r for r in s.notification if r["kind"] == "report"]
+    assert len(rows) >= 2 and all(len(r["summary"]) <= 4000 for r in rows)
+    assert rows[0]["summary"].startswith("<b>PHAROS</b>\nBackfill finished.")
+    assert sum(r["summary"].count("- source-") for r in rows) == 60   # no line lost
+
+
+def test_a_very_long_title_still_fits_one_alert():
+    s, iid = store_with_issue()
+    s.document[s.issue[iid]["anchor_document_id"]]["title_orig"] = "Lornoxicam & " * 2000
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram())
+    n.issue_alert(iid)
+    assert all(len(r["summary"]) <= 4000 and not _broken_entity(r["summary"]) for r in s.notification)
+
+
+def test_a_refused_immediate_alert_is_sent_again_on_a_later_run(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, iid = store_with_issue()
+    tg = RefusingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg)
+    n.issue_alert(iid)
+    assert tg.messages == [] and all(r["error"] for r in s.notification)
+    tg.refuse = False
+    assert n.retry_refused_alerts() == 2
+    assert sorted(c for c, _ in tg.messages) == [111, 222]
+    assert n.retry_refused_alerts() == 0                     # delivered: never twice
+
+
+def test_a_refused_alert_older_than_the_retry_window_is_left(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, iid = store_with_issue()
+    tg = RefusingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg)
+    n.issue_alert(iid)
+    tg.refuse = False
+    later = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                     now=lambda: datetime.now(timezone.utc) + timedelta(days=3))
+    assert later.retry_refused_alerts() == 0 and tg.messages == []
+
+
+def test_a_digest_refused_for_one_person_is_retried_for_that_person_only(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = many_class_issues(3)
+    tg = PickyTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: nine_ten)
+    n.digest_if_due()
+    assert [c for c, _ in tg.messages] == [222]              # p1 (111) refused, p2 (222) delivered
+    later = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                     now=lambda: nine_ten + timedelta(hours=2))
+    tg.refuse = None
+    assert later.digest_due()                                # p1 still waits for today's digest
+    assert later.digest_if_due() == 1
+    assert [c for c, _ in tg.messages] == [222, 111]         # p2 is not sent it twice
+    assert sum(t.count("<a href=") for c, t in tg.messages if c == 111) == 3
+    assert not later.digest_due()

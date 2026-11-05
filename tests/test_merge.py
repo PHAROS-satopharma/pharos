@@ -119,3 +119,29 @@ def test_late_anchor_adopts_national_issue():
     assert not ra.created and ra.issue_id == rn.issue_id
     assert s.issue[rn.issue_id]["anchor_document_id"] == anchor.document_id
     assert sorted(x["link"] for x in s.documents_of(rn.issue_id)) == ["anchor", "copy"]
+
+
+def test_a_copy_linked_to_an_ema_issue_adds_its_own_ingredients():
+    s = store_with_regulators()
+    anchor = add_doc(s, "ema-dhpc", "Xefo DHPC", date(2026, 10, 1), "", structured=EMA_STRUCT, url=EMA_URL)
+    r0 = merge_document(s, anchor, mahs=[])
+    copy = add_doc(s, "bfarm-rhb", "Rote-Hand-Brief zu Xefo plus", date(2026, 10, 3),
+                   "EMEA/H/A-31/1599 Xefo, Lornoxicam und Paracetamol")
+    copy.ingredient_ids = {ING, "ing-paracetamol"}
+    r = merge_document(s, copy, mahs=[])
+    assert not r.created and r.issue_id == r0.issue_id and r.link == "copy"
+    assert r.alert                                    # whoever watches the new ingredient is told
+    assert (r0.issue_id, "ing-paracetamol") in s.issue_ingredient
+
+
+def test_a_fresh_anchor_takes_an_old_issue_out_of_the_backfill():
+    s = store_with_regulators()
+    national = add_doc(s, "bfarm-rhb", "Rote-Hand-Brief zu Xefo", date(2026, 10, 3),
+                       "EMEA/H/A-31/1599 Xefo")
+    national.is_backfill = True
+    rn = merge_document(s, national, mahs=[])
+    assert s.issue[rn.issue_id]["is_backfill"]
+    anchor = add_doc(s, "ema-dhpc", "Xefo DHPC", date(2026, 10, 1), "", structured=EMA_STRUCT, url=EMA_URL)
+    ra = merge_document(s, anchor, mahs=[])
+    assert not ra.created and ra.issue_id == rn.issue_id and ra.alert
+    assert s.issue[rn.issue_id]["is_backfill"] is False

@@ -157,3 +157,10 @@ def test_normalise_offsets_are_monotonic():
 def test_similarity_bounds():
     assert similarity("lornoxicam", "lornoxicam") == 1.0
     assert similarity("lornoxicam", "meloxicam") < 0.55
+
+
+def test_a_term_before_an_en_dash_at_a_line_end_is_found():
+    m = Matcher([Term(id="t1", term="lornoxicam", lang="en", ingredient_id="ing-1")])
+    for dash in ("\u2013", "\u2012", "-"):
+        hits = m.match_text(f"Risk of lornoxicam{dash}\nassociated hepatotoxicity", "body", lang="en")
+        assert [h.matched_text.lower() for h in hits] == ["lornoxicam"], dash
