@@ -139,7 +139,11 @@ class Runner:
     def process_item(self, src: SourceConfig, module: ModuleType, item: Item, *,
                      seed: bool, stats: SourceStats) -> None:
         lang = item.lang or src.lang
+        max_age = int(self.settings.get("alert_max_age_days", ALERT_MAX_AGE_DAYS))
+        fresh = item.published is None or (date.today() - item.published).days <= max_age
         detail = src.options.get("detail", "always")
+        if not fresh and detail == "always" and src.options.get("old_detail") == "matched_only":
+            detail = "matched_only"   # an old notice never alerts: open its page only if its row matched
         if hasattr(module, "fetch_detail") and detail != "never":
             if detail != "matched_only" or self._match_item(module, item, lang):
                 item = module.fetch_detail(self.ctx, src, item)
@@ -159,8 +163,6 @@ class Runner:
             sha, key = self.ctx.archive(raw, "application/json")
             record = (sha, key, "application/json", len(raw))
         sha, key, mime, size = record
-        max_age = int(self.settings.get("alert_max_age_days", ALERT_MAX_AGE_DAYS))
-        fresh = item.published is None or (date.today() - item.published).days <= max_age
         # An old notice found by a regular run (a page that lists its whole archive) is history too:
         # it never alerts and never reaches the class-wide digest.
         is_backfill = self.backfill or seed or not fresh
@@ -249,7 +251,7 @@ class Runner:
                 ids.add(it.external_id)
                 fresh.append(it)
             if not self.backfill:
-                fresh = fresh[:MAX_NEW_ITEMS]
+                fresh = fresh[:int(src.options.get("max_new_items", MAX_NEW_ITEMS))]
             item_errors: list[str] = []
             waiting = 0
             stored = set(known)  # every item now in the database: known before, or stored by this run
