@@ -54,6 +54,14 @@ export function formatCairoDate(ts: string | null | undefined): string {
   return Number.isNaN(t.getTime()) ? ts : cairoDayFmt.format(t);
 }
 
+/** "8 Oct 2026" for a published day stored as a timestamp at UTC midnight (source.last_item_at): the day the
+ *  regulator printed, with no time — a time-zone shift would invent one ("8 Oct 2026, 03:00"). */
+export function formatPublishedDay(ts: string | null | undefined): string {
+  if (!ts) return '—';
+  const t = new Date(ts);
+  return Number.isNaN(t.getTime()) ? ts : dayFmt.format(t);
+}
+
 /** "4 Nov 2026, 21:34" in Cairo for a stored timestamp. */
 export function formatDateTime(ts: string | null | undefined): string {
   if (!ts) return '—';
