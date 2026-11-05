@@ -11,9 +11,11 @@ never tries to get past a challenge: if the page the browser ends on is still th
 source health becomes ``blocked``. F5 also injects a ``/TSPD/…?type=7`` script into ordinary protected
 pages, so a bare ``/TSPD/`` is never read as a challenge.
 
-Page structure relied on: the live listing could not be seen from here, so the parser uses link
-mode of ``generic_html``: every link to an article ``/<lang>/news/<slug>`` is one item; the date is
-the first date near the link ("04/11/2026" or "4 novembre 2026"). Items whose title has a safety
+Page structure relied on (seen in a browser on 5 Nov 2026): link mode of ``generic_html`` — every
+link to an article ``/<lang>/news/<slug>`` is one item (``/fr/news`` forwards to ``/fr/actualites``,
+``/nl/news`` to ``/nl/nieuws``). The list shows no dates, so the date is read from the news page:
+its publication-date field ("Date: 15/10/2026" / "Datum: 15/10/2026"), never the "last updated"
+stamp below it. Items whose title has a safety
 word are ``safety_alert``; titles with « DHPC » / « communication directe » are ``dhpc``; « rappel » /
 « terugroeping » are ``recall``; others ``other`` (the matcher still screens every one).
 
@@ -30,9 +32,11 @@ import re
 
 from collectors.core.context import looks_like_challenge
 from collectors.parsers import generic_html
-from collectors.parsers.base import Item, SourceBlocked, SourceConfig
+from collectors.parsers._html_util import local_date, node_text
+from collectors.parsers.base import Item, SourceBlocked, SourceConfig, soup
 
 _LANG = re.compile(r"/(fr|nl|de|en)/")
+PUBLICATION_DATE = ".field--name-field-publication-date .field__item"
 log = logging.getLogger(__name__)
 
 DOC_TYPE_RULES = [
@@ -91,4 +95,13 @@ def fetch_detail(ctx, source: SourceConfig, item: Item) -> Item:
     opts = options_for(source, item.lang or "fr", source.url)
     f = ctx.browser_get(item.url, wait_selector=opts["detail_selector"])
     check_not_interstitial(f)
-    return generic_html.fill_detail(item, f, opts["detail_selector"])
+    item = generic_html.fill_detail(item, f, opts["detail_selector"])
+    if item.published is None and f.status == 200 and f.content:
+        item.published = publication_date(f, item.lang)
+    return item
+
+
+def publication_date(fetched, lang: str | None):
+    """The news page's publication-date field ("Date: 15/10/2026" / "Datum: 15/10/2026"), or None."""
+    node = soup(fetched).select_one(PUBLICATION_DATE)
+    return local_date(node_text(node), lang) if node is not None else None
