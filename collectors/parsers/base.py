@@ -16,8 +16,8 @@ from collectors.core.context import FetchContext, FetchError, ParseError, Source
 from collectors.core.models import Fetched, Item, SourceConfig
 
 __all__ = ["FetchContext", "FetchError", "Fetched", "Item", "ParseError", "SourceBlocked",
-           "SourceConfig", "absolute", "attachment_links", "html_text", "keyword_ok", "parse_date",
-           "soup"]
+           "SourceConfig", "absolute", "attachment_links", "era_date", "html_text", "keyword_ok",
+           "parse_date", "soup"]
 
 _DMY = re.compile(r"\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b")
 _YMD = re.compile(r"\b(\d{4})[./-](\d{1,2})[./-](\d{1,2})\b")
@@ -25,9 +25,30 @@ _YMD_COMPACT = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
 _JA = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 _KO = re.compile(r"(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일")
 
+# Japanese era dates: 令和7年10月1日, 令和元年5月1日, 平成31年4月30日, 令和7年10月 (→ the 1st), and the
+# short forms R7.10.1 / H31.4.30. 令和 1 = 2019, 平成 1 = 1989, 昭和 1 = 1926; 元 = year 1.
+_ERA_OFFSET = {"令和": 2018, "平成": 1988, "昭和": 1925, "R": 2018, "H": 1988}
+ERA_JA = re.compile(r"(令和|平成|昭和)\s*(元|\d{1,2})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?")
+_ERA_SHORT = re.compile(r"(?<![A-Za-z0-9])([RH])\s*(元|\d{1,2})[./](\d{1,2})[./](\d{1,2})(?![\d.])")
+
+
+def era_date(text: str | None, *, short: bool = True) -> date | None:
+    """A Japanese era date (令和/平成/昭和, or R7.10.1 / H31.4.30) as a Gregorian date; ``None`` if
+    there is none. A year-and-month date becomes the 1st of that month. ``short=False`` reads only
+    the written-out era (令和…年…月), never the R/H short form."""
+    if not text:
+        return None
+    m = ERA_JA.search(text) or (_ERA_SHORT.search(text) if short else None)
+    if not m:
+        return None
+    era, year, month, day = m.group(1), m.group(2), m.group(3), m.group(4)
+    y = 1 if year == "元" else int(year)
+    return _safe(_ERA_OFFSET[era] + y, int(month), int(day) if day else 1)
+
 
 def parse_date(value: str | date | datetime | None, *, dayfirst: bool = True) -> date | None:
-    """Best-effort date from the formats regulators use (RFC 822, ISO, d/m/Y, 年月日, 년월일)."""
+    """Best-effort date from the formats regulators use (RFC 822, ISO, d/m/Y, 年月日, 년월일,
+    Japanese era dates 令和7年10月1日 / R7.10.1)."""
     if value is None:
         return None
     if isinstance(value, datetime):
@@ -37,6 +58,9 @@ def parse_date(value: str | date | datetime | None, *, dayfirst: bool = True) ->
     s = str(value).strip()
     if not s:
         return None
+    d = era_date(s, short=False)
+    if d:
+        return d
     for rx in (_JA, _KO):
         m = rx.search(s)
         if m:
@@ -51,6 +75,11 @@ def parse_date(value: str | date | datetime | None, *, dayfirst: bool = True) ->
     if m:
         a, b, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
         return _safe(y, b, a) if dayfirst else _safe(y, a, b)
+    # The short era form (R7.10.1) only after every Gregorian form, so "release R5.3.1,
+    # 12/03/2026" is still 12 March 2026.
+    d = era_date(s)
+    if d:
+        return d
     try:
         return parsedate_to_datetime(s).date()
     except (TypeError, ValueError, IndexError):
