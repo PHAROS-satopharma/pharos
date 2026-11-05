@@ -3720,3 +3720,74 @@ mark.hl {
   gap: 12px;
   margin: 14px 0;
 }
+
+/* ───────────── our label against an originator's change ───────────── */
+a.btn {
+  text-decoration: none;
+}
+.label-gap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rule);
+}
+.label-gap-one + .label-gap-one {
+  margin-top: 14px;
+}
+.label-gap-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+.label-gap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.label-gap-item {
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+}
+.label-gap-covered {
+  border-left-color: var(--sea);
+}
+.label-gap-partly {
+  border-left-color: var(--beacon);
+}
+.label-gap-missing {
+  border-left-color: var(--danger);
+}
+.label-gap-theirs {
+  margin: 6px 0 0;
+}
+.label-gap-ours {
+  margin: 4px 0 0;
+}
+.label-gap-full {
+  margin-top: 8px;
+}
+.our-label-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.our-label-sections {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.our-label-sections li {
+  padding: 4px 0;
+  border-top: 1px solid var(--rule);
+}

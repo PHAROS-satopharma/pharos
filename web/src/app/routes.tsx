@@ -11,6 +11,7 @@ import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { MePage, PasswordForm } from '../features/me/MePage';
 import { ReportsPage } from '../features/reports/ReportsPage';
+import { OurLabelsPage } from '../features/labels/OurLabelsPage';
 import { SignalsPage } from '../features/signals/SignalsPage';
 import { SignalPage } from '../features/signals/SignalPage';
 import { Button } from '../ui/Button';
@@ -125,6 +126,7 @@ export function AppRoutes() {
         <Route path="signals" element={<SignalsPage />} />
         <Route path="signals/:id" element={<SignalPage />} />
         <Route path="ingredients" element={<IngredientsPage />} />
+        <Route path="labels" element={<OurLabelsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="people" element={isAdmin ? <PeoplePage /> : <Navigate to="/" replace />} />
