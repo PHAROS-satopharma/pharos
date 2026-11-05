@@ -316,8 +316,9 @@ class Notifier:
         return len(people)
 
     def admin_document(self, filename: str, content: bytes, caption: str) -> int:
-        """The monthly report to the admins (dry-run aware)."""
-        people = self.store.subscribers("admin_health")
+        """The monthly report to every admin with Telegram linked (dry-run aware). It is a safety outcome, not
+        a health alert: the QPPV is an admin without "Source health alerts" and still receives it."""
+        people = self.store.admins()
         doc = {"filename": filename, "content": content, "caption": esc_cut(caption, 1000)}
         for person in people:
             self._deliver(person, None, "report", f"<b>{BRAND}</b>\n{esc(caption)}", doc)

@@ -299,6 +299,16 @@ def test_subscribers(store, tag):
     assert ids(store.subscribers("admin_health")) == {admin}          # admins only
 
 
+def test_admins_need_no_subscription(store, tag):
+    """The monthly report goes to every active, linked admin, with or without "Source health alerts"."""
+    qppv = _person(store, tag, "QPPV", role="admin")
+    gone = _person(store, tag, "GoneAdmin", role="admin", active=False)
+    unlinked = _person(store, tag, "UnlinkedAdmin", role="admin", chat=False)
+    reviewer = _person(store, tag, "Reviewer")
+    mine = {qppv, gone, unlinked, reviewer}
+    assert {r["person_id"] for r in store.admins()} & mine == {qppv}
+
+
 def test_refused_notifications_wait_for_a_retry(store, tag):
     src = _source(store, tag)
     doc = store.insert_document(_doc(src.id, "r1"))

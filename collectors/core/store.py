@@ -326,6 +326,15 @@ class Store:
         rows = self.db.fetchall(sql, params)
         return [{**r, "person_id": str(r["person_id"])} for r in rows]
 
+    def admins(self) -> list[dict]:
+        """Every active admin with Telegram linked, whatever they subscribed to (the monthly report)."""
+        rows = self.db.fetchall(
+            """select p.id as person_id, p.full_name, p.telegram_chat_id, p.role::text as role
+                 from person p
+                where p.role = 'admin' and p.active and p.telegram_chat_id is not null
+                order by p.created_at""")
+        return [{**r, "person_id": str(r["person_id"])} for r in rows]
+
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         return self.db.fetchone(
             """select 1 from notification where person_id = %(p)s and issue_id = %(i)s
