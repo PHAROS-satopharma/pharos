@@ -6,11 +6,15 @@ Options come from collectors/sources.yaml, so a change to a source's filters is 
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
+import httpx
 import pytest
 
+from collectors.core.archive import Archive
+from collectors.core.context import FetchContext, FetchError
 from collectors.core.registry import load_catalogue
 from collectors.parsers import govuk, hc_recalls, openfda_enforcement, pubmed
 from collectors.parsers.base import ParseError
@@ -178,3 +182,60 @@ def test_pubmed_esummary():
     assert first.structured["query_term"] == "lornoxicam"
     with pytest.raises(ParseError):
         pubmed.parse_esummary({"error": "x"}, "lornoxicam")
+
+
+def ncbi_ctx(tmp_path, esearch_failures: int, last_ok_at=None):
+    """A context whose E-utilities answers HTTP 500 to the first ``esearch_failures`` searches."""
+    calls: list[str] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls.append(str(req.url))
+        if "esearch" in req.url.path:
+            if sum("esearch" in c for c in calls) <= esearch_failures:
+                return httpx.Response(500, headers={"content-type": "text/html"}, text="<html>Error</html>")
+            return httpx.Response(200, headers={"content-type": "application/json"},
+                                  content=fixture("pubmed/esearch-lornoxicam.json"))
+        return httpx.Response(200, headers={"content-type": "application/json"},
+                              content=fixture("pubmed/esummary.json"))
+
+    ctx = FetchContext(None, "run", archive=Archive(tmp_path / "archive"),
+                       transport=httpx.MockTransport(handler), host_gap_s=0)
+    sleeps: list[float] = []
+    ctx._sleep = sleeps.append
+    ctx.watchlist = ["lornoxicam"]
+    ctx.last_ok_at = last_ok_at
+    return ctx, calls, sleeps
+
+
+def mindate(calls: list[str]) -> date:
+    q = parse_qs(urlsplit(next(c for c in calls if "esearch" in c)).query)
+    return datetime.strptime(q["mindate"][0], "%Y/%m/%d").date()
+
+
+def test_pubmed_waits_out_ncbi_server_errors(tmp_path):
+    ctx, calls, sleeps = ncbi_ctx(tmp_path, esearch_failures=3)
+    items = pubmed.list_items(ctx, CFG["pubmed"])
+    assert [i.external_id for i in items] == ["42846100", "42770875", "42859397"]
+    assert sleeps == [5.0, 15.0, 30.0]
+
+
+def test_pubmed_fails_when_ncbi_stays_down(tmp_path):
+    ctx, calls, sleeps = ncbi_ctx(tmp_path, esearch_failures=99)
+    with pytest.raises(FetchError) as err:
+        pubmed.list_items(ctx, CFG["pubmed"])
+    assert err.value.status == 500
+    assert sleeps == [5.0, 15.0, 30.0, 60.0] and len(calls) == 5
+
+
+def test_pubmed_searches_back_to_the_last_complete_run(tmp_path):
+    today = date.today()
+    ctx, calls, _ = ncbi_ctx(tmp_path, 0)                     # first run: the 10-day lookback
+    pubmed.list_items(ctx, CFG["pubmed"])
+    assert mindate(calls) == today - timedelta(days=10)
+    missed = datetime.now(timezone.utc) - timedelta(days=17)  # two weekly runs failed
+    ctx, calls, _ = ncbi_ctx(tmp_path, 0, last_ok_at=missed)
+    pubmed.list_items(ctx, CFG["pubmed"])
+    assert mindate(calls) == missed.date() - timedelta(days=3)
+    ctx, calls, _ = ncbi_ctx(tmp_path, 0, last_ok_at=datetime.now(timezone.utc) - timedelta(days=400))
+    pubmed.list_items(ctx, CFG["pubmed"])
+    assert mindate(calls) == today - timedelta(days=90)
