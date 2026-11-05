@@ -71,6 +71,8 @@ _STRONG = [re.compile(p, re.I) for p in (
     r"Checking your browser before accessing", r"Request unsuccessful\. Incapsula",
     r"_Incapsula_Resource", r"/_sec/cp_challenge/", r"id=\"px-captcha\"",
     r"Verify you are human",
+    # F5 BIG-IP ASM "TSPD" JavaScript interstitial (famhp.be / afmps.be / fagg.be, Nov 2026)
+    r"href=\"/TSPD/\?type=", r"window\[\"bobcmn\"\]",
 )]
 _WEAK = [re.compile(p, re.I) for p in (
     r"cf-chl", r"cf_chl_opt", r"challenge-platform",
