@@ -190,3 +190,42 @@ def test_split_japanese_heading_with_revision_mark_and_after_page_break():
     assert got["ja:8"] == "8.1 注意A\n－1－"
     assert got["ja:9"] == "9.1 注意B"
     assert got["ja:11"] == "＊＊11.1.6 中毒性表皮壊死融解症"
+
+
+def test_a_revision_published_while_the_reading_changed_still_alerts():
+    # Stored before: the straight-across reading of the 27 Oct insert. The first column read finds a
+    # newer revision with a new 副作用 line: compared with the old reading, never a silent baseline.
+    db, ctx = SpcDb(), _pmda_ctx()
+    old = Snapshot(sections={"ja:2": "2. 禁忌 本剤の成分に対し過敏症", "ja:11": "11. 副作用 発疹"},
+                   doc_date=date(2026, 10, 27), lang="ja", source_url=PRODUCT["url"])
+    new = Snapshot(sections={"ja:2": "2. 禁忌 本剤の成分に対し過敏症",
+                             "ja:11": "11. 副作用 発疹\n11.1.7 アナフィラキシー（頻度不明）"},
+                   doc_date=date(2026, 11, 20), lang="ja", source_url=PRODUCT["url"],
+                   method=pmda_pi.COLUMNS)
+    module = _Then(old, new)
+    assert watch_product(db, ctx, module, "spc-pmda", PRODUCT, INGREDIENT) is None
+    issue = watch_product(db, ctx, module, "spc-pmda", PRODUCT, INGREDIENT)
+    assert issue is not None and len(db.issues) == 1
+    assert db.changes[-1]["s"] == ["ja:11"]
+
+
+def test_a_revision_reported_under_the_other_reading_is_not_reported_twice():
+    # Read by columns (27 Oct), once straight across (20 Nov: revised, alerts), then by columns again
+    # (20 Nov): the revision was already reported; the 27 Oct column reading is not compared again.
+    db, ctx = SpcDb(), _pmda_ctx()
+
+    def snap(when, method, side_effects):
+        return Snapshot(sections={"ja:11": f"11. 副作用 {side_effects}"}, doc_date=when, lang="ja",
+                        source_url=PRODUCT["url"], method=method)
+
+    module = _Then(snap(date(2026, 10, 27), pmda_pi.COLUMNS, "発疹"),
+                   snap(date(2026, 11, 20), pmda_pi.LAYOUT, "発疹 アナフィラキシー"),
+                   snap(date(2026, 11, 20), pmda_pi.COLUMNS, "発疹 アナフィラキシー"),
+                   snap(date(2026, 12, 4), pmda_pi.COLUMNS, "発疹 アナフィラキシー 肝機能障害"))
+    assert watch_product(db, ctx, module, "spc-pmda", PRODUCT, INGREDIENT) is None
+    assert watch_product(db, ctx, module, "spc-pmda", PRODUCT, INGREDIENT) is not None
+    assert watch_product(db, ctx, module, "spc-pmda", PRODUCT, INGREDIENT) is None
+    assert len(db.issues) == 1 and len(db.snapshots) == 3
+    # a later revision read by columns is compared with the column reading of 20 Nov
+    assert watch_product(db, ctx, module, "spc-pmda", PRODUCT, INGREDIENT) is not None
+    assert len(db.issues) == 2 and "肝機能障害" in str(db.changes[-1]["d"])

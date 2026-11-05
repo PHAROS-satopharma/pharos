@@ -16,7 +16,8 @@ For every active ingredient (or the ones given) and every enabled ``kind: spc`` 
 
 The first snapshot of a product is a baseline: no change, no issue. A snapshot is diffed only
 against the last one read the same way (``Snapshot.method``; CIMA reads a label per section or, as
-a fallback, from the full HTML); with none, it is a new baseline. Returns the ids of the issues
+a fallback, from the full HTML); with none, it is a new baseline — unless the label's revision date
+moved past the newest snapshot's, when it is compared with that one all the same. Returns the ids of the issues
 created, which the runner alerts on.
 
 Every SPC source gets a ``source_run`` row per run (products seen, new snapshots, issues, and the
@@ -179,7 +180,7 @@ def last_snapshot(db, product_id: str) -> dict | None:
 
 def recent_snapshots(db, product_id: str, limit: int = RECENT_SNAPSHOTS) -> list[dict]:
     return db.fetchall(
-        """select id, sha256, r2_key, section_hashes from spc_snapshot
+        """select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot
             where spc_product_id = %(p)s order by fetched_at desc limit %(n)s""",
         {"p": product_id, "n": limit})
 
@@ -189,16 +190,33 @@ def comparable(ctx, rows: list[dict], method: str | None) -> tuple[dict | None, 
 
     The newest snapshot whose archive cannot be read is compared by its section hashes, as before
     (``(row, None)``). An older snapshot read another way is skipped; ``(None, None)`` when no
-    snapshot was read this way — the new one is then a baseline."""
+    snapshot was read this way — the new one is then a baseline. A snapshot of an older revision
+    than one read since (``doc_date``) is not comparable either: that revision was compared when
+    it was read (``revised_since``)."""
+    latest: date | None = None
     for i, row in enumerate(rows):
         body = load_archived(ctx, row.get("r2_key"))
         if body is None:
             if i == 0:
                 return row, None
-            continue
-        if body.get("method") == method:
+        elif body.get("method") == method:
+            if latest and row.get("doc_date") and row["doc_date"] < latest:
+                return None, None
             return row, body["sections"]
+        if row.get("doc_date") and (latest is None or row["doc_date"] > latest):
+            latest = row["doc_date"]
     return None, None
+
+
+def revised_since(ctx, rows: list[dict], snap: Snapshot) -> tuple[dict | None, dict | None]:
+    """With no snapshot read the way ``snap`` was: (the newest snapshot, its archived sections) when
+    ``snap`` is a later revision of the label (``doc_date``), else (None, None). The texts were read
+    another way, so the diff may also show sections that only read differently; a revision
+    published while the reading changed must alert all the same, never become the new baseline."""
+    if not rows or not snap.doc_date or not rows[0].get("doc_date") or snap.doc_date <= rows[0]["doc_date"]:
+        return None, None
+    body = load_archived(ctx, rows[0].get("r2_key"))
+    return rows[0], (body["sections"] if body is not None else None)
 
 
 def _json(value: Any):
@@ -283,8 +301,14 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
         return None
     prev, before = comparable(ctx, rows, snap.method)
     if rows and prev is None:
-        log.info("SPC %s %s: first snapshot read as %r; a new baseline, not a change",
-                 source_id, product["national_id"], snap.method)
+        prev, before = revised_since(ctx, rows, snap)
+        if prev is None:
+            log.info("SPC %s %s: first snapshot read as %r; a new baseline, not a change",
+                     source_id, product["national_id"], snap.method)
+        else:
+            log.info("SPC %s %s: read as %r for the first time, and revised (%s): compared with "
+                     "the reading before", source_id, product["national_id"], snap.method,
+                     snap.doc_date)
     with db.transaction():
         row = db.fetchone(
             """insert into spc_snapshot (spc_product_id, doc_date, sha256, r2_key, section_hashes)
