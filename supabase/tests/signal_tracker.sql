@@ -1,5 +1,5 @@
 -- PHAROS CI — the signal tracker (0024). Runs after every migration and the acceptance checks in ci.yml,
--- on the same database: the people CI Admin (…a1) and CI Reader (…b2) and the source ci-test exist.
+-- on the same database: the people CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3) and the source ci-test exist.
 
 create function pg_temp.sig_assert(ok boolean, msg text) returns void language plpgsql as $$
 begin
@@ -16,9 +16,6 @@ exception when others then
   return sqlstate || ' ' || sqlerrm;
 end $$;
 
-insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000c3', 'reviewer@example.test');
-insert into person (auth_user_id, full_name, email, role)
-  values ('00000000-0000-0000-0000-0000000000c3', 'CI Reviewer', 'reviewer@example.test', 'reviewer');
 insert into ingredient (id, inn_en, atc_code) values ('00000000-0000-0000-0000-00000000051a', 'Cisignaline', 'Z99SG01');
 insert into issue (id, doc_type, title, status) values
   ('00000000-0000-0000-0000-000000005101', 'dhpc', 'Relevant letter', 'relevant'),
