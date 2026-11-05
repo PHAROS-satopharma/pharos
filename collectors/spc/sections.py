@@ -76,7 +76,8 @@ def _alternation(words) -> str:
     return "|".join(map(re.escape, sorted(words, key=len, reverse=True)))
 
 
-_JA_NUM = re.compile(r"(?m)^\s*(\d{1,2})\s*[.．]\s*(" + _alternation(JA_HEADINGS) + r")")
+# A heading may carry the revision marks (＊, ＊＊) of the version that changed it: "＊24. 文献請求先…".
+_JA_NUM = re.compile(r"(?m)^\s*[＊*]*\s*(\d{1,2})\s*[.．]\s*(" + _alternation(JA_HEADINGS) + r")")
 # Old-format 【】 headings. Only these are boundaries; a 【】 inside body text never splits a section.
 JA_OLD_HEADINGS = {
     "警告": "ja:1", "禁忌": "ja:2", "原則禁忌": "ja:2", "使用上の注意": "ja:precautions",
@@ -157,7 +158,7 @@ def split_numbered(text: str) -> dict[str, str]:
 
 def split_japanese(text: str) -> dict[str, str]:
     """Split a 添付文書 text into ``{"ja:11": text, …}`` (new numbered format, else old 【】 format)."""
-    text = text or ""
+    text = (text or "").replace("\f", "\n")     # a page break starts a line too
     marks: list[tuple[int, int, str]] = []
     last = 0
     for m in _JA_NUM.finditer(text):
