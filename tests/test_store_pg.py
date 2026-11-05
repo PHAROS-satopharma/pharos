@@ -334,6 +334,25 @@ def test_refused_notifications_wait_for_a_retry(store, tag):
         store.last_notification_at("digest", delivered_only=True)
 
 
+def test_a_digest_delivered_partway_still_owes_the_rest(store, tag):
+    src = _source(store, tag)
+    doc = store.insert_document(_doc(src.id, "pw"))
+    a = store.create_issue(doc_type="dhpc", title="a", anchor_document_id=doc,
+                           first_date=None, class_only=True, is_backfill=False)
+    b = store.create_issue(doc_type="dhpc", title="b", anchor_document_id=doc,
+                           first_date=None, class_only=True, is_backfill=False)
+    p = _person(store, tag, "Partway")
+    since = store.db.fetchone("select now() - interval '1 minute' as t")["t"]
+    store.insert_notification(person_id=p, issue_id=a, kind="digest", dry_run=False,
+                              tg_message_id=123456789014, error=None, summary=f"part 1 {tag}")
+    store.insert_notification(person_id=p, issue_id=b, kind="digest", dry_run=False,
+                              tg_message_id=None, error="Too Many Requests", summary=f"part 2 {tag}")
+    assert p in store.refused_people("digest", since)
+    store.insert_notification(person_id=p, issue_id=b, kind="digest", dry_run=False,
+                              tg_message_id=123456789015, error=None, summary=f"part 2 ok {tag}")
+    assert p not in store.refused_people("digest", since)
+
+
 def test_a_fresh_anchor_clears_the_backfill_flag(store, tag):
     src = _source(store, tag)
     d1 = store.insert_document(_doc(src.id, "b1", is_backfill=True))

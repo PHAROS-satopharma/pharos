@@ -309,9 +309,11 @@ class MemoryStore:
 
     def refused_people(self, kind: str, since: datetime) -> list[str]:
         recent = [n for n in self.notification if n["kind"] == kind and n["sent_at"] >= since]
-        got = {n["person_id"] for n in recent if not n.get("error")}
+        got = {(n["person_id"], n["issue_id"]) for n in recent
+               if not n.get("error") or n.get("tg_message_id")}
         return sorted({n["person_id"] for n in recent
-                       if n.get("error") and n["person_id"] and n["person_id"] not in got})
+                       if n.get("error") and not n.get("tg_message_id") and n["person_id"]
+                       and (n["person_id"], n["issue_id"]) not in got})
 
     def refused_alerts(self, since: datetime) -> dict[str, set[str]]:
         rows = [n for n in self.notification
