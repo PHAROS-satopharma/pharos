@@ -15,7 +15,7 @@ with max_age as (
   update document d
      set is_backfill = true
     from max_age m
-   where not d.is_backfill
+   where false and not d.is_backfill  -- TEMPORARY break
      and d.published_date is not null
      and d.published_date < (d.first_seen_at at time zone 'Africa/Cairo')::date - m.days
   returning d.id
