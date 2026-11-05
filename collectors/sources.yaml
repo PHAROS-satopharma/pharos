@@ -197,6 +197,12 @@ regulators:
     name: وزارة الصحة ووقاية المجتمع
     languages: [ar, en]
     homepage: https://mohap.gov.ae/
+  - id: UAE_EDE
+    country_code: AE
+    country_name: United Arab Emirates
+    name: مؤسسة الإمارات للدواء
+    languages: [ar, en]
+    homepage: https://www.ede.gov.ae/
   # ── literature ──
   - id: NLM
     country_code: INT
@@ -771,7 +777,18 @@ sources:
     schedule: 12h
     expected_max_gap_days: 60
     enabled: false
-    notes: "Off: mohap.gov.ae resets every connection from outside its accepted networks (from Egypt, an outside fetch service and GitHub's runners, 5 Nov 2026), so PHAROS cannot read it."
+    notes: "Off: mohap.gov.ae resets every connection from outside its accepted networks (from Egypt, an outside fetch service and GitHub's runners, 5 Nov 2026), so PHAROS cannot read it. The UAE is read from EDE instead (uae-ede)."
+
+  - id: uae-ede
+    regulator: UAE_EDE
+    kind: safety
+    channel: html
+    # Emirates Drug Establishment, the UAE medicines regulator since MOHAP; Arabic and English news.
+    url: https://www.ede.gov.ae/ar/news
+    parser: ede
+    languages: [ar, en]
+    schedule: 12h
+    expected_max_gap_days: 60
 
   # ───────────── SPC / label watch (modules under collectors/spc, by A2) ─────────────
   - id: spc-cima

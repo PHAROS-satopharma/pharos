@@ -56,7 +56,16 @@ _MONTH_NAMES: dict[int, tuple[str, ...]] = {
     12: ("december", "dec", "décembre", "decembre", "déc", "dicembre", "dic", "dezember",
          "desember", "desember", "dezembro", "diciembre", "dez", "des", "joulukuu", "joulukuuta"),
 }
-MONTHS: dict[str, int] = {name: num for num, names in _MONTH_NAMES.items() for name in names}
+# Arabic: the Gregorian names used in Egypt and the Gulf (with the common spellings with and without
+# hamza), and the one-word Levantine names. EDE (UAE) writes "الأربعاء, ٠٤ نوفمبر ٢٠٢٦".
+_ARABIC_MONTHS: dict[int, tuple[str, ...]] = {
+    1: ("يناير",), 2: ("فبراير", "شباط"), 3: ("مارس", "آذار", "اذار"),
+    4: ("أبريل", "ابريل", "إبريل", "نيسان"), 5: ("مايو", "أيار", "ايار"),
+    6: ("يونيو", "يونيه", "حزيران"), 7: ("يوليو", "يوليه", "تموز"), 8: ("أغسطس", "اغسطس", "آب"),
+    9: ("سبتمبر", "أيلول", "ايلول"), 10: ("أكتوبر", "اكتوبر"), 11: ("نوفمبر",), 12: ("ديسمبر",),
+}
+MONTHS: dict[str, int] = {name: num for months in (_MONTH_NAMES, _ARABIC_MONTHS)
+                          for num, names in months.items() for name in names}
 
 # Abbreviations that are also ordinary English (or other) words — "out", "set", "ago", "gen", "mag"
 # — count as a month only on a page in the language that uses them, so "carried out 2026" on an
@@ -67,7 +76,8 @@ _LANG_MONTHS: dict[str, dict[str, int]] = {
     "pt": {"ago": 8, "set": 9, "out": 10},
 }
 
-_WORD = r"([A-Za-zÀ-ÿ]+)\.?"
+_ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+_WORD = r"([A-Za-zÀ-ÿء-ي]+)\.?"
 _D_MON_Y = re.compile(r"\b(\d{1,2})\s*\.?\s*" + _WORD + r"\s*,?\s*(\d{4})\b")      # 8. oktober 2026
 _MON_D_Y = re.compile(r"\b" + _WORD + r"\s+(\d{1,2})(?:st|nd|rd|th)?\s*,\s*(\d{4})\b")  # October 27, 2026
 _MON_Y = re.compile(r"\b" + _WORD + r"\s*[-–/ ]\s*(\d{4})\b")                        # Nov-2026, Oktober 2026
@@ -95,7 +105,7 @@ def local_date(text: str | None, lang: str | None = None) -> date | None:
     """Parse a regulator's date as written in its own language. ``None`` when there is none."""
     if not text:
         return None
-    s = clean(text)
+    s = clean(text).translate(_ARABIC_DIGITS)
     # Japanese era dates (令和7年10月1日, 令和元年5月) before anything else; the short form
     # (R7.10.1) only on a Japanese page and only when no Gregorian date is there.
     d = era_date(s, short=(lang or "").startswith("ja") and not re.search(r"\d{4}", s))
