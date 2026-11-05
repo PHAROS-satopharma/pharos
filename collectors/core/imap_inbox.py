@@ -10,7 +10,11 @@ Never sends mail.
 The From line can be forged by anyone, and Fimea publishes DMARC p=none, so a From domain alone proves
 nothing. A message is accepted only when the receiving mail server's own verdict (the TOPMOST
 Authentication-Results header, written by a server under the IMAP host's domain) shows DMARC, DKIM or SPF
-passing for one of that source's allowed domains. Anything else is held: left unread, counted, and
+passing for one of that source's allowed domains. Yahoo's IMAP server hands some messages over with
+no Authentication-Results at all (GovDelivery's FDA mail on 5 Nov 2026, although Yahoo's web view shows
+one); for those only, PHAROS checks the DKIM signature itself against the signer's DNS key and accepts a
+valid one from an allowed domain (``dkim_verified``). A server verdict that is present and not passing is
+never overridden. Anything else is held: left unread, counted, and
 reported in the screening log. Bodies are capped so no message can fill the database.
 
 Environment: ``PHAROS_IMAP_HOST``, ``PHAROS_IMAP_PORT`` (993, SSL), ``PHAROS_IMAP_USER``,
@@ -39,6 +43,7 @@ MAX_RAW_BYTES = 10 * 1024 * 1024   # a bigger message is held, never archived
 MAX_BODY_CHARS = 500_000           # per text/html body stored in the database
 
 _AR_RESULT = re.compile(r"(?<![\w.-])(dmarc|dkim|spf)\s*=\s*([a-z]+)", re.I)
+_DKIM_D = re.compile(r"(?:^|;)\s*d\s*=\s*([^;\s]+)", re.I)
 _AR_PROP = re.compile(r"(?<![\w.-])(header\.d|header\.i|header\.from|smtp\.mailfrom)\s*=\s*([^\s;()]+)",
                       re.I)
 
@@ -101,6 +106,34 @@ def sender_verified(raw_headers: bytes, allowed: Iterable[str],
         if any(props.get(k) and domain_matches(props[k], allowed) for k in keys):
             return True
     return False
+
+
+def has_trusted_verdict(raw_headers: bytes, authserv_domains: Iterable[str]) -> bool:
+    """True when the topmost Authentication-Results was written by a trusted server (whatever it says)."""
+    results = email.message_from_bytes(raw_headers).get_all("Authentication-Results") or []
+    top = " ".join(str(results[0]).split()) if results else ""
+    authserv = top.split(";", 1)[0].strip().split()[0].lower() if top.strip() else ""
+    return bool(authserv) and domain_matches(authserv, list(authserv_domains))
+
+
+def dkim_verified(raw: bytes, allowed: Iterable[str],
+                  dnsfunc: Callable[..., bytes | None] | None = None) -> str | None:
+    """Our own DKIM check of the whole message: the signing domain (d=) of the first signature that is
+    from an allowed domain and verifies against its published DNS key, else None."""
+    import dkim
+
+    allowed = list(allowed)
+    for idx, sig in enumerate(email.message_from_bytes(raw).get_all("DKIM-Signature") or []):
+        m = _DKIM_D.search(" ".join(str(sig).split()))
+        if not m or not domain_matches(m.group(1).lower(), allowed):
+            continue
+        kwargs = {"dnsfunc": dnsfunc} if dnsfunc is not None else {}
+        try:
+            if dkim.DKIM(raw).verify(idx=idx, **kwargs):
+                return m.group(1).lower()
+        except Exception:  # noqa: BLE001 - a bad signature or DNS failure is simply "not verified"
+            continue
+    return None
 
 
 def auth_summary(raw_headers: bytes) -> str:
@@ -172,13 +205,14 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
             insert: Callable[[dict], None] | None = None,
             source_exists: Callable[[str], bool] | None = None,
             mailbox: str = "INBOX", held: dict[str, int] | None = None,
-            authserv_domains: Iterable[str] | None = None) -> dict[str, int]:
+            authserv_domains: Iterable[str] | None = None,
+            dkim_dns: Callable[..., bytes | None] | None = None) -> dict[str, int]:
     """Pull matching UNSEEN mail. ``allow`` maps source_id → From domains. Returns count per source.
     ``held`` (if given) receives, per source, the messages left unread because the sender could not be
     verified or the message was too big.
 
     ``connect``, ``insert`` and ``source_exists`` are injectable for tests; by default the
-    environment and ``ctx.db``. A message whose source row is missing is skipped (left unread).
+    environment and ``ctx.db``; ``dkim_dns`` replaces the DNS lookup of our own DKIM check. A message whose source row is missing is skipped (left unread).
     Raises ``RuntimeError(NOT_CONFIGURED)`` when the IMAP variables are absent.
     """
     if connect is None:
@@ -204,7 +238,7 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
             raise RuntimeError(f"IMAP search failed: {status}")
         for uid in (data[0] or b"").split():
             status, hdr = conn.uid("FETCH", uid,
-                                   "(BODY.PEEK[HEADER.FIELDS (FROM AUTHENTICATION-RESULTS)])")
+                                   "(BODY.PEEK[HEADER])")
             if status != "OK" or not hdr or not isinstance(hdr[0], tuple):
                 continue
             _, addr = parseaddr(email.message_from_bytes(hdr[0][1]).get("From", ""))
@@ -213,22 +247,34 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
                              None)
             if source_id is None:
                 continue  # not ours: left unread and untouched
-            if not sender_verified(hdr[0][1], allow[source_id], authserv):
+            head = hdr[0][1]
+            verified = sender_verified(head, allow[source_id], authserv)
+            if not verified and has_trusted_verdict(head, authserv):
                 log.warning("imap: message %s claims %s but the sender is not verified (trusting %s; "
-                            "saw %s); left unread", uid, domain, authserv, auth_summary(hdr[0][1]))
+                            "saw %s); left unread", uid, domain, authserv, auth_summary(head))
                 held[source_id] = held.get(source_id, 0) + 1
                 continue
             status, body = conn.uid("FETCH", uid, "(BODY.PEEK[])")
             if status != "OK" or not body or not isinstance(body[0], tuple):
                 continue
-            if source_exists is not None and not source_exists(source_id):
-                log.warning("imap: no source row %s; message %s left unread", source_id, uid)
-                skipped.append(source_id)
-                continue
             raw = body[0][1]
             if len(raw) > MAX_RAW_BYTES:
                 log.warning("imap: message %s is %d bytes; left unread", uid, len(raw))
                 held[source_id] = held.get(source_id, 0) + 1
+                continue
+            if not verified:
+                signer = dkim_verified(raw, allow[source_id], dkim_dns)
+                if signer is None:
+                    log.warning("imap: message %s claims %s but the sender is not verified (trusting %s; "
+                                "saw %s; own DKIM check: no valid signature from it); left unread",
+                                uid, domain, authserv, auth_summary(head))
+                    held[source_id] = held.get(source_id, 0) + 1
+                    continue
+                log.info("imap: message %s from %s: no server verdict; own DKIM check passed (d=%s)",
+                         uid, domain, signer)
+            if source_exists is not None and not source_exists(source_id):
+                log.warning("imap: no source row %s; message %s left unread", source_id, uid)
+                skipped.append(source_id)
                 continue
             parsed = parse_message(raw)
             key = eml_key(parsed.received_at)

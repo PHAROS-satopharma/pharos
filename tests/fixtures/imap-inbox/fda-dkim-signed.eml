@@ -1,0 +1,18 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
+ d=public.govdelivery.com; i=@public.govdelivery.com; q=dns/txt;
+ s=pharos-test; t=1793883094; h=from : to : subject : date :
+ message-id; bh=zj6rDBHvHNktpWJ/lDHZcnPK31FrRKWlAKy1KK6ZqKI=;
+ b=JqQaHF6oZWYmHiBozPYpi3BoiaCp83nz4lv4yQRtyb0Q0h51xPXUx5aj/+kpFETitCZty
+ PiVMGX3P2plyBan80ASHhqXixMMUd0RQgRYaj/SjDlIMjTJsuoLXqEbY/aQmijvX33ZW4c0
+ TPim+RsKPJxtN/tXw/D/+n0WhinaGHyOsiGq/m9k6ya0HLLBFZ1UxWFzais94OTXfuSyj2b
+ H5WK0T4kYbSY6ZjZu12BmSnST83wrbnshQVawhLaY0EfiPv002VGHkJUr27+B2hLXOjfW1f
+ E7x1phRonC3AEV6rvnVdBuYEYJJXBq4ELBbY+NYSaNSzMISSm2w6++1kTxNw==
+From: U.S. Food and Drug Administration <usfda@public.govdelivery.com>
+To: pharos@satopharma.com
+Subject: MedWatch test notice (constructed for the PHAROS tests)
+Date: Thu, 05 Nov 2026 09:00:00 +0000
+Message-ID: <pharos-test-1@public.govdelivery.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+This message was constructed for the PHAROS tests. The FDA did not send it.
