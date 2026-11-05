@@ -403,7 +403,9 @@ sources:
     regulator: ANSM
     kind: safety
     channel: html
-    url: https://ansm.sante.fr/informations-de-securite/
+    # Filtered to medicines (healthProducts 20): unfiltered, devices and diagnostics filled 18 of the
+    # 20 items on 5 Nov 2026. Further pages add &page=2…, which keeps the filter (checked live).
+    url: https://ansm.sante.fr/informations-de-securite/?safety_news_filter[healthProducts][]=20
     parser: ansm
     languages: [fr]
     schedule: 4h

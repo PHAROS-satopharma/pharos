@@ -63,6 +63,19 @@ def test_ansm_list():
     assert all(i.lang == "fr" for i in items)
 
 
+def test_ansm_catalogue_reads_medicines_only():
+    # Audit: the catalogue URL had no medicines filter, so devices and diagnostics came in.
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    url = next(s for s in sources if s.id == "ansm-securite").url
+    assert url == ANSM + "?safety_news_filter[healthProducts][]=20"
+    assert ansm._page_url(url, 2) == url + "&page=2"
+    src = source("ansm-securite", url, languages=["fr"])
+    items = ansm.parse_list(fixture("ansm-securite/list_medicaments.html"), url, src)
+    assert len(items) == 20 and {i.structured["health_product"] for i in items} == {"Médicaments"}
+
+
 def test_ansm_category_filter():
     src = source("ansm-securite", ANSM, languages=["fr"], include_categories=["RAPPEL DE PRODUIT"])
     items = ansm.parse_list(fixture("ansm-securite/list.html"), ANSM, src)
