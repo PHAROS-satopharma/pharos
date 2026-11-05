@@ -343,6 +343,7 @@ export function IssuesPage() {
                           to={`/issue/${r.id}`}
                           className="title-link"
                           dir="auto"
+                          lang={r.lang ?? undefined}
                           onClick={(e) => e.stopPropagation()}
                         >
                           {r.title}

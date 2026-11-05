@@ -63,6 +63,8 @@ export interface IssueRow {
   countries: string[] | null;
   ingredients: string[] | null;
   copies: number;
+  /** Language of the first notice, the one the title comes from. */
+  lang: string | null;
 }
 
 export interface Person {
