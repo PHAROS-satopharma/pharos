@@ -310,7 +310,7 @@ def build_pdf(html: str, footer: str) -> bytes:
             # The page margins come from the template's @page rule; Chromium prints the footer inside the bottom
             # margin of every page (a position: fixed footer printed on the last page only).
             return page.pdf(format="A4", print_background=True, prefer_css_page_size=True,
-                            display_header_footer=True, header_template="<span></span>",
+                            display_header_footer=False, header_template="<span></span>",
                             footer_template=footer)
         finally:
             browser.close()
