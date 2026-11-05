@@ -11,6 +11,7 @@ import { Field, Input, Toggle } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
+import { Tag } from '../../ui/Tag';
 import { PageHead } from '../../ui/Text';
 import { Monogram } from '../../ui/Monogram';
 import { SubscriptionEditor } from './Subscriptions';
@@ -144,18 +145,25 @@ export function PeoplePage() {
             {people.data.map((p) => {
               const self = p.id === me?.id;
               return (
-                <tr key={p.id} className={p.active ? undefined : 'is-off'}>
-                  <td>
+                <tr key={p.id} className={p.active ? 'person-row' : 'person-row is-off'}>
+                  <td className="col-person">
                     <div className="person-cell">
                       <Monogram name={p.full_name} large />
-                      <div>
-                        <div className="strong">{p.full_name}</div>
-                        <div className="small muted">{p.email ?? 'No email'}</div>
-                        {!p.auth_user_id ? <div className="small muted">Invitation not accepted yet</div> : null}
+                      <div className="person-text">
+                        <div className="person-name">
+                          <span className="strong">{p.full_name}</span>
+                          {self ? <Tag tone="quiet">You</Tag> : null}
+                        </div>
+                        <div className="small muted person-email">{p.email ?? 'No email'}</div>
+                        {!p.auth_user_id ? (
+                          <div className="person-tags">
+                            <Tag tone="warning">Invitation not accepted yet</Tag>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Role" className="col-role">
                     <Select
                       aria-label={`Role of ${p.full_name}`}
                       value={p.role}
@@ -165,7 +173,7 @@ export function PeoplePage() {
                       options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
                     />
                   </td>
-                  <td>
+                  <td data-label="Can sign in" className="col-active">
                     <Toggle
                       checked={p.active}
                       disabled={self || update.isPending}
@@ -173,16 +181,19 @@ export function PeoplePage() {
                       label={p.active ? 'Yes' : 'Switched off'}
                     />
                   </td>
-                  <td className="small">
+                  <td data-label="Telegram" className="col-telegram">
                     {p.telegram_linked_at ? (
-                      <>
-                        Linked <span className="mono">{formatCairoDate(p.telegram_linked_at)}</span>
-                      </>
+                      <div className="telegram-cell">
+                        <Tag tone="success">Linked</Tag>
+                        <span className="small muted mono">{formatCairoDate(p.telegram_linked_at)}</span>
+                      </div>
                     ) : (
-                      <span className="muted">Not linked</span>
+                      <div className="telegram-cell">
+                        <Tag tone="quiet">Not linked</Tag>
+                      </div>
                     )}
                   </td>
-                  <td className="col-subs">
+                  <td data-label="Messages" className="col-subs">
                     <SubscriptionEditor
                       personId={p.id}
                       subs={p.subscription ?? []}
