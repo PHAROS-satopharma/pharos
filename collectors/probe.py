@@ -1,6 +1,6 @@
 """Probe a URL an admin wants to add as a source (``python -m collectors.run --probe-id <uuid>``).
 
-Reads the ``probe_result`` row, fetches the URL once, detects the channel (an RSS/Atom feed by
+Reads the ``probe_result`` row, fetches the URL, detects the channel (an RSS/Atom feed by
 content type or XML root, JSON by content type, otherwise HTML), runs the matching parser
 (``feed`` or ``generic_html``) WITHOUT writing documents, and writes up to 20 items, the channel and
 parser detected and the status back to ``probe_result``. Nothing is archived for a probe.
@@ -57,6 +57,8 @@ def run_probe(store: Any, ctx: FetchContext, probe_id: str) -> dict:
     try:
         fetched = ctx.get(url)
         channel, parser = detect(fetched)
+        # The parser reads the URL again; a site that honours ETags would answer that with an empty 304.
+        ctx.forget(url)
         result.update(channel_detected=channel, parser_detected=parser)
         if parser is None:
             result.update(status="ok", items=[], error="No parser for this content type yet; "

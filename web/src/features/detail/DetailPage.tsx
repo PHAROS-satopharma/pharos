@@ -7,7 +7,9 @@ import { MatchedText } from './MatchedText';
 import { PdfViewer } from './PdfViewer';
 import { SpcDiff } from './SpcDiff';
 import { ReviewHistory, WhoWasNotified } from './History';
+import { useAuth } from '../../lib/auth';
 import { formatDate } from '../../lib/format';
+import { safeHref } from '../../lib/safeHref';
 import { DOC_TYPE_LABEL } from '../../lib/labels';
 import { Country } from '../../ui/Flag';
 import { Select } from '../../ui/Select';
@@ -37,6 +39,7 @@ export function DetailPage() {
   const spc = useSpcChanges(id);
   const reviews = useReviews(id);
   const notified = useNotified(id);
+  const { isAdmin } = useAuth();
   const [pdfKey, setPdfKey] = useState<string>('');
 
   const pdfs = useMemo<PdfFile[]>(() => {
@@ -71,6 +74,7 @@ export function DetailPage() {
   const anchor = documents.find((d) => (copies.data ?? []).some((c) => c.link === 'anchor' && c.document?.id === d.id));
   const shownPdf = pdfs.find((p) => p.key === pdfKey) ?? pdfs[0] ?? null;
   const isLabelChange = row.doc_type === 'label_change' || (spc.data?.length ?? 0) > 0;
+  const link = safeHref(row.link);
   let n = 0;
   const idx = () => String(++n).padStart(2, '0');
 
@@ -127,8 +131,8 @@ export function DetailPage() {
           <div className="detail-fact">
             <dt>Original</dt>
             <dd>
-              {row.link ? (
-                <a href={row.link} target="_blank" rel="noopener noreferrer" className="ext-link">
+              {link ? (
+                <a href={link} target="_blank" rel="noopener noreferrer" className="ext-link">
                   On the regulator’s site <span aria-hidden>↗</span>
                 </a>
               ) : (
@@ -196,11 +200,11 @@ export function DetailPage() {
             ) : (
               <p className="soft">
                 No PDF is archived for this notification. The notice itself is on the regulator’s site
-                {row.link ? (
+                {link ? (
                   <>
                     {' '}
                     (
-                    <a href={row.link} target="_blank" rel="noopener noreferrer">
+                    <a href={link} target="_blank" rel="noopener noreferrer">
                       open it
                     </a>
                     )
@@ -240,13 +244,13 @@ export function DetailPage() {
           </section>
 
           <section className="panel">
-            <h2 className="panel-title">Who was notified</h2>
+            <h2 className="panel-title">{isAdmin ? 'Who was notified' : 'Messages to you'}</h2>
             {notified.isPending ? (
               <Loading />
             ) : notified.isError ? (
               <ErrorNote error={notified.error} />
             ) : (
-              <WhoWasNotified rows={notified.data} />
+              <WhoWasNotified rows={notified.data} mine={!isAdmin} />
             )}
           </section>
         </aside>

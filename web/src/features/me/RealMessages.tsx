@@ -21,6 +21,13 @@ interface TestResult {
   reason?: string | null;
 }
 
+/** telegram_test_delivered(): did Telegram accept YOUR latest test message? */
+interface TestDelivery {
+  state: 'none' | 'pending' | 'delivered' | 'failed';
+  at?: string;
+  reason?: string | null;
+}
+
 interface WouldHaveGone {
   id: string;
   kind: string;
@@ -40,9 +47,8 @@ export function RealMessages() {
       const setting = unwrap<{ value: unknown } | null>(
         await supabase.from('app_setting').select('value').eq('key', 'telegram_dry_run').maybeSingle(),
       );
-      const tests = unwrap<{ at: string }[] | null>(
-        await supabase.from('ops_alert_log').select('at').eq('kind', 'test').eq('sent', true).order('at', { ascending: false }).limit(1),
-      ) ?? [];
+      // Only this admin's own latest test, and only once Telegram answered 200 with ok=true, unlocks step 3.
+      const delivery = unwrap<TestDelivery>(await supabase.rpc('telegram_test_delivered'));
       const queued = unwrap<WouldHaveGone[] | null>(
         await supabase
           .from('notification')
@@ -51,8 +57,10 @@ export function RealMessages() {
           .order('sent_at', { ascending: false })
           .limit(3),
       ) ?? [];
-      return { dryRun: setting?.value !== false, lastTestAt: tests[0]?.at ?? null, queued };
+      return { dryRun: setting?.value !== false, delivery, queued };
     },
+    // While Telegram has not answered yet, look again every few seconds.
+    refetchInterval: (query) => (query.state.data?.delivery.state === 'pending' ? 3000 : false),
   });
 
   const [sending, setSending] = useState(false);
@@ -101,6 +109,9 @@ export function RealMessages() {
       setResult({ tone: 'error', text: errorMessage(e) });
     } finally {
       setSending(false);
+      // Step 3 follows this new test: pending, then delivered or failed.
+      setApproved(false);
+      void qc.invalidateQueries({ queryKey: ['telegram-sending'] });
     }
   }
 
@@ -120,7 +131,9 @@ export function RealMessages() {
 
   if (state.isPending) return <Loading />;
   if (state.isError) return <ErrorNote error={state.error} onRetry={() => void state.refetch()} />;
-  const { dryRun, lastTestAt, queued } = state.data;
+  const { dryRun, delivery, queued } = state.data;
+  const lastTestAt = delivery.at ?? null;
+  const delivered = delivery.state === 'delivered';
 
   return (
     <div className="telegram">
@@ -138,7 +151,8 @@ export function RealMessages() {
           One real message goes to your own Telegram chat, and to nobody else.
           {lastTestAt ? (
             <>
-              {' '}Last test: <span className="mono">{formatDateTime(lastTestAt)}</span>.
+              {' '}Your last test: <span className="mono">{formatDateTime(lastTestAt)}</span>
+              {delivered ? ', delivered by Telegram.' : delivery.state === 'pending' ? ', waiting for Telegram’s answer…' : ', not delivered.'}
             </>
           ) : null}
         </p>
@@ -169,14 +183,20 @@ export function RealMessages() {
         <div className="link-box">
           <span className="field-label">3 · Turn real messages on</span>
           <Toggle
-            checked={approved}
-            disabled={!lastTestAt}
+            checked={approved && delivered}
+            disabled={!delivered}
             onChange={setApproved}
             label="I received the test message and approve sending real messages."
           />
-          {!lastTestAt ? <p className="small muted">Send yourself a test message first.</p> : null}
+          {delivery.state === 'none' ? <p className="small muted">Send yourself a test message first.</p> : null}
+          {delivery.state === 'pending' ? <p className="small muted">Waiting for Telegram’s answer…</p> : null}
+          {delivery.state === 'failed' ? (
+            <Notice tone="error">
+              Your last test message was not delivered: {delivery.reason ?? 'no reason was given.'} Send a new one.
+            </Notice>
+          ) : null}
           <div className="link-box-actions">
-            <Button variant="primary" size="sm" busy={switching} disabled={!approved || !lastTestAt} onClick={() => void setDryRun(false)}>
+            <Button variant="primary" size="sm" busy={switching} disabled={!approved || !delivered} onClick={() => void setDryRun(false)}>
               Turn real messages on
             </Button>
           </div>

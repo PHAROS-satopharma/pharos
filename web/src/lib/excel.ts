@@ -1,6 +1,7 @@
 import type { IssueRow } from './types';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from './labels';
 import { cairoToday } from './format';
+import { safeHref } from './safeHref';
 
 type ExcelModule = typeof import('exceljs');
 
@@ -34,7 +35,7 @@ const LINE = 'FFD9D5CC';
 const SEA = 'FF1F4E5F';
 
 /** Writes the rows of the table, as filtered on screen, to an .xlsx file and downloads it. */
-export async function exportIssues(rows: IssueRow[], filterNote: string): Promise<void> {
+export async function exportIssues(rows: IssueRow[], filterNote: string, matching?: number): Promise<void> {
   const Excel = await loadExcel();
   const wb = new Excel.Workbook();
   wb.creator = 'PHAROS';
@@ -66,8 +67,9 @@ export async function exportIssues(rows: IssueRow[], filterNote: string): Promis
       status: STATUS_LABEL[r.status] ?? r.status,
       link: r.link ?? '',
     });
-    if (r.link) {
-      row.getCell('link').value = { text: r.link, hyperlink: r.link };
+    const href = safeHref(r.link);
+    if (r.link && href) {
+      row.getCell('link').value = { text: r.link, hyperlink: href };
       row.getCell('link').font = { color: { argb: SEA }, underline: true };
     }
     row.alignment = { vertical: 'top' };
@@ -85,7 +87,12 @@ export async function exportIssues(rows: IssueRow[], filterNote: string): Promis
   const about = wb.addWorksheet('About this file');
   about.columns = [{ header: 'PHAROS — export of safety notifications', key: 'a', width: 100 }];
   about.getRow(1).font = { bold: true, color: { argb: INK } };
-  about.addRow({ a: `Exported ${cairoToday()} (Cairo). ${rows.length} rows.` });
+  about.addRow({
+    a:
+      matching !== undefined && matching > rows.length
+        ? `Exported ${cairoToday()} (Cairo). The first ${rows.length} of ${matching} matching rows: narrow the filters to export the rest.`
+        : `Exported ${cairoToday()} (Cairo). ${rows.length} rows.`,
+  });
   about.addRow({ a: `Filters: ${filterNote || 'none'}` });
   about.addRow({ a: 'Titles are the regulators’ originals, exactly as published, never translated.' });
 

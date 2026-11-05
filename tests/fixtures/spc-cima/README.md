@@ -5,3 +5,5 @@ CIMA REST (AEMPS, Spain), saved 4 November 2026:
 * `secciones_65059.json` — /cima/rest/docSegmentado/secciones/1?nregistro=65059
 * `contenido_65059_4.4.html` — /cima/rest/docSegmentado/contenido/1?nregistro=65059&seccion=4.4
   (served as text/html).
+* `FT_65059.html` — https://cima.aemps.es/cima/dochtml/ft/65059/FT_65059.html, the full ficha técnica
+  HTML (the fallback when the section list does not answer), saved 5 November 2026.

@@ -25,8 +25,16 @@ export function ReviewHistory({ events }: { events: ReviewEventRow[] }) {
   );
 }
 
-export function WhoWasNotified({ rows }: { rows: NotificationRow[] }) {
-  if (rows.length === 0) return <p className="soft small">Nobody has been sent a message about this notification.</p>;
+/** `mine`: the reader is not an admin and sees only the messages sent to them. */
+export function WhoWasNotified({ rows, mine = false }: { rows: NotificationRow[]; mine?: boolean }) {
+  if (rows.length === 0)
+    return (
+      <p className="soft small">
+        {mine
+          ? 'You have not been sent a message about this notification.'
+          : 'Nobody has been sent a message about this notification.'}
+      </p>
+    );
   return (
     <ul className="notified">
       {rows.map((n) => (

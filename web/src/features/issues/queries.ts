@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { escapeLike, fetchAllPages, unwrap } from '../../lib/api';
+import { escapeLike, unwrap } from '../../lib/api';
 import { ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatus } from '../../lib/types';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from '../../lib/labels';
 
@@ -30,15 +30,35 @@ function issueQuery(f: IssueFilters, withCount: boolean) {
   return q.order('first_date', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
 }
 
+/** The API returns at most 1,000 rows per request, so longer lists are read in pages of this size. */
+const API_PAGE = 1000;
+
+/** The Excel export stops here; the screen then says how many matched. */
+export const EXPORT_CAP = 20000;
+
+/**
+ * The first `limit` rows that match the filters, read in pages of at most 1,000, and how many match in all
+ * (counted on the first page).
+ */
+async function readIssues(f: IssueFilters, limit: number): Promise<{ rows: IssueRow[]; total: number }> {
+  const rows: IssueRow[] = [];
+  let total = 0;
+  for (let from = 0; from < limit; from += API_PAGE) {
+    const to = Math.min(from + API_PAGE, limit) - 1;
+    const res = await issueQuery(f, from === 0).range(from, to);
+    const page = unwrap<IssueRow[] | null>(res) ?? [];
+    if (from === 0) total = res.count ?? page.length;
+    rows.push(...page);
+    if (page.length < to - from + 1) break;
+  }
+  return { rows, total: Math.max(total, rows.length) };
+}
+
 export function useIssues(f: IssueFilters, limit: number) {
   return useQuery({
     queryKey: ['issues', f, limit],
     placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const res = await issueQuery(f, true).range(0, limit - 1);
-      const rows = unwrap<IssueRow[] | null>(res) ?? [];
-      return { rows, total: res.count ?? rows.length };
-    },
+    queryFn: () => readIssues(f, limit),
   });
 }
 
@@ -72,9 +92,12 @@ export function useStatusCounts(f: IssueFilters) {
   });
 }
 
-/** Every row that matches the filters, for the Excel export. */
-export function fetchAllIssues(f: IssueFilters): Promise<IssueRow[]> {
-  return fetchAllPages<IssueRow>(async (from, to) => await issueQuery(f, false).range(from, to), 1000, 20000);
+/**
+ * Every row that matches the filters, up to EXPORT_CAP, for the Excel export. `total` is how many match in
+ * all, so the caller can say when the file holds only the first EXPORT_CAP.
+ */
+export function fetchAllIssues(f: IssueFilters): Promise<{ rows: IssueRow[]; total: number }> {
+  return readIssues(f, EXPORT_CAP);
 }
 
 export function describeFilters(f: IssueFilters): string {

@@ -44,21 +44,73 @@ _REFUSAL_URLS = ("/apology_objects/abuse-detection",)        # www.fda.gov bot m
 _REFUSAL_BROWSER_ERRORS = ("net::ERR_HTTP2_PROTOCOL_ERROR",)  # Akamai reset (www.tga.gov.au)
 
 
+# ───────────────────────────── secrets out of messages ─────────────────────────────
+# Error texts end in source_run.error (readable by every user), in Telegram health alerts and in the
+# Actions log, so a URL never carries its credentials there: NCBI/openFDA ``api_key=``, tokens,
+# passwords, ``user:pass@`` and the Telegram bot token in ``/bot<id>:<secret>/``.
+_SECRET_PARAM = re.compile(
+    r"([?&;](?:api[_-]?key|apikey|key|access[_-]?token|token|auth|password|passwd|pwd|secret|"
+    r"client[_-]?secret)=)[^&#\s\"'<>]*", re.I)
+_URL_USERINFO = re.compile(r"(\b[a-z][a-z0-9+.-]*://)[^/@\s:]+:[^/@\s]*@", re.I)
+_BOT_TOKEN = re.compile(r"(/bot)\d+:[A-Za-z0-9_-]+")
+REDACTED = "<redacted>"
+
+
+def redact(text: Any) -> str:
+    """``text`` (a URL, an error message, a traceback) with every secret replaced by <redacted>."""
+    s = str(text)
+    s = _SECRET_PARAM.sub(r"\1" + REDACTED, s)
+    s = _URL_USERINFO.sub(r"\1" + REDACTED + "@", s)
+    return _BOT_TOKEN.sub(r"\1" + REDACTED, s)
+
+
+class RedactingFilter(logging.Filter):
+    """A handler filter: the formatted message (and traceback) of every record, redacted."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            message = record.getMessage()
+        except Exception:  # noqa: BLE001 - a bad format string still logs, as is
+            message = str(record.msg)
+        record.msg, record.args = redact(message), None
+        if record.exc_info:
+            record.exc_text = redact(logging.Formatter().formatException(record.exc_info))
+            record.exc_info = None
+        return True
+
+
+def install_log_redaction() -> None:
+    """Called once after ``logging.basicConfig``: httpx/httpcore log every request URL at INFO
+    (``api.telegram.org/bot<TOKEN>/…``, ``…&api_key=…``), so they log warnings only, and every root
+    handler redacts what it writes."""
+    for name in ("httpx", "httpcore"):
+        logging.getLogger(name).setLevel(logging.WARNING)
+    for handler in logging.getLogger().handlers:
+        if not any(isinstance(f, RedactingFilter) for f in handler.filters):
+            handler.addFilter(RedactingFilter())
+
+
 class SourceBlocked(Exception):
     """A bot check or challenge page: source health becomes 'blocked', never retried aggressively."""
+
+    def __init__(self, message: Any = "") -> None:
+        super().__init__(redact(message))
 
 
 class ParseError(Exception):
     """The page changed shape; source health becomes 'degraded'."""
+
+    def __init__(self, message: Any = "") -> None:
+        super().__init__(redact(message))
 
 
 class FetchError(Exception):
     """An HTTP error status (4xx/5xx) that is not a bot check. Counts as a source failure."""
 
     def __init__(self, status: int, url: str, message: str | None = None) -> None:
-        super().__init__(message or f"HTTP {status} for {url}")
+        super().__init__(redact(message or f"HTTP {status} for {url}"))
         self.status = status
-        self.url = url
+        self.url = redact(url)
 
 
 # Markers of Cloudflare / bot-management interstitials, checked on the first 64 KB of a page.
@@ -169,6 +221,10 @@ class FetchContext:
         """(sha256, r2_key, mime, bytes) of the 200 response this run got for ``url``, if any."""
         return self.archived.get(url)
 
+    def forget(self, url: str) -> None:
+        """Ask for ``url`` in full next time: a reader that needs the body again must not get a bare 304."""
+        self._validators.pop(url, None)
+
     # ───────────────────────────── HTTP ─────────────────────────────
     def get(self, url: str, *, accept: str | None = None, headers: dict | None = None,
             raise_for_status: bool = True) -> Fetched:
@@ -216,7 +272,8 @@ class FetchContext:
             if status not in SLOW_DOWN or attempt == len(RETRY_WAITS_S):
                 break
             wait = self._slow_down(url, attempt, resp.headers.get("retry-after"))
-            log.info("HTTP %s from %s: waiting %.0f s, then retrying", status, final_url, wait)
+            log.info("HTTP %s from %s: waiting %.0f s, then retrying", status, redact(final_url),
+                     wait)
             self._sleep(wait)
         self._note_status(status)
         if any(marker in final_url for marker in _REFUSAL_URLS):

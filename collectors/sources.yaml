@@ -307,11 +307,16 @@ sources:
     regulator: BFARM
     kind: safety
     channel: html
-    url: https://www.bfarm.de/EN/Medicinal-products/Pharmacovigilance/Risk-information/SucheRisikoinfos/_node.html
+    url: https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Risikobewertungsverfahren/_node.html
     parser: bfarm_risk
-    languages: [de, en]
+    languages: [de]
     schedule: 4h
     expected_max_gap_days: 30
+    notes: The three German lists (checked 5 Nov 2026); the English search page has no table.
+    options:
+      extra_urls:
+        - https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Weitere-Arzneimittelrisiken/_node.html
+        - https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Aufforderung-zur-Textanpassung/_node.html
 
   # ───────────── Austria ─────────────
   - id: basg-whatsnew
@@ -476,12 +481,17 @@ sources:
     regulator: SWISSMEDIC
     kind: safety
     channel: html
-    url: https://www.swissmedic.ch/swissmedic/en/home/humanarzneimittel/market-surveillance/health-professional-communication--hpc-.html
+    url: https://www.swissmedic.ch/swissmedic/de/home/humanarzneimittel/marktueberwachung/health-professional-communication--hpc-.html
     parser: swissmedic
     languages: [de, fr, it]
     schedule: 4h
     expected_max_gap_days: 45
-    notes: The listing is read in the national languages (de/fr/it); A2 sets the per-language URLs in options.
+    notes: The listing is read in the national languages (de/fr/it), one page each (checked 5 Nov 2026).
+    options:
+      urls:
+        de: https://www.swissmedic.ch/swissmedic/de/home/humanarzneimittel/marktueberwachung/health-professional-communication--hpc-.html
+        fr: https://www.swissmedic.ch/swissmedic/fr/home/medicaments-a-usage-humain/surveillance-du-marche/health-professional-communication--hpc-.html
+        it: https://www.swissmedic.ch/swissmedic/it/home/medicamenti-per-uso-umano/sorveglianza-del-mercato/health-professional-communication--hpc-.html
 
   - id: medsafe-dhcp
     regulator: MEDSAFE
@@ -554,13 +564,17 @@ sources:
     regulator: FAMHP
     kind: safety
     channel: browser
-    url: https://www.famhp.be/en/news
+    url: https://www.afmps.be/fr/news
     parser: famhp
     enabled: false
-    notes: "Off: famhp sits behind an F5 bot check that is never bypassed; its VIG-news is read from the mailbox (famhp-email)."
-    languages: [fr, nl, en]
+    languages: [fr, nl]
     schedule: 12h
     expected_max_gap_days: 30
+    notes: "Off: famhp sits behind an F5 bot check that is never bypassed; its VIG-news is read from the mailbox (famhp-email). Switched on, it reads French and Dutch, one page each."
+    options:
+      urls:
+        fr: https://www.afmps.be/fr/news
+        nl: https://www.fagg.be/nl/news
 
   - id: cbg-news
     regulator: CBG
@@ -772,7 +786,7 @@ sources:
     regulator: EMA
     kind: spc
     channel: json
-    url: https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.json
+    url: https://www.ema.europa.eu/en/documents/report/medicines-output-medicines_json-report_en.json
     parser: spc_ema_epar
     languages: [en]
     schedule: weekly
