@@ -130,6 +130,26 @@ def test_aifa_live_page_with_java_dates():
     assert all(i.published for i in items)
 
 
+AIFA_COMMS = "https://www.aifa.gov.it/ricerca-aifa?searchKeywords=&structures=93604&adtCategories=1960205"
+
+
+def test_aifa_communications_are_safety_updates_and_niis_stay_dhpc():
+    # The second list holds AIFA/EMA communications; every one was typed DHPC (5 Nov 2026).
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    src = next(s for s in sources if s.id == "aifa-sicurezza")
+    ctx = FakeCtx({AIFA: "aifa-sicurezza/niis_live_2026-11-05.html",
+                   AIFA_COMMS: "aifa-sicurezza/comunicazioni_live_2026-11-05.html"})
+    items = aifa.list_items(ctx, src)
+    niis = [i for i in items if i.title.casefold().startswith("nota informativa importante")]
+    comms = [i for i in items if i not in niis]
+    assert len(niis) >= 25 and len(comms) >= 10
+    assert {i.doc_type for i in niis} == {"dhpc"}
+    assert {i.doc_type for i in comms} == {"safety_update"}
+    assert any("paracetamolo" in i.title for i in comms)
+
+
 def test_aifa_catalogue_points_at_the_niis_list():
     # It pointed at the landing page /sicurezza-dei-farmaci, which has no list: 3 failed runs.
     from collectors.core.registry import load_catalogue

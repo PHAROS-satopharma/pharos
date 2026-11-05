@@ -19,6 +19,10 @@ Options:
 * ``extra_urls`` — further list URLs read the same way.
 * ``doc_type`` — default ``dhpc`` (an NIIS is the Italian DHPC); titles starting « Comunicazione »
   become ``safety_update``.
+* ``doc_type_by_url`` — ``{text in the list URL: doc_type}``: the AIFA/EMA communications list
+  (``adtCategories=1960205``) holds communications, not DHPCs (5 Nov 2026: « EMA raccomanda… »,
+  « AIFA richiama… »), so its items are ``safety_update``. A title starting « Nota Informativa
+  Importante » is an NIIS and stays ``dhpc`` whichever list it is on.
 * ``include_keywords`` / ``exclude_keywords``; ``page_param`` with ``max_pages`` (1) /
   ``backfill_pages`` (5).
 * ``lang`` — default ``it``.
@@ -61,7 +65,7 @@ def _page_url(url: str, page: int, param: str | None) -> str:
     return url if page <= 1 or not param else f"{url}{'&' if '?' in url else '?'}{param}={page}"
 
 
-def parse_list(html, base_url: str, source: SourceConfig) -> list[Item]:
+def parse_list(html, base_url: str, source: SourceConfig, doc_type: str | None = None) -> list[Item]:
     doc = soup(html)
     opts = source.options or {}
     lang = source.lang or "it"
@@ -78,12 +82,14 @@ def parse_list(html, base_url: str, source: SourceConfig) -> list[Item]:
         art = card.select_one("[data-article-id]")
         date_span = card.select_one("span.u-color-blu")
         meta = node_text(date_span)
-        doc_type = opts.get("doc_type", "dhpc")
+        kind = doc_type or opts.get("doc_type", "dhpc")
         if title.casefold().startswith("comunicazione"):
-            doc_type = "safety_update"
+            kind = "safety_update"
+        if title.casefold().startswith("nota informativa importante"):
+            kind = "dhpc"
         items.append(Item(
             external_id=(f"aifa:{art['data-article-id']}" if art is not None else url),
-            url=url, title=title, published=_date(meta, lang), doc_type=doc_type, lang=lang,
+            url=url, title=title, published=_date(meta, lang), doc_type=kind, lang=lang,
             body_text=summary or None,
             structured={"category": _category(meta)}))
     return items
@@ -96,7 +102,9 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
     pages = pages_to_read(ctx, source) if param else 1
     out: list[Item] = []
     seen: set[str] = set()
+    by_url = opts.get("doc_type_by_url") or {}
     for base in urls:
+        kind = next((t for key, t in by_url.items() if key in base), None)
         for page in range(1, pages + 1):
             f = ctx.get(_page_url(base, page, param))
             if f.status == 304:
@@ -104,7 +112,7 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
             if page == 1:
                 require(soup(f).select("div.card h3 a"), f, marker="asset-link",
                         empty_markers=("Nessun risultato", "Non ci sono risultati"))
-            batch = [it for it in parse_list(f, f.final_url, source) if it.external_id not in seen]
+            batch = [it for it in parse_list(f, f.final_url, source, kind) if it.external_id not in seen]
             if not batch:
                 break
             seen.update(it.external_id for it in batch)
