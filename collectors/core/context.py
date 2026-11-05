@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import re
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import urlsplit
 
 import httpx
@@ -299,7 +299,9 @@ class FetchContext:
         return self._browser
 
     def browser_get(self, url: str, *, wait_selector: str | None = None,
-                    timeout_ms: int = 45000) -> Fetched:
+                    timeout_ms: int = 45000, before_wait: Callable[[Any], None] | None = None) -> Fetched:
+        """``before_wait(page)`` runs once the page has loaded, before ``wait_selector`` is awaited
+        (e.g. ticking a site's information disclaimer the owner agreed PHAROS may accept)."""
         browser = self._ensure_browser()
         self._polite(url)
         page = browser.new_page(user_agent=USER_AGENT, locale="en-GB")
@@ -312,6 +314,8 @@ class FetchContext:
                                         f"({str(exc).splitlines()[0][:200]})") from None
                 raise
             status = response.status if response is not None else 0
+            if before_wait is not None:
+                before_wait(page)
             if wait_selector:
                 try:
                     page.wait_for_selector(wait_selector, timeout=timeout_ms)
