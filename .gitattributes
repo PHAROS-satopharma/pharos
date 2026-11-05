@@ -3,3 +3,5 @@
 *.webp binary
 *.pdf binary
 *.eml -text
+# BDPM bulk-file slices: Latin-1 with CRLF, byte for byte as the server sends them
+tests/fixtures/spc-bdpm/*.txt -text
