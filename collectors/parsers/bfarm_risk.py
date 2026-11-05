@@ -7,7 +7,8 @@ Sister lists read the same way through ``extra_urls``:
 ``…/Risikoinformationen/Aufforderung-zur-Textanpassung/_node.html``. (Rote-Hand-Briefe are the A1
 feed ``bfarm-rhb``.)
 
-Page structure relied on (checked 4 Nov 2026): a sortable table, ``table tbody tr`` with
+Page structure relied on (checked 4 Nov 2026; all three lists again 5 Nov 2026): a sortable table,
+``table tr`` with (``tbody`` is not required, header rows have no ``td``)
 
 * td 1: the date "30.10.2026";
 * td 2: ``a[href]`` — the title as published and the article
@@ -53,7 +54,7 @@ def parse_list(html, base_url: str, source: SourceConfig) -> list[Item]:
     lang = source.lang or "de"
     doc_type = list_doc_type(base_url, source)
     items: list[Item] = []
-    for tr in doc.select("table tbody tr"):
+    for tr in doc.select("table tr"):
         tds = tr.find_all("td")
         if len(tds) < 2:
             continue
@@ -83,7 +84,7 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
         f = ctx.get(url)
         if f.status == 304:
             continue
-        require(soup(f).select("table tbody tr td a[href]"), f, marker="<tbody",
+        require(soup(f).select("table tr td a[href]"), f, marker="<table",
                 empty_markers=("Keine Einträge", "keine Treffer"))
         out.extend(parse_list(f, f.final_url, source))
     return out
