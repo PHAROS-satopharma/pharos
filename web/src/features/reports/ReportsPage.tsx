@@ -21,6 +21,8 @@ import { Table } from '../../ui/Table';
 import { PageHead, SectionHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
+import { InspectionPack } from './InspectionPack';
+import { useAuth } from '../../lib/auth';
 
 /** "PHAROS-screening-2026-10.xlsx": the month the report covers, in the name the file is saved under. */
 function reportFileName(month: string, ext: 'xlsx' | 'pdf'): string {
@@ -279,6 +281,7 @@ function ScreeningLog() {
 }
 
 export function ReportsPage() {
+  const { isAdmin } = useAuth();
   return (
     <div className="page">
       <PageHead
@@ -294,6 +297,12 @@ export function ReportsPage() {
         <SectionHead index="02" title="Screening log" />
         <ScreeningLog />
       </section>
+      {isAdmin ? (
+        <section className="section">
+          <SectionHead index="03" title="Inspection pack" />
+          <InspectionPack />
+        </section>
+      ) : null}
     </div>
   );
 }
