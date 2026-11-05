@@ -27,12 +27,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       GIT_SHA: ${{ github.sha }}
     steps:
       - name: Is it 05:00 in Cairo?
@@ -52,10 +46,10 @@ jobs:
           echo "Cairo offset $(TZ=Africa/Cairo date +%z), trigger '$CRON' → go=$go"
 
       - if: steps.gate.outputs.go == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - if: steps.gate.outputs.go == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
           cache: pip
@@ -63,7 +57,7 @@ jobs:
 
       - name: Fonts for originals in every script (PDF)
         if: steps.gate.outputs.go == 'true'
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
         with:
           packages: fonts-noto-core fonts-noto-cjk fonts-noto-ui-core
           version: "1"
@@ -73,7 +67,7 @@ jobs:
 
       - if: steps.gate.outputs.go == 'true'
         id: pw-cache
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('collectors/requirements.txt') }}
@@ -88,6 +82,13 @@ jobs:
       - name: Build and store the report
         if: steps.gate.outputs.go == 'true'
         env:
+          # Secrets go to this step only, never to the job: the setup actions above never see them.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           MONTH: ${{ inputs.month }}
         run: |
           if [ -n "$MONTH" ]; then

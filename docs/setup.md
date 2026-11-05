@@ -116,15 +116,33 @@ Telegram webhook, so you never paste a secret anywhere else.
 | `PHAROS_IMAP_USER` | `pharos@satopharma.com` | collectors |
 | `PHAROS_IMAP_PASSWORD` | The app password from step 0 | collectors |
 | `ADMIN_TELEGRAM_CHAT_ID` | Optional. Without it, admin alerts go to the first admin who has linked Telegram | Supabase Vault |
+| `BACKUP_AGE_RECIPIENT` | Optional but strongly advised. The **public** key (`age1…`) from "Backup encryption" below. Without it the nightly backup is stored unencrypted and each run shows a warning | nightly backup |
+
+### Backup encryption
+
+The nightly backup contains the sign-in accounts' password hashes, so it is encrypted with
+[age](https://age-encryption.org) before it is stored. Make the key pair once, on a trusted computer:
+
+1. Install age (`winget install FiloSottile.age`, `brew install age` or `apt install age`).
+2. Run `age-keygen -o key.txt`. It prints `Public key: age1…`.
+3. Paste that `age1…` line as the GitHub secret `BACKUP_AGE_RECIPIENT`. To let two people restore, paste
+   two public keys, one per line.
+4. Keep `key.txt` (the private key, the line starting `AGE-SECRET-KEY-1`) **offline**: a password manager
+   entry or an encrypted USB stick, with a second copy in a separate place. Never put it in GitHub, R2,
+   Supabase, email or chat. Without it no encrypted backup can be restored, and nobody can recover it.
+
+Backups made before the secret was set stay as plain `.sql.gz` until the 90-day rule deletes them.
 
 GitHub does not allow secret names that start with `GITHUB_`, which is why the dispatch token is called
 `DISPATCH_TOKEN` there.
 
 ## 7. First deploy, in this order
 
-1. The lead merges the first pull request to `main`. **PHAROS deploy Supabase** runs: it creates the
-   tables, deploys the functions, copies the secrets and sets the Telegram webhook. **PHAROS deploy web**
-   then publishes `https://pharos-satopharma.pages.dev`.
+1. The lead merges the first pull request to `main`. Once **PHAROS CI** has passed on `main`, **PHAROS
+   deploy Supabase** runs: it creates the tables, deploys the functions, copies the secrets and sets the
+   Telegram webhook. **PHAROS deploy web** then publishes `https://pharos-satopharma.pages.dev`. Deploys
+   only ever run from `main` after CI passes. If CI fails on `main`, that push is not deployed: fix it, or
+   run the deploy by hand from `main` (a later push deploys only the parts it touches itself).
 2. Supabase *Authentication → Users → Invite user*: invite your own work email. The lead then makes that
    account the first administrator (one line, in docs/operations.md under "First administrator").
 3. Open the website from the invitation email, set your password, and link Telegram from your profile.
