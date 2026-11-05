@@ -159,6 +159,10 @@ jobs:
           alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
           alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
           SQL
+          # Supabase records a migration by its number alone: two files with one number deploy the first and
+          # refuse the second (5 Nov 2026: two 0019 files stopped the deploy).
+          dup=$(ls supabase/migrations/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort | uniq -d)
+          if [ -n "$dup" ]; then echo "::error::Two migrations share the number: $dup. Renumber the newer one."; exit 1; fi
           for f in $(ls supabase/migrations/*.sql | sort); do
             echo "::group::apply $f"
             $P -f "$f"
@@ -206,7 +210,7 @@ jobs:
           insert into issue (id, doc_type, title, anchor_document_id) values
             ('00000000-0000-0000-0000-0000000000e8', 'dhpc', 'Old letter', '00000000-0000-0000-0000-0000000000d8'),
             ('00000000-0000-0000-0000-0000000000e9', 'dhpc', 'New letter', '00000000-0000-0000-0000-0000000000d9');
-          \i supabase/migrations/0019_old_notices_are_history.sql
+          \i supabase/migrations/0020_old_notices_are_history.sql
           select pg_temp.ci_assert((select is_backfill from document where id = '00000000-0000-0000-0000-0000000000d8')
             and (select is_backfill from issue where id = '00000000-0000-0000-0000-0000000000e8'),
             'a 2016 letter first seen in 2026 is history, and so is its notification');
