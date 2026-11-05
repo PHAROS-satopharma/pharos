@@ -3631,3 +3631,84 @@ mark.hl {
     color: #02224c;
   }
 }
+
+/* ───────────── signals ───────────── */
+/* The four signal stages on the same numbered rule as the review steps. */
+.steps-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.signal-stage-validation {
+  border-color: var(--beacon);
+  background: var(--beacon-tint);
+  color: var(--beacon-deep);
+}
+.signal-stage-validation .status-marker {
+  background: var(--beacon);
+}
+.signal-stage-assessment {
+  border-color: var(--sea);
+  background: var(--sea-tint);
+  color: var(--sea);
+}
+.signal-stage-assessment .status-marker {
+  background: var(--sea);
+}
+.signal-stage-action {
+  border-color: var(--danger);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+.signal-stage-action .status-marker {
+  background: var(--danger);
+}
+.signal-stage-closed {
+  color: var(--muted);
+}
+.signal-stage-closed .status-marker {
+  border: 1px solid var(--muted);
+}
+.issue-row.is-overdue td:first-child {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+/* Open / Closed / All: three square buttons on one rule. */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+}
+.segment {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.segment + .segment {
+  border-left: 1px solid var(--rule);
+}
+.segment.is-active {
+  background: var(--text);
+  color: var(--surface);
+}
+.signal-notices {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.signal-notice {
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+.signal-notice:first-child {
+  border-top: 0;
+}
+.signal-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

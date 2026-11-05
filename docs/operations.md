@@ -157,3 +157,22 @@ messages* (admins only):
    names.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
+
+## Signals
+
+A notice marked **Relevant** can open a signal (Signals screen, or the Signal panel on the notice). A signal
+goes through validation, assessment, action and closed. Every step is a row in `signal_event`, which nobody can
+change or delete, and each step needs a comment except assigning an owner. The step functions stamp the person and
+the time themselves. A step taken on a stage that someone else already changed is refused, and the page reloads.
+
+Due dates are Cairo calendar days, set from `app_setting` `signal_due_days`. The defaults are 30 days to
+validate, and 30, 60 or 90 days to assess a high, medium or low priority signal. An action's due date is chosen
+when the assessment is recorded. To match the SOP, an administrator changes the setting in the SQL editor, for
+example:
+
+```sql
+update app_setting set value = '{"validation": 14, "assessment": {"high": 30, "medium": 60, "low": 90}}'
+ where key = 'signal_due_days';
+```
+
+The new days apply to the next step taken. Due dates already set are not moved.

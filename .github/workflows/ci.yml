@@ -56,7 +56,7 @@ jobs:
           out py    '^(collectors/|tests/|pyproject\.toml)'
           out report '^(collectors/report|collectors/requirements\.txt|tests/test_report_credit\.py)'
           out web   '^web/'
-          out sql   '^supabase/migrations/'
+          out sql   '^supabase/(migrations|tests)/'
           out deno  '^supabase/functions/'
           out worker '^workers/'
           cat "$GITHUB_OUTPUT"
@@ -602,6 +602,21 @@ jobs:
                                       from issue_document where issue_id = '00000000-0000-0000-0000-0000000000e9'),
             'a link names the signed-in person who made it and the database time, never what the browser sent');
           SQL
+
+      # ───────────── one file per feature under supabase/tests, on the same migrated database ─────────────
+      - name: Feature checks against Postgres
+        if: steps.changes.outputs.sql == 'true' || steps.changes.outputs.py == 'true'
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: postgres
+        run: |
+          for f in $(ls supabase/tests/*.sql | sort); do
+            echo "::group::$f"
+            psql -v ON_ERROR_STOP=1 -q -f "$f"
+            echo "::endgroup::"
+          done
 
       # ───────────── the collectors' real SQL (collectors/core/store.py) on the migrated schema ─────────────
       - name: Store SQL against Postgres

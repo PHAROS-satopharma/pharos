@@ -11,6 +11,8 @@ import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { MePage, PasswordForm } from '../features/me/MePage';
 import { ReportsPage } from '../features/reports/ReportsPage';
+import { SignalsPage } from '../features/signals/SignalsPage';
+import { SignalPage } from '../features/signals/SignalPage';
 import { Button } from '../ui/Button';
 import { Empty, Loading } from '../ui/States';
 import { PharosMark } from '../ui/PharosMark';
@@ -120,6 +122,8 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<IssuesPage />} />
         <Route path="issue/:id" element={<DetailPage />} />
+        <Route path="signals" element={<SignalsPage />} />
+        <Route path="signals/:id" element={<SignalPage />} />
         <Route path="ingredients" element={<IngredientsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />

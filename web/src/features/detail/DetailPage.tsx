@@ -7,6 +7,7 @@ import { MatchedText } from './MatchedText';
 import { PdfViewer } from './PdfViewer';
 import { SpcDiff } from './SpcDiff';
 import { ReviewHistory, WhoWasNotified } from './History';
+import { SignalPanel } from '../signals/SignalPanel';
 import { useAuth } from '../../lib/auth';
 import { formatDate } from '../../lib/format';
 import { safeHref } from '../../lib/safeHref';
@@ -263,6 +264,8 @@ export function DetailPage() {
 
         <aside className="detail-aside">
           <DecisionPanel issue={row} />
+
+          <SignalPanel issue={row} />
 
           <section className="panel">
             <h2 className="panel-title">Review history</h2>

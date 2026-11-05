@@ -19,6 +19,7 @@ export function Layout() {
   const { person, isAdmin, signOut } = useAuth();
   const nav: NavItem[] = [
     { to: '/', label: 'Notifications', end: true },
+    { to: '/signals', label: 'Signals' },
     { to: '/ingredients', label: 'Ingredients' },
     { to: '/sources', label: 'Sources' },
     { to: '/reports', label: 'Reports' },
