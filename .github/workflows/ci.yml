@@ -169,6 +169,13 @@ jobs:
             values ('00000000-0000-0000-0000-0000000000d1', 'Valmiste sisältää lornoksikaamia.');
           insert into issue (id, doc_type, title) values ('00000000-0000-0000-0000-0000000000e1', 'dhpc', 'CI issue');
 
+          -- 0012: the notice list returns the language of the title's notice.
+          insert into issue (id, doc_type, title, anchor_document_id)
+            values ('00000000-0000-0000-0000-0000000000e7', 'dhpc', 'CI', '00000000-0000-0000-0000-0000000000d1');
+          select pg_temp.ci_assert((select lang from v_issue_table where id = '00000000-0000-0000-0000-0000000000e7') = 'fi',
+            'the notice list carries the language of the title');
+          delete from issue where id = '00000000-0000-0000-0000-0000000000e7';
+
           -- Test 10: the public key reads nothing and cannot call the RPCs.
           set role anon;
           select count(*) as anon_person from person \gset
@@ -234,6 +241,23 @@ jobs:
           insert into probe_result (url, requested_by) values ('https://example.test/', my_person_id());
           reset role;
           select pg_temp.ci_assert((select count(*) from probe_result where status = 'queued') = 1, 'an admin queues a probe');
+
+          -- 0011: saving an ingredient without an ATC code twice keeps one ingredient; a second ATC code of
+          -- the same substance is its own ingredient and never overwrites the first.
+          set role authenticated;
+          select save_ingredient('{"inn_en":"Ciexampline","terms":[{"lang":"en","term":"ciexampline"}]}') as ing1 \gset
+          select save_ingredient('{"inn_en":"ciexampline ","rxcui":"999","terms":[{"lang":"fi","term":"ciexampliini"}]}') as ing2 \gset
+          select save_ingredient('{"inn_en":"Cidexa","atc_code":"Z99AA01"}') as atc1 \gset
+          select save_ingredient('{"inn_en":"Cidexa","atc_code":"Z99BB02"}') as atc2 \gset
+          reset role;
+          select pg_temp.ci_assert(:'ing1' = :'ing2'
+              and (select count(*) from ingredient where lower(inn_en) = 'ciexampline') = 1
+              and (select rxcui from ingredient where id = :'ing1') = '999'
+              and (select count(*) from ingredient_term where ingredient_id = :'ing1') = 2,
+            'an ingredient without an ATC code is updated, not added again');
+          select pg_temp.ci_assert(:'atc1' <> :'atc2'
+              and (select atc_code from ingredient where id = :'atc1') = 'Z99AA01',
+            'a second ATC code of the same name is a separate ingredient');
 
           -- Test 10 and 6: "Not relevant" needs a comment; review_event is append-only.
           do $$

@@ -15,7 +15,7 @@ export interface IssueFilters {
 }
 
 export const ISSUE_COLUMNS =
-  'id,first_date,doc_type,title,status,class_only,is_backfill,link,anchor_country,anchor_regulator,countries,ingredients,copies';
+  'id,first_date,doc_type,title,status,class_only,is_backfill,link,anchor_country,anchor_regulator,countries,ingredients,copies,lang';
 
 function issueQuery(f: IssueFilters, withCount: boolean) {
   let q = supabase.from('v_issue_table').select(ISSUE_COLUMNS, withCount ? { count: 'exact' as const } : undefined);

@@ -13,9 +13,15 @@ Source ``spc-pmda``; country JP; Japanese, kept as published.
   revision. The package id ``<company>_<YJ code>_<version>`` minus its version suffix is the
   national id, so a new revision of the same insert is the same product.
 * Snapshot: the PDF ``https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/<package id>``,
-  text by ``collectors.pdf.extract_text`` (``jpn`` OCR fallback), split by 添付文書 heading
+  text by ``collectors.pdf.extract_text_by_columns`` (``jpn`` OCR fallback), split by 添付文書 heading
   (``sections.split_japanese``: 1. 警告, 2. 禁忌, 8. 重要な基本的注意, 9. 特定の背景…, 10. 相互作用,
-  11. 副作用, 13. 過量投与).
+  11. 副作用, 13. 過量投与). The inserts are printed in two columns; read straight across, a
+  right-column heading sat inside a left-column line and sections 3–8 were lost (fixture
+  ``tests/fixtures/spc-pmda/insert_870276_2190417A1029_2_04.pdf``). ``Snapshot.method`` says how
+  the text was read — ``COLUMNS`` (column by column) or ``LAYOUT`` (straight across, when
+  ``pdftotext -bbox`` is unavailable) — so a snapshot is diffed only against one read the same
+  way, and the snapshots stored before (no method) are never compared with the new reading: the
+  first read after the change is a new baseline, not a label change.
 """
 
 from __future__ import annotations
@@ -36,6 +42,8 @@ PDF = "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/{pid}"
 _PID = re.compile(r"ResultDataSetPDF/([0-9A-Za-z_]+)")
 _CODE = re.compile(r"/GeneralList/([0-9A-Za-z]+)")
 _VERSION = re.compile(r"^(.+?_[0-9A-Z]+)_\d+_\d+$")
+COLUMNS = "pdf-columns-1"    # Snapshot.method: two-column pages read column by column
+LAYOUT = "pdf-layout-2"      # Snapshot.method: read straight across (no word boxes on the runner)
 
 SQL_CODES = """select distinct d.structured -> 'general_list' as links
                  from document d join match m on m.document_id = d.id
@@ -118,12 +126,12 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     f = ctx.get(url, accept="application/pdf")
     if f.status != 200 or not f.is_pdf:
         return None
-    from collectors.pdf import extract_text
+    from collectors.pdf import extract_text_by_columns
 
-    text, _m, _w = extract_text(f.content, LANG)
+    text, _m, _w, by_columns = extract_text_by_columns(f.content, LANG)
     sections = split_japanese(text)
     if not sections:
         return None
     when = local_date(extra.get("pdf_date") or "", "ja")
     return Snapshot(sections=sections, doc_date=when, lang=LANG, source_url=url,
-                    original_sha256=f.sha256)
+                    original_sha256=f.sha256, method=COLUMNS if by_columns else LAYOUT)
