@@ -35,7 +35,9 @@ from __future__ import annotations
 
 import html as htmllib
 import json
+from datetime import date, datetime
 from urllib.parse import urlencode
+from zoneinfo import ZoneInfo
 
 from collectors.parsers._html_util import (absolute, block_text, clean, keep, links_in, local_date,
                                            pages_to_read)
@@ -45,6 +47,18 @@ HOST = "https://www.lakemedelsverket.se"
 API = HOST + "/api/newslist"
 CONTENT_API = HOST + "/api/episerver/v3.0/content/{id}?expand=*"
 HEADERS = {"Accept-Language": "sv"}
+STOCKHOLM = ZoneInfo("Europe/Stockholm")
+
+
+def published_date(stamp: str | None, lang: str | None) -> date | None:
+    """The day it was published in Sweden. startPublish is UTC: 23:30 on the 4th there is the 5th in Stockholm."""
+    try:
+        moment = datetime.fromisoformat((stamp or "").replace("Z", "+00:00"))
+    except ValueError:
+        return local_date((stamp or "")[:10], lang)
+    if moment.tzinfo is None:
+        return moment.date()
+    return moment.astimezone(STOCKHOLM).date()
 DEFAULT_CATEGORIES = [225, 221, 222, 224]
 
 
@@ -85,7 +99,7 @@ def parse_newslist(data: dict, source: SourceConfig) -> list[Item]:
         cid = row.get("contentId")
         out.append(Item(
             external_id=f"mpa:{cid}" if cid else path, url=absolute(path, HOST), title=title,
-            published=local_date((row.get("startPublish") or "")[:10], lang),
+            published=published_date(row.get("startPublish"), lang),
             doc_type=doc_type_for(cats), lang=lang, body_text=preamble or None,
             structured={"content_id": cid, "categories": cats,
                         "content_type": row.get("contentType")}))

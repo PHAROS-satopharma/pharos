@@ -194,8 +194,16 @@ def test_cima_products_skip_revoked():
     assert p.mah == "Meiji Pharma Spain S.A."
     assert p.country_code == "ES"
     assert p.extra["segmented"] is True
-    assert p.extra["ft_date"] == "2023-10-16"
+    assert p.extra["ft_date"] == "2023-10-17"   # stamped 23:50 UTC on the 16th = 01:50 on the 17th in Madrid
     assert p.extra["ft_html"] == "https://cima.aemps.es/cima/dochtml/ft/78274/FT_78274.html"
+
+
+def test_cima_document_date_is_the_day_in_spain():
+    # 23:30 UTC on 4 March is 00:30 on the 5th in Madrid (UTC+1); 22:30 UTC on 4 July is 00:30 on the 5th (UTC+2).
+    assert cima._ms_date(1772667000000) == date(2026, 3, 5)
+    assert cima._ms_date(1783204200000) == date(2026, 7, 5)
+    assert cima._ms_date(1772620200000) == date(2026, 3, 4)   # 10:30 UTC stays the same day
+    assert cima._ms_date(None) is None
 
 
 def test_cima_discover_by_atc():
