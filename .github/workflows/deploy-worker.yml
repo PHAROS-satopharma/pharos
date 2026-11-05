@@ -1,6 +1,6 @@
-# PHAROS — OPTIONAL email Worker (workers/email-inbound). Only needed if the mail domain's DNS is ever on
-# Cloudflare; today the collectors read pharos@satopharma.com over IMAP instead. Runs only when started by
-# hand, and only from main.
+# PHAROS — OPTIONAL email Worker (workers/email-inbound). satopharma.com's DNS is on Cloudflare; the Worker's
+# Email Routing goes on a subdomain (alerts.satopharma.com), never the main domain, whose mail stays where it is.
+# The collectors also read pharos@satopharma.com over IMAP. Runs only when started by hand, and only from main.
 name: PHAROS deploy email Worker (optional)
 
 on:
@@ -23,6 +23,19 @@ jobs:
           cache-dependency-path: workers/email-inbound/package-lock.json
       - run: npm ci --no-audit --no-fund
         working-directory: workers/email-inbound
+      # FORWARD_TO is optional: it is uploaded only when the PV_MAILBOX secret is set. wrangler-action fails on any
+      # listed secret that is empty, so the list is built here.
+      - id: secret-list
+        env:
+          FORWARD_TO: ${{ secrets.PV_MAILBOX }}
+        run: |
+          {
+            echo "names<<EOF"
+            echo SUPABASE_URL
+            echo SUPABASE_SERVICE_ROLE_KEY
+            if [ -n "$FORWARD_TO" ]; then echo FORWARD_TO; fi
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
       - uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -33,7 +46,4 @@ jobs:
           accountId: ${{ secrets.R2_ACCOUNT_ID }}
           workingDirectory: workers/email-inbound
           command: deploy
-          secrets: |
-            SUPABASE_URL
-            SUPABASE_SERVICE_ROLE_KEY
-            FORWARD_TO
+          secrets: ${{ steps.secret-list.outputs.names }}
