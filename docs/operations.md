@@ -176,3 +176,17 @@ update app_setting set value = '{"validation": 14, "assessment": {"high": 30, "m
 ```
 
 The new days apply to the next step taken. Due dates already set are not moved.
+
+## Our labels
+
+*Ingredients → Our labels* keeps the text of our own approved product information (leaflet or SmPC),
+section by section, one row per version. A reviewer or administrator adds a version as a PDF with a text layer, a
+text file or pasted text. It is read on their computer, and only the numbered sections found are saved. A new
+version of the same product keeps the older ones and marks them superseded.
+
+When the label watch records an originator's change, the notice shows, under each changed section, every sentence
+the originator added and whether the same section of our current label says it: *Our label says this* (three
+quarters or more of its content words are in one sentence of ours), *Partly in our label*, or *Not in our label*.
+US and Japanese sections are matched to the SmPC section they correspond to (adverse reactions → 4.8). The check
+compares words in one language only. When our label and the originator's text are in different languages, the
+notice shows our section to read side by side.

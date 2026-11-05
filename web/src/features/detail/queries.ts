@@ -54,7 +54,14 @@ export interface SpcChangeRow {
   sections: string[];
   diff: SpcDiffSection[];
   created_at: string;
-  spc_product: { product_name: string; mah: string | null; country_code: string; url: string | null } | null;
+  spc_product: {
+    product_name: string;
+    mah: string | null;
+    country_code: string;
+    url: string | null;
+    ingredient_id: string;
+    source: { languages: string[] } | null;
+  } | null;
   from_snap: { doc_date: string | null; fetched_at: string } | null;
   to_snap: { doc_date: string | null; fetched_at: string } | null;
 }
@@ -172,7 +179,7 @@ export function useSpcChanges(issueId: string) {
           await supabase
             .from('spc_change')
             .select(
-              'id,sections,diff,created_at,spc_product:spc_product_id(product_name,mah,country_code,url),' +
+              'id,sections,diff,created_at,spc_product:spc_product_id(product_name,mah,country_code,url,ingredient_id,source:source_id(languages)),' +
                 'from_snap:from_snapshot(doc_date,fetched_at),to_snap:to_snapshot(doc_date,fetched_at)',
             )
             .eq('issue_id', issueId)

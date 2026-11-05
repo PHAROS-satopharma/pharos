@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
@@ -131,17 +132,22 @@ export function IngredientsPage() {
         title="Ingredients"
         lede="Each ingredient is looked for under every name it carries, in each regulator’s own language."
         actions={
-          isAdmin && !adding ? (
-            <Button
-              variant="primary"
-              onClick={() => {
-                setAdding(true);
-                setSaved(false);
-              }}
-            >
-              Add ingredient
-            </Button>
-          ) : null
+          <>
+            <Link to="/labels" className="btn btn-secondary">
+              Our labels
+            </Link>
+            {isAdmin && !adding ? (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setAdding(true);
+                  setSaved(false);
+                }}
+              >
+                Add ingredient
+              </Button>
+            ) : null}
+          </>
         }
       />
 

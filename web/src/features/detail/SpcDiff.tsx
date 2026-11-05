@@ -4,6 +4,8 @@ import { formatDate, formatDateTime } from '../../lib/format';
 import { safeHref } from '../../lib/safeHref';
 import type { SpcChangeRow, SpcDiffSection } from './queries';
 import { Country } from '../../ui/Flag';
+import { LabelGap, type CurrentLabel } from './LabelGap';
+import { useCurrentLabels } from '../labels/queries';
 
 function Side({ parts, side }: { parts: DiffPart[]; side: 'before' | 'after' }) {
   const hide = side === 'before' ? 'add' : 'del';
@@ -30,7 +32,7 @@ function Side({ parts, side }: { parts: DiffPart[]; side: 'before' | 'after' }) 
   );
 }
 
-function SectionDiff({ s }: { s: SpcDiffSection }) {
+function SectionDiff({ s, ours, langs }: { s: SpcDiffSection; ours: CurrentLabel[]; langs: string[] }) {
   const parts = useMemo(() => diffWords(s.before, s.after), [s.before, s.after]);
   return (
     <div className="diff-section">
@@ -49,11 +51,17 @@ function SectionDiff({ s }: { s: SpcDiffSection }) {
           </div>
         </div>
       </div>
+      <LabelGap section={s} ours={ours} langs={langs} />
     </div>
   );
 }
 
 export function SpcDiff({ changes }: { changes: SpcChangeRow[] }) {
+  const ingredientIds = useMemo(
+    () => Array.from(new Set(changes.map((c) => c.spc_product?.ingredient_id).filter((x): x is string => Boolean(x)))),
+    [changes],
+  );
+  const labels = useCurrentLabels(ingredientIds);
   if (changes.length === 0) {
     return <p className="soft">No change to the product information is recorded for this notification.</p>;
   }
@@ -80,7 +88,12 @@ export function SpcDiff({ changes }: { changes: SpcChangeRow[] }) {
             added.
           </p>
           {c.diff.map((s, i) => (
-            <SectionDiff key={`${c.id}-${s.section}-${i}`} s={s} />
+            <SectionDiff
+              key={`${c.id}-${s.section}-${i}`}
+              s={s}
+              ours={(labels.data ?? []).filter((l) => l.ingredient_id === c.spc_product?.ingredient_id)}
+              langs={c.spc_product?.source?.languages ?? []}
+            />
           ))}
         </article>
       ))}
