@@ -31,7 +31,11 @@ TEMPLATES = Path(__file__).resolve().parent / "report_templates"
 LOGO_STACKED = TEMPLATES / "pharos-logo-stacked.png"
 LOGO_WIDE = TEMPLATES / "pharos-logo.png"
 LOGO = LOGO_STACKED
+# Sato Pharma's own logo (dark, cropped to its ink): the maker's credit at the foot, never the identity.
+SATO_LOGO = TEMPLATES / "sato-pharma.png"
+SATO_W, SATO_H = 307, 116
 TITLE = "PHAROS — Monthly screening report"
+CREDIT = "Developed in-house by Sato Pharma for the Pharmacovigilance Department"
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 STATUS_LABEL = {"new": "New", "reviewed": "Reviewed", "relevant": "Relevant",
                 "not_relevant": "Not relevant"}
@@ -70,6 +74,11 @@ def previous_month(today: date | None = None) -> Month:
 
 def cairo(ts: datetime | None) -> str:
     return ts.astimezone(CAIRO).strftime("%d %b %Y %H:%M") if ts else ""
+
+
+def copyright_line() -> str:
+    """The copyright, in the year the file is made (Cairo calendar)."""
+    return f"© {datetime.now(CAIRO).year} Sato Pharma. All rights reserved."
 
 
 # ───────────────────────────── data ─────────────────────────────
@@ -153,6 +162,9 @@ def build_xlsx(data: dict, month: Month) -> bytes:
     body_font = Font(name="IBM Plex Sans", color=ink)
 
     wb = Workbook()
+    wb.properties.creator = "Sato Pharma"
+    wb.properties.title = f"{TITLE}, {month.label}"
+    wb.properties.subject = "Pharmacovigilance Department"
 
     def sheet(title: str, header: list[str], rows: list[list[Any]], widths: list[int]):
         ws = wb.create_sheet(title)
@@ -169,7 +181,15 @@ def build_xlsx(data: dict, month: Month) -> bytes:
             ws.column_dimensions[get_column_letter(k)].width = w
         ws.freeze_panes = "A2"
         ws.auto_filter.ref = ws.dimensions
+        print_credit(ws)
         return ws
+
+    def print_credit(ws):
+        # every printed page carries the credit and its page number
+        ws.oddFooter.left.text = f"{copyright_line()} Pharmacovigilance Department."
+        ws.oddFooter.left.size = 8
+        ws.oddFooter.right.text = "Page &P of &N"
+        ws.oddFooter.right.size = 8
 
     ws = wb.active
     ws.title = "Summary"
@@ -191,6 +211,25 @@ def build_xlsx(data: dict, month: Month) -> bytes:
     ws.column_dimensions["B"].width = 48
     ws[f"A{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=ink)
     ws[f"B{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=ink)
+    # The maker's credit closes the Summary: a hairline, the small Sato Pharma logo, the credit and the copyright.
+    gap = ws.max_row + 2
+    for col in ("A", "B"):
+        ws[f"{col}{gap}"].border = Border(top=Side(style="thin", color=rule))
+    credit_row = gap + 1
+    if SATO_LOGO.exists():
+        from openpyxl.drawing.image import Image as XLImage
+
+        sato = XLImage(str(SATO_LOGO))
+        sato.height = 26  # px, small: it credits the maker, PHAROS stays the identity
+        sato.width = round(26 * SATO_W / SATO_H)
+        ws.add_image(sato, f"A{credit_row}")
+        ws.row_dimensions[credit_row].height = 24
+        credit_row += 1
+    ws[f"A{credit_row}"] = CREDIT
+    ws[f"A{credit_row}"].font = Font(name="IBM Plex Sans", bold=True, size=9, color=ink)
+    ws[f"A{credit_row + 1}"] = copyright_line()
+    ws[f"A{credit_row + 1}"].font = Font(name="IBM Plex Sans", size=8, color="5B6670")
+    print_credit(ws)
 
     sheet("Sources screened",
           ["Country", "Regulator", "Source", "Kind", "Channel", "Runs", "Successes", "Failures",
@@ -241,6 +280,7 @@ def render_html(data: dict, month: Month) -> str:
     return env.get_template("monthly.html").render(
         title=TITLE, month=month, summary=summary_rows(data, month), sources=data["sources"],
         issues=data["issues"], reviews=data["reviews"], logo_src=logo_data_uri(),
+        sato_src=logo_data_uri(SATO_LOGO), credit=CREDIT, copyright=copyright_line(),
         generated=cairo(datetime.now(timezone.utc)))
 
 
