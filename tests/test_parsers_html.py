@@ -16,7 +16,7 @@ from collectors.parsers import (aifa, ansm, bfarm_risk, cbg, dkma, email_inbox, 
                                 medsafe, mfds, noma, pmda, prac, swissmedic, tga, who_alerts)
 from collectors.core.models import Fetched
 from collectors.parsers._html_util import local_date
-from collectors.parsers.base import ParseError, SourceBlocked
+from collectors.parsers.base import FetchError, ParseError, SourceBlocked
 from tests.fakes_a2 import FakeCtx, fetched, fixture, source
 
 # ───────────────────────────── dates ─────────────────────────────
@@ -625,6 +625,25 @@ def test_generic_html_needs_a_selector():
 def test_generic_html_year_template():
     assert generic_html._expand("https://x/{year}/", False)[0].startswith("https://x/20")
     assert len(generic_html._expand("https://x/{year}/", True)) == 2
+    # January: the new year's page may not exist yet, so last year's is read too.
+    assert generic_html._expand("https://x/{year}/", False, date(2027, 1, 3)) == ["https://x/2027/",
+                                                                                "https://x/2026/"]
+    assert generic_html._expand("https://x/{year}/", False, date(2027, 2, 1)) == ["https://x/2027/"]
+
+
+def test_a_year_page_not_there_yet_does_not_fail_the_source():
+    # Audit: in January the EDA awareness page for the new year answered 404 and failed eda-eg.
+    year = date.today().year
+    url = "https://x.invalid/letters/{year}/"
+    opts = {"item_selector": "table tr", "title_selector": "td:nth-of-type(1) a",
+            "date_selector": "td:nth-of-type(2)", "summary_selector": "td:nth-of-type(3)",
+            "doc_type": "recall", "url": url}
+    src = source("eda-eg", "https://x.invalid/", languages=["ar"])
+    ctx = FakeCtx({url.format(year=year - 1): "eda-eg/awareness_2026.html"}, backfill=True)
+    items = generic_html.list_with(ctx, src, opts)
+    assert items and [r[1] for r in ctx.requests] == [url.format(year=year), url.format(year=year - 1)]
+    with pytest.raises(FetchError):                      # neither year there: still a failure
+        generic_html.list_with(FakeCtx({}, backfill=True), src, opts)
 
 
 # ───────────────────────────── browser sources ─────────────────────────────

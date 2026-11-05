@@ -28,7 +28,8 @@ Options (all optional unless said):
   ``wait_selector`` is then awaited (default: ``item_selector``);
 * ``extra_urls`` — more list pages read the same way; or ``pages`` — a list of option dicts, one
   per list page (each with its own ``url`` and any option above), for a source whose pages differ;
-  ``{year}`` in a URL is the current year (and last year too on a backfill);
+  ``{year}`` in a URL is the current year (and last year too in January and on a backfill — a
+  year's page may not exist yet in January: its 404 is skipped while last year's page answers);
 * built-in ``PRESETS`` (bottom of this module) supply the options for ``eda-eg``, ``sfda-sa`` and
   ``jfda-jo``; ``source.options`` override them key by key;
 * ``detail_selector`` — CSS of the notice body on the detail page; without it ``fetch_detail``
@@ -50,10 +51,11 @@ Example (EDA Egypt, DHPC table: content | date | PDF)::
 from __future__ import annotations
 
 import re
+from datetime import date
 
 from collectors.parsers._html_util import (absolute, block_text, clean, fill_detail, keep,
                                            links_in, local_date, node_text, require)
-from collectors.parsers.base import Item, ParseError, SourceConfig, soup
+from collectors.parsers.base import FetchError, Item, ParseError, SourceConfig, soup
 
 _ARABIC = re.compile(r"[؀-ۿ]")
 _ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
@@ -174,21 +176,20 @@ def raw_nodes(html, opts: dict) -> list:
     return []
 
 
-def read_page(ctx, url: str, opts: dict):
+def read_page(ctx, url: str, opts: dict, *, missing_ok: bool = False):
     if opts.get("browser"):
         return ctx.browser_get(url, wait_selector=opts.get("wait_selector")
                                or opts.get("item_selector"))
-    return ctx.get(url)
+    return ctx.get(url, raise_for_status=not missing_ok)
 
 
-def _expand(url: str, backfill: bool) -> list[str]:
-    """``{year}`` in a URL → this year (and last year on a backfill)."""
+def _expand(url: str, backfill: bool, today: date | None = None) -> list[str]:
+    """``{year}`` in a URL → this year (and last year in January and on a backfill)."""
     if "{year}" not in url:
         return [url]
-    from datetime import date
-
-    year = date.today().year
-    years = [year, year - 1] if backfill else [year]
+    today = today or date.today()
+    year = today.year
+    years = [year, year - 1] if backfill or today.month == 1 else [year]
     return [url.replace("{year}", str(y)) for y in years]
 
 
@@ -206,19 +207,31 @@ def list_with(ctx, source: SourceConfig, opts: dict) -> list[Item]:
     out: list[Item] = []
     seen: set[str] = set()
     for page in pages_for(source, opts):
-        for i, url in enumerate(_expand(page.get("url") or source.url,
-                                        bool(getattr(ctx, "backfill", False)))):
-            f = read_page(ctx, url, page)
+        urls = _expand(page.get("url") or source.url, bool(getattr(ctx, "backfill", False)))
+        missing = 0
+        checked = False
+        for url in urls:
+            # A year's page that is not there yet (January) is skipped while another year answers.
+            f = read_page(ctx, url, page, missing_ok=len(urls) > 1)
+            if f.status == 404:
+                missing += 1
+                continue
+            if f.status >= 400:
+                raise FetchError(f.status, url)
             if f.status == 304:
+                checked = True
                 continue
             got = extract(f, f.final_url, source, page)
-            if not page.get("allow_empty") and i == 0:
+            if not page.get("allow_empty") and not checked:
                 require(got or raw_nodes(f, page), f, marker=page.get("item_selector"),
                         empty_markers=page.get("empty_markers") or ())
+            checked = True
             for it in got:
                 if it.external_id not in seen:
                     seen.add(it.external_id)
                     out.append(it)
+        if missing == len(urls):
+            raise FetchError(404, urls[0])
     return out
 
 
