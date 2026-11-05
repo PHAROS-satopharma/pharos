@@ -5,6 +5,6 @@
 export function linkAnswer(errorMessage: string | null | undefined): 'sent' | 'error' {
   if (!errorMessage) return 'sent';
   const m = errorMessage.toLowerCase();
-  if (m === '') return 'sent'; // old behaviour, replaced in the next commit
+  if (m.includes('signups not allowed') || m.includes('user not found')) return 'sent';
   return 'error';
 }
