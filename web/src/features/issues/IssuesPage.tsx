@@ -275,7 +275,7 @@ export function IssuesPage() {
                     <tr
                       key={r.id}
                       data-row={i}
-                      className={cx('issue-row', i === active && 'is-active')}
+                      className={cx('issue-row', i === active && 'is-active', r.status === 'new' && 'is-new')}
                       onClick={() => navigate(`/issue/${r.id}`)}
                     >
                       <td data-label="Date" className="col-date nowrap">

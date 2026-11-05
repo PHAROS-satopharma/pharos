@@ -8,6 +8,7 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--rule) transparent;
 }
 body {
   margin: 0;
@@ -15,8 +16,35 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* Colour, rule and ground change smoothly on hover; nothing moves. */
+a,
+.btn,
+.field,
+.nav-link,
+.who-name,
+.bar-button,
+.tab,
+.choice,
+.candidate,
+.link-button,
+.issue-row td {
+  transition:
+    color var(--ease),
+    background-color var(--ease),
+    border-color var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
 }
 h1,
 h2,
@@ -205,23 +233,30 @@ kbd {
   left: 8px;
   top: 8px;
 }
+/* The bar stays in view on wide screens: a navy band on top, the logo, the sections, the person. */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: var(--bar-bg);
   color: var(--bar-text);
+  border-top: var(--band) solid var(--ink-fixed);
   border-bottom: 1px solid var(--bar-rule);
 }
 .topbar-inner {
   display: flex;
   align-items: stretch;
-  gap: 28px;
+  gap: 20px;
   max-width: var(--max);
-  min-height: var(--bar-h);
+  height: var(--bar-h);
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
 .brand {
   display: inline-flex;
+  flex: none;
   align-items: center;
+  margin-right: 8px;
   color: var(--bar-text);
   text-decoration: none;
 }
@@ -230,16 +265,22 @@ kbd {
 }
 .nav {
   display: flex;
+  flex: 0 1 auto;
   align-items: stretch;
-  gap: 22px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar {
+  display: none;
 }
 .nav-link,
 .who-name {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border-bottom: 2px solid transparent;
-  padding-top: 2px;
+  gap: 10px;
+  padding: 3px 12px 0;
+  border-bottom: 3px solid transparent;
   color: var(--bar-muted);
   font-weight: 500;
   text-decoration: none;
@@ -248,6 +289,7 @@ kbd {
 .nav-link:hover,
 .who-name:hover {
   color: var(--bar-text);
+  border-bottom-color: var(--bar-rule);
 }
 .nav-link.is-active,
 .who-name.is-active {
@@ -256,53 +298,73 @@ kbd {
 }
 .who {
   display: flex;
+  flex: none;
   align-items: stretch;
-  gap: 16px;
+  gap: 8px;
   margin-left: auto;
 }
 .who-role {
+  padding: 0 6px;
+  border: 1px solid var(--bar-rule);
   color: var(--bar-muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
+  line-height: 18px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 .bar-button {
   align-self: center;
-  padding: 4px 0;
-  border: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--bar-rule);
   background: none;
   color: var(--bar-muted);
   font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
 }
 .bar-button:hover {
+  border-color: var(--bar-text);
   color: var(--bar-text);
-  text-decoration: underline;
 }
 .main {
   flex: 1 0 auto;
   width: 100%;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 28px var(--gutter) 64px;
+  padding: 36px var(--gutter) 72px;
 }
 .main:focus {
   outline: none;
 }
 .footer {
   border-top: 1px solid var(--rule);
+  background: var(--surface);
 }
 .footer-inner {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 8px 24px;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 14px var(--gutter);
+  padding: 16px var(--gutter);
   color: var(--muted);
+}
+.footer-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.footer-mark::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--beacon);
 }
 .bare {
   max-width: 640px;
@@ -323,24 +385,26 @@ kbd {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px 24px;
-  padding-bottom: 18px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--rule);
+  padding-bottom: 22px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--text);
 }
 .page-head-text {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
 }
 .page-title {
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 600;
-  letter-spacing: -0.005em;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
 }
 .page-lede {
   max-width: 70ch;
   color: var(--muted);
+  font-size: 15px;
 }
 .page-head-actions {
   display: flex;
@@ -400,12 +464,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 0 14px;
+  min-height: 38px;
+  padding: 0 16px;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--surface);
-  color: var(--sea);
+  color: var(--text);
   font-size: 13.5px;
   font-weight: 500;
   line-height: 1.2;
@@ -413,37 +477,44 @@ kbd {
   cursor: pointer;
   white-space: nowrap;
 }
-.btn:hover {
-  border-color: var(--sea);
+.btn:hover:not(:disabled) {
+  border-color: var(--text);
+}
+.btn:active:not(:disabled) {
+  background: var(--surface-2);
 }
 .btn-primary {
   border-color: var(--btn-primary-bg);
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled),
+.btn-primary:active:not(:disabled) {
   border-color: var(--btn-primary-hover);
   background: var(--btn-primary-hover);
 }
 .btn-quiet {
   border-color: transparent;
   background: transparent;
+  color: var(--sea);
 }
-.btn-quiet:hover {
+.btn-quiet:hover:not(:disabled) {
   border-color: transparent;
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .btn-danger {
   border-color: var(--danger);
   color: var(--danger);
 }
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled),
+.btn-danger:active:not(:disabled) {
   border-color: var(--danger);
   background: var(--danger-tint);
 }
 .btn-sm {
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 30px;
+  padding: 0 11px;
   font-size: 12.5px;
 }
 .btn-block {
@@ -470,8 +541,8 @@ kbd {
 .field {
   display: block;
   width: 100%;
-  min-height: 36px;
-  padding: 6px 10px;
+  min-height: 38px;
+  padding: 7px 11px;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--surface);
@@ -480,13 +551,16 @@ kbd {
 }
 .field::placeholder {
   color: var(--muted);
-  opacity: 1;
+  opacity: 0.85;
 }
-.field:hover {
+.field:hover:not(:disabled) {
   border-color: var(--muted);
 }
 .field:focus {
   border-color: var(--text);
+}
+.field:focus-visible {
+  outline-offset: 1px;
 }
 .field:disabled {
   background: var(--surface-2);
@@ -685,12 +759,15 @@ kbd {
 }
 .table th,
 .table td {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--rule);
   text-align: left;
   vertical-align: top;
+  font-variant-numeric: tabular-nums;
 }
 .table th {
+  padding-top: 11px;
+  padding-bottom: 10px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 600;
@@ -748,15 +825,22 @@ kbd {
   border: 1px solid var(--rule);
   background: var(--surface);
 }
+/* The column heads stay in view just under the sticky bar. */
 .issues thead th {
   position: sticky;
-  top: 0;
+  top: calc(var(--band) + var(--bar-h) + 1px);
   z-index: 2;
   background: var(--surface);
   border-bottom-color: var(--text);
 }
 .issue-row {
   cursor: pointer;
+  scroll-margin-top: calc(var(--band) + var(--bar-h) + 56px);
+  scroll-margin-bottom: 16px;
+}
+/* Not yet reviewed: the title reads heavier, like an unread message. */
+.issue-row.is-new .title-link {
+  font-weight: 600;
 }
 .issue-row:hover td {
   background: var(--surface-2);
@@ -789,7 +873,7 @@ kbd {
 }
 .title-link {
   color: var(--text);
-  font-weight: 500;
+  font-weight: 400;
   text-decoration: none;
   overflow-wrap: anywhere;
 }
@@ -804,47 +888,85 @@ kbd {
   font-size: 12px;
 }
 .ext-link {
+  font-weight: 500;
+  text-decoration: none;
   white-space: nowrap;
+}
+.ext-link:hover {
+  text-decoration: underline;
 }
 .more-row {
   display: flex;
   justify-content: center;
-  padding: 16px 0;
+  padding: 20px 0;
 }
 
-/* ───────── filters and toolbar ───────── */
+/* ───────── filters and toolbar ─────────
+   One console: the filters on the surface, the count and shortcuts on a strip below them. */
 .filters {
   display: grid;
   grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(140px, 1fr));
-  gap: 12px;
+  gap: 14px;
   align-items: end;
-  margin-bottom: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  background: var(--surface);
 }
 .filters-toggles {
   grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 24px;
+  padding-top: 2px;
 }
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 20px;
-  padding: 10px 0;
-  border-top: 1px solid var(--rule);
+  margin-bottom: 16px;
+  padding: 9px 18px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
 }
 .toolbar-count {
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: 12.5px;
+  font-weight: 500;
 }
 .toolbar-hint {
+  margin-left: auto;
   font-size: 12px;
 }
 
 /* ───────── states and notices ───────── */
 .state {
-  padding: 40px 0;
+  padding: 36px 32px;
+  border: 1px dashed var(--rule);
+  background: var(--surface);
+}
+.state-error {
+  border-style: solid;
+  border-left: 3px solid var(--danger);
+}
+/* A short beacon rule over every message: the same mark as the loading line. */
+.state-title::before {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 2px;
+  margin-bottom: 14px;
+  background: var(--beacon);
+}
+.state-error .state-title::before {
+  background: var(--danger);
+}
+.panel .state {
+  padding: 20px 0 4px;
+  border: 0;
+  background: none;
 }
 .state-title {
   font-size: 17px;
@@ -860,11 +982,14 @@ kbd {
 .state-action {
   margin-top: 16px;
 }
-.state-loading {
+.state-loading,
+.panel .state-loading {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 28px 0;
+  border: 0;
+  background: none;
 }
 .loading-rule {
   position: relative;
@@ -920,9 +1045,11 @@ kbd {
 }
 
 /* ───────── panels ───────── */
+/* A panel is a printed card: hairline sides, an ink rule along the top. */
 .panel {
-  padding: 18px 20px;
+  padding: 20px 22px;
   border: 1px solid var(--rule);
+  border-top: 2px solid var(--text);
   background: var(--surface);
 }
 .panel + .panel {
@@ -993,10 +1120,15 @@ kbd {
   gap: 8px 14px;
   margin-bottom: 10px;
 }
+.detail-head {
+  border-bottom-color: var(--text);
+}
 .detail-title {
   max-width: 62em;
-  font-size: 24px;
+  font-size: 27px;
   font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
   overflow-wrap: anywhere;
 }
 .detail-meta {
@@ -1014,7 +1146,7 @@ kbd {
 }
 .detail-aside {
   position: sticky;
-  top: 16px;
+  top: calc(var(--band) + var(--bar-h) + 20px);
 }
 .steps {
   display: grid;
@@ -1321,26 +1453,52 @@ mark.hl {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 40px;
-  padding: 48px;
+  gap: 48px;
+  padding: 56px;
   background: var(--bar-bg);
   color: var(--bar-text);
+  border-top: var(--band) solid var(--ink-fixed);
   border-right: 3px solid var(--beacon);
 }
 .signin-words {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  max-width: 420px;
+  gap: 28px;
+  max-width: 460px;
 }
 .signin-title {
   color: var(--bar-text);
-  font-size: 28px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
 }
-.signin-lede {
+/* Three promises, numbered, each on its own hairline. */
+.signin-facts {
+  display: flex;
+  flex-direction: column;
+}
+.signin-fact {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid var(--bar-rule);
   color: var(--bar-muted);
+}
+.signin-fact:last-child {
+  border-bottom: 1px solid var(--bar-rule);
+}
+.signin-fact-index {
+  color: var(--bar-accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.75;
+}
+.signin-fact strong {
+  color: var(--bar-text);
+  font-weight: 600;
 }
 .signin-by {
   color: var(--bar-muted);
@@ -1354,11 +1512,21 @@ mark.hl {
 .signin-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   width: min(380px, 100%);
 }
+.signin-form-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.signin-form-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 .signin-foot {
-  padding-top: 12px;
+  padding-top: 14px;
   border-top: 1px solid var(--rule);
 }
 .tabs {
@@ -1587,6 +1755,12 @@ mark.hl {
 }
 
 /* ───────── narrow screens ───────── */
+@media (max-width: 1180px) {
+  .who-role {
+    display: none;
+  }
+}
+
 @media (max-width: 1080px) {
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1616,9 +1790,14 @@ mark.hl {
   :root {
     --gutter: 16px;
   }
+  /* On a phone the bar scrolls away with the page and the sections wrap onto their own line. */
+  .topbar {
+    position: static;
+  }
   .topbar-inner {
     flex-wrap: wrap;
-    gap: 0 16px;
+    gap: 0 12px;
+    height: auto;
     padding-top: 10px;
   }
   .brand {
@@ -1629,42 +1808,59 @@ mark.hl {
   }
   .nav {
     order: 3;
-    width: 100%;
     min-height: 44px;
-    overflow-x: auto;
-    gap: 18px;
+    margin: 0 -10px;
+    width: calc(100% + 20px);
+  }
+  .nav-link {
+    padding: 3px 10px 0;
   }
   .who {
-    gap: 12px;
+    gap: 6px;
   }
-  .who-role {
-    display: none;
+  .who-name {
+    padding: 3px 6px 0;
+  }
+  .bar-button {
+    min-height: 30px;
+    padding: 0 9px;
   }
   .main {
-    padding-top: 20px;
+    padding-top: 22px;
   }
   .page-title {
-    font-size: 22px;
+    font-size: 24px;
+  }
+  .page-lede {
+    font-size: 14px;
   }
   .detail-title {
-    font-size: 20px;
+    font-size: 21px;
   }
   .filters {
     grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+  .toolbar {
+    padding: 9px 14px;
   }
   .toolbar-hint {
     display: none;
+  }
+  .state {
+    padding: 28px 20px;
   }
   .signin {
     grid-template-columns: minmax(0, 1fr);
   }
   .signin-side {
+    gap: 28px;
     padding: 28px var(--gutter);
     border-right: 0;
     border-bottom: 3px solid var(--beacon);
   }
   .signin-title {
-    font-size: 22px;
+    font-size: 24px;
   }
   .copy {
     grid-template-columns: minmax(0, 1fr);

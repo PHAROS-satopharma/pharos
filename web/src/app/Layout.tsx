@@ -65,8 +65,8 @@ export function Layout() {
       </main>
       <footer className="footer">
         <div className="footer-inner">
-          <span className="micro">PHAROS · Pharmaceutical Alerts &amp; Regulatory Observation System</span>
-          <span className="micro muted">by Sato Pharma</span>
+          <span className="micro footer-mark">PHAROS · Pharmaceutical Alerts &amp; Regulatory Observation System</span>
+          <span className="micro muted">Times in Cairo local · by Sato Pharma</span>
         </div>
       </footer>
     </div>
