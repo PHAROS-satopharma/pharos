@@ -27,6 +27,7 @@ CAIRO = ZoneInfo("Africa/Cairo")
 API = "https://api.telegram.org"
 MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
 DIGEST_WINDOW = timedelta(hours=4, minutes=30)   # the digest goes out on the first run after the hour
+ALERT_RETRY = timedelta(days=2)  # a refused immediate alert is tried again on every run for this long
 MAX_DIGEST_ITEMS = 60          # newest first; the rest are named as a count with a pointer to PHAROS
 MAX_MESSAGE_CHARS = 4000       # Telegram refuses a message over 4096 characters
 BRAND = "PHAROS"
@@ -47,6 +48,17 @@ DOC_TYPE_LABEL = {
 
 def esc(value: Any) -> str:
     return html.escape("" if value is None else str(value), quote=False)
+
+
+def esc_cut(value: Any, limit: int) -> str:
+    """Escaped and at most ``limit`` characters. The raw text is cut, never the escaped one, so no
+    entity is left half (Telegram refuses a whole message over a broken ``&amp;``)."""
+    text = "" if value is None else str(value)
+    out = esc(text)
+    while len(out) > limit:
+        text = text[:max(0, len(text) - (len(out) - limit) - 1)]
+        out = esc(text) + "…"
+    return out
 
 
 def fmt_date(d: date | datetime | None) -> str:
@@ -99,7 +111,7 @@ class Telegram:
                       url: str | None = None, caption: str | None = None) -> int:
         data = {"chat_id": chat_id, "parse_mode": "HTML"}
         if caption:
-            data["caption"] = caption[:1000]
+            data["caption"] = caption   # escaped HTML, already cut by the caller (esc_cut)
         if content is not None:
             return self._call("sendDocument", chat_id, data=data,
                               files={"document": (filename, content, "application/pdf")})
@@ -139,7 +151,7 @@ class Notifier:
             f"{esc(issue.get('country_name'))} · {esc(issue.get('regulator_name'))}",
             f"{esc(doc_type)} · {esc(fmt_date(issue.get('first_date')))}",
             "",
-            esc(issue.get("title_orig") or issue.get("title")),
+            esc_cut(issue.get("title_orig") or issue.get("title"), 2000),
             "",
             f'<a href="{html.escape(issue.get("url") or "", quote=True)}">Open the notice</a>',
         ])
@@ -193,15 +205,31 @@ class Notifier:
             sent += 1
         return sent
 
+    def retry_refused_alerts(self) -> int:
+        """Immediate alerts Telegram refused (or a network error stopped) in the last two days are sent
+        again to the people who never got them. Returns messages written."""
+        sent = 0
+        for issue_id in self.store.refused_alert_issues(self.now() - ALERT_RETRY):
+            try:
+                sent += self.issue_alert(issue_id)
+            except Exception:  # noqa: BLE001 - one retry failing never stops the others
+                log.warning("alert retry for %s failed", issue_id, exc_info=True)
+        return sent
+
+    def _digest_due_at(self) -> datetime:
+        hour = int(self.settings.get("digest_hour_cairo", 9))
+        return self.now().astimezone(CAIRO).replace(hour=hour, minute=0, second=0, microsecond=0)
+
     def digest_due(self) -> bool:
         now = self.now().astimezone(CAIRO)
-        hour = int(self.settings.get("digest_hour_cairo", 9))
-        due_at = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        due_at = self._digest_due_at()
         if not (due_at <= now < due_at + DIGEST_WINDOW):
             return False
-        # Only a digest that really went out counts: a refused one is tried again on the next run.
+        # Only a digest that really went out counts: a refused one is tried again on the next run,
+        # also when it went out to someone else.
         last = self.store.last_notification_at("digest", delivered_only=True)
-        return last is None or last.astimezone(CAIRO) < due_at
+        return (last is None or last.astimezone(CAIRO) < due_at
+                or bool(self.store.refused_people("digest", due_at)))
 
     @staticmethod
     def digest_messages(header: str, entries: list[str], more: int) -> list[str]:
@@ -221,7 +249,9 @@ class Notifier:
         """One daily digest of class-only issues to class_digest subscribers."""
         if not self.digest_due():
             return 0
-        last = self.store.last_notification_at("digest", delivered_only=True)
+        # since the last digest of an earlier day: a retry today covers what today's first try did
+        last = self.store.last_notification_at("digest", delivered_only=True,
+                                               before=self._digest_due_at())
         since = last or (self.now() - timedelta(days=1))
         all_ids = self.store.class_only_issues_since(since)           # newest first
         if not all_ids:
@@ -229,15 +259,19 @@ class Notifier:
         issue_ids = all_ids[:MAX_DIGEST_ITEMS]
         issues = [i for i in (self.store.issue_for_alert(x) for x in issue_ids) if i]
         header = f"<b>{BRAND}</b> · class-wide notices · {esc(fmt_date(self.now()))}"
-        entries = [f"• {esc(iss.get('country_name'))} · {esc(iss.get('regulator_name'))} · "
-                   f"{esc(fmt_date(iss.get('first_date')))}\n  {esc(iss.get('title_orig'))}\n"
+        entries = {iss["id"]: f"• {esc(iss.get('country_name'))} · {esc(iss.get('regulator_name'))} · "
+                   f"{esc(fmt_date(iss.get('first_date')))}\n  {esc_cut(iss.get('title_orig'), 2000)}\n"
                    f'  <a href="{html.escape(iss.get("url") or "", quote=True)}">Open</a>'
-                   for iss in issues]
-        messages = self.digest_messages(header, entries, len(all_ids) - len(issue_ids))
+                   for iss in issues}
         sent = 0
         for person in self.store.subscribers("class_digest"):
-            if all(self.store.notified(person["person_id"], iss["id"], "digest") for iss in issues):
-                continue  # this person already has these (a retry after someone else's refusal)
+            # a retry after someone else's refusal: only what this person does not have yet
+            mine = [iss for iss in issues
+                    if not self.store.notified(person["person_id"], iss["id"], "digest")]
+            if not mine:
+                continue
+            messages = self.digest_messages(header, [entries[iss["id"]] for iss in mine],
+                                            len(all_ids) - len(issue_ids))
             message_id, error = None, None
             if not self.dry_run:
                 try:
@@ -246,7 +280,7 @@ class Notifier:
                 except (TelegramError, httpx.HTTPError) as exc:
                     error = str(exc)[:500]
                     log.warning("digest send failed for %s: %s", person.get("person_id"), error)
-            for iss in issues:
+            for iss in mine:
                 self.store.insert_notification(person_id=person["person_id"], issue_id=iss["id"],
                                                kind="digest", dry_run=self.dry_run,
                                                tg_message_id=message_id, error=error,
@@ -259,22 +293,32 @@ class Notifier:
         labels = {"down": "is down (3 failed runs in a row)", "degraded": "needs attention",
                   "blocked": "is blocked by a bot check"}
         text = (f"<b>{BRAND}</b> · source health\n<b>{esc(source_id)}</b> "
-                f"{esc(labels.get(health, health))}\n{esc(detail)[:600]}")
+                f"{esc(labels.get(health, health))}\n{esc_cut(detail, 600)}")
         people = self.store.subscribers("admin_health")
         for person in people:
             self._deliver(person, None, "health", text)
         return len(people)
 
     def admin_message(self, text: str, kind: str = "report") -> int:
+        """Split on line ends, like the digest, so a long backfill summary stays under Telegram's limit."""
+        messages, current = [], f"<b>{BRAND}</b>"
+        for line in text.splitlines():
+            line = esc_cut(line, MAX_MESSAGE_CHARS - 100)
+            if len(current) + 1 + len(line) > MAX_MESSAGE_CHARS:
+                messages.append(current)
+                current = f"<b>{BRAND}</b> (continued)"
+            current += "\n" + line
+        messages.append(current)
         people = self.store.subscribers("admin_health")
         for person in people:
-            self._deliver(person, None, kind, f"<b>{BRAND}</b>\n{esc(text)}")
+            for message in messages:
+                self._deliver(person, None, kind, message)
         return len(people)
 
     def admin_document(self, filename: str, content: bytes, caption: str) -> int:
         """The monthly report to the admins (dry-run aware)."""
         people = self.store.subscribers("admin_health")
-        doc = {"filename": filename, "content": content, "caption": esc(caption)}
+        doc = {"filename": filename, "content": content, "caption": esc_cut(caption, 1000)}
         for person in people:
             self._deliver(person, None, "report", f"<b>{BRAND}</b>\n{esc(caption)}", doc)
         return len(people)

@@ -39,7 +39,8 @@ _ARABIC_MAP = {"أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا",
                "ى": "ي", "ی": "ي", "ة": "ه", "ؤ": "و",
                "ئ": "ي", "ک": "ك"}
 _LINE_BREAK_AFTER_HYPHEN = re.compile(r"[ \t]*\r?\n[ \t]*(?=\w)")
-_HAS_LINE_HYPHEN = re.compile(r"[-‐‑­][ \t]*\r?\n")
+# every dash normalise() rejoins across a line break, so the "hyphen kept" variant is built for each
+_HAS_LINE_HYPHEN = re.compile("[" + re.escape("".join(sorted(_HYPHENS))) + r"][ \t]*\r?\n")
 
 
 def _strippable(ch: str) -> bool:

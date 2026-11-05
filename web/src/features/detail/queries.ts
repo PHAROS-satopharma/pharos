@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { unwrap } from '../../lib/api';
+import { fetchAllPages, unwrap } from '../../lib/api';
 import { personNames } from '../../lib/people';
 import { ISSUE_COLUMNS } from '../issues/queries';
 import type {
@@ -110,26 +110,39 @@ export function useEvidence(issueId: string, docIds: string[]) {
     queryKey: ['issue-evidence', issueId, docIds],
     enabled: docIds.length > 0,
     queryFn: async (): Promise<EvidenceData> => {
-      const [m, t, a] = await Promise.all([
-        supabase
-          .from('match')
-          .select(
-            'id,document_id,attachment_id,field,start_offset,end_offset,matched_text,snippet,confidence,' +
-              'ingredient:ingredient_id(inn_en),drug_class:class_id(name_en)',
-          )
-          .in('document_id', docIds)
-          .order('start_offset', { ascending: true }),
-        supabase.from('document_text').select('document_id,attachment_id,text').in('document_id', docIds),
-        supabase
-          .from('attachment')
-          .select('id,document_id,url,filename,r2_key,mime,bytes,extraction,words')
-          .in('document_id', docIds),
+      // Every page: a merged issue with many long copies has more than the API's 1,000 rows of matches.
+      const [matches, texts, attachments] = await Promise.all([
+        fetchAllPages<MatchRow>(async (from, to) =>
+          await supabase
+            .from('match')
+            .select(
+              'id,document_id,attachment_id,field,start_offset,end_offset,matched_text,snippet,confidence,' +
+                'ingredient:ingredient_id(inn_en),drug_class:class_id(name_en)',
+            )
+            .in('document_id', docIds)
+            .order('start_offset', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to),
+        ),
+        fetchAllPages<DocumentTextRow>(async (from, to) =>
+          await supabase
+            .from('document_text')
+            .select('document_id,attachment_id,text')
+            .in('document_id', docIds)
+            .order('document_id', { ascending: true })
+            .order('attachment_id', { ascending: true, nullsFirst: true })
+            .range(from, to),
+        ),
+        fetchAllPages<AttachmentRow>(async (from, to) =>
+          await supabase
+            .from('attachment')
+            .select('id,document_id,url,filename,r2_key,mime,bytes,extraction,words')
+            .in('document_id', docIds)
+            .order('id', { ascending: true })
+            .range(from, to),
+        ),
       ]);
-      return {
-        matches: unwrap<MatchRow[] | null>(m) ?? [],
-        texts: unwrap<DocumentTextRow[] | null>(t) ?? [],
-        attachments: unwrap<AttachmentRow[] | null>(a) ?? [],
-      };
+      return { matches, texts, attachments };
     },
   });
 }

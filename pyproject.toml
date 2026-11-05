@@ -23,3 +23,5 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
+# The handbook PDF script draws with the helpers of its kit.py, imported as a whole.
+"docs/handbook/build.py" = ["F403", "F405"]

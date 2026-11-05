@@ -9,6 +9,9 @@ workers_dev = false
 [vars]
 # recipient alias (the part before @) = source id in collectors/sources.yaml
 ALIAS_SOURCES = "fimea=fimea-email,tga=tga-email"
+# source id = its From domains (| between them), as options.from_domains in collectors/sources.yaml. A message
+# reaches its source only from these domains and with the receiving server's DMARC, DKIM or SPF pass for one.
+SOURCE_DOMAINS = "fimea-email=fimea.fi,tga-email=tga.gov.au|health.gov.au"
 
 [[r2_buckets]]
 binding = "ARCHIVE"
