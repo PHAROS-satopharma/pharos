@@ -5,6 +5,7 @@ import { errorMessage, invoke, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useRegulators } from '../../lib/regulators';
 import { formatDate } from '../../lib/format';
+import { safeHref } from '../../lib/safeHref';
 import { CHANNEL_LABEL, KIND_LABEL, SCHEDULE_LABEL, hostOf, languageName } from '../../lib/labels';
 import {
   SOURCE_CHANNELS,
@@ -284,8 +285,8 @@ export function AddSource({ onDone }: { onDone: () => void }) {
               <ul className="probe-items">
                 {items.slice(0, 12).map((it, i) => (
                   <li key={`${it.url ?? ''}-${i}`}>
-                    {it.url ? (
-                      <a href={it.url} target="_blank" rel="noopener noreferrer" dir="auto" lang={it.lang ?? undefined}>
+                    {safeHref(it.url) ? (
+                      <a href={safeHref(it.url) ?? undefined} target="_blank" rel="noopener noreferrer" dir="auto" lang={it.lang ?? undefined}>
                         {it.title}
                       </a>
                     ) : (
