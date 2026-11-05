@@ -11,6 +11,7 @@ on Telegram (dry-run aware). Times are shown in Cairo local time.
 from __future__ import annotations
 
 import argparse
+import functools
 import io
 import logging
 import os
@@ -41,6 +42,9 @@ STATUS_LABEL = {"new": "New", "reviewed": "Reviewed", "relevant": "Relevant",
                 "not_relevant": "Not relevant"}
 HEALTH_LABEL = {"unknown": "Not yet run", "ok": "OK", "degraded": "Needs attention",
                 "down": "Down", "blocked": "Blocked"}
+# The PDF page geometry and colours shared by monthly.html (@page, :root) and footer.html, so the running
+# foot always lines up with the body column.
+PAGE = {"top": "18mm", "side": "16mm", "bottom": "20mm", "rule": "#D9D5CC", "muted": "#5B6670"}
 
 
 @dataclass
@@ -269,6 +273,7 @@ def _decision_at(row: dict) -> str:
 
 # ───────────────────────────── PDF ─────────────────────────────
 
+@functools.cache
 def _env():
     from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -278,7 +283,7 @@ def _env():
 def render_footer(month: Month) -> str:
     """The running foot Chromium prints on every page: the month, the Sato Pharma credit and the page number."""
     return _env().get_template("footer.html").render(
-        month=month, sato_src=logo_data_uri(SATO_LOGO), copyright=copyright_line())
+        month=month, page=PAGE, sato_src=logo_data_uri(SATO_LOGO), copyright=copyright_line())
 
 
 def render_html(data: dict, month: Month) -> str:
@@ -287,11 +292,12 @@ def render_html(data: dict, month: Month) -> str:
     env.filters["status"] = lambda s: STATUS_LABEL.get(s, s)
     env.filters["health"] = lambda s: HEALTH_LABEL.get(s, s)
     return env.get_template("monthly.html").render(
-        title=TITLE, month=month, summary=summary_rows(data, month), sources=data["sources"],
+        title=TITLE, month=month, page=PAGE, summary=summary_rows(data, month), sources=data["sources"],
         issues=data["issues"], reviews=data["reviews"], logo_src=logo_data_uri(),
         sato_src=logo_data_uri(SATO_LOGO), credit=CREDIT, copyright=copyright_line())
 
 
+@functools.cache
 def logo_data_uri(path: Path = LOGO) -> str:
     """A logo embedded in the HTML, so set_content() needs no file access and the PDF carries it."""
     import base64

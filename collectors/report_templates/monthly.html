@@ -10,14 +10,14 @@
   :root {
     --ink: #02224C;   /* the logo's navy */
     --paper: #F6F4EF;
-    --rule: #D9D5CC;
-    --muted: #5B6670;
+    --rule: {{ page.rule }};
+    --muted: {{ page.muted }};
     --sea: #1F4E5F;
     --beacon: #E3A336;   /* markers only, never text */
     --sans: "IBM Plex Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans Arabic", Arial, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
   }
-  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  @page { size: A4; margin: {{ page.top }} {{ page.side }} {{ page.bottom }} {{ page.side }}; }
   * { box-sizing: border-box; border-radius: 0; box-shadow: none; }
   html, body { margin: 0; background: var(--paper); color: var(--ink); }
   body { font: 9pt/1.45 var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
