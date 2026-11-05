@@ -205,3 +205,16 @@ notice shows our section to read side by side.
   Notices judged not relevant are counted and listed in the Excel file only.
 - **Print or save as PDF** prints the page without the form; **Download Excel** saves the same sections as one
   workbook. PHAROS began screening on 5 November 2026; the annex says so when the interval starts earlier.
+
+## Oversight and the morning escalation
+
+- **The page** (`/oversight`, in the top bar): notices waiting for review, reviews late, open signals, signal
+  steps late, sources needing a look, the PSUR data lock points and submissions in the next 90 days (from the
+  EURD list), and the latest monthly report. Everything late links to the notice or signal.
+- **What is late** comes from `overdue_items(day)`: a signal past the due date of its stage, and a notice still
+  "New" more than `review_due_days` days (app setting, 7 by default) after PHAROS found it. Backfilled notices
+  are never late. To change the review time: `update app_setting set value = '5' where key = 'review_due_days';`
+- **The escalation** (`python -m collectors.escalate`, after the 12-hour collection): once a Cairo day, from
+  07:00, the late signals and notices go to every active administrator with Telegram linked, as notification
+  kind "Late items". Nothing goes when nothing is late. While `telegram_dry_run` is on, the message is only
+  written to the notification log.

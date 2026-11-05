@@ -15,6 +15,7 @@ import { OurLabelsPage } from '../features/labels/OurLabelsPage';
 import { SignalsPage } from '../features/signals/SignalsPage';
 import { SignalPage } from '../features/signals/SignalPage';
 import { PsurPage } from '../features/psur/PsurPage';
+import { OversightPage } from '../features/oversight/OversightPage';
 import { Button } from '../ui/Button';
 import { Empty, Loading } from '../ui/States';
 import { PharosMark } from '../ui/PharosMark';
@@ -131,6 +132,7 @@ export function AppRoutes() {
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="psur" element={<PsurPage />} />
+        <Route path="oversight" element={<OversightPage />} />
         <Route path="people" element={isAdmin ? <PeoplePage /> : <Navigate to="/" replace />} />
         <Route path="me" element={<MePage />} />
         <Route path="*" element={<NotFound />} />

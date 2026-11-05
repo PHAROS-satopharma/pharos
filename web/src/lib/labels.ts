@@ -158,6 +158,7 @@ export const NOTIF_KIND_LABEL: Record<NotifKind, string> = {
   digest: 'Daily digest',
   health: 'Source health',
   report: 'Monthly report',
+  escalation: 'Late items',
 };
 
 const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });

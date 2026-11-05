@@ -23,6 +23,7 @@ export function Layout() {
     { to: '/ingredients', label: 'Ingredients' },
     { to: '/sources', label: 'Sources' },
     { to: '/reports', label: 'Reports' },
+    { to: '/oversight', label: 'Oversight' },
   ];
   if (isAdmin) nav.push({ to: '/people', label: 'People' });
 

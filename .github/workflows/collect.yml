@@ -148,3 +148,17 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.eurd || echo "::warning::The EURD list could not be read; the PSUR dates keep the last list."
+
+      # The morning escalation: late signals and notices to every administrator on Telegram, once a Cairo day
+      # from 07:00 (the 05:47 UTC run; the 17:47 run sends only if the morning one could not). It honours
+      # telegram_dry_run like every other message; a failure warns and never fails the collection.
+      - name: Escalation
+        if: steps.which.outputs.schedule == '12h' || steps.which.outputs.schedule == 'all'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          DRY: ${{ inputs.dry_run && '1' || '' }}
+        run: |
+          args=()
+          [ -n "$DRY" ] && args+=(--dry-run)
+          python -m collectors.escalate "${args[@]}" || echo "::warning::The escalation could not be sent."
