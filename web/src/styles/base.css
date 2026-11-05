@@ -209,6 +209,45 @@ a,
   text-decoration: underline;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* An ingredient name as a small ruled chip. */
+.chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--text);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip-quiet {
+  border-left-color: var(--muted);
+  color: var(--muted);
+}
+.masthead .chip {
+  border-color: var(--masthead-rule);
+  border-left-color: var(--masthead-accent);
+  background: transparent;
+  color: var(--masthead-text);
+}
+
 /* The person's initials in a navy square: the top bar, the people list. */
 .monogram {
   display: inline-grid;
@@ -260,7 +299,7 @@ a,
   height: auto;
 }
 .brand .pharos-logo {
-  height: 46px;
+  height: 50px;
   width: auto;
 }
 .signin-mark {
@@ -895,6 +934,12 @@ button.stat[aria-pressed='true'] {
   line-height: 1.55;
   resize: vertical;
 }
+.field[type='search'] {
+  padding-left: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Ccircle cx='6' cy='6' r='4.75' fill='none' stroke='%23878f96' stroke-width='1.5'/%3E%3Cpath d='M9.5 9.5L13 13' stroke='%23878f96' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+}
 .field-select {
   appearance: none;
   padding-right: 32px;
@@ -1202,6 +1247,18 @@ button.stat[aria-pressed='true'] {
   letter-spacing: 0.06em;
   text-align: center;
 }
+.cell-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cell-sub {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
 .more {
   margin-left: 6px;
   color: var(--muted);
@@ -1252,19 +1309,35 @@ button.stat[aria-pressed='true'] {
   width: 104px;
 }
 .col-country {
-  width: 170px;
-}
-.col-regulator {
-  width: 190px;
+  width: 220px;
 }
 .col-ingredient {
-  width: 140px;
+  width: 160px;
 }
 .col-status {
   width: 140px;
 }
 .col-link {
-  width: 80px;
+  width: 64px;
+  text-align: right;
+}
+/* The way out to the original: a square ruled button. */
+.open-link {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  text-decoration: none;
+}
+.open-link:hover {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--surface);
 }
 .title-link {
   color: var(--text);
@@ -1352,7 +1425,8 @@ button.stat[aria-pressed='true'] {
 /* ───────── states and notices ───────── */
 .state {
   padding: 40px 36px;
-  border: 1px dashed var(--muted);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--text);
   background: var(--surface);
 }
 .state-error {
@@ -1554,14 +1628,42 @@ button.stat[aria-pressed='true'] {
   letter-spacing: -0.008em;
   overflow-wrap: anywhere;
 }
-.detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 18px;
-  margin-top: 20px;
-  padding-top: 16px;
+/* The facts of a notification as a labelled strip along the masthead's foot. */
+.detail-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin: 26px 0 0;
   border-top: 1px solid var(--masthead-rule);
+}
+.detail-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px 2px 0;
+}
+.detail-fact + .detail-fact {
+  padding-left: 18px;
+  border-left: 1px solid var(--masthead-rule);
+}
+.detail-fact dt {
+  color: var(--masthead-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+.detail-fact dd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  font-weight: 500;
+}
+.detail-fact-sub {
+  color: var(--masthead-muted);
+  font-size: 12.5px;
+  font-weight: 400;
 }
 .detail-grid {
   display: grid;
@@ -2239,13 +2341,28 @@ mark.hl {
   gap: 8px;
   min-width: 260px;
 }
+.subs-list {
+  border-top: 1px solid var(--text);
+}
 .subs-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 0;
+  padding: 6px 0 6px 16px;
   border-bottom: 1px solid var(--rule);
+  position: relative;
+  font-weight: 500;
+}
+.subs-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  background: var(--beacon);
 }
 .subs-add {
   display: flex;
@@ -2282,6 +2399,53 @@ mark.hl {
 .deep-link {
   font-size: 15px;
   overflow-wrap: anywhere;
+}
+.link-box-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.telegram-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.form-grid-action {
+  display: flex;
+  align-items: flex-end;
+}
+.device-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 40px;
+}
+.device-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+/* The theme switch on a page (not the always-light bar) follows the theme's own colours. */
+.theme-switch-page {
+  border-color: var(--rule);
+  background: var(--surface);
+}
+.theme-switch-page button {
+  min-height: 36px;
+  padding: 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.theme-switch-page button + button {
+  border-left-color: var(--rule);
+}
+.theme-switch-page button:hover {
+  color: var(--text);
+}
+.theme-switch-page button[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--surface);
 }
 
 /* ───────── narrow screens ───────── */
@@ -2360,12 +2524,18 @@ mark.hl {
   .who-name {
     padding: 3px 4px 0;
   }
-  .theme-switch button {
-    padding: 0 7px;
+  /* the theme and sign-out live under My account on a phone, so the bar is one line plus the sections */
+  .bar-only {
+    display: none;
   }
-  .bar-button {
-    min-height: 30px;
-    padding: 0 9px;
+  .detail-fact,
+  .detail-fact + .detail-fact {
+    padding: 12px 0 4px;
+    border-left: 0;
+  }
+  .detail-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
   }
   .masthead {
     margin-bottom: 22px;
@@ -2491,11 +2661,18 @@ mark.hl {
   .issues .datestamp-day {
     font-size: 15px;
   }
-  .issues .col-regulator,
+  .issues .col-country {
+    grid-column: 1 / -1;
+  }
+  .issues .cell-sub {
+    display: inline;
+    margin: 0 0 0 8px;
+  }
   .issues .col-ingredient {
     grid-column: 1 / -1;
-    color: var(--muted);
-    font-size: 12.5px;
+  }
+  .issues .col-link {
+    text-align: left;
   }
   .issue-row.is-active td:first-child,
   .issue-row.is-new td:first-child {

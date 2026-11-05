@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
@@ -19,29 +19,37 @@ function apply(choice: ThemeChoice): void {
   else root.setAttribute('data-theme', choice);
 }
 
-function keep(choice: ThemeChoice): void {
-  apply(choice);
+// One choice for the whole page, so every switch (the top bar, My account) shows the same state.
+let current: ThemeChoice = read();
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function setTheme(next: ThemeChoice): void {
+  current = next;
+  apply(next);
   try {
-    if (choice === 'system') window.localStorage.removeItem(KEY);
-    else window.localStorage.setItem(KEY, choice);
+    if (next === 'system') window.localStorage.removeItem(KEY);
+    else window.localStorage.setItem(KEY, next);
   } catch {
     // private window: the choice lasts for this visit only
   }
+  listeners.forEach((l) => l());
 }
 
 /** Light or dark follows the system unless the person picks one; the pick is kept on this device. */
 export function useTheme(): { choice: ThemeChoice; set: (next: ThemeChoice) => void; cycle: () => void } {
-  const [choice, setChoice] = useState<ThemeChoice>(read);
-  const set = useCallback((next: ThemeChoice) => {
-    keep(next);
-    setChoice(next);
-  }, []);
-  const cycle = useCallback(() => {
-    setChoice((c) => {
-      const next: ThemeChoice = c === 'system' ? 'light' : c === 'light' ? 'dark' : 'system';
-      keep(next);
-      return next;
-    });
-  }, []);
-  return { choice, set, cycle };
+  const choice = useSyncExternalStore(
+    subscribe,
+    () => current,
+    () => current,
+  );
+  return {
+    choice,
+    set: setTheme,
+    cycle: () => setTheme(current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system'),
+  };
 }

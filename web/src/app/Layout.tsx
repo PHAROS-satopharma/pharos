@@ -1,9 +1,9 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL } from '../lib/labels';
-import { useTheme, type ThemeChoice } from '../lib/theme';
 import { Monogram } from '../ui/Monogram';
 import { PharosMark } from '../ui/PharosMark';
+import { ThemeSwitch } from '../ui/ThemeSwitch';
 import { cx } from '../ui/cx';
 
 interface NavItem {
@@ -12,15 +12,8 @@ interface NavItem {
   end?: boolean;
 }
 
-const THEMES: { value: ThemeChoice; label: string; title: string }[] = [
-  { value: 'system', label: 'Auto', title: 'Follow this device’s light or dark setting' },
-  { value: 'light', label: 'Light', title: 'Always light' },
-  { value: 'dark', label: 'Dark', title: 'Always dark' },
-];
-
 export function Layout() {
   const { person, isAdmin, signOut } = useAuth();
-  const theme = useTheme();
   const nav: NavItem[] = [
     { to: '/', label: 'Notifications', end: true },
     { to: '/ingredients', label: 'Ingredients' },
@@ -37,7 +30,7 @@ export function Layout() {
       <header className="topbar">
         <div className="topbar-inner">
           <Link to="/" className="brand" aria-label="PHAROS, home">
-            <PharosMark height={46} />
+            <PharosMark height={50} />
           </Link>
           <nav className="nav" aria-label="Main">
             {nav.map((n) => (
@@ -63,20 +56,8 @@ export function Layout() {
                 {person ? <span className="who-role">{ROLE_LABEL[person.role]}</span> : null}
               </span>
             </NavLink>
-            <div className="theme-switch" role="group" aria-label="Light or dark">
-              {THEMES.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  aria-pressed={theme.choice === t.value}
-                  title={t.title}
-                  onClick={() => theme.set(t.value)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <button type="button" className="bar-button" onClick={() => void signOut()}>
+            <ThemeSwitch className="bar-only" />
+            <button type="button" className="bar-button bar-only" onClick={() => void signOut()}>
               Sign out
             </button>
           </div>

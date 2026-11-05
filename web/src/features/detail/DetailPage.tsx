@@ -92,17 +92,51 @@ export function DetailPage() {
         <h1 className="detail-title" dir="auto" lang={anchor?.lang ?? undefined}>
           {row.title}
         </h1>
-        <div className="detail-meta">
-          <StatusPill status={row.status} />
-          <Country name={row.anchor_country} />
-          <span>{row.anchor_regulator}</span>
-          {(row.ingredients ?? []).length > 0 ? <span>· {(row.ingredients ?? []).join(', ')}</span> : null}
-          {row.link ? (
-            <a href={row.link} target="_blank" rel="noopener noreferrer" className="ext-link">
-              Open on the regulator’s site <span aria-hidden>↗</span>
-            </a>
-          ) : null}
-        </div>
+        <dl className="detail-facts">
+          <div className="detail-fact">
+            <dt>Status</dt>
+            <dd>
+              <StatusPill status={row.status} />
+            </dd>
+          </div>
+          <div className="detail-fact">
+            <dt>First published by</dt>
+            <dd>
+              <Country name={row.anchor_country} />
+              <span className="detail-fact-sub">{row.anchor_regulator ?? '—'}</span>
+            </dd>
+          </div>
+          <div className="detail-fact">
+            <dt>Ingredient</dt>
+            <dd>
+              {(row.ingredients ?? []).length > 0 ? (
+                <span className="chips">
+                  {(row.ingredients ?? []).map((n) => (
+                    <span key={n} className="chip">
+                      {n}
+                    </span>
+                  ))}
+                </span>
+              ) : row.class_only ? (
+                <span className="chip chip-quiet">Class-wide</span>
+              ) : (
+                '—'
+              )}
+            </dd>
+          </div>
+          <div className="detail-fact">
+            <dt>Original</dt>
+            <dd>
+              {row.link ? (
+                <a href={row.link} target="_blank" rel="noopener noreferrer" className="ext-link">
+                  On the regulator’s site <span aria-hidden>↗</span>
+                </a>
+              ) : (
+                '—'
+              )}
+            </dd>
+          </div>
+        </dl>
       </header>
 
       <div className="detail-grid">

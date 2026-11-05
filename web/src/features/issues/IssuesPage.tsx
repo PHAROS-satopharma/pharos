@@ -275,10 +275,7 @@ export function IssuesPage() {
                     Date
                   </th>
                   <th scope="col" className="col-country">
-                    Country
-                  </th>
-                  <th scope="col" className="col-regulator">
-                    Regulator
+                    Published by
                   </th>
                   <th scope="col" className="col-ingredient">
                     Ingredient
@@ -288,7 +285,7 @@ export function IssuesPage() {
                     Status
                   </th>
                   <th scope="col" className="col-link">
-                    Link
+                    <span className="visually-hidden">Original</span>
                   </th>
                 </tr>
               </thead>
@@ -306,19 +303,31 @@ export function IssuesPage() {
                       <td data-label="Date" className="col-date nowrap">
                         <DateStamp value={r.first_date} />
                       </td>
-                      <td data-label="Country" className="col-country">
-                        <Country name={anchor} />
-                        {others.length > 0 ? (
-                          <span className="more" title={`Also published in ${others.join(', ')}`}>
-                            +{others.length}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td data-label="Regulator" className="col-regulator">
-                        {r.anchor_regulator ?? '—'}
+                      <td data-label="Published by" className="col-country">
+                        <span className="cell-line">
+                          <Country name={anchor} />
+                          {others.length > 0 ? (
+                            <span className="more" title={`Also published in ${others.join(', ')}`}>
+                              +{others.length}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="cell-sub">{r.anchor_regulator ?? '—'}</span>
                       </td>
                       <td data-label="Ingredient" className="col-ingredient">
-                        {(r.ingredients ?? []).join(', ') || (r.class_only ? 'Class-wide' : '—')}
+                        {(r.ingredients ?? []).length > 0 ? (
+                          <span className="chips">
+                            {(r.ingredients ?? []).map((n) => (
+                              <span key={n} className="chip">
+                                {n}
+                              </span>
+                            ))}
+                          </span>
+                        ) : r.class_only ? (
+                          <span className="chip chip-quiet">Class-wide</span>
+                        ) : (
+                          <span className="soft">—</span>
+                        )}
                       </td>
                       <td data-label="Safety notification" className="col-title">
                         <Link
@@ -343,11 +352,12 @@ export function IssuesPage() {
                             href={r.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ext-link"
+                            className="open-link"
                             onClick={(e) => e.stopPropagation()}
                             aria-label={`Open on the regulator’s site: ${r.title}`}
+                            title="Open on the regulator’s site"
                           >
-                            Open <span aria-hidden>↗</span>
+                            <span aria-hidden>↗</span>
                           </a>
                         ) : (
                           <span className="soft">—</span>
