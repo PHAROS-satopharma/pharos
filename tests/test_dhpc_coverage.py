@@ -117,6 +117,25 @@ def test_mhra_roundup_body_carries_the_letters():
     assert "Guanfacine prolonged-release tablets" in section
 
 
+def test_mhra_roundup_letters_are_items_of_their_own():
+    roundup = "https://www.gov.uk/drug-device-alerts/mhra-safety-roundup-october-2026"
+    api = "https://www.gov.uk/api/content/drug-device-alerts/mhra-safety-roundup-october-2026"
+    ctx = FakeCtx({CFG["mhra-alerts"].url: "mhra-alerts/feed.atom",
+                   api: "mhra-alerts/content-roundup-october-2026.json"}, backfill=True)
+    items = govuk.list_items(ctx, CFG["mhra-alerts"])
+    letters = [i for i in items if (i.structured or {}).get("roundup") == roundup]
+    assert len(letters) == 8                              # the October 2026 DHPC section
+    guanfacine = next(i for i in letters if i.title.startswith("Guanfacine"))
+    assert guanfacine.title.startswith("Guanfacine prolonged-release tablets (PL 49718/0136-0142): "
+                                       "Important safety information missing")
+    assert guanfacine.doc_type == "dhpc" and guanfacine.published == date(2026, 10, 27)
+    assert guanfacine.url.endswith("/DMRC_PROC-40963122_Guanfacine_DHCP_V4_APPROVED_20261008.pdf")
+    assert guanfacine.external_id == guanfacine.url and guanfacine.attachment_urls == [guanfacine.url]
+    assert any(i.external_id == "/drug-device-alerts/mhra-safety-roundup-october-2026" for i in items)
+    assert ("FORGET", api, None) in ctx.requests          # the roundup's own detail is read in full
+    assert govuk.fetch_detail(ctx, CFG["mhra-alerts"], guanfacine) is guanfacine
+
+
 # ─────────────────── Spain: the letters are only in AEMPS's « Cartas de seguridad » list ───────────────────
 
 def test_aemps_letters_are_read():

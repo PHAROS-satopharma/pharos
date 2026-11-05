@@ -8,14 +8,26 @@ Options:
   doc_type        str   default for every entry ('safety_update' for DSU, 'safety_alert' for alerts)
   alert_types     dict  metadata.alert_type → doc_type (defaults below)
   skip_alert_types list metadata.alert_type values whose detail is not fetched (default: devices)
+  roundup_days    int   how far back the Safety Roundups' letters are read (120; a backfill reads all)
+
+The monthly "MHRA Safety Roundup" (``/drug-device-alerts/mhra-safety-roundup-<month>-<year>``) is
+the only place MHRA lists the letters sent to healthcare professionals (DHPCs) since mid-2025: its
+body section "Direct Healthcare Professional Communications" is one ``ul``, each ``li`` one letter
+whose link is the letter PDF on assets.publishing.service.gov.uk ("Guanfacine prolonged-release
+tablets (PL 49718/0136-0142): Important safety information …"; checked 5 Nov 2026). Each letter
+becomes its own ``dhpc`` item, so it reaches review and matching by its own title; the roundup
+stays one ``newsletter`` item.
 """
 
 from __future__ import annotations
 
+import re
+from datetime import date, timedelta
 from urllib.parse import urlsplit
 
+from collectors.parsers._html_util import absolute, clean, keep, node_text
 from collectors.parsers.base import (FetchContext, Item, ParseError, SourceConfig, html_text,
-                                     parse_date)
+                                     parse_date, soup)
 from collectors.parsers.feed import parse_feed
 
 STRUCTURED_FIELDS: list[str] = []
@@ -36,6 +48,9 @@ ALERT_TYPES = {
     "field-safety-notices": "other",
 }
 
+ROUNDUP = re.compile(r"/mhra-safety-roundup-[a-z]+-\d{4}/?$")
+DHPC_HEADING = re.compile(r"direct healthcare professional communications?", re.I)
+
 ATTACHMENT_MIMES = ("application/pdf", "application/vnd.openxmlformats", "application/msword")
 
 
@@ -50,7 +65,66 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
     items = parse_feed(fetched.content, source, fetched.final_url)
     for item in items:
         item.external_id = path_of(item.url) or item.external_id  # stable GOV.UK base path
-    return items
+    days = int(source.options.get("roundup_days", 120))
+    oldest = date.today() - timedelta(days=days)
+    letters: list[Item] = []
+    for item in items:
+        if not ROUNDUP.search(path_of(item.url)):
+            continue
+        if not ctx.backfill and item.published and item.published < oldest:
+            continue
+        api = f"{CONTENT_API}{path_of(item.url)}"
+        page = ctx.get(api, accept="application/json", raise_for_status=False)
+        ctx.forget(api)                 # fetch_detail of a new roundup reads it again in full
+        if page.status != 200:
+            continue
+        try:
+            data = page.json()
+        except ValueError as exc:
+            raise ParseError(f"GOV.UK content API returned non-JSON for {item.url}") from exc
+        letters.extend(roundup_letters(data, item, source))
+    return items + letters
+
+
+def roundup_letters(data: dict, roundup: Item, source: SourceConfig) -> list[Item]:
+    """One ``dhpc`` Item per letter listed in a Safety Roundup's DHPC section. Pure: no network."""
+    details = (data or {}).get("details") or {}
+    body = details.get("body") or ""
+    if isinstance(body, list):  # multi-part bodies: [{content_type, content}]
+        body = "\n".join(p.get("content", "") for p in body if "html" in p.get("content_type", ""))
+    if not body:
+        return []
+    doc = soup(f"<main>{body}</main>")
+    heading = next((h for h in doc.find_all(["h2", "h3", "h4"]) if DHPC_HEADING.search(node_text(h))),
+                   None)
+    if heading is None:
+        return []
+    issued = (parse_date((details.get("metadata") or {}).get("issued_date"))
+              or parse_date(data.get("first_published_at")) or roundup.published)
+    name = clean(data.get("title")) or roundup.title
+    out: list[Item] = []
+    seen: set[str] = set()
+    for el in heading.find_next_siblings():
+        if el.name in ("h2", "h3", "h4"):
+            break                       # the next section: medicine recalls, device notices
+        for li in el.select("li") if el.name in ("ul", "ol") else []:
+            a = li.select_one("a[href]")
+            text = clean(node_text(li))
+            title = clean(node_text(a)) if a is not None else text
+            if not title:
+                continue
+            pdf = absolute(a["href"], roundup.url) if a is not None else ""
+            key = pdf or f"{roundup.external_id}#dhpc-{len(out) + 1}"
+            if key in seen or not keep(source, text):
+                continue
+            seen.add(key)
+            out.append(Item(
+                external_id=key, url=pdf or roundup.url, title=title, published=issued,
+                doc_type="dhpc", lang=roundup.lang or "en",
+                body_text=f"{text}\n\nListed in {name}: {roundup.url}",
+                attachment_urls=[pdf] if pdf else [],
+                structured={"roundup": roundup.url, "roundup_title": name}))
+    return out
 
 
 def apply_content(item: Item, data: dict, source: SourceConfig) -> Item:
@@ -95,7 +169,7 @@ def apply_content(item: Item, data: dict, source: SourceConfig) -> Item:
 
 def fetch_detail(ctx: FetchContext, source: SourceConfig, item: Item) -> Item:
     path = path_of(item.url)
-    if not path:
+    if not path or (item.structured or {}).get("roundup"):  # a roundup letter: its PDF is the detail
         return item
     fetched = ctx.get(f"{CONTENT_API}{path}", accept="application/json")
     if fetched.status != 200:
