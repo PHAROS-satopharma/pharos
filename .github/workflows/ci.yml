@@ -195,6 +195,29 @@ jobs:
             'the notice list carries the language of the title');
           delete from issue where id = '00000000-0000-0000-0000-0000000000e7';
 
+          -- 0019: a notice published long before PHAROS first saw it is history, with its notification.
+          insert into document (id, source_id, external_id, url, title_orig, published_date, first_seen_at) values
+            ('00000000-0000-0000-0000-0000000000d8', 'ci-test', 'old', 'https://example.test/old', 'Old letter',
+             '2016-01-14', '2026-11-05 06:50+00'),
+            ('00000000-0000-0000-0000-0000000000d9', 'ci-test', 'new', 'https://example.test/new', 'New letter',
+             '2026-10-20', '2026-11-05 06:50+00'),
+            ('00000000-0000-0000-0000-0000000000da', 'ci-test', 'nodate', 'https://example.test/nd', 'No date',
+             null, '2026-11-05 06:50+00');
+          insert into issue (id, doc_type, title, anchor_document_id) values
+            ('00000000-0000-0000-0000-0000000000e8', 'dhpc', 'Old letter', '00000000-0000-0000-0000-0000000000d8'),
+            ('00000000-0000-0000-0000-0000000000e9', 'dhpc', 'New letter', '00000000-0000-0000-0000-0000000000d9');
+          \i supabase/migrations/0019_old_notices_are_history.sql
+          select pg_temp.ci_assert((select is_backfill from document where id = '00000000-0000-0000-0000-0000000000d8')
+            and (select is_backfill from issue where id = '00000000-0000-0000-0000-0000000000e8'),
+            'a 2016 letter first seen in 2026 is history, and so is its notification');
+          select pg_temp.ci_assert(not (select is_backfill from document where id = '00000000-0000-0000-0000-0000000000d9')
+            and not (select is_backfill from issue where id = '00000000-0000-0000-0000-0000000000e9')
+            and not (select is_backfill from document where id = '00000000-0000-0000-0000-0000000000da'),
+            'a recent notice and an undated one stay current');
+          delete from issue where id in ('00000000-0000-0000-0000-0000000000e8', '00000000-0000-0000-0000-0000000000e9');
+          delete from document where id in ('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000d9',
+                                            '00000000-0000-0000-0000-0000000000da');
+
           -- Test 10: the public key reads nothing and cannot call the RPCs.
           set role anon;
           select count(*) as anon_person from person \gset
