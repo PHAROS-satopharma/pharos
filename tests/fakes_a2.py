@@ -84,7 +84,7 @@ class FakeCtx:
         return f
 
     def get(self, url: str, *, accept: str | None = None, headers: dict | None = None,
-            raise_for_status: bool = True) -> Fetched:
+            raise_for_status: bool = True, retry_server_errors: bool = True) -> Fetched:
         self.requests.append(("GET", url, headers))
         return self._answer(url)
 

@@ -61,7 +61,8 @@ def _get_json(ctx: FetchContext, url: str) -> dict:
     """``url`` as JSON, waiting out E-utilities' passing server errors."""
     for wait in (*NCBI_RETRY_WAITS_S, None):
         try:
-            data = ctx.get(url, accept="application/json").json()
+            # its own schedule below, longer than the fetcher's two retries (NCBI was down for hours)
+            data = ctx.get(url, accept="application/json", retry_server_errors=False).json()
         except FetchError as exc:
             if wait is None or exc.status not in NCBI_FLAKY:
                 raise

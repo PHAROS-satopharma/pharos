@@ -57,7 +57,7 @@ export interface RunTotals {
  * Canada backfill that stopped at its 10-minute budget ("time budget reached: …") read the whole list;
  * this page counted six of them as failed runs on 5 Nov 2026 while the Reports screen did not.
  */
-const RUN_NOTE =
+export const RUN_NOTE =
   /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text)/;
 
 export function isFailed(r: RunSlice): boolean {

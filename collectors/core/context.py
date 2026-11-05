@@ -1,9 +1,10 @@
 """FetchContext: the only way a parser reaches the network.
 
-* polite: one request at a time per host, at least 1 s apart, a real browser User-Agent, 40 s timeout;
-  a 429 or 503 ("slow down") is waited out (its Retry-After, else 30 s, then 60 s) and retried twice,
-  and that host's gap is doubled for the rest of the run (up to 8 s); a GET that stalls (read timeout,
-  connection reset) is tried again after 15 s and then after 35 s;
+* polite: one request at a time per host, at least 2 s apart, a real browser User-Agent, 40 s timeout;
+  a 429 or 503 ("slow down") is waited out (its Retry-After but at least 5 s, else 30 s, then 60 s) and
+  retried twice, and that host's gap is doubled for the rest of the run (up to 8 s); a GET that stalls
+  (read timeout, connection reset) or gets a server error (500, 502, 504) is tried again after 15 s and
+  then after 35 s;
 * conditional GET (ETag / Last-Modified) for URLs already fetched in this run — a repeat returns
   status 304 with empty content. Validators are kept in memory per run only: across runs, the
   ``(source_id, external_id)`` dedupe makes a re-read cheap and safe;
@@ -47,11 +48,14 @@ USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
 DEFAULT_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 TIMEOUT_S = 40.0
-HOST_GAP_S = 1.0
+# 2 s, not 1: on 5 Nov 2026 firewalls answered quick runs of reads with a captcha (infarmed.pt, six reads in
+# 9.8 s) or "too many requests" (ema.europa.eu, 119 downloads); a site that needs more says so (``pace``).
+HOST_GAP_S = 2.0
 MAX_BYTES = 80 * 1024 * 1024  # a single original larger than this is refused
 SLOW_DOWN = (429, 503)
 RETRY_WAITS_S = (30.0, 60.0)    # without Retry-After; one entry per retry
 MAX_RETRY_WAIT_S = 120.0
+MIN_RETRY_WAIT_S = 5.0          # "Retry-After: 0" must not become three requests in a row
 # A GET whose read timed out or whose connection broke is tried again after each of these waits: one
 # stall at a site (bfarm.de, 5 Nov 2026 15:34 Cairo, both readers) is not yet a failed check. The last
 # wait outlasts a 30 s DNS answer: www.sfda.gov.sa is an F5 load-balanced name (www.wideip.sfda.gov.sa,
@@ -60,6 +64,9 @@ MAX_RETRY_WAIT_S = 120.0
 # a 40 s read timeout (16:58 Cairo) and a reset during the TLS handshake (18:25 Cairo).
 STALL_RETRY_WAITS_S = (15.0, 35.0)
 _STALLS = (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError)
+# A server error is the same passing trouble as a stall (openFDA 21:17, INFARMED 18:20, NCBI all morning,
+# 5 Nov 2026) and gets the same two retries. A reader with its own schedule (PubMed) opts out.
+SERVER_ERRORS = (500, 502, 504)
 MAX_HOST_GAP_S = 8.0
 # A refusal that is not a challenge page but means the same: the site will not serve this network.
 _REFUSAL_URLS = ("/apology_objects/abuse-detection",)        # www.fda.gov bot management
@@ -249,6 +256,21 @@ _WEAK = [re.compile(p, re.I) for p in (
 _SMALL_PAGE = 30000
 
 
+# Words of a security page. Checked only on a page that should have carried a list and did not
+# (``require``): a vendor not listed above then reads as a bot check, not as "the page changed shape".
+_BLOCK_WORDS = re.compile(
+    r"captcha|security check|request (?:was )?rejected|the requested url was rejected|access denied|"
+    r"are you (?:a )?(?:human|robot)|unusual traffic|automated (?:access|requests|queries)", re.I)
+
+
+_BLOCK_PAGE_MAX = 100_000     # a security page is small (INFARMED's captcha: 26 KB; its list: 968 KB)
+
+
+def looks_like_block_page(text: str) -> bool:
+    """A small page that carries no list and reads like a security check (any vendor)."""
+    return len(text) < _BLOCK_PAGE_MAX and bool(_BLOCK_WORDS.search(text))
+
+
 def looks_like_challenge(text: str, status: int | None = None, headers: Any = None) -> bool:
     head = text[:65536]
     if any(rx.search(head) for rx in _STRONG):
@@ -352,7 +374,7 @@ class FetchContext:
         self._host_gap[host] = min(MAX_HOST_GAP_S, max(1.0, gap * 2))
         wait = RETRY_WAITS_S[min(attempt, len(RETRY_WAITS_S) - 1)]
         if retry_after and retry_after.strip().isdigit():
-            wait = float(retry_after.strip())
+            wait = max(MIN_RETRY_WAIT_S, float(retry_after.strip()))
         return min(wait, MAX_RETRY_WAIT_S)
 
     # ───────────────────────────── archive ─────────────────────────────
@@ -375,9 +397,9 @@ class FetchContext:
 
     # ───────────────────────────── HTTP ─────────────────────────────
     def get(self, url: str, *, accept: str | None = None, headers: dict | None = None,
-            raise_for_status: bool = True) -> Fetched:
+            raise_for_status: bool = True, retry_server_errors: bool = True) -> Fetched:
         return self.request("GET", url, accept=accept, headers=headers,
-                            raise_for_status=raise_for_status)
+                            raise_for_status=raise_for_status, retry_server_errors=retry_server_errors)
 
     def post(self, url: str, *, data: dict | None = None, json: Any = None,
              accept: str | None = None, headers: dict | None = None,
@@ -401,7 +423,7 @@ class FetchContext:
 
     def request(self, method: str, url: str, *, accept: str | None = None,
                 headers: dict | None = None, data: dict | None = None, json: Any = None,
-                raise_for_status: bool = True) -> Fetched:
+                raise_for_status: bool = True, retry_server_errors: bool = True) -> Fetched:
         hdrs = {"Accept": accept or DEFAULT_ACCEPT}
         if headers:
             hdrs.update(headers)
@@ -417,16 +439,21 @@ class FetchContext:
             while True:
                 try:
                     resp, content = self._read(method, url, hdrs, data, json)
-                    break
                 except _STALLS as exc:
                     if method != "GET" or stalls == len(STALL_RETRY_WAITS_S):
                         raise       # a POST is never sent twice; a third stall is the site, not luck
-                    wait = STALL_RETRY_WAITS_S[stalls]
-                    stalls += 1
-                    log.info("%s from %s: waiting %.0f s, then trying again (%d of %d)",
-                             type(exc).__name__, redact(url), wait, stalls, len(STALL_RETRY_WAITS_S))
-                    self._sleep(wait)
-                    self._polite(url)
+                    trouble = type(exc).__name__
+                else:
+                    if (method != "GET" or not retry_server_errors or resp.status_code not in SERVER_ERRORS
+                            or stalls == len(STALL_RETRY_WAITS_S)):
+                        break       # a third server error is answered as it is (FetchError below)
+                    trouble = f"HTTP {resp.status_code}"
+                wait = STALL_RETRY_WAITS_S[stalls]
+                stalls += 1
+                log.info("%s from %s: waiting %.0f s, then trying again (%d of %d)",
+                         trouble, redact(url), wait, stalls, len(STALL_RETRY_WAITS_S))
+                self._sleep(wait)
+                self._polite(url)
             status = resp.status_code
             ctype = resp.headers.get("content-type", "")
             final_url = str(resp.url)
