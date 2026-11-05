@@ -27,9 +27,10 @@ from __future__ import annotations
 
 import os
 
+from collectors.core.context import FetchError
 from collectors.parsers._html_util import block_text
 from collectors.parsers.base import soup
-from collectors.spc.common import Product, Snapshot, terms_for
+from collectors.spc.common import Product, Snapshot, run_cache, terms_for
 from collectors.spc.sections import WATCHED_EU, split_numbered
 
 SOURCE_ID = "spc-bdpm"
@@ -40,15 +41,19 @@ COMPO_URL = HOST + "/download/file/CIS_COMPO_bdpm.txt"
 CIS_URL = HOST + "/download/file/CIS_bdpm.txt"
 RCP_URL = os.environ.get("SPC_BDPM_RCP_URL", HOST + "/affichageDoc.php?specid={cis}&typedoc=R")
 
-_cache: dict[str, list[list[str]]] = {}
-
-
 def _rows(ctx, url: str) -> list[list[str]]:
-    if url not in _cache:
+    """The rows of one bulk file, read once per run. A file that does not answer 200 is a failure
+    of the source (raised), never an empty file — that would read as "no products" all run."""
+    cache = run_cache(ctx, "bdpm")
+    if url not in cache:
         f = ctx.get(url, accept="text/plain,*/*;q=0.5")
-        _cache[url] = [ln.split("\t") for ln in f.text.splitlines() if ln.strip()] \
-            if f.status == 200 else []
-    return _cache[url]
+        if f.status != 200:
+            raise FetchError(f.status, url, f"BDPM bulk file {url}: HTTP {f.status}")
+        rows = [ln.split("\t") for ln in f.text.splitlines() if ln.strip()]
+        if not rows:
+            raise FetchError(f.status, url, f"BDPM bulk file {url} is empty")
+        cache[url] = rows
+    return cache[url]
 
 
 def match_cis(compo_rows: list[list[str]], terms: list[str]) -> set[str]:

@@ -10,8 +10,12 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from collectors.spc import bdpm, cima, mhra, pmda_pi
-from collectors.spc.common import Snapshot, terms_for
+import pytest
+
+from collectors.core.context import FetchError
+from collectors.core.models import Fetched
+from collectors.spc import bdpm, cima, ema_epar, mhra, pmda_pi
+from collectors.spc.common import Product, Snapshot, SnapshotError, terms_for
 from collectors.spc.diff import diff_sections, word_changes
 from collectors.spc.run import canonical, change_title, watch_product
 from collectors.spc.sections import (normalize, section_hash, split_japanese, split_numbered,
@@ -80,6 +84,71 @@ def test_split_japanese_new_format():
 def test_split_japanese_old_format():
     got = split_japanese("【警告】\n注意A\n【禁忌（次の患者には投与しないこと）】\n注意B\n【使用上の注意】\n注意C")
     assert got == {"ja:1": "注意A", "ja:2": "注意B", "ja:precautions": "注意C"}
+
+
+def test_split_japanese_new_format_section_3_ends_contraindications():
+    # Headings as in the real insert of イブリーフ静注20mg (PMDA, revised Oct 2026): 3 組成・性状,
+    # 5 and 7 (… に関連する注意) sit between the watched sections.
+    text = "\n".join([
+        "2. 禁忌（次の患者には投与しないこと）",
+        "2.1 重篤な腎機能障害のある患者",
+        "3. 組成・性状",
+        "3.1 組成",
+        "有効成分 イブプロフェン L-リシン 20mg",
+        "4. 効能又は効果",
+        "未熟児動脈管開存症",
+        "5. 効能又は効果に関連する注意",
+        "5.1 動脈管の閉鎖を確認すること。",
+        "6. 用法及び用量",
+        "通常、初回投与量は10mg/kg。",
+        "7. 用法及び用量に関連する注意",
+        "7.1 投与時間の上限は1時間を目安とすること。",
+        "8. 重要な基本的注意",
+        "8.1 最新の治療ガイドラインを参考にすること。",
+    ])
+    got = split_japanese(text)
+    assert got["ja:2"] == "（次の患者には投与しないこと）\n2.1 重篤な腎機能障害のある患者"
+    assert got["ja:3"] == "3.1 組成\n有効成分 イブプロフェン L-リシン 20mg"
+    assert got["ja:4"] == "未熟児動脈管開存症"
+    assert got["ja:5"] == "5.1 動脈管の閉鎖を確認すること。"
+    assert got["ja:7"] == "7.1 投与時間の上限は1時間を目安とすること。"
+    assert got["ja:8"] == "8.1 最新の治療ガイドラインを参考にすること。"
+    # a composition change (new excipient) is not a contraindication change
+    after = split_japanese(text.replace("20mg", "20mg 添加物 塩化ナトリウム"))
+    changed = [c["section"] for c in diff_sections(got, after)]
+    assert changed == ["ja:3"] and watched_changes(changed) == []
+
+
+def test_split_japanese_old_format_insert():
+    text = "\n".join([
+        "2014年7月改訂（第8版）",
+        "【禁忌（次の患者には投与しないこと）】",
+        "消化性潰瘍のある患者",
+        "【組成・性状】",
+        "1錠中ロルノキシカム4mg",
+        "【効能・効果】",
+        "関節リウマチ",
+        "【用法・用量】",
+        "通常、成人に1回4mgを1日3回経口投与する。",
+        "【使用上の注意】",
+        "1. 慎重投与（次の患者には慎重に投与すること）",
+        "2. 重要な基本的注意",
+        "3. 副作用",
+        "消化性潰瘍があらわれることがある。",
+        "【薬物動態】",
+        "健康成人に4mgを単回経口投与した。",
+    ])
+    got = split_japanese(text)
+    assert got["ja:2"] == "消化性潰瘍のある患者"               # ends at 【組成・性状】
+    assert got["ja:precautions"].endswith("消化性潰瘍があらわれることがある。")   # ends at 【薬物動態】
+    assert "ja:8" not in got and "ja:11" not in got
+    # a 副作用 change inside 【使用上の注意】 alerts; a change in 【用法・用量】 or 【薬物動態】 does not
+    side = split_japanese(text.replace("あらわれることがある。", "あらわれることがある。肝機能障害。"))
+    changed = [c["section"] for c in diff_sections(got, side)]
+    assert watched_changes(changed) == ["ja:precautions"]
+    dose = split_japanese(text.replace("1日3回", "1日2回").replace("単回", "反復"))
+    changed = [c["section"] for c in diff_sections(got, dose)]
+    assert changed and watched_changes(changed) == []
 
 
 def test_watched_changes():
@@ -276,3 +345,213 @@ def test_watch_product_without_archived_texts_compares_hashes():
     assert issue is not None
     assert db.changes[0]["s"] == ["4.4"]
     assert db.changes[0]["d"][0]["before"] is None
+
+
+# ───────────────────────────── CIMA: one way of reading, one baseline ─────────────────────────────
+
+SECC_65059 = CIMA + "/docSegmentado/secciones/1?nregistro=65059"
+FT_65059 = "https://cima.aemps.es/cima/dochtml/ft/65059/FT_65059.html"
+CIMA_PRODUCT = {**PRODUCT, "national_id": "65059",
+                "extra": {"segmented": True, "ft_html": FT_65059, "ft_date": "2023-10-16"}}
+
+
+def _cima_routes(sections_answer: bytes | str = "spc-cima/secciones_65059.json") -> dict:
+    return {SECC_65059: sections_answer,
+            CIMA + "/docSegmentado/contenido/1?*": "spc-cima/contenido_65059_4.4.html",
+            FT_65059: "spc-cima/FT_65059.html"}
+
+
+def test_cima_fallback_week_and_recovery_open_no_issue():
+    # Week 1 per section; week 2 the section list answers [] and the full HTML is read (other keys,
+    # other text); week 3 the API is back. None of that is a label change.
+    db, ctx = SpcDb(), FakeCtx(_cima_routes())
+    assert watch_product(db, ctx, cima, "spc-cima", CIMA_PRODUCT, INGREDIENT) is None
+    assert len(db.snapshots) == 1
+
+    ctx.routes[SECC_65059] = b"[]"
+    snap = cima.snapshot(ctx, CIMA_PRODUCT)
+    assert snap.method == "html" and "4.2.1" not in snap.sections      # other keys than week 1
+    assert watch_product(db, ctx, cima, "spc-cima", CIMA_PRODUCT, INGREDIENT) is None
+    assert len(db.snapshots) == 2 and not db.changes and not db.issues    # a new baseline
+
+    ctx.routes[SECC_65059] = "spc-cima/secciones_65059.json"
+    assert watch_product(db, ctx, cima, "spc-cima", CIMA_PRODUCT, INGREDIENT) is None
+    assert not db.changes and not db.issues                               # same as week 1
+
+
+def test_cima_real_change_after_a_fallback_week_still_alerts():
+    db, ctx = SpcDb(), FakeCtx(_cima_routes())
+    watch_product(db, ctx, cima, "spc-cima", CIMA_PRODUCT, INGREDIENT)
+    ctx.routes[SECC_65059] = b"[]"
+    watch_product(db, ctx, cima, "spc-cima", CIMA_PRODUCT, INGREDIENT)
+    ctx.routes[SECC_65059] = "spc-cima/secciones_65059.json"
+    changed = fixture("spc-cima/contenido_65059_4.4.html") + "<p>Riesgo de lesión hepática.</p>".encode()
+    ctx.routes[CIMA + "/docSegmentado/contenido/1?*"] = changed
+    assert watch_product(db, ctx, cima, "spc-cima", CIMA_PRODUCT, INGREDIENT) is not None
+    assert db.changes[-1]["f"] == db.snapshots[0]["id"]          # diffed against week 1, not 2
+
+
+class ConditionalCtx(FakeCtx):
+    """Like FetchContext: a URL already read in this run answers 304 with no content."""
+
+    def get(self, url, **kwargs):
+        seen = url in {r[1] for r in self.requests}
+        f = super().get(url, **kwargs)
+        return Fetched(304, url, b"", "") if seen and f.status == 200 else f
+
+
+def test_cima_same_product_twice_in_one_run_reuses_the_first_read():
+    # The same nregistro found for two ingredients: the second read gets 304 for every URL.
+    ctx = ConditionalCtx(_cima_routes())
+    first = cima.snapshot(ctx, CIMA_PRODUCT)
+    second = cima.snapshot(ctx, CIMA_PRODUCT)
+    assert second.method == first.method == "sections"
+    assert second.sections == first.sections
+    assert not any(r[1] == FT_65059 for r in ctx.requests)       # no fallback to the full HTML
+
+
+def test_cima_missing_listed_section_fails_instead_of_partial_snapshot():
+    ctx = FakeCtx({SECC_65059: "spc-cima/secciones_65059.json"})   # every contenido is a 404
+    with pytest.raises(SnapshotError):
+        cima.snapshot(ctx, CIMA_PRODUCT)
+
+
+def test_snapshot_method_is_part_of_the_archived_form():
+    a = Snapshot(sections={"4.4": "x"}, lang="es", method="sections")
+    b = Snapshot(sections={"4.4": "x"}, lang="es", method="html")
+    assert canonical(a) != canonical(b)
+    assert canonical(Snapshot(sections={"4.4": "x"}, lang="es")) == \
+        b'{"lang": "es", "sections": {"4.4": "x"}}'                 # other sources: unchanged
+
+
+# ───────────────────────────── SPC failures are visible ─────────────────────────────
+
+
+@pytest.fixture
+def spc_world(monkeypatch):
+    """A MemoryStore with the catalogue and an admin, SpcDb, and one fake module as spc-cima."""
+    import sys
+    import types
+
+    from collectors.alerts import Notifier
+    from collectors.core.memstore import MemoryStore
+    from collectors.core.registry import sync_catalogue
+    from collectors.spc import run as spc_run
+
+    monkeypatch.setenv("DRY_RUN", "1")
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    store = MemoryStore()
+    sync_catalogue(store)
+    store.person["p2"] = {"id": "p2", "full_name": "Admin Two", "telegram_chat_id": 222,
+                          "role": "admin", "active": True}
+    store.subscription.append({"person_id": "p2", "kind": "admin_health", "ingredient_id": None})
+    module = types.ModuleType("collectors.spc._fake_country")
+    monkeypatch.setitem(sys.modules, "collectors.spc._fake_country", module)
+    monkeypatch.setitem(spc_run.MODULES, "spc-cima", "_fake_country")
+    monkeypatch.setattr(spc_run, "_sources", lambda db: ["spc-cima"])
+    monkeypatch.setattr(spc_run, "_ingredients", lambda db, ids: [dict(INGREDIENT, terms={})])
+    ctx = FakeCtx()
+    ctx.run_id = "run-1"
+    notifier = Notifier(store, store.settings(), telegram=None, dry_run=True)
+    return store, SpcDb(), ctx, notifier, module
+
+
+def _spc_runs(store, source_id="spc-cima"):
+    return [r for r in store.source_run.values() if r["source_id"] == source_id]
+
+
+def test_spc_failures_are_recorded_and_degrade_the_source(spc_world):
+    from collectors.spc.run import DEGRADED_AFTER, run_spc
+
+    store, db, ctx, notifier, module = spc_world
+
+    def discover(ctx, ing):
+        raise FetchError(503, "https://cima.aemps.es/cima/rest/medicamentos?atc=M01AC05")
+
+    module.discover = discover
+    for n in range(1, DEGRADED_AFTER + 2):
+        assert run_spc(ctx, db, store=store, notifier=notifier) == []
+        runs = _spc_runs(store)
+        assert len(runs) == n and "HTTP 503" in runs[-1]["error"]
+        assert store.source["spc-cima"]["consecutive_failures"] == n
+    assert store.source["spc-cima"]["health"] == "degraded"
+    health = [x for x in store.notification if x["kind"] == "health"]
+    assert len(health) == 1 and health[0]["person_id"] == "p2"   # one alert, on the change
+
+
+def test_spc_label_without_text_is_noted_and_a_good_run_is_ok(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    module.discover = lambda ctx, ing: [Product(national_id="78274", product_name="X",
+                                                country_code="ES"),
+                                        Product(national_id="99999", product_name="Y",
+                                                country_code="ES")]
+    module.snapshot = lambda ctx, p: (None if p["national_id"] == "99999"
+                                      else Snapshot(sections={"4.4": "Texto."}, lang="es"))
+    run_spc(ctx, db, store=store, notifier=notifier)
+    run = _spc_runs(store)[-1]
+    assert run["items_seen"] == 2 and run["items_new"] == 1
+    assert "1 product(s) without label text" in run["error"]
+    assert store.source["spc-cima"]["health"] == "ok"
+
+
+def test_spc_no_label_read_at_all_counts_as_a_failure(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    module.discover = lambda ctx, ing: [Product(national_id="78274", product_name="X",
+                                                country_code="ES")]
+
+    def snapshot(ctx, p):
+        raise SnapshotError("CIMA 78274 section 4.4: HTTP 500")
+
+    module.snapshot = snapshot
+    run_spc(ctx, db, store=store, notifier=notifier)
+    assert store.source["spc-cima"]["consecutive_failures"] == 1
+    assert "section 4.4: HTTP 500" in _spc_runs(store)[-1]["error"]
+
+
+# ───────────────────────────── France, EU: a failed bulk read is not "no products" ──────────────
+
+
+def test_bdpm_failed_bulk_file_raises_and_is_not_cached_as_empty():
+    ing = {"inn_en": "lornoxicam", "terms": {"fr": ["LORNOXICAM"]}}
+    with pytest.raises(FetchError):
+        bdpm.discover(FakeCtx(), ing)                                # 404 for the COMPO file
+    compo = "60001234\tcomprimé\t0001\tLORNOXICAM\t8 mg\tun comprimé\tSA\t1\n".encode()
+    cis = ("60001234\tLORNOXICAM 8 mg, comprimé\tcomprimé\torale\tAutorisation active\t"
+           "Procédure nationale\tCommercialisée\t01/01/2010\t\t\tLABO X\tNon\n").encode()
+    ctx = FakeCtx({bdpm.COMPO_URL: compo, bdpm.CIS_URL: cis})
+    assert [p.national_id for p in bdpm.discover(ctx, ing)] == ["60001234"]
+
+
+EMA_SLICE = "spc-ema-epar/medicines_json_slice.json"
+
+
+def test_ema_epar_catalogue_url_is_the_json_report():
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    assert next(s for s in sources if s.id == "spc-ema-epar").url == ema_epar.REPORT
+    assert ema_epar.REPORT.endswith("/medicines-output-medicines_json-report_en.json")
+
+
+def test_ema_epar_discovery_from_the_real_report():
+    ctx = FakeCtx({ema_epar.REPORT: EMA_SLICE})
+    found = ema_epar.discover(ctx, {"inn_en": "ibuprofen", "atc_code": None})
+    assert [p.national_id for p in found] == ["EMEA/H/C/006129", "EMEA/H/C/000549"]  # not withdrawn
+    assert found[1].product_name == "Pedea" and found[1].mah == "Recordati Rare Diseases"
+    assert ema_epar.report_date(found[0].extra["last_updated"]) == date(2026, 11, 3)
+
+
+def test_ema_epar_not_authorised_is_not_authorised():
+    row = json.loads(fixture(EMA_SLICE))["data"][1]
+    rows = [dict(row, medicine_status=s) for s in ("Not authorised", "Authorised")]
+    got = ema_epar.products_from(rows, {"inn_en": "ibuprofen"})
+    assert len(got) == 1
+
+
+def test_ema_epar_failed_report_raises():
+    with pytest.raises(FetchError):
+        ema_epar.discover(FakeCtx(), {"inn_en": "ibuprofen"})

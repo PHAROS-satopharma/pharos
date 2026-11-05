@@ -6,8 +6,10 @@ both languages are listed with ``urls``).
 On 4 Nov 2026 a plain HTTP request answered an F5 "TSPD" JavaScript interstitial (saved as
 ``tests/fixtures/famhp-news/challenge_fr.html``), so the source is ``channel: browser``. The parser
 never tries to get past a challenge: if the page the browser ends on is still the interstitial
-(``TSPD`` / ``bobcmn`` markers, or any marker ``FetchContext`` knows), it raises ``SourceBlocked`` and
-the source health becomes ``blocked``.
+(``FetchContext.looks_like_challenge``: the interstitial's own ``href="/TSPD/?type=`` and
+``window["bobcmn"]`` markers, or any other challenge it knows), it raises ``SourceBlocked`` and the
+source health becomes ``blocked``. F5 also injects a ``/TSPD/…?type=7`` script into ordinary protected
+pages, so a bare ``/TSPD/`` is never read as a challenge.
 
 Page structure relied on: the live listing could not be seen from here, so the parser uses link
 mode of ``generic_html``: every link to an article ``/<lang>/news/<slug>`` is one item; the date is
@@ -23,10 +25,10 @@ from __future__ import annotations
 
 import re
 
+from collectors.core.context import looks_like_challenge
 from collectors.parsers import generic_html
 from collectors.parsers.base import Item, SourceBlocked, SourceConfig
 
-_INTERSTITIAL = re.compile(r"/TSPD/|bobcmn|window\[\"bobcmn\"\]", re.I)
 _LANG = re.compile(r"/(fr|nl|de|en)/")
 
 DOC_TYPE_RULES = [
@@ -61,8 +63,8 @@ def targets(source: SourceConfig) -> list[tuple[str, str]]:
 
 
 def check_not_interstitial(fetched) -> None:
-    head = fetched.text[:20000] if fetched.content else ""
-    if _INTERSTITIAL.search(head):
+    text = fetched.text if fetched.content else ""
+    if looks_like_challenge(text, fetched.status):
         raise SourceBlocked(f"F5 interstitial at {fetched.final_url}; not attempted further")
 
 
