@@ -105,6 +105,25 @@ def test_aifa_niis():
     assert oc.body_text.startswith("Ocrevus (ocrelizumab): nuovo rischio di danno epatico")
 
 
+def test_aifa_live_page_with_java_dates():
+    # The page a plain request gets (5 Nov 2026): dates written "Thu Oct 08 00:00:00 CEST 2026".
+    src = source("aifa-sicurezza", AIFA, languages=["it"])
+    items = aifa.parse_list(fixture("aifa-sicurezza/niis_live_2026-11-05.html"), AIFA, src)
+    assert len(items) == 25
+    oc = next(i for i in items if "Ocrevus" in i.title)
+    assert oc.published == date(2026, 10, 8)
+    assert oc.structured["category"] == "Sicurezza dei farmaci"
+    assert all(i.published for i in items)
+
+
+def test_aifa_catalogue_points_at_the_niis_list():
+    # It pointed at the landing page /sicurezza-dei-farmaci, which has no list: 3 failed runs.
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    assert next(s for s in sources if s.id == "aifa-sicurezza").url == AIFA
+
+
 # ───────────────────────────── Ireland ─────────────────────────────
 
 def test_hpra_api_keeps_human_medicines_only():
@@ -609,3 +628,12 @@ def test_email_split_links():
     items = email_inbox.items_from_rows(rows, src)
     assert [i.title for i in items] == ["Alert A", "Alert B"]
     assert items[0].structured["subject"] == "TGA safety updates"
+
+
+def test_catalogue_urls_match_the_pages_the_parsers_read():
+    # Two catalogue entries pointed at landing pages with no list (both failed every run, 5 Nov 2026).
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    urls = {s.id: s.url for s in sources}
+    assert urls["infarmed-circulares"] == "https://www.infarmed.pt/web/infarmed/alertas"

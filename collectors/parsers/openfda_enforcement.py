@@ -15,6 +15,7 @@ exactly the record stored in ``document.structured``.
 
 from __future__ import annotations
 
+import hashlib
 import os
 from datetime import date, timedelta
 from urllib.parse import quote
@@ -37,17 +38,26 @@ def _window(ctx: FetchContext, source: SourceConfig, today: date | None = None) 
 
 def record_to_item(rec: dict, base_url: str) -> Item:
     number = (rec.get("recall_number") or "").strip()
-    if not number:
-        raise ParseError("openFDA enforcement record without recall_number")
     product = " ".join((rec.get("product_description") or "").split())
+    if number:
+        external_id, link = number, f"{base_url}?search=recall_number:%22{quote(number)}%22"
+    else:
+        # openFDA publishes some records with a blank recall_number (e.g. event 100061, Oct 2026).
+        # The event id plus the product text identifies the record and stays the same between runs.
+        event = (rec.get("event_id") or "").strip()
+        if not event or not product:
+            raise ParseError("openFDA enforcement record without recall_number or event_id")
+        digest = hashlib.sha256(product.encode("utf-8")).hexdigest()[:12]
+        external_id, link = f"event-{event}-{digest}", f"{base_url}?search=event_id:%22{quote(event)}%22"
+
     body = "\n".join(x for x in (
         rec.get("product_description"), f"Reason for recall: {rec.get('reason_for_recall', '')}",
         f"Recalling firm: {rec.get('recalling_firm', '')}", f"Classification: {rec.get('classification', '')}",
         f"Code info: {rec.get('code_info', '')}", f"Distribution: {rec.get('distribution_pattern', '')}",
     ) if x and x.split(":")[-1].strip())
     return Item(
-        external_id=number,
-        url=f"{base_url}?search=recall_number:%22{quote(number)}%22",
+        external_id=external_id,
+        url=link,
         title=product[:300] + ("…" if len(product) > 300 else ""),
         published=parse_date(rec.get("report_date")) or parse_date(rec.get("recall_initiation_date")),
         doc_type="recall",

@@ -94,3 +94,20 @@ def test_other_browser_errors_still_fail(tmp_path):
     ctx._browser = _Browser("Page.goto: Timeout 45000ms exceeded.")
     with pytest.raises(RuntimeError):
         ctx.browser_get("https://example.test/")
+
+
+@pytest.mark.parametrize("name", ["challenge_fr.html", "challenge_nl_2026-11-05.html"])
+def test_famhp_f5_challenge_pages_read_as_blocked(name):
+    from pathlib import Path
+
+    from collectors.core.context import looks_like_challenge
+    html = (Path(__file__).parent / "fixtures" / "famhp-news" / name).read_text(encoding="utf-8", errors="replace")
+    assert looks_like_challenge(html, 200)
+
+
+def test_a_real_regulator_page_is_not_a_challenge():
+    from pathlib import Path
+
+    from collectors.core.context import looks_like_challenge
+    html = (Path(__file__).parent / "fixtures" / "aifa-sicurezza" / "niis_live_2026-11-05.html").read_text(encoding="utf-8")
+    assert not looks_like_challenge(html, 200)

@@ -137,6 +137,18 @@ def test_openfda_enforcement_records():
         openfda_enforcement.record_to_item({"product_description": "x"}, base)
 
 
+def test_openfda_record_without_recall_number_is_kept():
+    # A real record (event 100061) that openFDA publishes with recall_number "": it used to fail the
+    # whole source ("record without recall_number"). It now gets a stable id from event id + product.
+    rec = json.loads(fixture("fda-enforcement/blank-recall-number.json"))["results"][0]
+    base = CFG["fda-enforcement"].url
+    a = openfda_enforcement.record_to_item(rec, base)
+    b = openfda_enforcement.record_to_item(dict(rec), base)
+    assert a.external_id.startswith("event-100061-") and a.external_id == b.external_id
+    assert "event_id:%22100061%22" in a.url
+    assert a.title.startswith("Amitriptyline Hydrochloride")
+
+
 def test_health_canada_keeps_health_products():
     rows = json.loads(fixture("hc-recalls/HCRSAMOpenData-slice.json"))
     items = hc_recalls.parse_records(rows, CFG["hc-recalls"])

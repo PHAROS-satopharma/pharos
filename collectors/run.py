@@ -146,7 +146,11 @@ class Runner:
             sha, key = self.ctx.archive(raw, "application/json")
             record = (sha, key, "application/json", len(raw))
         sha, key, mime, size = record
-        is_backfill = self.backfill or seed
+        max_age = int(self.settings.get("alert_max_age_days", ALERT_MAX_AGE_DAYS))
+        fresh = item.published is None or (date.today() - item.published).days <= max_age
+        # An old notice found by a regular run (a page that lists its whole archive) is history too:
+        # it never alerts and never reaches the class-wide digest.
+        is_backfill = self.backfill or seed or not fresh
         doc_row = {"source_id": src.id, "external_id": item.external_id, "url": item.url,
                    "title_orig": item.title, "lang": lang, "doc_type": item.doc_type,
                    "published_date": item.published, "sha256": sha, "r2_key": key, "mime": mime,
@@ -195,9 +199,7 @@ class Runner:
         if result.created:
             stats.issues_created += 1
             self.issues_created += 1
-            fresh = item.published is None or (date.today() - item.published).days <= int(
-                self.settings.get("alert_max_age_days", ALERT_MAX_AGE_DAYS))
-            if not is_backfill and not dm.class_only and dm.has_high and fresh:
+            if not is_backfill and not dm.class_only and dm.has_high:
                 stats.alerts.append(result.issue_id)
 
     def _country(self, regulator_id: str) -> str | None:

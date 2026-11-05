@@ -8,7 +8,8 @@ Source: ``aifa-sicurezza``; ``source.url`` is the AIFA site search filtered to t
 Page structure relied on (checked 4 Nov 2026):
 
 * list: ``div.card`` → ``div[data-article-id]`` → ``h3 a.asset-link`` (href ``/-/<slug>``), a summary
-  ``p``, and ``span.u-color-blu`` holding the date dd/mm/yyyy followed by the category.
+  ``p``, and ``span.u-color-blu`` holding the date followed by the category. The date is dd/mm/yyyy
+  in a browser, but a plain request (5 Nov 2026) gets Java's ``Thu Oct 08 00:00:00 CEST 2026``.
   The pager is JavaScript (``data-paginator``); only the first page is read unless
   ``options.page_param`` names the query parameter for further pages.
 * detail: ``div.journal-content-article``; originals ``/documents/20142/…pdf``.
@@ -25,11 +26,35 @@ Options:
 
 from __future__ import annotations
 
+import re
+from datetime import date
+
 from collectors.parsers._html_util import (absolute, fill_detail, keep, local_date, node_text,
                                            pages_to_read, require)
 from collectors.parsers.base import Item, SourceConfig, soup
 
 BASE = "https://www.aifa.gov.it"
+
+
+_JAVA_DATE = re.compile(r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
+                        r"\s+(\d{1,2})\s+\d{2}:\d{2}:\d{2}\s+[A-Z]{2,5}\s+(\d{4})")
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def _date(meta: str, lang: str) -> date | None:
+    m = _JAVA_DATE.search(meta or "")
+    if m:
+        try:
+            return date(int(m.group(3)), _MONTHS.index(m.group(1)) + 1, int(m.group(2)))
+        except ValueError:
+            return None
+    return local_date(meta, lang)
+
+
+def _category(meta: str) -> str | None:
+    rest = _JAVA_DATE.sub("", meta or "").strip()
+    rest = re.sub(r"^\d{1,2}/\d{1,2}/\d{4}", "", rest).strip()
+    return rest or None
 
 
 def _page_url(url: str, page: int, param: str | None) -> str:
@@ -58,9 +83,9 @@ def parse_list(html, base_url: str, source: SourceConfig) -> list[Item]:
             doc_type = "safety_update"
         items.append(Item(
             external_id=(f"aifa:{art['data-article-id']}" if art is not None else url),
-            url=url, title=title, published=local_date(meta, lang), doc_type=doc_type, lang=lang,
+            url=url, title=title, published=_date(meta, lang), doc_type=doc_type, lang=lang,
             body_text=summary or None,
-            structured={"category": meta.split(" ", 1)[1].strip() if " " in meta else None}))
+            structured={"category": _category(meta)}))
     return items
 
 
