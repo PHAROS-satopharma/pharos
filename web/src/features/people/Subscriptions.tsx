@@ -14,6 +14,13 @@ export function describeSub(s: SubscriptionRow): string {
   return SUB_KIND_LABEL[s.kind];
 }
 
+/** The same in two parts, for the list: what arrives, and when. */
+function subParts(s: SubscriptionRow): { what: string; when: string | null } {
+  if (s.kind === 'ingredient') return { what: s.ingredient?.inn_en ?? 'Every ingredient', when: 'Immediately' };
+  if (s.kind === 'class_digest') return { what: 'Class-wide notices', when: 'Daily digest' };
+  return { what: SUB_KIND_LABEL[s.kind], when: null };
+}
+
 /** One person's Telegram subscriptions: a plain list, each removable, and one row to add. */
 export function SubscriptionEditor({
   personId,
@@ -70,14 +77,26 @@ export function SubscriptionEditor({
         <p className="muted small">No messages are sent to this person.</p>
       ) : (
         <ul className="subs-list">
-          {subs.map((s) => (
-            <li key={s.id}>
-              <span>{describeSub(s)}</span>
-              <Button size="sm" variant="quiet" busy={remove.isPending && remove.variables === s.id} onClick={() => remove.mutate(s.id)}>
-                Remove
-              </Button>
-            </li>
-          ))}
+          {subs.map((s) => {
+            const { what, when } = subParts(s);
+            return (
+              <li key={s.id}>
+                <span className="sub-text" title={describeSub(s)}>
+                  <span className="sub-what">{what}</span>
+                  {when ? <span className="sub-when">{when}</span> : null}
+                </span>
+                <Button
+                  size="sm"
+                  variant="quiet"
+                  aria-label={`Stop ${describeSub(s)}`}
+                  busy={remove.isPending && remove.variables === s.id}
+                  onClick={() => remove.mutate(s.id)}
+                >
+                  Remove
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       )}
       <div className="subs-add">

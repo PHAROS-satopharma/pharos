@@ -1,5 +1,7 @@
 # PHAROS — apply database migrations and deploy the Edge Functions after "PHAROS CI" has passed on a push
-# to main that touches supabase/. Never from another branch: a run started by hand works on main only.
+# to main (main's tip only: a CI run for an older commit that finishes after a newer merge skips, so older
+# functions never replace newer ones; the steps are safe to repeat, so the tip's run brings everything).
+# Never from another branch: a run started by hand works on main only.
 # It also copies the secrets the owner pasted into GitHub into the places that need them
 # (Supabase function secrets, Supabase Vault) and points the Telegram webhook at the function, so every
 # secret is pasted in exactly one place. No message is ever sent by this workflow.
@@ -29,15 +31,17 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     # Secrets are given to the steps that use them, never to the job (so the setup action never sees them).
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ env.DEPLOY_SHA }}
           fetch-depth: 2
 
       # The commit CI tested, against its first parent (the whole pull request for a merge commit).
-      # A manual run always deploys.
+      # A manual run always deploys; otherwise only main's tip does.
       - name: What changed
         id: changes
         env:
@@ -46,12 +50,22 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "Manual run: deploying."; echo "deploy=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          git fetch -q --depth=1 origin main
+          tip="$(git rev-parse FETCH_HEAD)"
+          echo "CI passed on $DEPLOY_SHA; main's tip is $tip."
+          if [ "$DEPLOY_SHA" != "$tip" ]; then
+            echo "::notice::Skipped: $DEPLOY_SHA is no longer main's tip ($tip); the tip's own run deploys it."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"; echo "deploy=false"; exit 0
+          fi
           if ! git rev-parse -q --verify 'HEAD^1' > /dev/null; then
             echo "No parent commit: deploying."; echo "deploy=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           files="$(git diff --name-only 'HEAD^1' HEAD)"
           echo "$files"
-          if echo "$files" | grep -qE '^(supabase/|\.github/workflows/deploy-supabase\.yml$)'; then deploy=true; else deploy=false; fi
+          # Always deploy: when main moves fast GitHub drops queued CI runs, so the commit that brought a
+          # change may never get a deploy of its own, and the next tested commit's own diff would not show
+          # it. Every step below is safe to repeat (db push applies only what is missing).
+          deploy=true
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
           echo "deploy=$deploy"
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth';
 import { formatDateTime } from '../../lib/format';
 import { Button } from '../../ui/Button';
 import { Toggle } from '../../ui/Input';
+import { Tag } from '../../ui/Tag';
 import { ErrorNote, Loading, Notice } from '../../ui/States';
 
 interface TestSend {
@@ -33,6 +34,17 @@ interface WouldHaveGone {
   kind: string;
   sent_at: string;
   summary: string | null;
+}
+
+/** One numbered step: its number, its title and, on the right, where it stands. */
+function StepHead({ index, title, state }: { index: string; title: string; state?: ReactNode }) {
+  return (
+    <div className="step-head">
+      <span className="step-index">{index}</span>
+      <span className="step-title">{title}</span>
+      {state ? <span className="step-state">{state}</span> : null}
+    </div>
+  );
 }
 
 /** Admin only: send yourself a test, read what would have gone, then turn real messages on yourself. */
@@ -141,15 +153,28 @@ export function RealMessages() {
   return (
     <div className="telegram">
       {dryRun ? (
-        <p>
-          <strong>Dry run.</strong> PHAROS writes down every message it would send, and sends none of them.
+        <p className="telegram-status">
+          <Tag tone="warning">Dry run</Tag>
+          <span>PHAROS writes down every message it would send, and sends none of them.</span>
         </p>
       ) : (
         <Notice tone="ok">Real messages are on. Notices go to every linked person who receives them.</Notice>
       )}
 
-      <div className="link-box">
-        <span className="field-label">1 · Test message to you</span>
+      <div className="link-box link-step">
+        <StepHead
+          index="1"
+          title="Test message to you"
+          state={
+            delivered ? (
+              <Tag tone="success">Delivered</Tag>
+            ) : delivery.state === 'pending' ? (
+              <Tag>Waiting</Tag>
+            ) : delivery.state === 'failed' ? (
+              <Tag tone="danger">Not delivered</Tag>
+            ) : null
+          }
+        />
         <p className="small">
           One real message goes to your own Telegram chat, and to nobody else.
           {lastTestAt ? (
@@ -168,23 +193,25 @@ export function RealMessages() {
         {result ? <Notice tone={result.tone}>{result.text}</Notice> : null}
       </div>
 
-      <div className="link-box">
-        <span className="field-label">2 · What would have gone</span>
+      <div className="link-box link-step">
+        <StepHead index="2" title="What would have gone" state={queued.length ? <Tag>Latest {queued.length}</Tag> : null} />
         {queued.length === 0 ? (
           <p className="small muted">Nothing yet. The first notice found after the history load will appear here.</p>
         ) : (
-          queued.map((n) => (
-            <div key={n.id}>
-              <span className="small muted mono">{formatDateTime(n.sent_at)}</span>
-              <div className="excerpt">{n.summary ?? '—'}</div>
-            </div>
-          ))
+          <ul className="would-list">
+            {queued.map((n) => (
+              <li key={n.id}>
+                <span className="small muted mono">{formatDateTime(n.sent_at)}</span>
+                <div className="excerpt">{n.summary ?? '—'}</div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
       {dryRun ? (
-        <div className="link-box">
-          <span className="field-label">3 · Turn real messages on</span>
+        <div className="link-box link-step">
+          <StepHead index="3" title="Turn real messages on" state={!delivered ? <Tag tone="quiet">After step 1</Tag> : null} />
           <Toggle
             checked={approved && delivered}
             disabled={!delivered}

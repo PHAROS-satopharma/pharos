@@ -15,8 +15,12 @@ function checkUrl(raw: string): string {
   if (u.protocol !== "https:" && u.protocol !== "http:") throw new HttpError(400, "Only http and https addresses can be probed.");
   if (u.username || u.password) throw new HttpError(400, "Addresses with a user name or password cannot be probed.");
   const h = u.hostname.toLowerCase();
-  const privateHost = h === "localhost" || h.endsWith(".local") || h.endsWith(".internal") ||
+  // A first quick refusal only: URL() already turns 2130706433 / 0x7f.1 / 127.1 into 127.0.0.1. The
+  // collector checks what every host (and every redirect) really resolves to before it connects.
+  const privateHost = h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") ||
+    h.endsWith(".internal") ||
     /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(h) || /^(22[4-9]|2[3-5]\d)\./.test(h) ||
     h.startsWith("[") || !h.includes(".");
   if (privateHost) throw new HttpError(400, "Only public regulator websites can be probed.");
   if (u.href.length > 2000) throw new HttpError(400, "That address is too long.");
