@@ -195,7 +195,7 @@ jobs:
             'the notice list carries the language of the title');
           delete from issue where id = '00000000-0000-0000-0000-0000000000e7';
 
-          -- 0019: a notice published long before PHAROS first saw it is history, with its notification.
+          -- 0020: a notice published long before PHAROS first saw it is history, with its notification.
           insert into document (id, source_id, external_id, url, title_orig, published_date, first_seen_at) values
             ('00000000-0000-0000-0000-0000000000d8', 'ci-test', 'old', 'https://example.test/old', 'Old letter',
              '2016-01-14', '2026-11-05 06:50+00'),
@@ -206,7 +206,7 @@ jobs:
           insert into issue (id, doc_type, title, anchor_document_id) values
             ('00000000-0000-0000-0000-0000000000e8', 'dhpc', 'Old letter', '00000000-0000-0000-0000-0000000000d8'),
             ('00000000-0000-0000-0000-0000000000e9', 'dhpc', 'New letter', '00000000-0000-0000-0000-0000000000d9');
-          \i supabase/migrations/0019_old_notices_are_history.sql
+          \i supabase/migrations/0020_old_notices_are_history.sql
           select pg_temp.ci_assert((select is_backfill from document where id = '00000000-0000-0000-0000-0000000000d8')
             and (select is_backfill from issue where id = '00000000-0000-0000-0000-0000000000e8'),
             'a 2016 letter first seen in 2026 is history, and so is its notification');
