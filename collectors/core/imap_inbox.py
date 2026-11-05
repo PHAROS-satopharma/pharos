@@ -103,6 +103,23 @@ def sender_verified(raw_headers: bytes, allowed: Iterable[str],
     return False
 
 
+def auth_summary(raw_headers: bytes) -> str:
+    """Why a sender was not verified, for the log: the receiving server's name and its verdicts
+    (``mta.yahoo.com: dkim=pass(public.govdelivery.com) spf=pass(…)``). No addresses, only domains."""
+    results = email.message_from_bytes(raw_headers).get_all("Authentication-Results") or []
+    if not results:
+        return "no Authentication-Results header"
+    top = " ".join(str(results[0]).split())
+    authserv = top.split(";", 1)[0].strip().split()[0].lower() if top.strip() else "?"
+    verdicts = []
+    for clause in top.split(";")[1:]:
+        m = _AR_RESULT.search(clause)
+        if m:
+            doms = sorted({_domain_of(v) for _, v in _AR_PROP.findall(clause)})
+            verdicts.append(f"{m.group(1).lower()}={m.group(2).lower()}({','.join(doms)})")
+    return f"{authserv} ({len(results)} header(s)): {' '.join(verdicts) or 'no verdicts'}"
+
+
 def parse_message(raw: bytes) -> ParsedEmail:
     msg: EmailMessage = email.message_from_bytes(raw, policy=policy.default)  # type: ignore[assignment]
     _, addr = parseaddr(str(msg.get("From", "")))
@@ -197,8 +214,8 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
             if source_id is None:
                 continue  # not ours: left unread and untouched
             if not sender_verified(hdr[0][1], allow[source_id], authserv):
-                log.warning("imap: message %s claims %s but the sender is not verified; left unread",
-                            uid, domain)
+                log.warning("imap: message %s claims %s but the sender is not verified (trusting %s; "
+                            "saw %s); left unread", uid, domain, authserv, auth_summary(hdr[0][1]))
                 held[source_id] = held.get(source_id, 0) + 1
                 continue
             status, body = conn.uid("FETCH", uid, "(BODY.PEEK[])")
