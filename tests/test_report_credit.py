@@ -76,8 +76,10 @@ def test_every_pdf_page_prints_the_footer():
     pages = [p for p in pages if p.strip()]
     assert len(pages) >= 3
     for n, text in enumerate(pages, start=1):
-        assert "Sato Pharma. All rights reserved." in text, f"page {n} has no footer"
-        assert f"Page {n} of {len(pages)}" in text, f"page {n} has no page number"
+        flat = " ".join(text.split())          # pdftotext -layout pads the footer's spans with spaces
+        foot = flat[-200:]
+        assert "Sato Pharma. All rights reserved." in flat, f"page {n} has no footer: …{foot}"
+        assert f"Page {n} of {len(pages)}" in flat, f"page {n} has no page number: …{foot}"
 
 
 def test_copyright_year_is_the_cairo_year():
