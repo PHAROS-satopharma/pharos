@@ -5,6 +5,7 @@ import { ROLE_LABEL } from '../lib/labels';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { Monogram } from '../ui/Monogram';
 import { PharosMark } from '../ui/PharosMark';
+import { SatoCopyright, SatoCredit } from '../ui/SatoCredit';
 import { ThemeSwitch } from '../ui/ThemeSwitch';
 import { cx } from '../ui/cx';
 
@@ -100,7 +101,11 @@ export function Layout() {
       <footer className="footer">
         <div className="footer-inner">
           <span className="micro footer-mark">PHAROS · Pharmaceutical Alerts &amp; Regulatory Observation System</span>
-          <span className="micro muted">Times in Cairo local · by Sato Pharma</span>
+          <SatoCredit tone="reverse" />
+        </div>
+        <div className="footer-base">
+          <SatoCopyright />
+          <span className="micro">All times are Cairo local time</span>
         </div>
       </footer>
     </div>
