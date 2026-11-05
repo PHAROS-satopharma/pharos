@@ -11,9 +11,9 @@ insert into ingredient (id, inn_en) values ('00000000-0000-0000-0000-0000000f0a0
 -- A signal whose validation was due on 1 January 2025, and one closed long ago.
 insert into signal (id, ref, title, ingredient_id, opened_by, validation_due) values
   ('00000000-0000-0000-0000-0000000f0b01', 'SIG-CI-LATE', 'Late signal', '00000000-0000-0000-0000-0000000f0a01',
-   '00000000-0000-0000-0000-0000000000a1', '2025-01-01');
+   (select id from person where auth_user_id = '00000000-0000-0000-0000-0000000000a1'), '2025-01-01');
 insert into signal (id, ref, title, opened_by, validation_due, stage, outcome, closed_at) values
-  ('00000000-0000-0000-0000-0000000f0b02', 'SIG-CI-DONE', 'Closed signal', '00000000-0000-0000-0000-0000000000a1',
+  ('00000000-0000-0000-0000-0000000f0b02', 'SIG-CI-DONE', 'Closed signal', (select id from person where auth_user_id = '00000000-0000-0000-0000-0000000000a1'),
    '2025-01-01', 'closed', 'refuted', '2025-01-02 10:00+00');
 -- Notices found on 1 January (late after 7 days) and on 15 January (not yet), and an old one from a backfill.
 insert into issue (id, doc_type, title, status, is_backfill, created_at) values
