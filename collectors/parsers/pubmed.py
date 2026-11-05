@@ -16,7 +16,9 @@ field, so a paper found for lornoxicam is linked to lornoxicam even when the tit
 in a translation.
 
 E-utilities answers HTTP 500/502/504 in bursts (on 2026-11-05 most esearch calls, from any network,
-while esummary answered), so each call is retried after 5, 15, 30 and 60 s before the source fails.
+while esummary answered), or HTTP 200 with ``esearchresult.ERROR`` "Search Backend failed ... Search
+is temporarily unavailable", so each call is retried after 5, 15, 30 and 60 s before the source
+fails (as down, never as "the page changed shape").
 """
 
 from __future__ import annotations
@@ -47,16 +49,33 @@ def _common() -> str:
     return "&tool=pharos" + (f"&api_key={key}" if key else "")
 
 
+def _ncbi_error(data: object) -> str | None:
+    """The message E-utilities sends with HTTP 200 while its search backend is down."""
+    if not isinstance(data, dict):
+        return None
+    msg = (data.get("esearchresult") or {}).get("ERROR") or data.get("error")
+    return str(msg) if msg else None
+
+
 def _get_json(ctx: FetchContext, url: str) -> dict:
     """``url`` as JSON, waiting out E-utilities' passing server errors."""
     for wait in (*NCBI_RETRY_WAITS_S, None):
         try:
-            return ctx.get(url, accept="application/json").json()
+            data = ctx.get(url, accept="application/json").json()
         except FetchError as exc:
             if wait is None or exc.status not in NCBI_FLAKY:
                 raise
-            log.info("NCBI HTTP %s: waiting %.0f s, then retrying", exc.status, wait)
-            ctx._sleep(wait)
+            why = f"HTTP {exc.status}"
+        else:
+            err = _ncbi_error(data)
+            if err is None:
+                return data
+            if wait is None:
+                # NCBI is down, not changed: a failed run, never "the page changed shape"
+                raise FetchError(503, url, f"NCBI search unavailable: {err[:300]}")
+            why = "search unavailable"
+        log.info("NCBI %s: waiting %.0f s, then retrying", why, wait)
+        ctx._sleep(wait)
     raise AssertionError("unreachable")  # pragma: no cover
 
 
