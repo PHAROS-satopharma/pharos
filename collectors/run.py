@@ -251,17 +251,22 @@ class Runner:
                 fresh = fresh[:MAX_NEW_ITEMS]
             item_errors: list[str] = []
             waiting = 0
+            stored = set(known)  # every item now in the database: known before, or stored by this run
             for k, it in enumerate(fresh):
                 if self.out_of_time(started):
                     waiting = len(fresh) - k
                     break
                 try:
                     self.process_item(src, module, it, seed=seed, stats=stats)
+                    stored.add(it.external_id)
                 except SourceBlocked:
                     raise
                 except Exception as exc:  # noqa: BLE001 - one bad notice never stops the ones behind it
                     item_errors.append(redact(f"{it.external_id}: {type(exc).__name__}: {exc}"))
                     log.warning("%s item %s: %s", src.id, it.external_id, redact(traceback.format_exc()))
+            if hasattr(module, "after_store"):
+                # a parser that consumes its input (the mailbox) marks only what is now stored
+                module.after_store(self.ctx, src, items, stored)
             tried = len(fresh) - waiting
             if tried and len(item_errors) == tried:
                 raise FetchError(0, src.url, f"every new item failed; first: {item_errors[0]}")

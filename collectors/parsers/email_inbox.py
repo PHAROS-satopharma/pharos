@@ -18,7 +18,10 @@ site), else ``options.web_url``, else ``email:<row id>``. Links into a blocked s
 URLs only — never fetched (``fetch_attachments`` false).
 
 Rows are read when unprocessed, or received within ``reread_days`` (14) — the runner's
-``(source_id, external_id)`` dedupe makes a re-read harmless; ``processed_at`` is then set.
+``(source_id, external_id)`` dedupe makes a re-read harmless. ``processed_at`` is set only once a
+row is done: at once when it gives no item (filtered out), else by ``after_store`` when every item
+it gave is stored. A message whose item failed, or waits for the next run, stays unprocessed and is
+read again however old it is.
 
 Options: ``from_domains`` (read by imap_inbox), ``web_domain`` (``fimea.fi`` / ``tga.gov.au``),
 ``web_url``, ``split_links``, ``doc_type`` (``newsletter``), ``fetch_attachments`` (false),
@@ -124,7 +127,22 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
     days = int((source.options or {}).get("reread_days", 14))
     rows = ctx.db.fetchall(SQL, {"sid": source.id, "days": days})
     items = items_from_rows(rows, source)
-    fresh = [str(r["id"]) for r in rows if r.get("processed_at") is None]
-    if fresh and not getattr(ctx, "dry_run", False):
-        ctx.db.execute(MARK, {"ids": fresh})
+    giving = {(it.structured or {}).get("inbound_email_id") for it in items}
+    nothing = [str(r["id"]) for r in rows if r.get("processed_at") is None and str(r["id"]) not in giving]
+    if nothing and not getattr(ctx, "dry_run", False):
+        ctx.db.execute(MARK, {"ids": nothing})       # filtered out: nothing to store
     return items
+
+
+def after_store(ctx, source: SourceConfig, items: list[Item], stored: set[str]) -> None:
+    """Mark a message processed only when every item it gave is stored (called by the runner)."""
+    if ctx.db is None or getattr(ctx, "dry_run", False):
+        return
+    pending: dict[str, bool] = {}
+    for it in items:
+        rid = (it.structured or {}).get("inbound_email_id")
+        if rid:
+            pending[rid] = pending.get(rid, True) and it.external_id in stored
+    done = [rid for rid, ok in pending.items() if ok]
+    if done:
+        ctx.db.execute(MARK, {"ids": done})

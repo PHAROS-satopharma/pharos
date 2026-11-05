@@ -707,6 +707,51 @@ def test_email_split_links():
     assert items[0].structured["subject"] == "TGA safety updates"
 
 
+class _InboxDb:
+    def __init__(self, rows):
+        self.rows, self.marked = rows, []
+
+    def fetchall(self, sql, params=None):
+        return self.rows
+
+    def execute(self, sql, params=None):
+        assert sql.startswith("update inbound_email set processed_at")
+        self.marked += params["ids"]
+
+
+class _InboxCtx:
+    def __init__(self, rows, dry_run=False):
+        self.db, self.dry_run = _InboxDb(rows), dry_run
+
+
+def test_email_rows_are_marked_only_once_their_items_are_stored():
+    # Audit: rows were marked processed when read, so an item that then failed to store was lost.
+    src = source("tga-email", "mailto:x", channel="email", split_links=r"tga\.gov\.au/news/",
+                 include_keywords=["safety"])
+    a, b, c = "aaaaaaaa-0000-0000-0000-000000000001", "bbbbbbbb-0000-0000-0000-000000000002",         "cccccccc-0000-0000-0000-000000000003"
+    digest = ("<a href='https://www.tga.gov.au/news/safety-alerts/a'>Safety alert A</a>"
+              "<a href='https://www.tga.gov.au/news/safety-alerts/b'>Safety alert B</a>")
+    rows = [{"id": a, "received_at": "2026-11-02", "subject": "safety digest", "text_body": "",
+             "html_body": digest, "processed_at": None},
+            {"id": b, "received_at": "2026-11-02", "subject": "Safety notice", "text_body": "one",
+             "html_body": None, "processed_at": None},
+            {"id": c, "received_at": "2026-11-02", "subject": "Event invitation", "text_body": "x",
+             "html_body": None, "processed_at": None}]
+    ctx = _InboxCtx(rows)
+    items = email_inbox.list_items(ctx, src)
+    assert ctx.db.marked == [c]                           # filtered out: nothing to store
+    assert {i.external_id for i in items} == {"https://www.tga.gov.au/news/safety-alerts/a",
+                                              "https://www.tga.gov.au/news/safety-alerts/b", f"email:{b}"}
+    # alert B failed to store: the digest stays unprocessed and is read again
+    email_inbox.after_store(ctx, src, items, {"https://www.tga.gov.au/news/safety-alerts/a", f"email:{b}"})
+    assert ctx.db.marked == [c, b]
+
+    dry = _InboxCtx(rows, dry_run=True)
+    items = email_inbox.list_items(dry, src)
+    email_inbox.after_store(dry, src, items, {i.external_id for i in items})
+    assert dry.db.marked == []                            # a dry run never consumes the mailbox
+
+
 def test_catalogue_urls_match_the_pages_the_parsers_read():
     # Two catalogue entries pointed at landing pages with no list (both failed every run, 5 Nov 2026).
     from collectors.core.registry import load_catalogue
