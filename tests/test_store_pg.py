@@ -374,6 +374,23 @@ def test_a_fresh_copy_marks_a_history_issue_current(store, tag):
     assert store.issue_for_alert(issue)["is_backfill"] is False
 
 
+def test_a_class_issue_revived_from_history_is_in_the_digest(store, tag):
+    src = _source(store, tag)
+    d1 = store.insert_document(_doc(src.id, "cr", is_backfill=True))
+    issue = store.create_issue(doc_type="dhpc", title="c", anchor_document_id=d1,
+                               first_date=None, class_only=True, is_backfill=True)
+    since = store.db.fetchone("select now() + interval '1 second' as t")["t"]
+    store.db.execute("update issue set created_at = now() - interval '30 days' where id = %(i)s", {"i": issue})
+    assert issue not in store.class_only_issues_since(since)
+    store.db.execute("update issue set is_backfill = false, current_since = now() + interval '1 minute' "
+                     "where id = %(i)s", {"i": issue})
+    assert issue in store.class_only_issues_since(since)
+    store.db.execute("update issue set is_backfill = true, current_since = null where id = %(i)s", {"i": issue})
+    store.mark_issue_current(issue)
+    row = store.db.fetchone("select current_since from issue where id = %(i)s", {"i": issue})
+    assert row["current_since"] is not None
+
+
 @pytest.mark.parametrize("error, failed", [
     (None, False), ("imap not configured", False),
     ("imap: 2 message(s) held unread: sender not verified (no DMARC, DKIM or SPF pass) or too big", False),

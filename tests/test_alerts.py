@@ -206,6 +206,23 @@ def many_class_issues(n: int) -> tuple[MemoryStore, datetime]:
     return s, nine_ten
 
 
+def test_a_class_issue_revived_from_history_reaches_the_next_digest(monkeypatch):
+    # Stored as history on a seed run long before; a fresh copy made it current this morning.
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = many_class_issues(1)
+    anchor = next(iter(s.issue.values()))["anchor_document_id"]
+    old = s.create_issue(doc_type="dhpc", title="NSAR-Hinweis alt", anchor_document_id=anchor,
+                         first_date=date(2026, 9, 1), class_only=True, is_backfill=True)
+    s.link_document(old, anchor, link="anchor", method="auto", score=None)
+    s.issue[old]["created_at"] = nine_ten - timedelta(days=30)
+    s.mark_issue_current(old)
+    s.issue[old]["current_since"] = nine_ten - timedelta(hours=1)
+    tg = RecordingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: nine_ten)
+    n.digest_if_due()
+    assert sum(t.count("<a href=") for c, t in tg.messages if c == 111) == 2   # the new one and it
+
+
 def test_digest_is_split_on_whole_entries(monkeypatch):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
     s, nine_ten = many_class_issues(40)

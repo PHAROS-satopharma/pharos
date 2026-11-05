@@ -237,13 +237,17 @@ class MemoryStore:
             if x["issue_id"] == issue_id and x["link"] == "anchor" and x["document_id"] != document_id:
                 x["link"] = "copy"
         iss = self.issue[issue_id]
+        if iss["is_backfill"] and not is_backfill:
+            iss["current_since"] = _now()
         iss.update(anchor_document_id=document_id, title=title, doc_type=doc_type,
                    is_backfill=iss["is_backfill"] and is_backfill)
         if first_date and (iss["first_date"] is None or first_date < iss["first_date"]):
             iss["first_date"] = first_date
 
     def mark_issue_current(self, issue_id: str) -> None:
-        self.issue[issue_id]["is_backfill"] = False
+        iss = self.issue[issue_id]
+        if iss["is_backfill"]:
+            iss.update(is_backfill=False, current_since=_now())
 
     def add_issue_ingredients(self, issue_id: str, ingredient_ids: Iterable[str]) -> None:
         for g in ingredient_ids:
@@ -331,8 +335,9 @@ class MemoryStore:
         return out
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
-        rows = [(r["created_at"], i) for i, r in self.issue.items()
-                if r["class_only"] and not r["is_backfill"] and r["created_at"] > since]
+        rows = [(r.get("current_since") or r["created_at"], i) for i, r in self.issue.items()
+                if r["class_only"] and not r["is_backfill"]
+                and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)]
         return [i for _, i in sorted(rows, reverse=True)]
 
     # ───────────────────────────── probe ─────────────────────────────
