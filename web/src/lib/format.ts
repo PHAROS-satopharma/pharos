@@ -59,7 +59,7 @@ export function formatCairoDate(ts: string | null | undefined): string {
 export function formatPublishedDay(ts: string | null | undefined): string {
   if (!ts) return '—';
   const t = new Date(ts);
-  return Number.isNaN(t.getTime()) ? ts : dateTimeFmt.format(t); // TEMPORARY break
+  return Number.isNaN(t.getTime()) ? ts : dayFmt.format(t);
 }
 
 /** "4 Nov 2026, 21:34" in Cairo for a stored timestamp. */
