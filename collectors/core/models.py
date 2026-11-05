@@ -49,6 +49,7 @@ class SourceConfig:  # one entry of sources.yaml (and of the source table)
     enabled: bool
     options: dict
     expected_max_gap_days: int | None
+    page_url: str | None = None   # the page a person opens (sources.yaml `page:`), never a feed
 
     @property
     def lang(self) -> str | None:

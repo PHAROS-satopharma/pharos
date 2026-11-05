@@ -60,19 +60,20 @@ class Store:
         touched, and ``enabled`` is only set on insert: switching a source off is an admin's call."""
         self.db.execute(
             """insert into source (id, regulator_id, kind, channel, url, parser, languages, schedule,
-                                   enabled, origin, expected_max_gap_days, notes)
+                                   enabled, origin, expected_max_gap_days, notes, page_url)
                values (%(id)s, %(regulator_id)s, %(kind)s, %(channel)s, %(url)s, %(parser)s,
-                       %(languages)s, %(schedule)s, %(enabled)s, 'catalogue', %(gap)s, %(notes)s)
+                       %(languages)s, %(schedule)s, %(enabled)s, 'catalogue', %(gap)s, %(notes)s,
+                       %(page)s)
                on conflict (id) do update set regulator_id = excluded.regulator_id,
                  kind = excluded.kind, channel = excluded.channel, url = excluded.url,
                  parser = excluded.parser, languages = excluded.languages,
                  schedule = excluded.schedule, expected_max_gap_days = excluded.expected_max_gap_days,
-                 notes = excluded.notes
+                 notes = excluded.notes, page_url = excluded.page_url
                where source.origin = 'catalogue'""",
             {"id": src.id, "regulator_id": src.regulator_id, "kind": src.kind,
              "channel": src.channel, "url": src.url, "parser": src.parser,
              "languages": src.languages, "schedule": src.schedule, "enabled": src.enabled,
-             "gap": src.expected_max_gap_days, "notes": notes})
+             "gap": src.expected_max_gap_days, "notes": notes, "page": src.page_url})
 
     def list_sources(self) -> list[dict]:
         return self.db.fetchall("select * from source order by id")
@@ -350,6 +351,21 @@ class Store:
             """select 1 from notification where person_id = %(p)s and issue_id = %(i)s
                  and kind = %(k)s and (error is null or tg_message_id is not null) limit 1""",
             {"p": person_id, "i": issue_id, "k": kind}) is not None
+
+    def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
+        """A ``kind`` message (with no issue) reached this person since ``since``, or went as a dry run."""
+        return self.db.fetchone(
+            """select 1 from notification where person_id = %(p)s and kind = %(k)s and sent_at >= %(s)s
+                 and (error is null or tg_message_id is not null) limit 1""",
+            {"p": person_id, "k": kind, "s": since}) is not None
+
+    def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
+        """Per country, how many items the authorities published in [since, until) — new_items() in
+        0032_sources_horizontal.sql, the very list the Sources screen shows."""
+        rows = self.db.fetchall(
+            """select country_name, count(*)::int as n from new_items(%(f)s, %(t)s)
+                group by country_name order by country_name""", {"f": since, "t": until})
+        return [{"country_name": r["country_name"], "n": int(r["n"])} for r in rows]
 
     def insert_notification(self, *, person_id: str | None, issue_id: str | None, kind: str,
                             dry_run: bool, tg_message_id: int | None, error: str | None,
