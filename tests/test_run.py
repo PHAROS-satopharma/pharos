@@ -15,7 +15,7 @@ import pytest
 
 from collectors.alerts import Notifier
 from collectors.core.archive import Archive
-from collectors.core.context import FetchContext
+from collectors.core.context import RETRY_WAITS_S, FetchContext
 from collectors.core.memstore import MemoryStore
 from collectors.core.registry import load_catalogue, sync_catalogue
 from collectors.run import DOWN_AFTER, Runner, parse_args, select_sources
@@ -141,9 +141,13 @@ def test_three_failures_mark_down_and_alert_once(tmp_path):
     server = Server()
     server.reply = (503, b"Service Unavailable", "text/plain")
     store, ctx, runner, _ = setup(tmp_path, server)
+    slept: list[float] = []
+    ctx._sleep = slept.append            # the 30 s + 60 s slow-down waits, recorded, not slept
     for _ in range(DOWN_AFTER + 1):
         stats = runner.run_source(SRC)
         assert stats.failed
+    assert server.hits == (DOWN_AFTER + 1) * 3                       # first try + two retries
+    assert [w for w in slept if w in RETRY_WAITS_S] == list(RETRY_WAITS_S) * (DOWN_AFTER + 1)
     assert store.source["ema-psusa"]["health"] == "down"
     assert store.source["ema-psusa"]["consecutive_failures"] == DOWN_AFTER + 1
     assert len([n for n in store.notification if n["kind"] == "health"]) == 1
