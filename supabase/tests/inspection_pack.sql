@@ -1,4 +1,4 @@
--- PHAROS CI — the inspection pack's coverage calendar (0025). Runs on the database ci.yml prepared: the
+-- PHAROS CI — the inspection pack's coverage calendar (0026). Runs on the database ci.yml prepared: the
 -- people CI Admin (…a1) and CI Reader (…b2) and the source ci-test exist.
 
 create function pg_temp.ip_assert(ok boolean, msg text) returns void language plpgsql as $$
