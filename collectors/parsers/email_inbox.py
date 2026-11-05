@@ -1,6 +1,6 @@
-"""PHAROS — e-mail newsletters as a source (Fimea, TGA): reads ``inbound_email``.
+"""PHAROS — e-mail newsletters as a source (Fimea, TGA, FDA MedWatch, famhp VIG-news): reads ``inbound_email``.
 
-Sources: ``fimea-email`` and ``tga-email``. Fimea's web site sits behind a Cloudflare check that
+Sources: ``fimea-email``, ``tga-email``, ``fda-email`` and ``famhp-email``. Fimea's web site sits behind a Cloudflare check that
 PHAROS never tries to pass, and TGA drops non-browser clients, so both regulators' e-mail
 newsletters are subscribed to by the PHAROS mailbox. ``collectors.core.imap_inbox`` (A1) stores each
 message whose From domain is on the source's ``options.from_domains`` in ``inbound_email``
