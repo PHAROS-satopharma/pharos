@@ -1,0 +1,40 @@
+# PHAROS — read the last day of Supabase sign-in and email events, to see why a sign-in link or invitation
+# email did not arrive (refused by the mail server, rate-limited, or never requested). Read-only: it calls
+# the Supabase Management API logs endpoint and prints the events with every email address masked.
+name: PHAROS sign-in mail log
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: [".github/workflows/auth-mail-log.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  log:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read the sign-in and email events of the last 24 hours
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          start=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          # ClickHouse SQL over the unified logs table (logs.all was retired and answers 410).
+          sql="select timestamp, event_message from logs where source = 'auth_logs' order by timestamp desc limit 300"
+          code=$(curl -sS -o logs.json -w '%{http_code}' -G "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/analytics/endpoints/logs" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            --data-urlencode "sql=${sql}" \
+            --data-urlencode "iso_timestamp_start=${start}" \
+            --data-urlencode "iso_timestamp_end=${end}")
+          if [ "$code" != 200 ] || jq -e '.error' logs.json >/dev/null; then echo "Supabase answered $code:"; head -c 2000 logs.json; exit 1; fi
+          # Keep the events about email: OTP / magic link / invite / recovery requests, the mailer, SMTP errors.
+          jq -r '.result[]? | "\(.timestamp)\t\(.event_message)"' logs.json \
+            | grep -iE 'mail|smtp|otp|magic|invite|recover|verify|rate|token' \
+            | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<email>/g' \
+            | cut -c1-600 || echo "No email events in the last 24 hours."
+          echo "Events read: $(jq '.result | length' logs.json)"
