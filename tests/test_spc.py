@@ -14,7 +14,7 @@ import pytest
 
 from collectors.core.context import FetchError
 from collectors.core.models import Fetched
-from collectors.spc import bdpm, cima, ema_epar, mhra, pmda_pi
+from collectors.spc import bdpm, cima, dailymed, ema_epar, mhra, pmda_pi
 from collectors.spc.common import Product, Snapshot, SnapshotError, terms_for
 from collectors.spc.diff import diff_sections, word_changes
 from collectors.spc.run import canonical, change_title, watch_product
@@ -237,19 +237,32 @@ def test_cima_snapshot_reads_watched_sections_only():
 # ───────────────────────────── France, Japan, UK ─────────────────────────────
 
 
-def test_bdpm_match_and_products():
-    compo = [["60001234", "comprimé", "0001", "LORNOXICAM", "8 mg", "un comprimé", "SA", "1"],
-             ["60001234", "comprimé", "0002", "LACTOSE", "", "", "FT", "2"],
-             ["60009999", "comprimé", "0003", "PARACÉTAMOL", "", "", "SA", "1"],
-             ["60005555", "comprimé", "0004", "LORNOXICAM", "", "", "XX", "1"]]
-    assert bdpm.match_cis(compo, ["lornoxicam"]) == {"60001234"}
-    cis = [["60001234", "LORNOXICAM 8 mg, comprimé", "comprimé", "orale", "Autorisation active",
-            "Procédure nationale", "Commercialisée", "01/01/2010", "", "", " LABO X"],
-           ["60007777", "AUTRE", "comprimé", "orale", "Autorisation abrogée", "Procédure nationale",
-            "Non commercialisée", "01/01/2010", "", "", "LABO Y"]]
-    got = bdpm.products_from(cis, {"60001234", "60007777"})
-    assert [p.national_id for p in got] == ["60001234"]
-    assert got[0].product_name == "LORNOXICAM 8 mg, comprimé" and got[0].mah == "LABO X"
+BDPM_IBU = {"inn_en": "ibuprofen", "terms": {"fr": ["IBUPROFÈNE"]}}
+
+
+def _bdpm_ctx() -> FakeCtx:
+    # Real rows of the two bulk files, Latin-1 with CRLF as the server sends them (fixture README).
+    return FakeCtx({bdpm.COMPO_URL: "spc-bdpm/CIS_COMPO_slice.txt", bdpm.CIS_URL: "spc-bdpm/CIS_slice.txt"})
+
+
+def test_bdpm_discovers_from_the_real_bulk_files():
+    got = bdpm.discover(_bdpm_ctx(), BDPM_IBU)
+    # active national products only: the abrogated one and the central (EU) PEDEA are left out,
+    # the lysinate product is found through its ibuprofène FT row, paracetamol is not matched
+    assert [p.national_id for p in got] == ["60073914", "64481322"]
+    first = got[0]
+    assert first.product_name == "IBUPROFENE BIOGARAN CONSEIL 400 mg, comprimé pelliculé"   # Latin-1 read right
+    assert first.mah == "BIOGARAN"
+    assert first.extra == {"commercialisation": "Commercialisée", "procedure": "Procédure nationale"}
+    assert first.url == bdpm.HOST + "/medicament/60073914/extrait"
+
+
+def test_bdpm_central_products_only_on_request():
+    ctx = _bdpm_ctx()
+    cis = bdpm.match_cis(bdpm._rows(ctx, bdpm.COMPO_URL), ["IBUPROFÈNE"])
+    assert cis == {"60073914", "64481322", "62611169", "67747504"}
+    got = bdpm.products_from(bdpm._rows(ctx, bdpm.CIS_URL), cis, include_central=True)
+    assert [p.national_id for p in got] == ["60073914", "64481322", "67747504"]
 
 
 def test_pmda_general_list():
@@ -524,14 +537,47 @@ def test_spc_no_label_read_at_all_counts_as_a_failure(spc_world):
 
 
 def test_bdpm_failed_bulk_file_raises_and_is_not_cached_as_empty():
-    ing = {"inn_en": "lornoxicam", "terms": {"fr": ["LORNOXICAM"]}}
     with pytest.raises(FetchError):
-        bdpm.discover(FakeCtx(), ing)                                # 404 for the COMPO file
-    compo = "60001234\tcomprimé\t0001\tLORNOXICAM\t8 mg\tun comprimé\tSA\t1\n".encode()
-    cis = ("60001234\tLORNOXICAM 8 mg, comprimé\tcomprimé\torale\tAutorisation active\t"
-           "Procédure nationale\tCommercialisée\t01/01/2010\t\t\tLABO X\tNon\n").encode()
-    ctx = FakeCtx({bdpm.COMPO_URL: compo, bdpm.CIS_URL: cis})
-    assert [p.national_id for p in bdpm.discover(ctx, ing)] == ["60001234"]
+        bdpm.discover(FakeCtx(), BDPM_IBU)                           # 404 for the COMPO file
+    assert [p.national_id for p in bdpm.discover(_bdpm_ctx(), BDPM_IBU)] == ["60073914", "64481322"]
+
+
+# ───────────────────────────── United States, DailyMed ─────────────────────────────
+
+DM_LIST = dailymed.API + "/spls.json?drug_name=meloxicam&doctype=34391-3&pagesize=100&page="
+
+
+def test_dailymed_discovers_human_prescription_labels_on_every_page():
+    ctx = FakeCtx({DM_LIST + "1": "spc-dailymed/spls_meloxicam_rx_p1.json",
+                   DM_LIST + "2": "spc-dailymed/spls_meloxicam_rx_p2.json"})
+    got = dailymed.discover(ctx, {"inn_en": "meloxicam", "terms": {}})
+    assert [r[1] for r in ctx.requests] == [DM_LIST + "1", DM_LIST + "2"]   # doctype: no veterinary labels
+    assert len(got) == 186 and len({p.national_id for p in got}) == 186
+    first = got[0]
+    assert first.national_id == "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
+    assert first.product_name == "MELOXICAM TABLET [ADVANCED RX OF TENNESSEE, LLC]"
+    assert first.url == "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=" + first.national_id
+    assert first.country_code == "US" and first.extra["spl_version"] == 3
+
+
+def test_dailymed_a_failed_page_fails_the_discovery():
+    # A partial list would switch off every product on the pages that failed.
+    ctx = FakeCtx({DM_LIST + "1": "spc-dailymed/spls_meloxicam_rx_p1.json"})   # page 2: 404
+    with pytest.raises(FetchError):
+        dailymed.discover(ctx, {"inn_en": "meloxicam", "terms": {}})
+
+
+def test_dailymed_snapshot_of_a_real_label():
+    setid = "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
+    ctx = FakeCtx({f"{dailymed.API}/spls/{setid}.xml": "spc-dailymed/spl_445d7cbf.xml"})
+    snap = dailymed.snapshot(ctx, {"national_id": setid})
+    assert snap.doc_date == date(2026, 11, 2) and snap.lang == "en"
+    assert list(snap.sections) == ["us:boxed_warning", "us:indications", "us:dosage_and_administration",
+                                   "us:contraindications", "us:warnings_and_precautions",
+                                   "us:adverse_reactions", "us:drug_interactions",
+                                   "us:specific_populations", "us:overdosage"]
+    assert snap.sections["us:boxed_warning"].startswith("Cardiovascular Thrombotic Events")
+    assert "Hepatotoxicity" in snap.sections["us:warnings_and_precautions"]
 
 
 EMA_SLICE = "spc-ema-epar/medicines_json_slice.json"
