@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, unwrap } from '../../lib/api';
+import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
 import { personNames } from '../../lib/people';
 import { useAuth } from '../../lib/auth';
 import { useCountryIndex } from '../../lib/regulators';
@@ -89,7 +89,7 @@ export function IngredientsPage() {
 
   const setActive = useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      unwrap<null>(await supabase.from('ingredient').update({ active }).eq('id', id));
+      unwrapChanged(await supabase.from('ingredient').update({ active }).eq('id', id).select('id'), 'this ingredient');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
   });

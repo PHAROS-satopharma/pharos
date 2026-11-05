@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { errorMessage, invoke, unwrap } from '../../lib/api';
+import { errorMessage, invoke, unwrap, unwrapChanged } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatCairoDate } from '../../lib/format';
 import { ROLE_LABEL } from '../../lib/labels';
@@ -101,7 +101,7 @@ export function PeoplePage() {
 
   const update = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Pick<Person, 'role' | 'active'>> }) => {
-      unwrap<null>(await supabase.from('person').update(patch).eq('id', id));
+      unwrapChanged(await supabase.from('person').update(patch).eq('id', id).select('id'), 'this person');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['people'] }),
   });
