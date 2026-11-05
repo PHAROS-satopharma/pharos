@@ -615,8 +615,11 @@ sources:
     languages: [en]
     schedule: 4h
     expected_max_gap_days: 60
-    notes: Fallback while TGA blocks datacenter addresses.
-    options: {from_domains: [tga.gov.au]}
+    notes: >-
+      TGA cuts the connection from datacenter addresses, so its Safety Information notifications are read
+      from the mailbox. They are sent through the Department of Health's Swift Digital portal
+      (tgacomms.health.gov.au), hence health.gov.au.
+    options: {from_domains: [tga.gov.au, health.gov.au]}
 
   # ───────────── Literature ─────────────
   - id: pubmed
