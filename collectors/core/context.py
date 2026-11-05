@@ -47,6 +47,10 @@ MAX_BYTES = 80 * 1024 * 1024  # a single original larger than this is refused
 SLOW_DOWN = (429, 503)
 RETRY_WAITS_S = (30.0, 60.0)    # without Retry-After; one entry per retry
 MAX_RETRY_WAIT_S = 120.0
+# A GET whose read timed out or whose connection broke is tried once more after this wait: one stall
+# at a site (bfarm.de, 5 Nov 2026 15:34 Cairo, both readers) is not yet a failed check.
+STALL_RETRY_WAIT_S = 15.0
+_STALLS = (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError)
 MAX_HOST_GAP_S = 8.0
 # A refusal that is not a challenge page but means the same: the site will not serve this network.
 _REFUSAL_URLS = ("/apology_objects/abuse-detection",)        # www.fda.gov bot management
@@ -340,6 +344,19 @@ class FetchContext:
         return self.request("POST", url, accept=accept, headers=headers, data=data, json=json,
                             raise_for_status=raise_for_status)
 
+    def _read(self, method: str, url: str, hdrs: dict, data: dict | None,
+              json: Any) -> tuple[httpx.Response, bytes]:
+        """One request, its body read in full (refused past MAX_BYTES)."""
+        with self._client.stream(method, url, headers=hdrs, data=data, json=json) as resp:
+            chunks: list[bytes] = []
+            total = 0
+            for chunk in resp.iter_bytes():
+                total += len(chunk)
+                if total > MAX_BYTES:
+                    raise FetchError(resp.status_code, url, f"response over {MAX_BYTES} bytes")
+                chunks.append(chunk)
+        return resp, b"".join(chunks)
+
     def request(self, method: str, url: str, *, accept: str | None = None,
                 headers: dict | None = None, data: dict | None = None, json: Any = None,
                 raise_for_status: bool = True) -> Fetched:
@@ -352,17 +369,20 @@ class FetchContext:
                 hdrs["If-None-Match"] = etag
             if modified:
                 hdrs["If-Modified-Since"] = modified
+        stalled = False
         for attempt in range(len(RETRY_WAITS_S) + 1):
             self._polite(url)
-            with self._client.stream(method, url, headers=hdrs, data=data, json=json) as resp:
-                chunks: list[bytes] = []
-                total = 0
-                for chunk in resp.iter_bytes():
-                    total += len(chunk)
-                    if total > MAX_BYTES:
-                        raise FetchError(resp.status_code, url, f"response over {MAX_BYTES} bytes")
-                    chunks.append(chunk)
-                content = b"".join(chunks)
+            try:
+                resp, content = self._read(method, url, hdrs, data, json)
+            except _STALLS as exc:
+                if method != "GET" or stalled:
+                    raise           # a POST is never sent twice; a second stall is the site, not luck
+                stalled = True
+                log.info("%s from %s: waiting %.0f s, then trying once more", type(exc).__name__,
+                         redact(url), STALL_RETRY_WAIT_S)
+                self._sleep(STALL_RETRY_WAIT_S)
+                self._polite(url)
+                resp, content = self._read(method, url, hdrs, data, json)
             status = resp.status_code
             ctype = resp.headers.get("content-type", "")
             final_url = str(resp.url)
