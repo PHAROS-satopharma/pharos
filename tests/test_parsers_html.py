@@ -14,6 +14,7 @@ import pytest
 from collectors.parsers import (aifa, ansm, bfarm_risk, cbg, dkma, email_inbox, famhp,
                                 generic_html, hpra, ima_is, infarmed, lakemedelsverket, lu_sante,
                                 medsafe, mfds, noma, pmda, prac, swissmedic, tga, who_alerts)
+from collectors.core.models import Fetched
 from collectors.parsers._html_util import local_date
 from collectors.parsers.base import ParseError, SourceBlocked
 from tests.fakes_a2 import FakeCtx, fetched, fixture, source
@@ -325,6 +326,58 @@ def test_bfarm_risk_table():
     assert first.structured["list"] == "Risikobewertungsverfahren"
 
 
+BFARM_RI = "https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/"
+
+
+def test_bfarm_risk_catalogue_reads_the_three_german_lists():
+    # It pointed at the English search page, which has no table: the parser found nothing there.
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    src = next(s for s in sources if s.id == "bfarm-risk")
+    assert src.url == BFARM and src.languages == ["de"]
+    assert src.options["extra_urls"] == [BFARM_RI + "Weitere-Arzneimittelrisiken/_node.html",
+                                         BFARM_RI + "Aufforderung-zur-Textanpassung/_node.html"]
+    ctx = FakeCtx({BFARM: "bfarm-risk/list.html",
+                   src.options["extra_urls"][0]: "bfarm-risk/list_weitere_2026-11-05.html",
+                   src.options["extra_urls"][1]: "bfarm-risk/list_textanpassung_2026-11-05.html"})
+    items = bfarm_risk.list_items(ctx, src)
+    lists = [i.structured["list"] for i in items]
+    assert lists.count("Risikobewertungsverfahren") == 10
+    assert lists.count("Weitere-Arzneimittelrisiken") == 15
+    assert lists.count("Aufforderung-zur-Textanpassung") == 15
+    assert all(i.lang == "de" and i.published for i in items)
+    weitere = next(i for i in items if i.structured["list"] == "Weitere-Arzneimittelrisiken")
+    assert weitere.doc_type == "safety_alert" and weitere.published == date(2026, 3, 18)
+    assert weitere.structured["wirkstoff"] == "Colecalciferol, Vitamin D3, Fluorid"
+
+
+def test_bfarm_risk_table_without_tbody():
+    html = fixture("bfarm-risk/list.html").replace(b"<tbody>", b"").replace(b"</tbody>", b"")
+    src = source("bfarm-risk", BFARM, languages=["de"])
+    items = bfarm_risk.list_items(FakeCtx({BFARM: html}), src)
+    assert len(items) == 10
+    assert items[0].published == date(2026, 10, 30)
+
+
+def test_national_language_pages_in_catalogue():
+    # swissmedic-hpc read only /en/ and famhp-news only /en/news although the regulators publish
+    # in de/fr/it and fr/nl: every regulator is screened in its own language.
+    from collectors.core.registry import load_catalogue
+
+    _, sources, _ = load_catalogue()
+    by_id = {s.id: s for s in sources}
+    swiss, famhp_src = by_id["swissmedic-hpc"], by_id["famhp-news"]
+    assert [lang for lang, _ in swissmedic.targets(swiss)] == ["de", "fr", "it"]
+    assert swiss.languages == ["de", "fr", "it"]
+    assert all(f"/swissmedic/{lang}/" in url for lang, url in swissmedic.targets(swiss))
+    assert famhp.targets(famhp_src) == [("fr", "https://www.afmps.be/fr/news"),
+                                        ("nl", "https://www.fagg.be/nl/news")]
+    assert famhp_src.languages == ["fr", "nl"]
+    for src in (swiss, famhp_src):
+        assert "/en/" not in src.url
+
+
 # ───────────────────────────── New Zealand ─────────────────────────────
 
 MEDSAFE = "https://www.medsafe.govt.nz/safety/"
@@ -570,6 +623,20 @@ def test_famhp_interstitial_is_blocked_not_bypassed():
     f = fetched("famhp-news/challenge_fr.html", "https://www.afmps.be/fr/news")
     with pytest.raises(SourceBlocked):
         famhp.check_not_interstitial(f)
+
+
+F5_INJECTED = (b'<script type="text/javascript" '
+               b'src="/TSPD/08e8b1e6a8ab2000c5d2e4b2f1a3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1?type=7">'
+               b'</script>')
+
+
+def test_famhp_normal_page_with_f5_script_is_not_blocked():
+    # F5 injects its /TSPD/…?type=7 script into ordinary protected pages; only the interstitial's
+    # own markers (href="/TSPD/?type=, window["bobcmn"]) mean a challenge.
+    page = fixture("swissmedic-hpc/list_fr.html").replace(b"</head>", F5_INJECTED + b"</head>", 1)
+    assert b"/TSPD/" in page
+    famhp.check_not_interstitial(Fetched(200, "https://www.afmps.be/fr/news", page,
+                                         "text/html; charset=utf-8"))
 
 
 def test_famhp_reads_with_browser_and_stops_at_challenge():

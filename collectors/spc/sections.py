@@ -9,9 +9,14 @@ Section keys are language-neutral where the label format is:
 * US PI (DailyMed SPL, by LOINC section code): ``"us:boxed_warning"``, ``"us:contraindications"``,
   ``"us:warnings_and_precautions"``, ``"us:warnings"``, ``"us:adverse_reactions"``,
   ``"us:drug_interactions"``, ``"us:specific_populations"``, ``"us:overdosage"``.
-* Japan (new-format 添付文書, 2019+): ``"ja:1"`` 警告, ``"ja:2"`` 禁忌, ``"ja:8"`` 重要な基本的注意,
+* Japan (new-format 添付文書, 2019+): every numbered heading 1–26 is a boundary (``"ja:3"`` 組成・性状,
+  ``"ja:5"`` 効能又は効果に関連する注意 … so their text never runs on inside the section before);
+  watched are ``"ja:1"`` 警告, ``"ja:2"`` 禁忌, ``"ja:8"`` 重要な基本的注意,
   ``"ja:9"`` 特定の背景を有する患者に関する注意, ``"ja:10"`` 相互作用, ``"ja:11"`` 副作用,
-  ``"ja:13"`` 過量投与; old-format headings 【警告】【禁忌】【使用上の注意】 map to the same keys.
+  ``"ja:13"`` 過量投与. Old format (before 2019): 【警告】→ ja:1, 【禁忌】【原則禁忌】→ ja:2 and the
+  whole 【使用上の注意】 block (慎重投与, 重要な基本的注意, 相互作用, 副作用 … numbered inside it) →
+  ``"ja:precautions"``, which is watched; the other 【】 headings (【組成・性状】【効能・効果】
+  【用法・用量】【薬物動態】 …) end the section before them and are not watched.
 
 ``WATCHED`` lists the sections whose change raises a label-change issue; ``RECORD_ONLY`` (section 10
 "date of revision of the text", 改訂年月) is stored and diffed but never alerts.
@@ -27,7 +32,8 @@ WATCHED_EU = {"4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9"}
 WATCHED_US = {"us:boxed_warning", "us:contraindications", "us:warnings_and_precautions",
               "us:warnings", "us:adverse_reactions", "us:drug_interactions",
               "us:specific_populations", "us:overdosage"}
-WATCHED_JA = {"ja:1", "ja:2", "ja:8", "ja:9", "ja:10", "ja:11", "ja:13"}
+# "ja:precautions" is the old-format 【使用上の注意】 block, which holds 副作用 and 相互作用.
+WATCHED_JA = {"ja:1", "ja:2", "ja:8", "ja:9", "ja:10", "ja:11", "ja:13", "ja:precautions"}
 WATCHED = WATCHED_EU | WATCHED_US | WATCHED_JA
 RECORD_ONLY = {"10", "ja:revision"}
 
@@ -51,14 +57,39 @@ US_LOINC = {
 }
 
 JA_HEADINGS = {
-    "警告": "ja:1", "禁忌": "ja:2", "効能又は効果": "ja:4", "効能・効果": "ja:4",
-    "用法及び用量": "ja:6", "用法・用量": "ja:6", "重要な基本的注意": "ja:8",
-    "特定の背景を有する患者に関する注意": "ja:9", "相互作用": "ja:10", "副作用": "ja:11",
-    "臨床検査結果に及ぼす影響": "ja:12", "過量投与": "ja:13", "適用上の注意": "ja:14",
-    "その他の注意": "ja:15", "薬物動態": "ja:16", "臨床成績": "ja:17", "薬効薬理": "ja:18",
+    "警告": "ja:1", "禁忌": "ja:2", "組成・性状": "ja:3", "組成･性状": "ja:3", "組成及び性状": "ja:3",
+    "効能又は効果": "ja:4", "効能・効果": "ja:4",
+    "効能又は効果に関連する注意": "ja:5", "効能・効果に関連する注意": "ja:5",
+    "用法及び用量": "ja:6", "用法・用量": "ja:6",
+    "用法及び用量に関連する注意": "ja:7", "用法・用量に関連する注意": "ja:7",
+    "重要な基本的注意": "ja:8", "特定の背景を有する患者に関する注意": "ja:9", "相互作用": "ja:10",
+    "副作用": "ja:11", "臨床検査結果に及ぼす影響": "ja:12", "過量投与": "ja:13",
+    "適用上の注意": "ja:14", "その他の注意": "ja:15", "薬物動態": "ja:16", "臨床成績": "ja:17",
+    "薬効薬理": "ja:18", "有効成分に関する理化学的知見": "ja:19", "取扱い上の注意": "ja:20",
+    "承認条件": "ja:21", "包装": "ja:22", "主要文献": "ja:23", "文献請求先": "ja:24",
+    "保険給付上の注意": "ja:25", "製造販売業者等": "ja:26",
 }
-_JA_NUM = re.compile(r"(?m)^\s*(\d{1,2})\s*[.．]\s*(" + "|".join(map(re.escape, JA_HEADINGS)) + r")")
-_JA_OLD = re.compile(r"【\s*(警告|禁忌|使用上の注意|重要な基本的注意|相互作用|副作用|過量投与)[^】]*】")
+
+
+def _alternation(words) -> str:
+    # Longest first, so "効能又は効果に関連する注意" (5) is not read as "効能又は効果" (4).
+    return "|".join(map(re.escape, sorted(words, key=len, reverse=True)))
+
+
+_JA_NUM = re.compile(r"(?m)^\s*(\d{1,2})\s*[.．]\s*(" + _alternation(JA_HEADINGS) + r")")
+# Old-format 【】 headings. Only these are boundaries; a 【】 inside body text never splits a section.
+JA_OLD_HEADINGS = {
+    "警告": "ja:1", "禁忌": "ja:2", "原則禁忌": "ja:2", "使用上の注意": "ja:precautions",
+    "組成・性状": "ja:old:composition", "組成･性状": "ja:old:composition",
+    "組成": "ja:old:composition", "性状": "ja:old:composition",
+    "効能・効果": "ja:old:indications", "効能又は効果": "ja:old:indications",
+    "用法・用量": "ja:old:dosage", "用法及び用量": "ja:old:dosage",
+    "薬物動態": "ja:old:pharmacokinetics", "臨床成績": "ja:old:clinical",
+    "薬効薬理": "ja:old:pharmacology", "有効成分に関する理化学的知見": "ja:old:chemistry",
+    "取扱い上の注意": "ja:old:handling", "承認条件": "ja:old:conditions", "包装": "ja:old:package",
+    "主要文献": "ja:old:references", "文献請求先": "ja:old:contact",
+}
+_JA_OLD = re.compile(r"【\s*(" + _alternation(JA_OLD_HEADINGS) + r")[^】\n]*】")
 _JA_REV = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*改訂")
 
 
@@ -137,11 +168,8 @@ def split_japanese(text: str) -> dict[str, str]:
         last = num
         marks.append((m.start(), m.end(), key))
     if not marks:
-        old_map = {"警告": "ja:1", "禁忌": "ja:2", "使用上の注意": "ja:precautions",
-                   "重要な基本的注意": "ja:8", "相互作用": "ja:10", "副作用": "ja:11",
-                   "過量投与": "ja:13"}
         for m in _JA_OLD.finditer(text):
-            marks.append((m.start(), m.end(), old_map[m.group(1)]))
+            marks.append((m.start(), m.end(), JA_OLD_HEADINGS[m.group(1)]))
     out: dict[str, str] = {}
     for i, (_s, e, key) in enumerate(marks):
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)

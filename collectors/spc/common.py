@@ -6,7 +6,12 @@ Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pm
 * ``discover(ctx, ingredient) -> list[Product]`` — the products authorised for one active
   ingredient (``ingredient`` = ``{"id", "inn_en", "atc_code", "terms": {lang: [term, …]}}``);
 * ``snapshot(ctx, product) -> Snapshot | None`` — the product's current label split into sections
-  (``product`` = the ``spc_product`` row as a dict); ``None`` when no label is published.
+  (``product`` = the ``spc_product`` row as a dict); ``None`` when no label is published. A label
+  that could not be read (an HTTP error, a missing section, an unknown shape) raises — never a
+  partial snapshot, which would read as removed sections.
+
+A module that can read one label two ways (CIMA: per-section API, else the full HTML) sets
+``Snapshot.method``; ``run.py`` diffs a snapshot only against the last one read the same way.
 
 ``collectors/spc/run.py`` does the rest (rows, hashes, diffs, issues).
 """
@@ -15,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
+from typing import Any
 
 
 @dataclass
@@ -34,6 +40,32 @@ class Snapshot:
     lang: str | None = None
     source_url: str | None = None  # where the label text was read
     original_sha256: str | None = None  # sha of the archived original (PDF/HTML/XML), if any
+    method: str | None = None     # how the sections were read, when a source has more than one way
+
+
+class SnapshotError(Exception):
+    """The label exists but could not be read completely: a failure of that product, not a change."""
+
+
+def run_cache(ctx, name: str) -> dict:
+    """A dict that lives as long as ``ctx`` (one run): bulk files read once per run, never longer."""
+    caches = getattr(ctx, "_spc_caches", None)
+    if caches is None:
+        caches = {}
+        ctx._spc_caches = caches
+    return caches.setdefault(name, {})
+
+
+def get_reusing(ctx, url: str, **kwargs: Any):
+    """``ctx.get``, except that a 304 for a URL already read in this run (the same product found
+    for two ingredients) answers the body read the first time instead of an empty one."""
+    seen = run_cache(ctx, "bodies")
+    f = ctx.get(url, **kwargs)
+    if f.status == 200:
+        seen[url] = f
+    elif f.status == 304 and url in seen:
+        return seen[url]
+    return f
 
 
 def terms_for(ingredient: dict, lang: str, *, fallback_en: bool = True) -> list[str]:

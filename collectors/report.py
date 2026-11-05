@@ -302,6 +302,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
     logging.basicConfig(level="INFO")
+    from collectors.core.context import install_log_redaction
+
+    install_log_redaction()     # httpx logs api.telegram.org/bot<TOKEN>/… at INFO
     from collectors.core.db import Db
     from collectors.core.store import Store
 

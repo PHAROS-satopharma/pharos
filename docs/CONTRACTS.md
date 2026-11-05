@@ -88,12 +88,22 @@ genuinely lists nothing in range.
 **SPC contract.** A2's entry point is `collectors/spc/run.py`:
 
 ```python
-def run_spc(ctx: FetchContext, db: Db, ingredient_ids: list[str] | None = None) -> list[str]:
+def run_spc(ctx: FetchContext, db: Db, ingredient_ids: list[str] | None = None, *,
+            store: Store | None = None, notifier: Notifier | None = None) -> list[str]:
     # discovers spc_product rows per active ingredient and country, snapshots, diffs per section,
     # writes spc_snapshot / spc_change, and returns the ids of the issues it created (doc_type 'label_change')
 ```
 
 The runner (A1) calls it on the `weekly` schedule, and for one ingredient when an admin confirms a new one.
+Each SPC source gets a `source_run` row per run and a health like any other source (`blocked` on a bot
+check, `degraded` after 2 failed runs in a row, with the admin health alert on the change). A module's
+`discover` / `snapshot` raises when it could not read (an HTTP error, a missing section, an unknown shape);
+it never returns `[]` or a partial snapshot for a failed read.
+
+Error texts and logs never carry a secret: `collectors.core.context.redact` strips `api_key=`, tokens,
+passwords and the Telegram bot token from every `FetchError` / `SourceBlocked` / `ParseError` message and
+every `source_run.error`; `install_log_redaction()` (called by every entry point after `basicConfig`)
+keeps httpx/httpcore at WARNING and redacts each log record.
 
 ## `sources.yaml` ids and parser names (A1 writes the file; these names are fixed)
 

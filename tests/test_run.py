@@ -264,3 +264,25 @@ def test_nul_characters_never_reach_postgres():
         "t": "Rote-Hand-Brief", "l": ["a", 1], "n": None}
     assert clean(("x\x00y",)) == ("xy",)
     assert _dumps({"t": "a\x00b"}) == '{"t": "ab"}'
+
+
+def test_a_secret_in_a_failure_never_reaches_the_screening_log_or_alert(tmp_path):
+    # source_run.error is readable by every user and health alerts go to Telegram: no api_key there.
+    secret = "NCBI0123456789abcdefSECRET"
+
+    class Parser:
+        @staticmethod
+        def list_items(ctx, src):
+            raise RuntimeError(f"connect failed for https://eutils.ncbi.nlm.nih.gov/x?db=pubmed&api_key={secret}")
+
+    server = Server()
+    store, ctx, _, _ = setup(tmp_path, server)
+    notifier = Notifier(store, store.settings(), telegram=ExplodingTelegram())
+    runner = Runner(store, ctx, notifier, store.settings(), parser_loader=lambda name: Parser)
+    for _ in range(DOWN_AFTER):
+        stats = runner.run_source(SRC)
+    assert stats.failed and "api_key=<redacted>" in stats.error
+    assert all(secret not in (sr["error"] or "") for sr in store.source_run.values())
+    health = [n for n in store.notification if n["kind"] == "health"]
+    assert health and all(secret not in str(n) for n in health)
+    ctx.close()
