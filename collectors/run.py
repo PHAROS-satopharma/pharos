@@ -36,7 +36,7 @@ import httpx
 from collectors import backfill as bf
 from collectors.alerts import Notifier
 from collectors.core.archive import Archive
-from collectors.core.context import (FetchContext, FetchError, ParseError, SourceBlocked,
+from collectors.core.context import (FetchContext, FetchError, NotSetUp, ParseError, SourceBlocked,
                                      install_log_redaction, redact)
 from collectors.core.imap_inbox import NOT_CONFIGURED
 from collectors.core.models import Item, SourceConfig
@@ -227,6 +227,7 @@ class Runner:
         prev = dict(self.store.get_source(src.id) or {})
         sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
         self.ctx.begin_source()
+        self.ctx.last_ok_at = prev.get("last_ok_at")
         t0 = time.monotonic()
         started = self.clock()
         failures = int(prev.get("consecutive_failures") or 0)
@@ -295,7 +296,8 @@ class Runner:
             stats.error = redact(f"parse: {exc}")
             self.store.set_source_state(src.id, health="degraded", consecutive_failures=failures + 1)
             if prev.get("health") != "degraded":
-                self.notifier.health_alert(src.id, "degraded", redact(f"The page changed shape: {exc}"))
+                what = "Not set up yet" if isinstance(exc, NotSetUp) else "The page changed shape"
+                self.notifier.health_alert(src.id, "degraded", redact(f"{what}: {exc}"))
         except Exception as exc:  # noqa: BLE001 - network, HTTP, a parser bug: all count as a failure
             failures += 1
             stats.failed = True
