@@ -10,6 +10,8 @@
 #   expected_max_gap_days   quiet longer than this → health 'degraded'
 #   options   parser options (documented at the top of each parser); runner-level keys:
 #             detail: always | matched_only | never   (when to call fetch_detail)
+#             old_detail: matched_only   (a notice older than the alert age: fetch_detail only if its row matched)
+#             max_new_items: N            (new items per normal run; default 400, the time budget still applies)
 #             backfill_all: true                       (backfill keeps the whole history)
 #   enabled   only applied when the row is first created; afterwards an admin decides in the app.
 
@@ -390,6 +392,11 @@ sources:
     options:
       include_organizations: [Drugs and health products, Marketed health products]
       exclude_categories: [Veterinary drugs]
+      # The file lists every recall ever (3,053 health rows on 5 Nov 2026) and each page takes ~2 s, so
+      # the old ones, which never alert, open their page only when the row (product, issue, advice)
+      # already names a watched term.
+      old_detail: matched_only
+      max_new_items: 3000
 
   # ───────────── HTML lists (parsers by A2) ─────────────
   - id: ansm-securite
