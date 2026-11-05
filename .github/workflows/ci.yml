@@ -164,6 +164,13 @@ jobs:
             values ('00000000-0000-0000-0000-0000000000d1', 'Valmiste sisältää lornoksikaamia.');
           insert into issue (id, doc_type, title) values ('00000000-0000-0000-0000-0000000000e1', 'dhpc', 'CI issue');
 
+          -- 0012: the notice list returns the language of the title's notice.
+          insert into issue (id, doc_type, title, anchor_document_id)
+            values ('00000000-0000-0000-0000-0000000000e7', 'dhpc', 'CI', '00000000-0000-0000-0000-0000000000d1');
+          select pg_temp.ci_assert((select lang from v_issue_table where id = '00000000-0000-0000-0000-0000000000e7') = 'fi',
+            'the notice list carries the language of the title');
+          delete from issue where id = '00000000-0000-0000-0000-0000000000e7';
+
           -- Test 10: the public key reads nothing and cannot call the RPCs.
           set role anon;
           select count(*) as anon_person from person \gset
