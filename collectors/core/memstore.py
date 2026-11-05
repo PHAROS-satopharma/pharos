@@ -283,6 +283,12 @@ class MemoryStore:
                         "telegram_chat_id": p["telegram_chat_id"], "role": p.get("role")})
         return out
 
+    def admins(self) -> list[dict]:
+        return [{"person_id": p["id"], "full_name": p["full_name"], "telegram_chat_id": p["telegram_chat_id"],
+                 "role": p.get("role")}
+                for p in self.person.values()
+                if p.get("role") == "admin" and p.get("active", True) and p.get("telegram_chat_id")]
+
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind
                    and n["error"] is None for n in self.notification)

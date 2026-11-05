@@ -166,6 +166,19 @@ def test_admin_document_dry_run():
     assert s.notification[-1]["kind"] == "report" and s.notification[-1]["dry_run"]
 
 
+def test_monthly_report_reaches_an_admin_without_health_alerts():
+    """The QPPV is an admin who never chose "Source health alerts": she gets the monthly report, never a
+    health alert. A reviewer with a health subscription gets neither."""
+    s, _ = store_with_issue()
+    s.person["p4"] = {"id": "p4", "full_name": "QPPV Admin", "telegram_chat_id": 444, "role": "admin",
+                      "active": True}
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram())
+    assert n.admin_document("PHAROS-screening-2026-10.pdf", b"%PDF-1.7", "October 2026") == 2
+    assert {r["person_id"] for r in s.notification if r["kind"] == "report"} == {"p2", "p4"}
+    assert n.health_alert("bfarm-rhb", "down", "HTTP 503") == 1
+    assert {r["person_id"] for r in s.notification if r["kind"] == "health"} == {"p2"}
+
+
 class RefusingTelegram(RecordingTelegram):
     """Telegram refusing the message (e.g. HTML it cannot parse) while ``refuse`` is set."""
 
