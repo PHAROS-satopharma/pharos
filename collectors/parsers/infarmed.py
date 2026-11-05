@@ -33,6 +33,11 @@ Options:
   keeps every family).
 * ``include_keywords`` / ``exclude_keywords``; ``max_pages`` (1) / ``backfill_pages`` (5).
 * ``circulares_url`` — the circulars page also read (default ``CIRCULARES``; ``""`` reads only Alertas).
+* ``host_gap_s`` — seconds between two reads of www.infarmed.pt (default 5). Its Fortinet firewall
+  answers a burst with a « Firewall Captcha Authentication » page as HTTP 200: the 5 Nov 2026 21:20 Cairo
+  backfill read five Alertas pages and the circulars page in 9.8 s and got the captcha for the last one.
+  A captcha is a bot check, never solved: on Alertas it blocks the check; on the circulars page the
+  Alertas notices already read are kept.
 * ``lang`` (``pt``).
 """
 
@@ -43,6 +48,7 @@ import re
 
 from collectors.parsers._html_util import (absolute, clean, fill_detail, keep, local_date,
                                            node_text, pages_to_read, require)
+from collectors.core.context import SourceBlocked
 from collectors.parsers.base import Item, SourceConfig, soup
 
 log = logging.getLogger(__name__)
@@ -140,7 +146,11 @@ def _next_page(doc, base_url: str, page: int) -> str | None:
     return None
 
 
+HOST_GAP_S = 5.0
+
+
 def list_items(ctx, source: SourceConfig) -> list[Item]:
+    ctx.pace("www.infarmed.pt", float((source.options or {}).get("host_gap_s", HOST_GAP_S)))
     out: list[Item] = []
     url: str | None = source.url
     for page in range(1, pages_to_read(ctx, source) + 1):
@@ -156,7 +166,11 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
         url = _next_page(doc, f.final_url, page + 1)
     circ_url = (source.options or {}).get("circulares_url", CIRCULARES)
     if circ_url:
-        f = ctx.get(circ_url)
+        try:
+            f = ctx.get(circ_url)
+        except SourceBlocked as exc:
+            log.warning("infarmed circulares %s: %s; only Alertas read", circ_url, exc)
+            return out
         if f.status not in (200, 304):
             log.warning("infarmed circulares %s: HTTP %s; only Alertas read", circ_url, f.status)
         elif f.status == 200:

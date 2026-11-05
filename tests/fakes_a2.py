@@ -91,6 +91,9 @@ class FakeCtx:
     def forget(self, url: str) -> None:
         self.requests.append(("FORGET", url, None))
 
+    def pace(self, host: str, seconds: float) -> None:
+        self.requests.append(("PACE", host, {"seconds": seconds}))
+
     def browser_get(self, url: str, *, wait_selector: str | None = None,
                     timeout_ms: int = 45000) -> Fetched:
         self.requests.append(("BROWSER", url, {"wait_selector": wait_selector}))

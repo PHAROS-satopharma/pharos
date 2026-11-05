@@ -346,6 +346,55 @@ def test_infarmed_circulares_down_still_reads_alertas():
     items = infarmed.list_items(FakeCtx({INFARMED: "infarmed-circulares/alertas.html"}), src)
     assert items and all(i.external_id.startswith("infarmed:1") for i in items)
 
+
+def _infarmed_live_ctx(tmp_path, *, alertas="infarmed-circulares/alertas.html",
+                       circulares="infarmed-circulares/circulares.html"):
+    """The real FetchContext (bot-check detection, pacing) over the saved INFARMED pages."""
+    import httpx
+
+    from collectors.core.archive import Archive
+    from collectors.core.context import FetchContext
+
+    pages = {INFARMED: alertas, infarmed.CIRCULARES: circulares}
+
+    def handler(req):
+        path = pages.get(str(req.url).split("?")[0])
+        return httpx.Response(200 if path else 404, headers={"content-type": "text/html"},
+                              content=fixture(path) if path else b"")
+
+    ctx = FetchContext(None, "run", archive=Archive(tmp_path / "archive"), transport=httpx.MockTransport(handler))
+    sleeps: list[float] = []
+    ctx._sleep = sleeps.append
+    return ctx, sleeps
+
+
+CAPTCHA = "infarmed-circulares/firewall-captcha.html"   # the page itself, saved 5 Nov 2026
+
+
+def test_infarmed_firewall_captcha_on_circulares_keeps_the_alertas_notices(tmp_path):
+    # 5 Nov 2026 21:20 Cairo: the circulars page came back as INFARMED's firewall captcha (HTTP 200), and
+    # the check failed as "the page changed shape", losing the Alertas notices already read.
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    ctx, _ = _infarmed_live_ctx(tmp_path, circulares=CAPTCHA)
+    items = infarmed.list_items(ctx, src)
+    assert items and all(i.external_id.startswith("infarmed:1") for i in items)
+
+
+def test_infarmed_firewall_captcha_on_alertas_is_a_bot_check(tmp_path):
+    from collectors.core.context import SourceBlocked
+
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    ctx, _ = _infarmed_live_ctx(tmp_path, alertas=CAPTCHA)
+    with pytest.raises(SourceBlocked):
+        infarmed.list_items(ctx, src)
+
+
+def test_infarmed_reads_are_five_seconds_apart(tmp_path):
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    ctx, sleeps = _infarmed_live_ctx(tmp_path)
+    infarmed.list_items(ctx, src)
+    assert sleeps and min(sleeps) > 4.0      # Alertas, then the circulars page: never a burst
+
 def test_infarmed_detail_pdf():
     src = source("infarmed-circulares", INFARMED, languages=["pt"])
     url = INFARMED + "/-/journal_content/56/15786/13517026"
