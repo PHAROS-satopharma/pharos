@@ -24,6 +24,11 @@ doc_type from the categories: DHPC → ``dhpc``; Indragning → ``recall``; Kval
 Options:
 
 * ``category_ids`` — list of ids (default ``[225, 221, 222, 224]``), read one request per id;
+* ``all_safety_news`` — also read every safety news item (``pageTypeId=2``, no ``categoryIds``:
+  an empty ``categoryIds`` answers HTTP 400). Some safety news carry only the label
+  "Säkerhetsnyhet" and no category, so no category request returns them (2026-04-13 "Nya krav på
+  kontroll av leverprover vid behandling med Ontozry", checked 5 Nov 2026). Items labelled
+  ``exclude_categories`` (default "Läkemedel för djur", "Medicinteknik") are left out of this pass;
 * ``page_type_id`` (empty), ``take`` (20; a backfill reads ``backfill_pages`` × ``take``);
 * ``include_keywords`` / ``exclude_keywords``; ``lang`` (``sv``).
 
@@ -60,6 +65,7 @@ def published_date(stamp: str | None, lang: str | None) -> date | None:
         return moment.date()
     return moment.astimezone(STOCKHOLM).date()
 DEFAULT_CATEGORIES = [225, 221, 222, 224]
+DEFAULT_EXCLUDED = ["Läkemedel för djur", "Medicinteknik"]
 
 
 def doc_type_for(categories: list[str]) -> str:
@@ -70,6 +76,8 @@ def doc_type_for(categories: list[str]) -> str:
         return "recall"
     if "effekt och säkerhet" in cats:
         return "safety_update"
+    if "bristsituation" in cats or "avregistrering" in cats:
+        return "other"
     return "safety_alert"
 
 
@@ -113,11 +121,15 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
     page_type = opts.get("page_type_id", "")
     if page_type in (0, "0"):
         page_type = ""
+    queries: list[tuple[int | None, int | str]] = [(cid, page_type) for cid in cats]
+    if opts.get("all_safety_news"):
+        queries.append((None, 2))
+    excluded = {c.casefold() for c in opts.get("exclude_categories", DEFAULT_EXCLUDED)}
     out: list[Item] = []
     seen: set[str] = set()
-    for cid in cats:
+    for cid, ptype in queries:
         for page in range(pages_to_read(ctx, source)):
-            f = ctx.get(api_url(cid, page_type=page_type, take=take, skip=page * take),
+            f = ctx.get(api_url(cid, page_type=ptype, take=take, skip=page * take),
                         accept="application/json", headers=HEADERS)
             if f.status == 304:
                 break
@@ -126,6 +138,9 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
             except (ValueError, json.JSONDecodeError) as exc:
                 raise ParseError(f"Läkemedelsverket API did not answer JSON: {exc}") from exc
             batch = parse_newslist(data, source)
+            if cid is None:
+                batch = [it for it in batch
+                         if not {c.casefold() for c in it.structured["categories"]} & excluded]
             for it in batch:
                 if it.external_id not in seen:
                     seen.add(it.external_id)

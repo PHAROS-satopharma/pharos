@@ -114,9 +114,11 @@ keeps httpx/httpcore at WARNING and redacts each log record.
 | fda-medwatch | feed | A1 |
 | fda-enforcement | openfda_enforcement | A1 |
 | mhra-dsu, mhra-alerts | govuk | A1 |
-| bfarm-rhb | feed | A1 |
+| bfarm-rhb, pei-rhb | feed | A1 |
 | basg-whatsnew | feed | A1 |
 | aemps-feed | feed | A1 |
+| aemps-dhpc | aemps_dhpc | A2 |
+| basg-dhpc | basg_dhpc | A2 |
 | hsa-announcements | feed | A1 |
 | hc-recalls | hc_recalls | A1 |
 | pubmed | pubmed | A1 |
@@ -131,10 +133,11 @@ keeps httpx/httpcore at WARNING and redacts each log record.
 | swissmedic-hpc | swissmedic | A2 |
 | medsafe-dhcp, medsafe-comms | medsafe | A2 |
 | bfarm-risk | bfarm_risk | A2 |
-| pmda-revisions, pmda-urgent, pmda-msi | pmda | A2 |
+| pmda-revisions, pmda-urgent, pmda-msi, pmda-company-letters, pmda-proper-use | pmda | A2 |
 | mfds-letters | mfds | A2 |
 | famhp-news | famhp | A2 |
 | cbg-news | cbg | A2 |
+| cbg-dhpc | cbg_dhpc | A2 |
 | mpa-news | lakemedelsverket | A2 |
 | tga-alerts, tga-updates | tga | A2 |
 | fimea-email, tga-email | email_inbox | A2 |
