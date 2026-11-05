@@ -1,7 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { escapeLike, fetchAllPages, unwrap } from '../../lib/api';
-import type { DocType, IssueRow, IssueStatus } from '../../lib/types';
+import { ISSUE_STATUSES, type DocType, type IssueRow, type IssueStatus } from '../../lib/types';
 import { DOC_TYPE_LABEL, STATUS_LABEL } from '../../lib/labels';
 
 export interface IssueFilters {
@@ -38,6 +38,36 @@ export function useIssues(f: IssueFilters, limit: number) {
       const res = await issueQuery(f, true).range(0, limit - 1);
       const rows = unwrap<IssueRow[] | null>(res) ?? [];
       return { rows, total: res.count ?? rows.length };
+    },
+  });
+}
+
+/**
+ * How many notifications of each status match every filter except the status: the figures in the masthead.
+ * One count-only request per status. The key sits under 'issues' so a recorded decision refreshes it too.
+ */
+export function useStatusCounts(f: IssueFilters) {
+  const base: IssueFilters = { ...f, status: '' };
+  return useQuery({
+    queryKey: ['issues', 'status-counts', base],
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const pairs = await Promise.all(
+        ISSUE_STATUSES.map(async (status) => {
+          let q = supabase.from('v_issue_table').select('id', { count: 'exact', head: true }).eq('status', status);
+          if (!base.history) q = q.eq('is_backfill', false);
+          if (!base.classWide) q = q.eq('class_only', false);
+          if (base.type) q = q.eq('doc_type', base.type);
+          if (base.country) q = q.contains('countries', [base.country]);
+          if (base.ingredient) q = q.contains('ingredients', [base.ingredient]);
+          const text = base.q.trim();
+          if (text) q = q.ilike('title', `%${escapeLike(text)}%`);
+          const res = await q;
+          unwrap<null>(res);
+          return [status, res.count ?? 0] as const;
+        }),
+      );
+      return Object.fromEntries(pairs) as Record<IssueStatus, number>;
     },
   });
 }

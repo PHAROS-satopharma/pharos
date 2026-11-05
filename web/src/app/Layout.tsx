@@ -1,7 +1,8 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL } from '../lib/labels';
-import { useTheme } from '../lib/theme';
+import { useTheme, type ThemeChoice } from '../lib/theme';
+import { Monogram } from '../ui/Monogram';
 import { PharosMark } from '../ui/PharosMark';
 import { cx } from '../ui/cx';
 
@@ -11,7 +12,11 @@ interface NavItem {
   end?: boolean;
 }
 
-const THEME_LABEL = { system: 'Theme: system', light: 'Theme: light', dark: 'Theme: dark' } as const;
+const THEMES: { value: ThemeChoice; label: string; title: string }[] = [
+  { value: 'system', label: 'Auto', title: 'Follow this device’s light or dark setting' },
+  { value: 'light', label: 'Light', title: 'Always light' },
+  { value: 'dark', label: 'Dark', title: 'Always dark' },
+];
 
 export function Layout() {
   const { person, isAdmin, signOut } = useAuth();
@@ -47,13 +52,30 @@ export function Layout() {
             ))}
           </nav>
           <div className="who">
-            <NavLink to="/me" className={({ isActive }) => cx('who-name', isActive && 'is-active')}>
-              <span>{person?.full_name ?? 'Me'}</span>
-              {person ? <span className="who-role">{ROLE_LABEL[person.role]}</span> : null}
+            <NavLink
+              to="/me"
+              className={({ isActive }) => cx('who-name', isActive && 'is-active')}
+              aria-label={`My account: ${person?.full_name ?? 'me'}`}
+            >
+              <Monogram name={person?.full_name ?? 'Me'} />
+              <span className="who-text">
+                <span className="who-person">{person?.full_name ?? 'Me'}</span>
+                {person ? <span className="who-role">{ROLE_LABEL[person.role]}</span> : null}
+              </span>
             </NavLink>
-            <button type="button" className="bar-button" onClick={theme.cycle} title="Switch between system, light and dark">
-              {THEME_LABEL[theme.choice]}
-            </button>
+            <div className="theme-switch" role="group" aria-label="Light or dark">
+              {THEMES.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  aria-pressed={theme.choice === t.value}
+                  title={t.title}
+                  onClick={() => theme.set(t.value)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
             <button type="button" className="bar-button" onClick={() => void signOut()}>
               Sign out
             </button>

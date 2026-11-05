@@ -76,11 +76,10 @@ export function DetailPage() {
 
   return (
     <div className="page detail">
-      <Link to="/" className="back-link">
-        <span aria-hidden>←</span> All notifications
-      </Link>
-
-      <header className="detail-head">
+      <header className="detail-head masthead">
+        <Link to="/" className="back-link">
+          <span aria-hidden>←</span> All notifications
+        </Link>
         <div className="detail-eyebrow">
           <span className="eyebrow">
             <span className="eyebrow-rule" aria-hidden />
@@ -99,7 +98,7 @@ export function DetailPage() {
           <span>{row.anchor_regulator}</span>
           {(row.ingredients ?? []).length > 0 ? <span>· {(row.ingredients ?? []).join(', ')}</span> : null}
           {row.link ? (
-            <a href={row.link} target="_blank" rel="noopener noreferrer">
+            <a href={row.link} target="_blank" rel="noopener noreferrer" className="ext-link">
               Open on the regulator’s site <span aria-hidden>↗</span>
             </a>
           ) : null}
