@@ -49,6 +49,7 @@ log = logging.getLogger("collectors.run")
 SCHEDULES = ("4h", "12h", "daily", "weekly", "monthly", "all")
 MAX_ATTACHMENTS = 8
 MAX_NEW_ITEMS = 400            # per source per normal run; the rest wait for the next run
+SOURCE_BUDGET_S = 10 * 60      # per source per normal run: one slow source never starves the others
 DOWN_AFTER = 3
 ALERT_MAX_AGE_DAYS = 60        # an item published longer ago than this never alerts
 
@@ -76,7 +77,8 @@ def _filename(url: str) -> str:
 class Runner:
     def __init__(self, store: Any, ctx: FetchContext, notifier: Notifier, settings: dict, *,
                  backfill: bool = False, matcher: Matcher | None = None,
-                 parser_loader=load_parser) -> None:
+                 parser_loader=load_parser, deadline: float | None = None,
+                 clock=time.monotonic) -> None:
         self.store = store
         self.ctx = ctx
         self.notifier = notifier
@@ -90,6 +92,16 @@ class Runner:
         self.imap_note: dict[str, str] = {}
         self.issues_created = 0
         self._countries: dict[str, str | None] = {}
+        self.deadline = deadline          # time.monotonic() value: no new item or source after it
+        self.clock = clock
+        self.skipped: list[str] = []      # sources left for the next run when the time ran out
+
+    def out_of_time(self, source_started: float | None = None) -> bool:
+        now = self.clock()
+        if self.deadline is not None and now >= self.deadline:
+            return True
+        return (source_started is not None and not self.backfill
+                and now - source_started >= SOURCE_BUDGET_S)
 
     # ───────────────────────────── matching ─────────────────────────────
     def _match_item(self, module: ModuleType, item: Item, lang: str | None) -> list[Hit]:
@@ -213,13 +225,16 @@ class Runner:
         sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
         self.ctx.begin_source()
         t0 = time.monotonic()
+        started = self.clock()
         failures = int(prev.get("consecutive_failures") or 0)
         try:
             module = self.load_parser(src.parser)
             items = module.list_items(self.ctx, src)
             stats.seen = len(items)
             known = self.store.known_external_ids(src.id)
-            seed = not known and not self.backfill
+            # The first normal run of a source is its seed (never alerts) until one run has completed:
+            # a first run cut short by the time budget keeps seeding on the next run.
+            seed = not self.backfill and (not known or prev.get("last_ok_at") is None)
             fresh: list[Item] = []
             ids: set[str] = set()
             for it in items:
@@ -232,24 +247,33 @@ class Runner:
             if not self.backfill:
                 fresh = fresh[:MAX_NEW_ITEMS]
             item_errors: list[str] = []
-            for it in fresh:
+            waiting = 0
+            for k, it in enumerate(fresh):
+                if self.out_of_time(started):
+                    waiting = len(fresh) - k
+                    break
                 try:
                     self.process_item(src, module, it, seed=seed, stats=stats)
                 except SourceBlocked:
                     raise
-                except (FetchError, httpx.HTTPError, ParseError) as exc:
-                    item_errors.append(f"{it.external_id}: {exc}")
-                    log.warning("%s item %s: %s", src.id, it.external_id, exc)
-            if fresh and len(item_errors) == len(fresh):
+                except Exception as exc:  # noqa: BLE001 - one bad notice never stops the ones behind it
+                    item_errors.append(f"{it.external_id}: {type(exc).__name__}: {exc}")
+                    log.warning("%s item %s: %s", src.id, it.external_id, traceback.format_exc())
+            tried = len(fresh) - waiting
+            if tried and len(item_errors) == tried:
                 raise FetchError(0, src.url, f"every new item failed; first: {item_errors[0]}")
             notes = [self.imap_note[src.id]] if src.id in self.imap_note else []
             if item_errors:
                 notes.append(f"{len(item_errors)} item(s) failed; first: {item_errors[0]}"[:500])
+            if waiting:
+                notes.append(f"time budget reached: {waiting} new item(s) wait for the next run")
+                log.warning("%s: time budget reached, %d new item(s) wait", src.id, waiting)
             stats.error = "; ".join(notes) or None
             latest = max((it.published for it in items if it.published), default=None)
             health = self._quiet_health(src, prev, latest)
-            self.store.set_source_state(src.id, health=health, consecutive_failures=0, ok=True,
-                                        last_item_at=_utc_midnight(latest))
+            # ok=True records a COMPLETE run; a run cut short leaves last_ok_at alone (seed continues)
+            self.store.set_source_state(src.id, health=health, consecutive_failures=0,
+                                        ok=not waiting, last_item_at=_utc_midnight(latest))
             if health == "degraded" and prev.get("health") != "degraded":
                 self.notifier.health_alert(src.id, "degraded",
                                            f"No new notice for more than {src.expected_max_gap_days} days.")
@@ -308,9 +332,13 @@ class Runner:
             return
         from collectors.core import imap_inbox
 
+        held: dict[str, int] = {}
         try:
-            counts = imap_inbox.collect(self.ctx, allow)
+            counts = imap_inbox.collect(self.ctx, allow, held=held)
             log.info("imap: %s", counts)
+            for sid, n in held.items():
+                self.imap_note[sid] = (f"imap: {n} message(s) held unread: sender not verified "
+                                       "(no DMARC, DKIM or SPF pass) or too big")
         except RuntimeError as exc:
             if str(exc) == NOT_CONFIGURED:
                 for sid in allow:
@@ -325,7 +353,20 @@ class Runner:
     def run(self, sources: list[SourceConfig]) -> bool:
         """True when no source failed (a blocked source is a known state, not a failed run)."""
         self.pull_mail(sources)
-        results = [self.run_source(src) for src in sources]
+        # The least recently completed source goes first, so one cut-short run never starves the
+        # same sources twice.
+        epoch = datetime.min.replace(tzinfo=timezone.utc)
+        order = sorted(sources, key=lambda s: (self.store.get_source(s.id) or {}).get("last_ok_at")
+                       or epoch)
+        results = []
+        for src in order:
+            if self.out_of_time():
+                self.skipped.append(src.id)
+                continue
+            results.append(self.run_source(src))
+        if self.skipped:
+            log.warning("time budget reached: %d source(s) wait for the next run: %s",
+                        len(self.skipped), ", ".join(self.skipped))
         return not any(s.failed for s in results)
 
 
@@ -396,14 +437,18 @@ def main(argv: list[str] | None = None) -> int:
     run_id = store.create_run(_trigger(args),
                               os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"))
     archive = Archive()
+    t_start = time.monotonic()
     ok = False
+    completed = False  # a run that raised is never recorded as successful
     with FetchContext(db, run_id, backfill=args.backfill, archive=archive,
                       dry_run=args.dry_run) as ctx:
         try:
             ctx.watchlist = [r["inn_en"] for r in store.active_ingredients()]
             ctx.backfill_months = int(settings.get("backfill_months", 12) or 12)
             notifier = Notifier(store, settings, dry_run=args.dry_run, archive=archive)
-            runner = Runner(store, ctx, notifier, settings, backfill=args.backfill)
+            budget_min = float(os.environ.get("PHAROS_TIME_BUDGET_MIN") or 0)
+            runner = Runner(store, ctx, notifier, settings, backfill=args.backfill,
+                            deadline=t_start + budget_min * 60 if budget_min > 0 else None)
             ok = True
             if not args.spc_ingredient:
                 sources = select_sources(source_configs(store), args.schedule, args.source,
@@ -435,8 +480,9 @@ def main(argv: list[str] | None = None) -> int:
                 notifier.admin_message(runner.summary.text(runner.issues_created))
             else:
                 notifier.digest_if_due()
+            completed = True
         finally:
-            store.finish_run(run_id, ok)
+            store.finish_run(run_id, ok and completed)
     return 0 if ok else 1
 
 

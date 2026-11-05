@@ -27,7 +27,8 @@ CAIRO = ZoneInfo("Africa/Cairo")
 API = "https://api.telegram.org"
 MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
 DIGEST_WINDOW = timedelta(hours=4, minutes=30)   # the digest goes out on the first run after the hour
-MAX_DIGEST_ITEMS = 30
+MAX_DIGEST_ITEMS = 60          # newest first; the rest are named as a count with a pointer to PHAROS
+MAX_MESSAGE_CHARS = 4000       # Telegram refuses a message over 4096 characters
 BRAND = "PHAROS"
 
 DOC_TYPE_LABEL = {
@@ -198,37 +199,58 @@ class Notifier:
         due_at = now.replace(hour=hour, minute=0, second=0, microsecond=0)
         if not (due_at <= now < due_at + DIGEST_WINDOW):
             return False
-        last = self.store.last_notification_at("digest")
+        # Only a digest that really went out counts: a refused one is tried again on the next run.
+        last = self.store.last_notification_at("digest", delivered_only=True)
         return last is None or last.astimezone(CAIRO) < due_at
+
+    @staticmethod
+    def digest_messages(header: str, entries: list[str], more: int) -> list[str]:
+        """Split the digest on entry boundaries, so no message is cut inside a tag or a link."""
+        tail = f"… and {more} more in PHAROS" if more else ""
+        messages: list[str] = []
+        current = header + "\n"   # a blank line under the heading
+        for entry in entries + ([tail] if tail else []):
+            if len(current) + 1 + len(entry) > MAX_MESSAGE_CHARS:
+                messages.append(current)
+                current = f"{header} (continued)\n"
+            current += "\n" + entry
+        messages.append(current)
+        return messages
 
     def digest_if_due(self) -> int:
         """One daily digest of class-only issues to class_digest subscribers."""
         if not self.digest_due():
             return 0
-        last = self.store.last_notification_at("digest")
+        last = self.store.last_notification_at("digest", delivered_only=True)
         since = last or (self.now() - timedelta(days=1))
-        issue_ids = self.store.class_only_issues_since(since)[:MAX_DIGEST_ITEMS]
-        if not issue_ids:
+        all_ids = self.store.class_only_issues_since(since)           # newest first
+        if not all_ids:
             return 0
+        issue_ids = all_ids[:MAX_DIGEST_ITEMS]
         issues = [i for i in (self.store.issue_for_alert(x) for x in issue_ids) if i]
-        lines = [f"<b>{BRAND}</b> · class-wide notices · {esc(fmt_date(self.now()))}", ""]
-        for iss in issues:
-            lines.append(f"• {esc(iss.get('country_name'))} · {esc(iss.get('regulator_name'))} · "
-                         f"{esc(fmt_date(iss.get('first_date')))}\n  {esc(iss.get('title_orig'))}\n"
-                         f'  <a href="{html.escape(iss.get("url") or "", quote=True)}">Open</a>')
-        text = "\n".join(lines)[:4000]
+        header = f"<b>{BRAND}</b> · class-wide notices · {esc(fmt_date(self.now()))}"
+        entries = [f"• {esc(iss.get('country_name'))} · {esc(iss.get('regulator_name'))} · "
+                   f"{esc(fmt_date(iss.get('first_date')))}\n  {esc(iss.get('title_orig'))}\n"
+                   f'  <a href="{html.escape(iss.get("url") or "", quote=True)}">Open</a>'
+                   for iss in issues]
+        messages = self.digest_messages(header, entries, len(all_ids) - len(issue_ids))
         sent = 0
         for person in self.store.subscribers("class_digest"):
+            if all(self.store.notified(person["person_id"], iss["id"], "digest") for iss in issues):
+                continue  # this person already has these (a retry after someone else's refusal)
             message_id, error = None, None
             if not self.dry_run:
                 try:
-                    message_id = self.telegram.send_message(int(person["telegram_chat_id"]), text)
+                    for text in messages:
+                        message_id = self.telegram.send_message(int(person["telegram_chat_id"]), text)
                 except (TelegramError, httpx.HTTPError) as exc:
                     error = str(exc)[:500]
+                    log.warning("digest send failed for %s: %s", person.get("person_id"), error)
             for iss in issues:
                 self.store.insert_notification(person_id=person["person_id"], issue_id=iss["id"],
                                                kind="digest", dry_run=self.dry_run,
-                                               tg_message_id=message_id, error=error, summary=text)
+                                               tg_message_id=message_id, error=error,
+                                               summary="\n".join(messages))
             sent += 1
         return sent
 

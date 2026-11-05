@@ -164,3 +164,64 @@ def test_admin_document_dry_run():
     n = Notifier(s, s.settings(), telegram=ExplodingTelegram())
     assert n.admin_document("PHAROS-screening-2026-10.pdf", b"%PDF-1.7", "October 2026") == 1
     assert s.notification[-1]["kind"] == "report" and s.notification[-1]["dry_run"]
+
+
+class RefusingTelegram(RecordingTelegram):
+    """Telegram refusing the message (e.g. HTML it cannot parse) while ``refuse`` is set."""
+
+    refuse = True
+
+    def send_message(self, chat_id: int, text: str) -> int:
+        from collectors.alerts import TelegramError
+
+        if self.refuse:
+            raise TelegramError("Bad Request: can't parse entities")
+        return super().send_message(chat_id, text)
+
+
+def many_class_issues(n: int) -> tuple[MemoryStore, datetime]:
+    s, first = store_with_issue(class_only=True)
+    nine_ten = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)
+    s.issue[first]["created_at"] = nine_ten - timedelta(hours=3)
+    anchor = s.issue[first]["anchor_document_id"]
+    for k in range(n - 1):
+        iid = s.create_issue(doc_type="dhpc", title=f"NSAR-Hinweis {k}", anchor_document_id=anchor,
+                             first_date=date(2026, 10, 30), class_only=True, is_backfill=False)
+        s.link_document(iid, anchor, link="anchor", method="auto", score=None)
+        s.issue[iid]["created_at"] = nine_ten - timedelta(hours=2, minutes=k)
+    s.subscription.append({"person_id": "p2", "kind": "class_digest", "ingredient_id": None})
+    return s, nine_ten
+
+
+def test_digest_is_split_on_whole_entries(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = many_class_issues(40)
+    tg = RecordingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: nine_ten)
+    assert n.digest_if_due() == 2
+    to_p1 = [t for c, t in tg.messages if c == 111]
+    assert len(to_p1) >= 2                                   # 40 entries do not fit one message
+    for text in to_p1:
+        assert len(text) <= 4000
+        assert text.count("<a href=") == text.count("</a>")  # never cut inside a link
+    assert sum(t.count("<a href=") for t in to_p1) == 40     # nobody's notice dropped
+
+
+def test_refused_digest_is_retried_not_marked_sent(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = many_class_issues(3)
+    tg = RefusingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: nine_ten)
+    n.digest_if_due()
+    assert tg.messages == [] and all(r["error"] for r in s.notification if r["kind"] == "digest")
+    # a refused digest does not count as "sent today": the next run in the window tries again
+    tg.refuse = False
+    later = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                     now=lambda: nine_ten + timedelta(hours=2))
+    assert later.digest_due()
+    assert later.digest_if_due() == 2
+    assert sorted(c for c, _ in tg.messages) == [111, 222]
+    # and once delivered, nobody gets it twice
+    again = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                     now=lambda: nine_ten + timedelta(hours=3))
+    assert not again.digest_due()

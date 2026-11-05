@@ -1,3 +1,7 @@
+Authentication-Results: atlas101.mail.bf1.yahoo.com;
+ dkim=pass header.i=@fimea.fi header.s=s1;
+ spf=pass smtp.mailfrom=fimea.fi;
+ dmarc=pass(p=NONE) header.from=fimea.fi;
 Return-Path: <uutiskirje@fimea.fi>
 From: Fimea <uutiskirje@fimea.fi>
 To: PHAROS <pharos@satopharma.com>
