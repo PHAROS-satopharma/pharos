@@ -359,6 +359,18 @@ jobs:
           select pg_temp.ci_assert(:'wd5' = 'logged (dry run)', 'the text "false" keeps the watchdog in dry run');
           select pg_temp.ci_assert(:'wd6' = 'logged (dry run)', 'an unreadable switch keeps the watchdog in dry run');
 
+          -- 0019: the watchdog's back-up chat is the oldest linked admin WITH Source health alerts, never an
+          -- admin who did not ask for them (the QPPV is an admin and receives safety notices only).
+          insert into person (full_name, email, role, telegram_chat_id, created_at)
+            values ('CI QPPV', 'qppv@example.test', 'admin', 9001, now() - interval '30 days');
+          update person set telegram_chat_id = 9002 where email = 'admin@example.test';
+          select pg_temp.ci_assert(ops_health_chat() is null, 'no health chat while no admin asked for health alerts');
+          insert into subscription (person_id, kind) select id, 'admin_health' from person where email = 'admin@example.test';
+          select pg_temp.ci_assert(ops_health_chat() = '9002', 'the health chat is the admin who asked, not the older QPPV admin');
+          delete from subscription where kind = 'admin_health';
+          update person set telegram_chat_id = null where email = 'admin@example.test';
+          delete from person where email = 'qppv@example.test';
+
           -- Audit fix: the screening log counts a run in its CAIRO month (31 Oct 2026 is UTC+2 in Cairo).
           insert into source_run (run_id, source_id, started_at)
             select r.id, 'ci-test', t
