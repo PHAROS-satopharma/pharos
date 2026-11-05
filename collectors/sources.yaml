@@ -771,7 +771,7 @@ sources:
     schedule: 12h
     expected_max_gap_days: 60
     enabled: false
-    notes: needs live probe
+    notes: "Off: mohap.gov.ae resets every connection from outside its accepted networks (from Egypt, an outside fetch service and GitHub's runners, 5 Nov 2026), so PHAROS cannot read it."
 
   # ───────────── SPC / label watch (modules under collectors/spc, by A2) ─────────────
   - id: spc-cima

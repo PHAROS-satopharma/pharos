@@ -295,6 +295,55 @@ def test_infarmed_alerts():
     assert salofalk.published == date(2026, 8, 28)
 
 
+def test_infarmed_circulares_bring_the_alerts_the_alertas_page_missed():
+    # 5 Nov 2026: Alertas ended on 04/09; the circulars page had the Sterisets (087, posted 03/11) and
+    # Besilato de Atracúrio (097, posted 04/11) recalls. Prices, export lists and rules are left out.
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    items = infarmed.parse_circulares(fixture("infarmed-circulares/circulares.html"), infarmed.CIRCULARES, src)
+    by_circ = {i.structured["circular"]: i for i in items}
+    atrac = by_circ["097/CD7550.20.001"]
+    assert atrac.title.startswith("Recolha do medicamento Besilato de Atracúrio")
+    assert atrac.doc_type == "recall" and atrac.published == date(2026, 11, 4)
+    assert atrac.external_id == "infarmed:doc:54c59033-abcb-beb4-a2b8-cfa5054e32cb"
+    assert atrac.attachment_urls == [atrac.url]
+    steri = by_circ["087/CD/550.20.001"]
+    assert "Sterisets" in steri.title and steri.published == date(2026, 11, 3)
+    assert not any("Preços" in i.title or "Preços" in i.title for i in items)
+    assert all(i.doc_type == "recall" or "550.20.001" in (i.body_text or "") for i in items)
+
+
+def test_infarmed_reads_both_pages_and_keeps_an_alert_once():
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    ctx = FakeCtx({INFARMED: "infarmed-circulares/alertas.html",
+                   infarmed.CIRCULARES: "infarmed-circulares/circulares.html"})
+    items = infarmed.list_items(ctx, src)
+    circs = [i.structured["circular"] for i in items if i.structured.get("circular")]
+    assert "097/CD7550.20.001" in circs and "087/CD/550.20.001" in circs
+    keys = [infarmed.circular_key(i.body_text or "") for i in items]
+    keys = [k for k in keys if k]
+    assert len(keys) == len(set(keys))           # an alert on both pages is kept once
+    infarmed.fetch_detail(ctx, src, next(i for i in items if i.external_id.startswith("infarmed:doc:")))
+    assert ctx.requests[-1][1] == infarmed.CIRCULARES   # a circular is its own PDF: no detail page
+
+
+def test_infarmed_an_alert_on_both_pages_is_kept_once():
+    # The iron circular (088, 04/09/2026) is on Alertas; the same circular posted on the circulars
+    # page (its markup, another wording of the number) must not become a second notice.
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    same = ('<div class="result-item"><h3 class="title"><a href="https://www.infarmed.pt/documents/15786/1/x/'
+            '11111111-2222-3333-4444-555555555555?version=1.0"><p>Medicamentos contendo compostos de ferro</p>'
+            '</a></h3><div class="result-resume"><p>"Circular Informativa n.º 088/CD/550.20.001 de 04/09/2026"'
+            '</p></div><div class="result-path"><span>05/09/2026</span></div></div>').encode()
+    ctx = FakeCtx({INFARMED: "infarmed-circulares/alertas.html", infarmed.CIRCULARES: same})
+    items = infarmed.list_items(ctx, src)
+    assert [i.structured["circular"] for i in items].count("088/CD/550.20.001") == 1
+    assert not any(i.external_id.startswith("infarmed:doc:") for i in items)
+
+def test_infarmed_circulares_down_still_reads_alertas():
+    src = source("infarmed-circulares", INFARMED, languages=["pt"])
+    items = infarmed.list_items(FakeCtx({INFARMED: "infarmed-circulares/alertas.html"}), src)
+    assert items and all(i.external_id.startswith("infarmed:1") for i in items)
+
 def test_infarmed_detail_pdf():
     src = source("infarmed-circulares", INFARMED, languages=["pt"])
     url = INFARMED + "/-/journal_content/56/15786/13517026"
