@@ -12,10 +12,10 @@ from email.utils import parsedate_to_datetime
 from typing import Iterable
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
-from collectors.core.context import FetchContext, FetchError, ParseError, SourceBlocked
+from collectors.core.context import FetchContext, FetchError, NotSetUp, ParseError, SourceBlocked
 from collectors.core.models import Fetched, Item, SourceConfig
 
-__all__ = ["FetchContext", "FetchError", "Fetched", "Item", "ParseError", "SourceBlocked",
+__all__ = ["FetchContext", "FetchError", "Fetched", "Item", "NotSetUp", "ParseError", "SourceBlocked",
            "SourceConfig", "absolute", "attachment_links", "era_date", "html_text", "keyword_ok",
            "parse_date", "soup"]
 

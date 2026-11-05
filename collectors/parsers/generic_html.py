@@ -55,7 +55,7 @@ from datetime import date
 
 from collectors.parsers._html_util import (absolute, block_text, clean, fill_detail, keep,
                                            links_in, local_date, node_text, require)
-from collectors.parsers.base import FetchError, Item, ParseError, SourceConfig, soup
+from collectors.parsers.base import FetchError, Item, NotSetUp, ParseError, SourceConfig, soup
 
 _ARABIC = re.compile(r"[؀-ۿ]")
 _ARABIC_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
@@ -204,9 +204,14 @@ def pages_for(source: SourceConfig, opts: dict) -> list[dict]:
 
 
 def list_with(ctx, source: SourceConfig, opts: dict) -> list[Item]:
+    pages = pages_for(source, opts)
+    if any(not (p.get("item_selector") or p.get("link_pattern")) for p in pages):
+        # e.g. uae-mohap: no preset until its page has been seen; say so before fetching anything
+        raise NotSetUp(f"{source.id} has no reading rules yet. Its page has not been checked, so "
+                       "item_selector or link_pattern must be added to the source options first.")
     out: list[Item] = []
     seen: set[str] = set()
-    for page in pages_for(source, opts):
+    for page in pages:
         urls = _expand(page.get("url") or source.url, bool(getattr(ctx, "backfill", False)))
         missing = 0
         checked = False

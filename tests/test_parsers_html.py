@@ -16,7 +16,7 @@ from collectors.parsers import (aifa, ansm, bfarm_risk, cbg, dkma, email_inbox, 
                                 medsafe, mfds, noma, pmda, prac, swissmedic, tga, who_alerts)
 from collectors.core.models import Fetched
 from collectors.parsers._html_util import local_date
-from collectors.parsers.base import FetchError, ParseError, SourceBlocked
+from collectors.parsers.base import FetchError, NotSetUp, ParseError, SourceBlocked
 from tests.fakes_a2 import FakeCtx, fetched, fixture, source
 
 # ───────────────────────────── dates ─────────────────────────────
@@ -620,6 +620,15 @@ def test_generic_html_needs_a_selector():
     src = source("user-1", "https://example.invalid/")
     with pytest.raises(ParseError):
         generic_html.extract(b"<html><body><a href='/x'>x</a></body></html>", src.url, src, {})
+
+
+def test_a_source_without_reading_rules_says_so_before_fetching():
+    # Audit: uae-mohap has no preset; switched on it fetched the page, then failed as "the page changed shape".
+    src = source("uae-mohap", "https://mohap.gov.ae/en/media-center/news", languages=["ar", "en"])
+    ctx = FakeCtx({})
+    with pytest.raises(NotSetUp, match="no reading rules yet"):
+        generic_html.list_items(ctx, src)
+    assert ctx.requests == []
 
 
 def test_generic_html_year_template():
