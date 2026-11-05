@@ -24,13 +24,14 @@ jobs:
           set -euo pipefail
           start=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
           end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          sql="select timestamp, event_message from auth_logs order by timestamp desc limit 300"
-          curl -sS --fail-with-body -G "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/analytics/endpoints/logs.all" \
+          # ClickHouse SQL over the unified logs table (logs.all was retired and answers 410).
+          sql="select timestamp, event_message from logs where source = 'auth_logs' order by timestamp desc limit 300"
+          code=$(curl -sS -o logs.json -w '%{http_code}' -G "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/analytics/endpoints/logs" \
             -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
             --data-urlencode "sql=${sql}" \
             --data-urlencode "iso_timestamp_start=${start}" \
-            --data-urlencode "iso_timestamp_end=${end}" > logs.json
-          jq -r '.error // empty' logs.json
+            --data-urlencode "iso_timestamp_end=${end}")
+          if [ "$code" != 200 ] || jq -e '.error' logs.json >/dev/null; then echo "Supabase answered $code:"; head -c 2000 logs.json; exit 1; fi
           # Keep the events about email: OTP / magic link / invite / recovery requests, the mailer, SMTP errors.
           jq -r '.result[]? | "\(.timestamp)\t\(.event_message)"' logs.json \
             | grep -iE 'mail|smtp|otp|magic|invite|recover|verify|rate|token' \
