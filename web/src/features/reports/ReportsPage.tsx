@@ -23,6 +23,7 @@ import { PageHead, SectionHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
 import { InspectionPack } from './InspectionPack';
+import { SignOff } from '../signoff/SignOff';
 import { useAuth } from '../../lib/auth';
 
 /** "PHAROS-screening-2026-10.xlsx": the month the report covers, in the name the file is saved under. */
@@ -31,6 +32,7 @@ function reportFileName(month: string, ext: 'xlsx' | 'pdf'): string {
 }
 
 function MonthlyReports() {
+  const { isAdmin } = useAuth();
   const [openError, setOpenError] = useState<string | null>(null);
   const reports = useQuery({
     queryKey: ['monthly-reports'],
@@ -68,6 +70,7 @@ function MonthlyReports() {
         <thead>
           <tr>
             <th scope="col">Month</th>
+            <th scope="col">Sign-off</th>
             <th scope="col" className="num">
               Files
             </th>
@@ -81,6 +84,9 @@ function MonthlyReports() {
                 <span className="cell-sub">
                   Made <span className="mono">{formatDateTime(r.generated_at)}</span>
                 </span>
+              </td>
+              <td>
+                <SignOff kind="monthly_report" id={r.id} canSign={isAdmin} compact />
               </td>
               <td className="num">
                 <div className="button-row report-files">

@@ -3823,3 +3823,29 @@ a.btn {
     text-decoration: none;
   }
 }
+
+/* Electronic sign-off (2026-11-05) */
+.sign-off-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+.sign-off-list li + li {
+  margin-top: 0.5rem;
+}
+.sign-off-compact .sign-off-list {
+  margin-bottom: 0.4rem;
+}
+.sign-off-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  max-width: 34rem;
+}
+.sign-off-meaning {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}

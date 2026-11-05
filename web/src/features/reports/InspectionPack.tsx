@@ -45,7 +45,7 @@ export function InspectionPack() {
     <div className="inspection-pack">
       <p className="soft">
         One Excel workbook for an inspection or an audit: how PHAROS works, which source was read on which day, every
-        notice found and every decision on it, the signals and their steps, the alerts sent, the audit trail, the
+        notice found and every decision on it, the signals and their steps, the alerts sent, the audit trail, the sign-offs, the
         archive checks, the sources, the watchlist and the people. It is built from the live records when you press the
         button.
       </p>
