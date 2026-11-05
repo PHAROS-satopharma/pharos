@@ -13,11 +13,12 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" as="image" href="/brand/pharos-logo.webp" />
     <script>
-      // Apply a saved light/dark choice before the first paint (the app's theme switch writes it).
+      // Light by default (navy masthead over a light page); apply a saved choice before the first paint.
+      var t = 'light';
       try {
-        var t = localStorage.getItem('pharos-theme');
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        t = localStorage.getItem('pharos-theme') || 'light';
       } catch (e) {}
+      if (t !== 'system') document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

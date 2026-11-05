@@ -2,12 +2,12 @@ import { useTheme, type ThemeChoice } from '../lib/theme';
 import { cx } from './cx';
 
 const THEMES: { value: ThemeChoice; label: string; title: string }[] = [
-  { value: 'system', label: 'Auto', title: 'Follow this device’s light or dark setting' },
-  { value: 'light', label: 'Light', title: 'Always light' },
+  { value: 'light', label: 'Light', title: 'Navy masthead over a light page (the default)' },
   { value: 'dark', label: 'Dark', title: 'Always dark' },
+  { value: 'system', label: 'Auto', title: 'Follow this device’s light or dark setting' },
 ];
 
-/** Auto / Light / Dark: three words in one ruled box, the chosen one in navy. */
+/** Light / Dark / Auto: three words in one ruled box, the chosen one in navy. */
 export function ThemeSwitch({ className }: { className?: string }) {
   const theme = useTheme();
   return (

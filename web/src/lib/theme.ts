@@ -7,9 +7,9 @@ const KEY = 'pharos-theme';
 function read(): ThemeChoice {
   try {
     const v = window.localStorage.getItem(KEY);
-    return v === 'light' || v === 'dark' ? v : 'system';
+    return v === 'dark' || v === 'system' ? v : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 }
 
@@ -32,15 +32,14 @@ function setTheme(next: ThemeChoice): void {
   current = next;
   apply(next);
   try {
-    if (next === 'system') window.localStorage.removeItem(KEY);
-    else window.localStorage.setItem(KEY, next);
+    window.localStorage.setItem(KEY, next);
   } catch {
     // private window: the choice lasts for this visit only
   }
   listeners.forEach((l) => l());
 }
 
-/** Light or dark follows the system unless the person picks one; the pick is kept on this device. */
+/** Light (navy masthead over a light page) unless the person picks Dark or Auto; the pick is kept on this device. */
 export function useTheme(): { choice: ThemeChoice; set: (next: ThemeChoice) => void; cycle: () => void } {
   const choice = useSyncExternalStore(
     subscribe,
@@ -50,6 +49,6 @@ export function useTheme(): { choice: ThemeChoice; set: (next: ThemeChoice) => v
   return {
     choice,
     set: setTheme,
-    cycle: () => setTheme(current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system'),
+    cycle: () => setTheme(current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light'),
   };
 }
