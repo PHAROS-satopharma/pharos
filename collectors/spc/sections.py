@@ -206,7 +206,7 @@ def _ca_new_head(line: str, last: int) -> tuple[int, str] | None:
 def split_ca_monograph(text: str) -> dict[str, str]:
     """A Health Canada product monograph's text as ``{"ca:contraindications": text, …}`` (see the module notes)."""
     lines = _ca_lines(text)
-    new = any(_ca_new_head(l, 0) for l in lines)
+    new = any(_ca_new_head(line, 0) for line in lines)
     out: dict[str, list[str]] = {}
     key, last = None, 0
     for line in lines:
