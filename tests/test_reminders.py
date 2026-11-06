@@ -258,6 +258,51 @@ def test_a_refused_message_is_tried_again_and_the_others_are_not_told_twice(monk
     assert len(s.notification) == 3
 
 
+
+class PartRefusingTelegram(RecordingTelegram):
+    """Refuses, for one chat, every message that starts with ``part`` (a timeout, a 429) until cleared."""
+
+    def __init__(self, chat: int, part: str) -> None:
+        super().__init__()
+        self.chat, self.part = chat, part
+
+    def send_message(self, chat_id: int, text: str) -> int:
+        from collectors.alerts import TelegramError
+        if self.part and chat_id == self.chat and text.startswith(self.part):
+            raise TelegramError("Too Many Requests: retry after 30")
+        return super().send_message(chat_id, text)
+
+
+def test_a_refused_second_part_is_sent_again_without_the_first(monkeypatch):
+    """Audit of 6 Nov 2026: a long reminder goes in two parts; part 2 refused at 08:17 counted the person as told,
+    so the rest of the late findings never reached them that day."""
+    s = store_with_findings()
+    monkeypatch.setattr(reminders, "build_messages", lambda items, today, signals=(): ["PART ONE", "PART TWO"])
+    tg = PartRefusingTelegram(111, "PART TWO")
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(8, 17)) == 2
+    assert tg.messages == [(111, "PART ONE"), (222, "PART ONE"), (222, "PART TWO")]
+    tg.part = ""
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(12, 17)) == 1
+    assert tg.messages[3:] == [(111, "PART TWO")]                # only what p1 missed; p2 is not told twice
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(16, 17)) == 0
+    assert len(tg.messages) == 4
+
+
+def test_a_refused_first_part_holds_back_the_rest_until_it_goes(monkeypatch):
+    """Part 1 carries the heading and the most-late findings: when it is refused, part 2 waits with it, and the
+    next run sends both in order."""
+    s = store_with_findings()
+    monkeypatch.setattr(reminders, "build_messages", lambda items, today, signals=(): ["PART ONE", "PART TWO"])
+    tg = PartRefusingTelegram(111, "PART ONE")
+    reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(8, 17))
+    assert [m for m in tg.messages if m[0] == 111] == []         # part 2 never goes alone
+    assert [(r["summary"], r["error"] is not None) for r in s.notification if r["person_id"] == "p1"] == [
+        ("PART ONE", True), ("PART TWO", True)]
+    tg.part = ""
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(12, 17)) == 1
+    assert [m for m in tg.messages if m[0] == 111] == [(111, "PART ONE"), (111, "PART TWO")]
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(16, 17)) == 0
+
 def test_waits_for_seven_in_cairo():
     s = store_with_findings()
     assert reminders.remind_if_due(s, notifier_for(s), now=at(6, 59)) == 0

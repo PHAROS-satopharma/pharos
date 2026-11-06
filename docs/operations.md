@@ -558,7 +558,9 @@ keeps that clock (migrations 0041 and 0050) per notice:
   Telegram chat gets one message listing the findings that are late or due within two days: the title, the
   ingredient, the country, "due Tue 11 Nov, 1 day left" or "3 days late (was due Tue 3 Nov)", and the link to
   the ingredient's screen. Nothing is sent when nothing is due (notification kind `escalation`; the collector
-  sends it right after the new-items digest, never on a backfill, and a failure never fails the run).
+  sends it right after the new-items digest, never on a backfill, and a failure never fails the run). A long
+  list goes in parts: a part Telegram refuses is tried again at the next run with the parts after it (they wait
+  for it, so the parts arrive in order), and the parts the person already has are not sent again.
 - **The weekly report** adds "Reported to the authority this week" and "Due to the authority: N (M late)" to the
   summary and the columns *Due* and *Sent* (date · reference) to the decisions table.
 
