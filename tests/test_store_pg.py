@@ -323,6 +323,10 @@ def test_notifications(store, tag):
                               tg_message_id=987654321012, error=None, summary=f"ok {tag}")
     assert store.notified(p, issue, "immediate")
     assert not store.notified(p, issue, "digest")
+    store.insert_notification(person_id=p, issue_id=issue, kind="digest", dry_run=True,
+                              tg_message_id=None, error=None, summary=f"digest dry {tag}")
+    assert store.notified(p, issue, "digest")                       # a dry run's own once-only rule
+    assert not store.notified(p, issue, "digest", real_only=True)   # the real digest still carries it
 
     store.insert_notification(person_id=None, issue_id=None, kind="report", dry_run=True,
                               tg_message_id=None, error=None, summary=f"report ok {tag}")

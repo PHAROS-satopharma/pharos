@@ -412,13 +412,15 @@ class MemoryStore:
         out.sort(key=lambda r: (r["next_due"], r["ref"]))
         return out
 
-    def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
+    def notified(self, person_id: str, issue_id: str, kind: str, *, real_only: bool = False) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind
-                   and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+                   and (n["error"] is None or n.get("tg_message_id"))
+                   and not (real_only and n.get("dry_run")) for n in self.notification)
 
-    def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
+    def notified_since(self, person_id: str, kind: str, since: datetime, *, dry_run: bool = False) -> bool:
         return any(n["person_id"] == person_id and n["kind"] == kind and n["sent_at"] >= since
-                   and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+                   and (n["error"] is None or n.get("tg_message_id"))
+                   and (dry_run or not n.get("dry_run")) for n in self.notification)
 
     def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
         return {n["person_id"] for n in self.notification
@@ -484,9 +486,10 @@ class MemoryStore:
         self.notification.append({**fields, "sent_at": _now()})
 
     def last_notification_at(self, kind: str, *, delivered_only: bool = False,
-                             before: datetime | None = None) -> datetime | None:
+                             before: datetime | None = None, dry_run: bool = False) -> datetime | None:
         times = [n["sent_at"] for n in self.notification
                  if n["kind"] == kind and not (delivered_only and n.get("error"))
+                 and not (delivered_only and not dry_run and n.get("dry_run"))
                  and (before is None or n["sent_at"] < before)]
         return max(times) if times else None
 

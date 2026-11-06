@@ -280,7 +280,10 @@ The counts run from the last message delivered on an earlier day (a day back for
 same list as the screen (`new_items()`). Nothing is sent on a day with nothing new. A refused message is
 tried again on the next run inside the window, to the people who did not get it. Anyone switches it on or
 off on the People screen: *New items on the authorities' pages, once a day*. Migration 0033 switches it on for
-Dr Sama only. While `telegram_dry_run` is on, the message is only written down.
+Dr Sama only. While `telegram_dry_run` is on, the message is only written down. A dry run (the setting, or
+a manual collect run with `dry_run`) is once a day among dry runs but never counts as the real message: the
+next real run still sends that day's message and counts from the last one that really went out. The class
+digest follows the same rule.
 
 ### Her pages: what reads each one (0038, 6 Nov 2026)
 
