@@ -50,7 +50,7 @@ select sign_record('weekly_report', '00000000-0000-0000-0000-00000005f001', 'rev
 select record_fingerprint('weekly_report', '00000000-0000-0000-0000-00000005f001') as sw_fp2 \gset
 reset role;
 
--- The reviewer without a fresh password; a reader at all; a pack (not built yet).
+-- The reviewer without a fresh password; a reader at all; a pack that was never made.
 select pg_temp.sw_as('00000000-0000-0000-0000-0000000000c3', 600);
 set role authenticated;
 select pg_temp.sw_refused($q$select sign_record('weekly_report', '00000000-0000-0000-0000-00000005f001', 'approved')$q$) as sw_old \gset
@@ -107,7 +107,7 @@ select pg_temp.sw_assert(:'sw_twice' like '23505%', 'the same person cannot sign
 select pg_temp.sw_assert(:'sw_old' like '28P01%', 'a password older than five minutes cannot sign');
 select pg_temp.sw_assert(:'sw_reader' like '42501%' and :sw_reader_sees = 2,
   'a reader signs nothing and reads every signature');
-select pg_temp.sw_assert(:'sw_pack' like '%not yet%', 'a pack cannot be signed yet, and says so');
+select pg_temp.sw_assert(:'sw_pack' like '22023%', 'a pack that was never made cannot be signed (0048)');
 select pg_temp.sw_assert(:'sw_fp3' <> :'sw_sha', 'a week made again no longer matches its signatures');
 select pg_temp.sw_assert(:sw_audited = 2, 'each signature is in the audit log');
 select pg_temp.sw_assert(:'sw_owner_upd' like '%never changed or removed%'
