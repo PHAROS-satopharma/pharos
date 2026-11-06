@@ -24,9 +24,12 @@ select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 19:29+00') = 'literature 20
   'at 19:29 UTC the 18:41 literature slot is due');
 select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 03:29+00') = 'daily 2031-03-04 02:31',
   'at 03:29 UTC the 02:31 daily slot is due');
-select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 00:29+00') = 'literature 2031-03-03 18:41',
+select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 23:29+00') = 'literature 2031-03-04 22:41'
+                     and pg_temp.rk_slot('2031-03-04 23:20+00') = 'literature 2031-03-04 18:41',
+  'at 23:29 UTC the 22:41 literature slot (0090) is due, not before 23:21');
+select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 00:29+00') = 'literature 2031-03-03 22:41',
   'after midnight the evening literature slot of the day before is still the one retried');
-select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 02:29+02') = 'literature 2031-03-03 18:41',
+select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 02:29+02') = 'literature 2031-03-03 22:41',
   'the slots are UTC whatever the time zone the time is given in');
 
 -- ───────────── a lost literature run is asked for again, every hour, until one starts ─────────────
