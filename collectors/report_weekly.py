@@ -929,6 +929,33 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                ("New items", len(raw["new_items"])),
                ("Notices naming our ingredients", len(found)),
                ("To check by hand", len(pages) + len(failed) + len(unread))]
+    # The findings themselves, first in the report: every notice naming one of our ingredients (or its class), every
+    # label change and every paper, ingredient by ingredient, each with its link and her decision.
+    findings_list = []
+    for i in ingredients:
+        for c in i["countries"]:
+            for m in c["mentions"]:
+                findings_list.append({"ingredient": i["name"], "what": "Notice", "where": c["country"],
+                                      "source": m["authority"], "day": m["day"], "title": m["title"],
+                                      "link": m["link"], "by_email": m["by_email"], "tags": [t for t, on in (
+                                          (m["doc_type"], bool(m["doc_type"])), ("by class", m["by_class"]),
+                                          ("history", m["history"])) if on],
+                                      "decision": m["decision"], "awaiting": m["awaiting"]})
+        for m in i["label_changes"]:
+            findings_list.append({"ingredient": i["name"], "what": "Label change", "where": m["country"],
+                                  "source": m["authority"], "day": m["day"], "title": m["title"], "link": m["link"],
+                                  "by_email": False, "tags": [t for t, on in (
+                                      ("reference product", m["reference"]), ("history", m["history"])) if on],
+                                  "decision": m["decision"], "awaiting": m["awaiting"]})
+        for p in i["literature"]["list"]:
+            findings_list.append({"ingredient": i["name"], "what": "Possible case report" if p["case_report"]
+                                  else "Paper", "where": p["journal"], "source": "", "day": p["day"],
+                                  "title": p["title"], "link": p["pubmed"] or p["pmc"] or p["europepmc"],
+                                  "by_email": False, "tags": [t for t, on in (
+                                      ("preprint", p["preprint"]), ("by class", p["by_class"]),
+                                      ("history", p["history"])) if on],
+                                  "decision": p["decision"], "awaiting": p["awaiting"]})
+
     by_label = dict(summary)
     groups = [(heading, [(k, by_label[k]) for k in keys if k in by_label]) for heading, keys in (
         ("Screening", ("Reference countries read", "Other authorities read", "Reads of the authorities' notices",
@@ -944,14 +971,14 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                               "Sources whose reads failed", f"Sources not read {week.this}")),
     )]
     return {"week": week, "made_at": made_at, "made_text": cairo_time(made_at), "summary": summary,
-            "summary_groups": groups, "figures": figures, "decisions": decisions,
+            "summary_groups": groups, "findings": findings_list, "figures": figures, "decisions": decisions,
             "readiness": readiness, "sent": sent, "authorities": authorities, "ingredients": ingredients,
             "new": new, "check": {"pages": pages, "failed": failed, "unread": unread}}
 
 
 # ───────────────────────────── Excel ─────────────────────────────
 
-SHEETS = ("Summary", "Decisions", "Authorities read", "Ingredients by country", "Literature searches",
+SHEETS = ("Summary", "Findings", "Decisions", "Authorities read", "Ingredients by country", "Literature searches",
           "Literature papers",
           "Everything new", "To check by hand")
 
@@ -965,6 +992,15 @@ def build_weekly_xlsx(data: dict) -> bytes:
 
     def yes(v: bool) -> str:
         return "yes" if v else ""
+
+    xlsx_sheet(wb, "Findings",
+               ["Ingredient", "What", "Country or journal", "Authority", "Date", "Title (original)", "Link", "Marked",
+                "Decision"],
+               [[f["ingredient"], f["what"], f["where"], f["source"], f["day"], f["title"],
+                 f["link"] or ("By e-mail: open it in PHAROS" if f["by_email"] else ""), ", ".join(f["tags"]),
+                 f["decision"]] for f in data["findings"]],
+               [16, 18, 22, 30, 14, 70, 50, 22, 24], links=True,
+               empty=f"Nothing about our ingredients was found {week.this}.")
 
     xlsx_sheet(wb, "Decisions",
                ["When (Cairo)", "Notice (original title)", "Decision", "Before", "By", "Reason", "Due", "Sent", "Signal"],

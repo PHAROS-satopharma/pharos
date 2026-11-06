@@ -854,6 +854,33 @@ def test_the_polished_files():
     assert "Screening" in summary and "To check by hand" in summary
 
 
+def test_the_findings_come_first_with_their_links_and_decisions():
+    data = rw.assemble(rw.gather_week(FakeDb(NOV1), NOV1), NOV1)
+    expected = [(i["name"], m["title"]) for i in data["ingredients"]
+                for m in [m for c in i["countries"] for m in c["mentions"]] + i["label_changes"] + i["literature"]["list"]]
+    assert expected and [(f["ingredient"], f["title"]) for f in data["findings"]] == expected
+    kinds = {f["what"] for f in data["findings"]}
+    assert "Notice" in kinds and "Label change" in kinds
+    html = rw.render_weekly_html(data)
+    assert html.index("What was found about our ingredients") < html.index('<div class="summary-grid">')
+    for f in data["findings"]:
+        if f["link"]:
+            assert f'href="{f["link"]}"' in html
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    assert wb.sheetnames[:2] == ["Summary", "Findings"]
+    rows = list(wb["Findings"].iter_rows(min_row=2, values_only=True))
+    assert [(r[0], r[5]) for r in rows] == expected
+    assert [r[8] for r in rows] == [f["decision"] for f in data["findings"]]
+
+
+def test_no_finding_is_said_in_words():
+    data = rw.assemble(rw.gather_week(FakeDb(NOV1), NOV1), NOV1)
+    data["findings"] = []
+    assert "Nothing about our ingredients was found this week" in rw.render_weekly_html(data)
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    assert wb["Findings"]["A2"].value == "Nothing about our ingredients was found this week."
+
+
 def test_a_preview_is_never_archived_recorded_or_sent(tmp_path, monkeypatch):
     monkeypatch.setenv("ARCHIVE_DIR", str(tmp_path / "archive"))
     monkeypatch.setenv("REPORT_DIR", str(tmp_path / "out"))

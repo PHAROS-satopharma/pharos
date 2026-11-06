@@ -70,6 +70,9 @@
   .summary-grid td { padding: 1.3mm 0; }
   .summary-grid td.num { white-space: nowrap; padding-left: 3mm; }
   .summary-grid .quiet td.num { color: var(--muted); }
+  .findings td { padding-top: 2mm; padding-bottom: 2mm; }
+  .findings .what-kind { font-weight: 600; }
+  .findings a { word-break: break-all; font-size: 8pt; }
 
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; font: 500 6.5pt/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase;
@@ -139,6 +142,27 @@
 </div>
 
 <h2><span class="n">01</span>Summary</h2>
+<h3>What was found about our ingredients<span class="sub">{{ data.findings | length }} {{ "finding" if data.findings | length == 1 else "findings" }}</span></h3>
+{% if data.findings %}
+<table class="fixed findings">
+  <colgroup><col style="width: 24mm"><col style="width: 30mm"><col><col style="width: 30mm"></colgroup>
+  <thead><tr><th>Ingredient</th><th>What, where</th><th>Title</th><th>Decision</th></tr></thead>
+  <tbody>
+  {% for f in data.findings %}
+  <tr>
+    <td class="title-orig">{% if loop.first or f.ingredient != loop.previtem.ingredient %}{{ f.ingredient }}{% endif %}</td>
+    <td><strong class="what-kind">{{ f.what }}</strong><br><span class="comment">{{ f.where }}{% if f.source and f.source != f.where %} · {{ f.source }}{% endif %}</span><br><span class="code">{{ f.day }}</span></td>
+    <td><span class="title-orig" dir="auto">{{ f.title }}</span>{% for t in f.tags %}<span class="tag">{{ t }}</span>{% endfor %}<br>{{ link(f.link) }}{% if not f.link and f.by_email %}<span class="comment">Arrived by e-mail; open it in PHAROS</span>{% endif %}</td>
+    <td>{% if f.awaiting %}<span class="dot check"></span>{% else %}<span class="dot fine"></span>{% endif %}{{ f.decision }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Nothing about our ingredients was found {{ week.this }}: no notice naming them or their class, no label change and no paper.</div>
+{% endif %}
+
+<h3>The figures</h3>
 <div class="summary-grid">
   {% for heading, rows in data.summary_groups %}
   <div>
