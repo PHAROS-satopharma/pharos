@@ -60,8 +60,7 @@ describe('the Japan code typed for an ingredient (set_japan_code, 0052)', () => 
 describe('several Japan codes in one field (set_japan_codes, 0069)', () => {
   it('reads every code typed, separated by commas, spaces, new lines or Japanese commas', () => {
     expect(japanCodesOf('1141007, 1141700')).toEqual({ codes: ['1141007', '1141700'], wrong: [] });
-    expect(japanCodesOf(' 1141007 1141700
-1141400 ')).toEqual({ codes: ['1141007', '1141700', '1141400'], wrong: [] });
+    expect(japanCodesOf(' 1141007 1141700\n1141400 ')).toEqual({ codes: ['1141007', '1141700', '1141400'], wrong: [] });
     expect(japanCodesOf('1141007、1141700;1141400')).toEqual({
       codes: ['1141007', '1141700', '1141400'],
       wrong: [],

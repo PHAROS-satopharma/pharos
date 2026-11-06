@@ -365,13 +365,15 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
   `collectors/eurd.py`), whether EMA's literature monitoring covers it, and who receives its Telegram messages.
 - **Japan:** PMDA's search is a form that answers a POST only, so PHAROS cannot look a package insert up by
-  name. The term editor has a *Japan code* field when an ingredient is added, and an administrator finds the
+  name. The term editor has a *Japan codes* field when an ingredient is added, and an administrator finds the
   same field on any ingredient already on the watchlist: open its row (the triangle beside the name), then
-  *Japan code*. Open the PMDA search (link beside the field), search the name, open the product and copy the
+  *Japan codes*. Open the PMDA search (link beside the field), search the name, open the product and copy the
   7-character code from its address (`…/GeneralList/<code>`; the 12-character YJ code is accepted and kept as the
-  7 characters it starts with), then **Save**. The row shows the code it has now with a link to its products on
-  PMDA; a new code replaces the old one and leaves every name alone (`set_japan_code()`, migration 0052; audited).
-  Japan's label watch uses it at its next weekly run. Like any new word it is due for the check of the past that
+  7 characters it starts with), then **Save**. PMDA files each form under its own code (paracetamol: 1141007
+  tablets, 1141700 suppositories, 1141400 injection): type every one, separated by commas. The row shows the codes
+  it has now, each with a link to its products on PMDA; **Save** keeps exactly the codes typed, removes one left
+  out, and leaves every name alone (`set_japan_codes()`, migration 0069; audited). A wrong code is named and nothing
+  is saved. Japan's label watch reads every code at its next weekly run. Like any new word it is due for the check of the past that
   night (0034); the readiness line does not wait for that, since a code is not a name. Without a code the row says *No Japan code
   yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
 
@@ -382,8 +384,8 @@ the English name or any name: its wording, kind, matching, exclusions or country
 press **Remove** (an emptied name is removed too). Nothing is written until **Save**; **Cancel** leaves it as it
 was. The rows are written directly (the ingredient_term admin policy, 0001; every change is in the audit log), so
 the edit is not one step: if a write fails part-way, the screen says so and the list shows what the database holds.
-A new or changed name is due for the check of the past that night (0034). The Japan code is not in this editor; it
-keeps its own field on the row. The ATC code is not edited here (classes are made from it).
+A new or changed name is due for the check of the past that night (0034). The Japan codes are not in this editor;
+they keep their own field on the row. The ATC code is not edited here (classes are made from it).
 
 ## The Ingredients screen: one ingredient across every source
 

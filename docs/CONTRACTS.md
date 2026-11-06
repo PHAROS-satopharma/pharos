@@ -623,10 +623,30 @@ set_japan_code(p_ingredient uuid, p_code text) returns text
   -- code again is not. Execute for authenticated only (revoked from public and anon).
 ```
 
-Web: `JapanCodeField.tsx` (the field, shared by `TermEditor.tsx` and `JapanCodeEdit.tsx`), `JapanCodeEdit.tsx`
-(the open row of the Ingredients page, administrators; invalidates `['ingredients']` and
-`['ingredient-readiness', id]`), `japanCode.ts` (`japanCodeOf`, `currentJapanCode`, `pmdaGeneralListUrl`).
-SQL test: `supabase/tests/japan_code.sql`; web: `japanCode.test.ts`.
+The screen no longer calls it; it keeps its meaning for any other caller (0069).
+
+## Several Japan codes for one ingredient (0069)
+
+PMDA files one ingredient under one 一般名 code per form (paracetamol: 1141007 tablets, 1141700 suppositories,
+1141400 injection). Japan's label watch reads every JP code term (`collectors/spc/pmda_pi.py`, `SQL_TERM_CODES`).
+
+```sql
+set_japan_codes(p_ingredient uuid, p_codes text[]) returns text[]
+  -- security definer; administrators only, 42501 for anyone else; P0002 for an ingredient not on the watchlist.
+  -- Each element trimmed and upper-cased, blanks skipped; 22023 naming every element that does not match
+  -- isJapanCode, and 22023 for a list with no code (it would remove every code). Each code is stored as its first
+  -- 7 characters, once: an ingredient_term lang 'ja', country 'JP', kind 'code', mode 'exact', source 'pmda',
+  -- verified_by = the caller. The ingredient's JP code terms not in the list are deleted; a code it already had
+  -- keeps its row (not due again for the check of the past, 0034); touches no other term; returns the stored
+  -- codes in order. Audited by audit_ingredient_term (0001). Execute for authenticated only.
+```
+
+Web: `JapanCodeField.tsx` (the field: one or several codes, separated by commas, spaces, new lines, 、 or ;
+shared by `TermEditor.tsx`, one draft term per good code, and `JapanCodeEdit.tsx`), `JapanCodeEdit.tsx` (the open
+row of the Ingredients page, administrators; `set_japan_codes`; invalidates `['ingredients']` and
+`['ingredient-readiness', id]`), `japanCode.ts` (`japanCodeOf`, `japanCodesOf`, `currentJapanCodes`,
+`sameJapanCodes`, `pmdaGeneralListUrl`). SQL tests: `supabase/tests/japan_code.sql`, `supabase/tests/japan_codes.sql`;
+web: `japanCode.test.ts`.
 
 ## Environment / secrets
 

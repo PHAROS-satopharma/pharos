@@ -1,6 +1,8 @@
-// The Japan code: PMDA's 一般名 code, kept as an ingredient_term of kind 'code', country JP, so Japan's label watch
-// can find the package inserts (collectors/spc/pmda_pi.py). Set on an ingredient that exists by set_japan_code()
-// (migration 0052), which checks it by the same rule and stores the 7 characters. Pure, for JapanCodeField.tsx.
+// The Japan codes: PMDA's 一般名 codes, kept as ingredient_terms of kind 'code', country JP, so Japan's label watch
+// can find the package inserts (collectors/spc/pmda_pi.py). PMDA files one ingredient under one code per form
+// (paracetamol: 1141007 tablets, 1141700 suppositories, 1141400 injection), so an ingredient can have several. Set on
+// an ingredient that exists by set_japan_codes() (migration 0069), which checks each by the same rule and stores the
+// 7 characters. Pure, for JapanCodeField.tsx.
 import { isJapanCode } from './readiness';
 
 /** PMDA's search form (it answers a POST only; see docs/operations.md, "Adding an ingredient"). */
@@ -17,13 +19,34 @@ export function japanCodeOf(input: string): string | null {
   return isJapanCode(s) ? s.slice(0, 7) : null;
 }
 
-/** The ingredient's current Japan code, or null when it has none. */
-export function currentJapanCode(terms: { kind: string; country_code: string | null; term: string }[]): string | null {
-  const codes = terms
+/** Every code typed in the field: separated by commas, spaces, new lines, Japanese commas or semicolons. Each is
+ *  stored as its 7 characters, once; what is not a Japan code is named in `wrong`, as the field and the database
+ *  refuse it. */
+export function japanCodesOf(input: string): { codes: string[]; wrong: string[] } {
+  const codes: string[] = [];
+  const wrong: string[] = [];
+  for (const part of input.split(/[\s,、;；]+/)) {
+    if (!part) continue;
+    const code = japanCodeOf(part);
+    if (!code) wrong.push(part.toUpperCase());
+    else if (!codes.includes(code)) codes.push(code);
+  }
+  return { codes, wrong };
+}
+
+/** The ingredient's current Japan codes, in order; empty when it has none. */
+export function currentJapanCodes(terms: { kind: string; country_code: string | null; term: string }[]): string[] {
+  return terms
     .filter((t) => t.kind === 'code' && t.country_code === 'JP')
     .map((t) => t.term)
     .sort();
-  return codes[0] ?? null;
+}
+
+/** True when the codes typed are the ones saved, whatever their order. */
+export function sameJapanCodes(a: string[], b: string[]): boolean {
+  const x = [...a].sort();
+  const y = [...b].sort();
+  return x.length === y.length && x.every((c, i) => c === y[i]);
 }
 
 export interface LocalTerm {
