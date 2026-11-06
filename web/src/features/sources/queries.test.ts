@@ -43,6 +43,13 @@ describe('totalsBySource', () => {
     expect(t?.lastError).toBeNull();
   });
 
+  it('does not count a run that stopped at its item cap as a failed run', () => {
+    const t = totalsBySource([
+      run('2026-11-06T10:00:00Z', 'item cap reached: 212 new item(s) wait for the next run', 'pubmed', 200),
+    ]).get('pubmed');
+    expect(t?.failed).toBe(0);
+  });
+
   it('counts a real failure, and one bad notice in a completed run is only a note', () => {
     const t = totalsBySource([
       run('2026-11-05T19:20:00Z', "parse: no rows recognised at https://www.infarmed.pt/x (marker 'result-item' missing)", 'infarmed-circulares', 200),

@@ -263,6 +263,7 @@ class Runner:
         failures = int(prev.get("consecutive_failures") or 0)
         try:
             module = self.load_parser(src.parser)
+            self.ctx.held_back = 0      # new items a parser found but did not read, over max_new_items
             items = module.list_items(self.ctx, src)
             stats.seen = len(items)
             known = self.store.known_external_ids(src.id)
@@ -281,8 +282,11 @@ class Runner:
                     continue
                 ids.add(it.external_id)
                 fresh.append(it)
+            held = 0
             if not self.backfill:
-                fresh = fresh[:int(src.options.get("max_new_items", MAX_NEW_ITEMS))]
+                cap = int(src.options.get("max_new_items", MAX_NEW_ITEMS))
+                held = max(0, len(fresh) - cap) + int(getattr(self.ctx, "held_back", 0) or 0)
+                fresh = fresh[:cap]
             item_errors: list[str] = []
             waiting = 0
             stored = set(known)  # every item now in the database: known before, or stored by this run
@@ -313,12 +317,16 @@ class Runner:
             if waiting:
                 notes.append(f"time budget reached: {waiting} new item(s) wait for the next run")
                 log.warning("%s: time budget reached, %d new item(s) wait", src.id, waiting)
+            if held:
+                notes.append(f"item cap reached: {held} new item(s) wait for the next run")
+                log.warning("%s: item cap reached, %d new item(s) wait", src.id, held)
             stats.error = "; ".join(notes) or None
             latest = latest_published(items)
             health = self._quiet_health(src, prev, latest)
-            # ok=True records a COMPLETE run; a run cut short leaves last_ok_at alone (seed continues)
+            # ok=True records a COMPLETE run; a run cut short by the time budget or the item cap leaves
+            # last_ok_at alone (a seed continues; NCBI's next window still covers the papers held back)
             self.store.set_source_state(src.id, health=health, consecutive_failures=0,
-                                        ok=not waiting, last_item_at=_utc_midnight(latest))
+                                        ok=not waiting and not held, last_item_at=_utc_midnight(latest))
             if health == "degraded" and prev.get("health") != "degraded":
                 self.notifier.health_alert(src.id, "degraded",
                                            f"No new notice for more than {src.expected_max_gap_days} days.")

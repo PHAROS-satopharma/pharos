@@ -517,6 +517,7 @@ def test_a_class_issue_revived_from_history_is_in_the_digest(store, tag):
     ("3 item(s) failed; first: x: ValueError: y", False),
     ("time budget reached: 40 new item(s) wait for the next run", False),
     ("imap not configured; time budget reached: 4 new item(s) wait for the next run", False),
+    ("item cap reached: 212 new item(s) wait for the next run", False),
     ("2 error(s); first: HTTP 503", False), ("1 product(s) without label text", False),
     ("blocked: bot check at https://x", True), ("parse: the page changed shape", True),
     ("FetchError: every new item failed; first: x", True), ("ConnectError: timed out", True),
