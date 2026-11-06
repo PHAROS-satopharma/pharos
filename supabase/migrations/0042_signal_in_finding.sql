@@ -214,45 +214,41 @@ end $$;
 create function review_event_open_signal() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
-  v_auto       boolean := coalesce((select (value #>> '{}')::boolean from app_setting where key = 'signal_auto_open'), true);
   v_title      text;
-  v_n          int;
   v_ingredient uuid;
   v_sig        signal%rowtype;
 begin
-  if new.to_status = 'relevant' then
-    if not v_auto or exists (select 1 from signal_issue where issue_id = new.issue_id) then
-      return new;
-    end if;
-    select i.title into v_title from issue i where i.id = new.issue_id;
-    -- the notice's single ingredient; a notice of several ingredients opens a signal with none
-    select count(*), min(ii.ingredient_id) into v_n, v_ingredient from issue_ingredient ii where ii.issue_id = new.issue_id;
-    if v_n <> 1 then
-      v_ingredient := null;
-    end if;
-    begin
+  -- Everything here is inside one exception block: opening or closing the signal never refuses the decision.
+  begin
+    if new.to_status = 'relevant' then
+      if not coalesce((select (value #>> '{}')::boolean from app_setting where key = 'signal_auto_open'), true)
+         or exists (select 1 from signal_issue where issue_id = new.issue_id) then
+        return new;
+      end if;
+      select i.title into v_title from issue i where i.id = new.issue_id;
+      -- the notice's single ingredient; a notice of several ingredients opens a signal with none
+      -- (uuid has no min(): the first of the array when there is exactly one)
+      select case when count(*) = 1 then (array_agg(ii.ingredient_id))[1] end into v_ingredient
+        from issue_ingredient ii where ii.issue_id = new.issue_id;
       perform open_signal_as(new.issue_id, v_title, v_ingredient, new.person_id,
                              'Opened when the notice was marked Concerns us'
                              || coalesce(': ' || nullif(trim(new.comment), ''), ''));
-    exception when others then
-      raise warning 'PHAROS: the signal for notice % was not opened (% %)', new.issue_id, sqlstate, sqlerrm;
-    end;
-  elsif new.to_status = 'not_relevant' then
-    select s.* into v_sig from signal s join signal_issue si on si.signal_id = s.id where si.issue_id = new.issue_id;
-    if v_sig.id is null or v_sig.stage <> 'validation' then
-      return new;
-    end if;
-    -- a step beyond opened, a notice linked or a note is real work: the signal is left as it is
-    if exists (select 1 from signal_event e where e.signal_id = v_sig.id and e.step not in ('opened', 'notice_linked', 'note')) then
-      return new;
-    end if;
-    begin
+    elsif new.to_status = 'not_relevant' then
+      select s.* into v_sig from signal s join signal_issue si on si.signal_id = s.id where si.issue_id = new.issue_id;
+      if v_sig.id is null or v_sig.stage <> 'validation' then
+        return new;
+      end if;
+      -- a step beyond opened, a notice linked or a note is real work: the signal is left as it is
+      if exists (select 1 from signal_event e
+                  where e.signal_id = v_sig.id and e.step not in ('opened', 'notice_linked', 'note')) then
+        return new;
+      end if;
       perform signal_take_step_as(new.person_id, v_sig.id, 'not_validated', 'validation',
                                   'Decision changed: ' || coalesce(nullif(trim(new.comment), ''), 'no reason given'));
-    exception when others then
-      raise warning 'PHAROS: the signal % for notice % was not closed (% %)', v_sig.ref, new.issue_id, sqlstate, sqlerrm;
-    end;
-  end if;
+    end if;
+  exception when others then
+    raise warning 'PHAROS: the signal of notice % was not opened or closed (% %)', new.issue_id, sqlstate, sqlerrm;
+  end;
   return new;
 end $$;
 create trigger review_event_zz_open_signal after insert on review_event
