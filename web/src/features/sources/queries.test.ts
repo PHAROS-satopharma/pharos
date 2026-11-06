@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 // queries.ts imports the Supabase client; the totals under test never call it.
 vi.mock('../../lib/supabase', () => ({ supabase: {} }));
 
-import { RUN_NOTE, totalsBySource, type RunSlice } from './queries';
+import { RUN_NOTE, filteredBySource, totalsBySource, type FilteredRow, type RunSlice } from './queries';
 
 function run(started_at: string, error: string | null, source_id = 'fda-email', http_status: number | null = null): RunSlice {
   return {
@@ -90,5 +90,20 @@ describe('RUN_NOTE', () => {
     const inDb = /p_error\s+!~\s+'([^']+)'/.exec(sql)?.[1];
     expect(inDb).toBeDefined();
     expect(RUN_NOTE.source).toBe(inDb);
+  });
+});
+
+describe('filteredBySource', () => {
+  it('counts what each source left out and keeps the newest', () => {
+    const row = (source_id: string, title: string, last_seen_at: string) =>
+      ({ source_id, title, reason: 'category: veterinary', last_seen_at }) as FilteredRow;
+    const m = filteredBySource([
+      row('ema-dhpc', 'Enrofloxacin: veterinary letter', '2026-11-06T10:00:00Z'),
+      row('hsa-news', 'Press release', '2026-11-05T10:00:00Z'),
+      row('ema-dhpc', 'Older veterinary letter', '2026-10-01T10:00:00Z'),
+    ]);
+    expect(m.get('ema-dhpc')).toMatchObject({ count: 2, latest: { title: 'Enrofloxacin: veterinary letter' } });
+    expect(m.get('hsa-news')?.count).toBe(1);
+    expect(m.has('mhra-alerts')).toBe(false);
   });
 });

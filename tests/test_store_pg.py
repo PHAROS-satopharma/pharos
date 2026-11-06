@@ -750,3 +750,14 @@ def test_a_signed_signal_matches_in_the_inspection_pack(store, tag):
             raise _RollBack
     except _RollBack:
         pass
+
+
+def test_what_a_filter_dropped_is_kept_once_per_title(store, tag):
+    src = _source(store, tag)
+    store.record_filtered(src.id, [("Veterinary letter: enrofloxacin", "category: veterinary"),
+                                   ("Press release: new chair", "keywords: none of sicherheit")])
+    store.record_filtered(src.id, [("Veterinary letter: enrofloxacin", "category: veterinary"), ("", "x")])
+    rows = store.db.fetchall("select title, reason, times_seen from filtered_item where source_id = %(s)s "
+                             "order by title", {"s": src.id})
+    assert [(r["title"], r["times_seen"]) for r in rows] == [("Press release: new chair", 1),
+                                                             ("Veterinary letter: enrofloxacin", 2)]

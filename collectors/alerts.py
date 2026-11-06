@@ -374,7 +374,7 @@ class Notifier:
     def health_alert(self, source_id: str, health: str, detail: str) -> int:
         """Source down / degraded / blocked → admins with an admin_health subscription only."""
         labels = {"down": "is down (3 failed runs in a row)", "degraded": "needs attention",
-                  "blocked": "is blocked by a bot check"}
+                  "blocked": "is blocked by a bot check", "gap": "may have missed notices"}
         text = (f"<b>{BRAND}</b> · source health\n<b>{esc(source_id)}</b> "
                 f"{esc(labels.get(health, health))}\n{esc_cut(detail, 600)}")
         people = self.store.subscribers("admin_health")
