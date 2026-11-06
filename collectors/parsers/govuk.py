@@ -26,8 +26,8 @@ from datetime import date, timedelta
 from urllib.parse import urlsplit
 
 from collectors.parsers._html_util import absolute, clean, keep, node_text
-from collectors.parsers.base import (FetchContext, Item, ParseError, SourceConfig, html_text,
-                                     parse_date, soup)
+from collectors.parsers.base import (FetchContext, Item, ParseError, SourceBlocked, SourceConfig,
+                                     html_text, parse_date, soup)
 from collectors.parsers.feed import parse_feed
 
 STRUCTURED_FIELDS: list[str] = []
@@ -73,17 +73,30 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
             continue
         if not ctx.backfill and item.published and item.published < oldest:
             continue
-        api = f"{CONTENT_API}{path_of(item.url)}"
-        page = ctx.get(api, accept="application/json", raise_for_status=False)
-        ctx.forget(api)                 # fetch_detail of a new roundup reads it again in full
-        if page.status != 200:
-            continue
         try:
-            data = page.json()
-        except ValueError as exc:
-            raise ParseError(f"GOV.UK content API returned non-JSON for {item.url}") from exc
-        letters.extend(roundup_letters(data, item, source))
+            letters.extend(read_roundup(ctx, item, source))
+        except SourceBlocked:
+            raise
+        except Exception as exc:  # noqa: BLE001 - one roundup not read never loses the feed
+            # The feed's alerts and updates are kept; the roundup is read again on the next run (its
+            # letters are listed every run for roundup_days), and the run carries a note.
+            errors = getattr(ctx, "list_errors", None)
+            if errors is not None:
+                errors.append(f"{path_of(item.url)}: {type(exc).__name__}: {exc}"[:300])
     return items + letters
+
+
+def read_roundup(ctx: FetchContext, item: Item, source: SourceConfig) -> list[Item]:
+    api = f"{CONTENT_API}{path_of(item.url)}"
+    page = ctx.get(api, accept="application/json", raise_for_status=False)
+    ctx.forget(api)                     # fetch_detail of a new roundup reads it again in full
+    if page.status != 200:
+        raise ParseError(f"GOV.UK content API answered HTTP {page.status} for {item.url}")
+    try:
+        data = page.json()
+    except ValueError as exc:
+        raise ParseError(f"GOV.UK content API returned non-JSON for {item.url}") from exc
+    return roundup_letters(data, item, source)
 
 
 def roundup_letters(data: dict, roundup: Item, source: SourceConfig) -> list[Item]:
