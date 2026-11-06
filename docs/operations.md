@@ -335,7 +335,14 @@ messages* (admins only):
    picks one for you.
 3. Click **Confirm <name> (<ATC>)**. Nothing is saved before this click.
 4. The term editor is pre-filled for each language. Add the names it marks as gaps, and the national brand
-   names.
+   names. Names that belong to another substance are left out and listed in a warning
+   (`ingredient-lookup/guard.ts`, 0073): a Wikidata or PubChem name that Wikidata gives to another substance
+   with a different RxNorm ingredient, to a medicine of another substance, or to a disambiguation page, or
+   that RxNorm resolves only to other ingredients; also chemical formulas, and aliases of several words that
+   contain none of the substance's names. On 6 November 2026 levofloxacin had "Ofloxacin", "Floxin" and
+   "Floxacin", which linked the EMA ofloxacin PSUSA to it. 0073 removed those names and what they found.
+   Wikidata cannot catch every wrong alias (guaifenesin's "Buchenteer" is on no other item), so still read
+   each name.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
 7. The next daily run adds its group from the ATC code (searched) and the class above it (shown, switched off

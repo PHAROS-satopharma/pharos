@@ -84,6 +84,7 @@ export function usableSynonym(s: string): boolean {
   if (t.length < 3 || t.length > 40) return false;
   if (/[\[\](){},;:=]/.test(t)) return false;
   if (/^\d+-\d+-\d$/.test(t)) return false; // CAS number
+  if (/^C\d*H\d*(?:[A-Z][a-z]?\d*)*$/.test(t) && /\d/.test(t)) return false; // formula (C9H13NO2)
   if (/^[A-Z0-9]{10}$/.test(t) && /\d/.test(t)) return false; // UNII
   if (/^(CHEBI|CHEMBL|DTXSID|DTXCID|SCHEMBL|ZINC|AKOS|MFCD|NSC|CCRIS|HSDB|EINECS|UNII|BRN|HY-|CS-|BDBM|SR-|KS-|AC-|AB\d|NCGC|BRD|SBI|Q\d|D\d{5}|RefChem|BIDD|GTPL|s\d{4})/i.test(t)) {
     return false;
