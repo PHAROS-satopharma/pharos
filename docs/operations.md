@@ -210,6 +210,37 @@ messages* (admins only):
    words at its next daily run, looking back 12 months first (stored as history; papers never go to
    Telegram). See NCBI literature below.
 
+## The Ingredients screen: one ingredient across every source
+
+Click an ingredient's name on *Ingredients* (the triangle beside it still shows every name looked for). The
+screen answers one question for the days chosen: did any source mention this ingredient, and where. It is the
+vertical pass; the Sources screen is the horizontal one.
+
+- **The days.** *This week* (Sunday to today, Cairo), *Last week*, *Last 30 days*, or any *From*/*To*, both days
+  included, at most 366. The days are in the address (`/ingredients/<id>?from=2026-11-01&to=2026-11-07`), so a
+  link opens the same screen.
+- **The answer per country**, her countries first, then *Other authorities*:
+  *Mentioned in N notices*; *Not read in these days*; *N of M reads failed*; *A page of hers is not read by the
+  app*; or *Nothing found*. The middle three say "check it by hand", and their pages open folded out. A read
+  counts the safety and recall sources of the country in those Cairo days; a note such as "time budget reached"
+  is not a failure. The line at the top sums it up: *Mentioned in X of N countries · Y nothing found · Z to check
+  by hand*.
+- **Each mention** shows its date (published, else the day it was first seen), its type, the original title
+  linked to the page a person opens (the same link as on the Sources screen), the words that matched with their
+  language, *By class* when only a class word matched, and *History* when it came from a backfill or the check of
+  the past. An e-mail with no web page opens with **Read the e-mail**. Its notice shows its status and latest
+  decision (who, when, why); a reviewer or administrator records **Reviewed**, **Relevant** or **Not relevant**
+  (a reason is required) right there, or **Change** after a decision. The decision shows at once on every
+  mention filed under the same notice.
+- **Label changes** of products with the ingredient are listed apart, with the sections that changed.
+- **Literature**: the papers the daily NCBI watch stored for those days, by database and by search, the
+  ingredient's own papers first, 50 at a time (**Show more**), each with its PubMed and PubMed Central links.
+  Papers have no decision buttons. **Count on PubMed and PubMed Central now** asks NCBI live
+  (`literature-search`); those counts are by publication date.
+
+The screen reads everything with one call, `ingredient_screen()` (migration 0039), and more papers with
+`ingredient_papers()`. Both refuse anyone who is not on the team.
+
 ## Drug classes and the check of the past
 
 - **Drug classes from the ATC code.** The daily run starts with `python -m collectors.classes`. For each
