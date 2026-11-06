@@ -6,9 +6,14 @@ Section keys are language-neutral where the label format is:
   Headings are recognised by their number at the start of a line ("4.4 Advertencias y
   precauciones especiales de empleo", "4.4. Mises en garde…", "4.8 Undesirable effects"); the
   heading words are never translated or compared, so every language splits the same way.
-* US PI (DailyMed SPL, by LOINC section code): ``"us:boxed_warning"``, ``"us:contraindications"``,
-  ``"us:warnings_and_precautions"``, ``"us:warnings"``, ``"us:adverse_reactions"``,
-  ``"us:drug_interactions"``, ``"us:specific_populations"``, ``"us:overdosage"``.
+* US PI (DailyMed SPL, by LOINC section code): ``"us:boxed_warning"``, ``"us:recent_major_changes"``,
+  ``"us:contraindications"``, ``"us:warnings_and_precautions"``, ``"us:warnings"``, ``"us:precautions"``,
+  ``"us:adverse_reactions"``, ``"us:drug_interactions"``, ``"us:specific_populations"``, ``"us:overdosage"``.
+  A section's text holds its sub-sections: the old-format PRECAUTIONS (42232-9, before 2006 and on many generics)
+  holds pregnancy, nursing, paediatric and geriatric use; an OTC label's Warnings (34071-1) holds "Do not use",
+  "Ask a doctor" and "Stop use". Before 7 Nov 2026 PRECAUTIONS was not read at all.
+* An EPAR product-information PDF holds one SmPC per strength or form: the second and later SmPCs are keyed
+  ``"smpc2:4.4"`` … (``split_smpcs``); they are watched like the first.
 * Japan (new-format 添付文書, 2019+): every numbered heading 1–26 is a boundary (``"ja:3"`` 組成・性状,
   ``"ja:5"`` 効能又は効果に関連する注意 … so their text never runs on inside the section before);
   watched are ``"ja:1"`` 警告, ``"ja:2"`` 禁忌, ``"ja:8"`` 重要な基本的注意,
@@ -29,9 +34,9 @@ import re
 
 # EU SmPC sections watched for safety-relevant change.
 WATCHED_EU = {"4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9"}
-WATCHED_US = {"us:boxed_warning", "us:contraindications", "us:warnings_and_precautions",
-              "us:warnings", "us:adverse_reactions", "us:drug_interactions",
-              "us:specific_populations", "us:overdosage"}
+WATCHED_US = {"us:boxed_warning", "us:recent_major_changes", "us:contraindications",
+              "us:warnings_and_precautions", "us:warnings", "us:precautions", "us:adverse_reactions",
+              "us:drug_interactions", "us:specific_populations", "us:overdosage"}
 # "ja:precautions" is the old-format 【使用上の注意】 block, which holds 副作用 and 相互作用.
 WATCHED_JA = {"ja:1", "ja:2", "ja:8", "ja:9", "ja:10", "ja:11", "ja:13", "ja:precautions"}
 WATCHED = WATCHED_EU | WATCHED_US | WATCHED_JA
@@ -45,6 +50,8 @@ _HEAD = re.compile(r"^\s*(\d{1,2}(?:\.\d{1,2}){0,2})\.?\s+(\S.{0,200})$")
 
 US_LOINC = {
     "34066-1": "us:boxed_warning",
+    "43683-2": "us:recent_major_changes",
+    "42232-9": "us:precautions",
     "34070-3": "us:contraindications",
     "43685-7": "us:warnings_and_precautions",
     "34071-1": "us:warnings",
@@ -185,6 +192,37 @@ def split_japanese(text: str) -> dict[str, str]:
     return out
 
 
+_SMPC_PREFIX = re.compile(r"^smpc\d+:")
+
+
+def split_smpcs(text: str) -> list[str]:
+    """The SmPCs of one product-information text, in order: a new one starts at each "1. NAME OF THE MEDICINAL
+    PRODUCT" heading (number 1, mostly upper-case, in any language) once the SmPC before it reached section 6.
+    Before 7 Nov 2026 every SmPC after the first ran on inside the first one's section 10."""
+    blocks: list[list[str]] = [[]]
+    top = 0
+    for line in (text or "").splitlines():
+        m = _HEAD.match(line)
+        if m and "." not in m.group(1):
+            num = int(m.group(1))
+            if num == 1 and top >= 6 and _mostly_upper(m.group(2)):
+                blocks.append([])
+                top = 0
+            elif _mostly_upper(m.group(2)) and num > top:
+                top = num
+        blocks[-1].append(line)
+    return ["\n".join(b) for b in blocks if any(x.strip() for x in b)]
+
+
+def split_smpc_sections(text: str) -> dict[str, str]:
+    """``split_numbered`` of each SmPC in ``text``: the first one's keys as they are, the next ``"smpc2:4.4"`` …"""
+    out: dict[str, str] = {}
+    for n, block in enumerate(split_smpcs(text), start=1):
+        for key, body in split_numbered(block).items():
+            out[key if n == 1 else f"smpc{n}:{key}"] = body
+    return out
+
+
 def cut_annex_i(text: str) -> str:
     """The SmPC part of an EPAR product-information PDF: Annex I up to Annex II."""
     m_start = re.search(r"(?im)^\s*(ANNEX I|ANHANG I|ANNEXE I|ALLEGATO I|ANEXO I|BIJLAGE I)\s*$",
@@ -200,9 +238,10 @@ def watched_changes(changed: list[str]) -> list[str]:
     """Sections among ``changed`` that may raise an issue (QRD sub-sections count via parent)."""
     out = []
     for key in changed:
-        if key in RECORD_ONLY:
+        bare = _SMPC_PREFIX.sub("", key)
+        if bare in RECORD_ONLY:
             continue
-        parent = ".".join(key.split(".")[:2])
-        if key in WATCHED or parent in WATCHED:
+        parent = ".".join(bare.split(".")[:2])
+        if bare in WATCHED or parent in WATCHED:
             out.append(key)
     return out

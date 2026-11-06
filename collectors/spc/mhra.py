@@ -146,6 +146,11 @@ def discover(ctx, ingredient: dict) -> Listing:
     return Listing(found.values(), gaps=gaps)
 
 
+def listed_version(product: dict) -> str | None:
+    """The SPC file's document id: a new SPC is a new file on MHRA's document store."""
+    return (product.get("extra") or {}).get("doc_id") or None
+
+
 def wanted(section: str) -> bool:
     return section == "10" or section in WATCHED_EU
 

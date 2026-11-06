@@ -513,6 +513,16 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   new SPC file is the same product. A run that only ran out of time shows as a note, not as Failed (0084). On
   7 Nov 2026, 99 Japanese package inserts filed under ivabradine by codes it does not have (paracetamol's among
   them) were switched off once (0085).
+- **The regulator's version decides what is read first** (0086, 7 Nov 2026). Each snapshot keeps the label's
+  version as the regulator's list gives it: DailyMed's SPL version, PMDA's package id, CIMA's document date,
+  EMA's last update, MHRA's document id (France's list names none). A label whose listed version moved is read
+  first, ahead of the labels read in turn; a label still listed at the version last read is not read again for
+  28 days (our reference product always is). The time saved goes to the labels that changed.
+- **Sections read** (7 Nov 2026). US labels: the old-format PRECAUTIONS (with pregnancy, nursing, paediatric and
+  geriatric use inside it) and Recent Major Changes are read and watched too; an OTC label's Warnings already
+  held "Do not use", "Ask a doctor" and "Stop use". An EPAR's product information is read one SmPC per strength
+  or form (the second one's sections are *smpc2:4.4* …); before, every SmPC after the first ran on inside the
+  first one's section 10. The first read of a US label or an EPAR this new way is a new baseline, never a change.
 
 The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
 took its place.

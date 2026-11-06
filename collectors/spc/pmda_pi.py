@@ -175,6 +175,11 @@ def discover(ctx, ingredient: dict) -> list[Product]:
     return Listing(found.values(), gaps=gaps)
 
 
+def listed_version(product: dict) -> str | None:
+    """The package id with its version suffix (``…_2_04``): a revised insert gets a new one."""
+    return (product.get("extra") or {}).get("package_id") or None
+
+
 def snapshot(ctx, product: dict) -> Snapshot | None:
     extra = product.get("extra") or {}
     url = PDF.format(pid=extra["package_id"]) if extra.get("package_id") else product.get("url")

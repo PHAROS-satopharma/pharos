@@ -28,7 +28,7 @@ from datetime import date, datetime
 
 from collectors.core.context import FetchError, ParseError
 from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, run_cache
-from collectors.spc.sections import WATCHED_EU, cut_annex_i, split_numbered
+from collectors.spc.sections import WATCHED_EU, cut_annex_i, split_smpc_sections
 
 SOURCE_ID = "spc-ema-epar"
 COUNTRY = "EU"
@@ -121,8 +121,19 @@ def pi_url(product: dict) -> str | None:
     return PI_URL.format(slug=url.rsplit("/", 1)[-1], lang=LANG)
 
 
+# Snapshot.method: each SmPC of the PDF read on its own (7 Nov 2026). The snapshots before it ran every SmPC
+# after the first into section 10; a first read this way is a new baseline, never a label change.
+SMPCS = "smpcs-1"
+
+
+def listed_version(product: dict) -> str | None:
+    """The medicines report's last update of the product information."""
+    return (product.get("extra") or {}).get("last_updated") or None
+
+
 def wanted(section: str) -> bool:
-    return section == "10" or section in WATCHED_EU
+    bare = section.split(":", 1)[1] if section.startswith("smpc") else section
+    return bare == "10" or bare in WATCHED_EU
 
 
 def snapshot(ctx, product: dict) -> Snapshot | None:
@@ -136,9 +147,9 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     from collectors.pdf import extract_text
 
     text, _method, _words = extract_text(f.content, LANG)
-    sections = {k: v for k, v in split_numbered(cut_annex_i(text)).items() if wanted(k)}
+    sections = {k: v for k, v in split_smpc_sections(cut_annex_i(text)).items() if wanted(k)}
     if not sections:
         return None
     doc_date = report_date((product.get("extra") or {}).get("last_updated"))
     return Snapshot(sections=sections, doc_date=doc_date, lang=LANG, source_url=url,
-                    original_sha256=f.sha256)
+                    original_sha256=f.sha256, method=SMPCS)
