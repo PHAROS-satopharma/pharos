@@ -489,6 +489,29 @@ Collector: `collectors/eurd.py` (daily, `collect.yml` step "EURD list"; `eurd_en
 source `pmda` (`TermEditor.tsx`). SQL test: `supabase/tests/ingredient_readiness.sql`; Python: `tests/test_eurd.py`,
 `tests/test_report_weekly.py`; web: `readiness.test.ts`.
 
+## Inspection evidence (0046, 0047)
+
+```sql
+audit_log  -- append-only (0046): trigger audit_log_no_change (before update or delete, each row) and
+  -- audit_log_no_truncate (before truncate) raise 42501 "The audit log is never changed or removed." for every
+  -- role, the owner included; update, delete, truncate revoked from public, anon, authenticated, service_role.
+  -- audit_row() inserts as before. Nothing may update, delete or truncate it (no retention job exists).
+sign_kind  -- + 'weekly_report', 'pack' (0046; used from 0047 on).
+record_fingerprint(p_kind sign_kind, p_id uuid) returns text   -- 0047, same signature and grants, now plpgsql:
+  -- null for someone not on the team; monthly_report and weekly_report: sha256(pdf_sha256 || ':' || xlsx_sha256)
+  -- as hex; signal as 0030; pack raises 0A000 "… not yet …" until the pack table exists (Phase 15 replaces it).
+sign_record(p_kind, p_id, p_meaning sign_meaning, p_comment) returns uuid   -- 0047, same signature and grants:
+  -- weekly_report (and pack): reviewer or admin, either meaning (reviewed / approved); monthly_report: admin;
+  -- signal: reviewer or admin, once closed. Password sign-in in the last 300 s (amr) or 28P01; the same person,
+  -- meaning and fingerprint once (23505); sign_off append-only and audited (0030).
+```
+
+Web: Reports (`web/src/features/reports/ReportsPage.tsx`, `FileHash.tsx`), `web/src/features/signoff/`
+(`SignOff.tsx`: query key `['sign-off', kind, id]`, reads `sign_off` and `record_fingerprint`; `signoff.ts`:
+`shortHash`, `signatureState`, `STATE_LABEL` "Fingerprint matches" / "File changed since signing",
+`defaultMeaning`), `styles/signoff.css`. Workflow: `db-backup.yml` verify-archive samples 50 originals plus 10
+`weekly_report` / `monthly_report` files. SQL test: `supabase/tests/sign_off_weekly.sql`; web: `signoff.test.ts`.
+
 ## Environment / secrets
 
 | Secret | Used by |
