@@ -2,8 +2,8 @@
 // terms become drafts for the term editor, and the edited drafts become the deletes, updates and inserts that
 // bring the database to them. Administrators write ingredient_term directly (the ingredient_term_admin policy,
 // 0001); every change is in audit_log, and a new or changed word is due for the check of the past (0034).
-// The Japan code is not a name: it keeps its own field on the row (JapanCodeEdit, set_japan_code), so it is
-// left out here and never touched by an edit.
+// The Japan codes are not names: they keep their own field on the row (JapanCodeEdit, set_japan_codes), so they
+// are left out here and never touched by an edit.
 import type { IngredientTerm, MatchMode, TermKind } from '../../lib/types';
 import type { TermDraft } from './TermEditor';
 

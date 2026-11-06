@@ -7,6 +7,7 @@ import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { Select, type Option } from '../../ui/Select';
 import { JapanCodeField } from './JapanCodeField';
+import { japanCodesOf } from './japanCode';
 
 export interface TermDraft {
   uid: string;
@@ -25,8 +26,9 @@ export function newUid(): string {
   return `t${Date.now().toString(36)}${seq}`;
 }
 
-/** The Japan code: PMDA's product code, kept as a term of kind 'code' for Japan so the label watch can find the
- *  package inserts (ingredient_term kind 'code', country JP, source 'pmda'). */
+/** A Japan code: PMDA's product code, kept as a term of kind 'code' for Japan so the label watch can find the
+ *  package inserts (ingredient_term kind 'code', country JP, source 'pmda'). An ingredient can have several, one per
+ *  form PMDA files it under. */
 export function isJapanCodeDraft(t: TermDraft): boolean {
   return t.kind === 'code' && t.country === 'JP';
 }
@@ -50,27 +52,41 @@ export function TermEditor({
   /** Languages that can be added (the regulators' languages). */
   languages: string[];
   countries: Option[];
-  /** False when the ingredient exists: its Japan code has its own field on the row (JapanCodeEdit). */
+  /** False when the ingredient exists: its Japan codes have their own field on the row (JapanCodeEdit). */
   withJapanCode?: boolean;
 }) {
   const [hits, setHits] = useState<Record<string, HitState>>({});
   const [addLang, setAddLang] = useState('');
 
-  // The Japan code is a term of kind 'code' for Japan: not a name, so it is not shown among the languages.
-  const japan = terms.find(isJapanCodeDraft);
+  // The Japan codes are terms of kind 'code' for Japan: not names, so they are not shown among the languages. The
+  // field keeps what was typed; one term per good code is kept beside the names, and a wrong one is named under it.
   const named = terms.filter((t) => !isJapanCodeDraft(t));
+  const [japanText, setJapanText] = useState(() =>
+    terms
+      .filter(isJapanCodeDraft)
+      .map((t) => t.term)
+      .join(', '),
+  );
   const langs = [...new Set(named.map((t) => t.lang))].sort((a, b) => languageName(a).localeCompare(languageName(b)));
   const missing = languages.filter((l) => !langs.includes(l));
 
-  function setJapanCode(code: string) {
-    if (japan) {
-      update(japan.uid, { term: code });
-    } else {
-      onChange([
-        ...terms,
-        { uid: newUid(), lang: 'ja', term: code, kind: 'code', mode: 'exact', exclusions: '', country: 'JP', source: 'pmda' },
-      ]);
-    }
+  function setJapanCodes(text: string) {
+    setJapanText(text);
+    const kept = terms.filter(isJapanCodeDraft);
+    const codes = japanCodesOf(text).codes.map(
+      (code): TermDraft =>
+        kept.find((t) => t.term === code) ?? {
+          uid: newUid(),
+          lang: 'ja',
+          term: code,
+          kind: 'code',
+          mode: 'exact',
+          exclusions: '',
+          country: 'JP',
+          source: 'pmda',
+        },
+    );
+    onChange([...named, ...codes]);
   }
 
   function update(uid: string, patch: Partial<TermDraft>) {
@@ -208,7 +224,7 @@ export function TermEditor({
         </Button>
       </div>
 
-      {withJapanCode ? <JapanCodeField value={japan?.term ?? ''} onChange={setJapanCode} /> : null}
+      {withJapanCode ? <JapanCodeField value={japanText} onChange={setJapanCodes} /> : null}
     </div>
   );
 }
