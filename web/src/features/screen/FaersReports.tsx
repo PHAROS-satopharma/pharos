@@ -227,7 +227,7 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
                               'the reaction is reported for.'
                             }
                           >
-                            Most often with {r.co_drug} ({share(r.co_reports, r.reports)} of these reports,{' '}
+                            Over-represented: {r.co_drug} ({share(r.co_reports, r.reports)} of these reports,{' '}
                             {share(r.co_all_reports, f.reports)} of all {f.searched} reports)
                           </div>
                         ) : null}
@@ -249,8 +249,8 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
             The reports are FDA’s, from the FDA Adverse Event Reporting System (FAERS), counted through openFDA; the
             reactions are named as FDA publishes them. A report is not proof that the drug caused the reaction, and the
             counts are not how often it happens: most reactions are never reported, and one report can name several
-            drugs, so under each flag is the other drug its reports name most often. The reactions are matched
-            to MeSH by name for the label; a blank label means MeSH does not have the name or no label is read yet. The
+            drugs, so under a flag is the other drug most reported with it that its reports name at least twice as
+            often as usual, when there is one. The reactions are matched to MeSH by name for the label; a blank label means MeSH does not have the name or no label is read yet. The
             U.S. Food and Drug Administration does not endorse PHAROS.
           </p>
         </>

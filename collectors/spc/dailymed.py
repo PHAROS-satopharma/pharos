@@ -79,6 +79,9 @@ def _read_list(ctx, query: str, otc: str | None, found: dict[str, Product]) -> N
         total = int((data.get("metadata") or {}).get("total_pages") or 1)
         if page >= total:
             break
+        if page >= MAX_PAGES:
+            # a partial list would switch off every label it did not reach: the discovery fails instead
+            raise FetchError(200, url, f"DailyMed label list {url}: {total} pages, more than {MAX_PAGES}")
         page += 1
 
 

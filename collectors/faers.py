@@ -523,6 +523,8 @@ def count_reports(db: Any, api: OpenFda, *, force: bool = False, ingredient: str
             continue
         try:
             us = us_name(r["rxcui"]) if us_name and r.get("rxcui") else None
+            if us_name and r.get("rxcui") and not us:
+                raise LookupError("RxNorm gave no name for the ingredient's rxcui")   # left for the next run
             got = count_ingredient(api, bg, r["inn_en"], us)
             store(db, r["id"], got)
         except Exception as exc:              # one ingredient never stops the others

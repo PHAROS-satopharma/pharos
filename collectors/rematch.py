@@ -50,7 +50,7 @@ log = logging.getLogger("collectors.rematch")
 BATCH = 24                  # notices read and checked together; the time is checked between batches
 READERS = 6                 # originals read from R2 at once
 MAX_ATTACHMENTS = 8         # as collectors/run.py
-ALL_HISTORY = date(2000, 1, 1)
+ALL_HISTORY = date.min      # every stored notice: one dated before 2000 or misread (1900) too
 
 
 @dataclass

@@ -13,6 +13,7 @@ import { key } from "./text.ts";
 const contact = Deno.env.get("CONTACT_EMAIL");
 const UA = `PHAROS/1.0 (pharmacovigilance screening aid${contact ? `; ${contact}` : ""})`;
 const DISAMBIGUATION = "Q4167410";
+const RX_NAMES = 30;           // English names asked of RxNorm per lookup
 
 export interface Candidate { term: string; lang: string }
 export interface Own { qid: string | null; rxcui: string[]; inn: string }
@@ -55,6 +56,7 @@ function variants(s: string): string[] {
 interface Other {
   label: string | null;
   rx: Set<string>;
+  cas: Set<string>;
   substance: boolean;
   formOf: boolean;
   disambiguation: boolean;
@@ -73,7 +75,7 @@ async function wikidataOthers(cands: Candidate[], own: Own): Promise<Map<string,
     }
   }
   const query = `
-SELECT ?val ?other ?otherLabel ?rx ?cas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHERE {
+SELECT ?val ?other ?otherLabel ?rx ?cas ?owncas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHERE {
   VALUES ?val { ${[...values].join(" ")} }
   { ?other rdfs:label ?val } UNION { ?other skos:altLabel ?val }
   FILTER(?other != wd:${own.qid})
@@ -85,6 +87,7 @@ SELECT ?val ?other ?otherLabel ?rx ?cas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHER
              OPTIONAL { ?ing wdt:P3345 ?irx } OPTIONAL { ?ing wdt:P279 ?isup }
              OPTIONAL { ?ing rdfs:label ?ingLabel FILTER(LANG(?ingLabel) = "en") } }
   OPTIONAL { ?other rdfs:label ?otherLabel FILTER(LANG(?otherLabel) = "en") }
+  OPTIONAL { wd:${own.qid} wdt:P231 ?owncas }
 } LIMIT 5000`;
   const data = await fetchJson<{ results: { bindings: Binding[] } }>("https://query.wikidata.org/sparql", {
     method: "POST",
@@ -92,7 +95,9 @@ SELECT ?val ?other ?otherLabel ?rx ?cas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHER
     body: new URLSearchParams({ query, format: "json" }),
   }, 15000);
   const byName = new Map<string, Map<string, Other>>();
+  const ownCas = new Set<string>();
   for (const b of data.results?.bindings ?? []) {
+    if (b.owncas?.value) ownCas.add(b.owncas.value);
     const name = b.val?.value;
     const qid = qidOf(b.other?.value);
     if (!name || !qid) continue;
@@ -100,11 +105,12 @@ SELECT ?val ?other ?otherLabel ?rx ?cas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHER
     byName.set(key(name), others);
     let o = others.get(qid);
     if (!o) {
-      o = { label: null, rx: new Set(), substance: false, formOf: false, disambiguation: false, ingredients: new Map() };
+      o = { label: null, rx: new Set(), cas: new Set(), substance: false, formOf: false, disambiguation: false, ingredients: new Map() };
       others.set(qid, o);
     }
     if (b.otherLabel?.value) o.label = b.otherLabel.value;
     if (b.rx?.value) o.rx.add(b.rx.value);
+    if (b.cas?.value) o.cas.add(b.cas.value);
     if (b.rx?.value || b.cas?.value) o.substance = true;
     if (qidOf(b.sup?.value) === own.qid) o.formOf = true;
     if (qidOf(b.p31?.value) === DISAMBIGUATION) o.disambiguation = true;
@@ -118,6 +124,8 @@ SELECT ?val ?other ?otherLabel ?rx ?cas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHER
     }
   }
   const sameRx = (rx: Set<string>) => own.rxcui.some((r) => rx.has(r));
+  // another item with the ingredient's own CAS number is the same substance (a duplicate Wikidata item)
+  const sameCas = (cas: Set<string>) => [...cas].some((c) => ownCas.has(c));
   // a salt or other form whose English name contains the INN ("ivabradine hydrochloride") is the substance
   const inn = key(own.inn);
   const named = (label: string | null) => !!inn && inn.length >= 4 && !!label && key(label).includes(inn);
@@ -131,7 +139,7 @@ SELECT ?val ?other ?otherLabel ?rx ?cas ?sup ?p31 ?ing ?ingLabel ?irx ?isup WHER
           const names = [...o.ingredients.values()].map((i) => i.label).filter(Boolean).join(", ");
           why = `a medicine of ${names || "another substance"}`;
         }
-      } else if (o.substance && !o.formOf && !sameRx(o.rx) && !named(o.label)) {
+      } else if (o.substance && !o.formOf && !sameRx(o.rx) && !sameCas(o.cas) && !named(o.label)) {
         why = `a name of ${o.label ?? qid}`;
       } else if (o.disambiguation) {
         why = "a name Wikidata lists for several things";
@@ -147,7 +155,12 @@ async function rxnormOthers(cands: Candidate[], own: Own): Promise<Map<string, s
   const out = new Map<string, string>();
   if (!own.rxcui.length) return out;
   const base = "https://rxnav.nlm.nih.gov/REST/";
-  const names = [...new Set(cands.filter((c) => c.lang === "en").map((c) => c.term))].slice(0, 30);
+  const every = [...new Set(cands.filter((c) => c.lang === "en").map((c) => c.term))];
+  const names = every.slice(0, RX_NAMES);
+  // a name RxNorm is not asked about is reported (left out), never passed unchecked
+  for (const name of every.slice(RX_NAMES)) {
+    out.set(key(name), `not checked: RxNorm is asked about ${RX_NAMES} English names at most`);
+  }
   const one = async (name: string) => {
     const ids = await fetchJson<{ idGroup?: { rxnormId?: string[] } }>(
       base + "rxcui.json?" + new URLSearchParams({ name, search: "2" }),
