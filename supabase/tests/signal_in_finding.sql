@@ -1,6 +1,6 @@
 -- PHAROS CI — signal steps inside the finding (0042): Concerns us opens a signal once, Doesn't concern us closes
--- it as not validated while nothing real was done, finding_state() carries the signal, and the step functions
--- keep their guards. Runs on the database ci.yml prepared: CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3)
+-- it as not validated while nothing real was done (Concerns us again reopens it, 0058), finding_state() carries
+-- the signal, and the step functions keep their guards. Runs on the database ci.yml prepared: CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3)
 -- exist. Everything here happens in one transaction that is rolled back at the end (review_event and
 -- signal_event cannot be deleted).
 -- One transaction means one now(): every signal_event shares its created_at, so the step lists below put
@@ -147,9 +147,24 @@ insert into review_event (issue_id, from_status, to_status, comment, person_id) 
   ('00000000-0000-0000-0000-00000042e001', 'not_relevant', 'relevant', 'It is our salt after all', my_person_id());
 reset role;
 select pg_temp.sf_assert((select count(*) from signal_issue where issue_id = '00000000-0000-0000-0000-00000042e001') = 1
-    and (select count(*) from signal_event where signal_id = :'sig1') = 2
-    and (select stage from signal where id = :'sig1') = 'closed',
-  'Concerns us again opens no second signal and reopens nothing by itself');
+    and (select count(*) from signal where id in (select signal_id from signal_issue
+                                                    where issue_id = '00000000-0000-0000-0000-00000042e001')) = 1,
+  'Concerns us again opens no second signal');
+select pg_temp.sf_assert((select stage = 'validation' and priority is null and outcome is null from signal where id = :'sig1')
+    and (select count(*) from signal_event where signal_id = :'sig1') = 3
+    and (select to_stage = 'validation' and person_id = :'reviewer_id'
+           from signal_event where signal_id = :'sig1' and step = 'reopened'
+            and comment = 'Decision changed back: It is our salt after all'),
+  'Concerns us again reopens the signal Doesn''t concern us closed, into validation, saying the decision changed back (0058)');
+
+-- ───────────── the decision can change again: the decision's own steps are not work ─────────────
+set role authenticated;
+insert into review_event (issue_id, from_status, to_status, comment, person_id) values
+  ('00000000-0000-0000-0000-00000042e001', 'relevant', 'not_relevant', 'Not ours after all', my_person_id());
+reset role;
+select pg_temp.sf_assert((select stage = 'closed' and outcome = 'not_validated' from signal where id = :'sig1')
+    and (select count(*) from signal_event where signal_id = :'sig1') = 4,
+  'Doesn''t concern us closes it again: the decision''s own closing and reopening are not work on the signal');
 
 -- ───────────── Reopen: a signal never validated goes back to validation (0057) ─────────────
 set role authenticated;
@@ -164,7 +179,7 @@ select pg_temp.sf_assert(:'sf_reopened' = 'validation'
   'reopening a signal closed as not validated sends it back to validation, with no priority nobody chose');
 select pg_temp.sf_assert(:'sf_reval'::jsonb ->> 'next_step' = 'validated'
     and (select to_stage = 'validation' and priority is null from signal_event
-          where signal_id = :'sig1' and step = 'reopened'),
+          where signal_id = :'sig1' and step = 'reopened' and comment = 'It is our salt after all'),
   'its next step is validation, and the record says where it went');
 set role authenticated;
 select signal_take_step(:'sig1', 'validated', 'validation', 'Plausible after all', 'low') as sf_reval_st \gset
@@ -218,6 +233,19 @@ select pg_temp.sf_assert((select s.ingredient_id is null and s.title = 'CI signa
                            where si.issue_id = '00000000-0000-0000-0000-00000042e003'),
   'a notice of two ingredients opens a signal with no ingredient');
 
+-- ───────────── a signal a person closed as Not a signal is not reopened by the decision (0058) ─────────────
+set role authenticated;
+select s.id as sig3 from signal s join signal_issue si on si.signal_id = s.id
+ where si.issue_id = '00000000-0000-0000-0000-00000042e003' \gset
+select signal_take_step(:'sig3', 'not_validated', 'validation', 'A known, labelled risk') as sf_st3 \gset
+insert into review_event (issue_id, from_status, to_status, comment, person_id) values
+  ('00000000-0000-0000-0000-00000042e003', 'relevant', 'not_relevant', 'Not ours', my_person_id());
+insert into review_event (issue_id, from_status, to_status, comment, person_id) values
+  ('00000000-0000-0000-0000-00000042e003', 'not_relevant', 'relevant', 'Ours after all', my_person_id());
+reset role;
+select pg_temp.sf_assert((select stage = 'closed' and outcome = 'not_validated' from signal where id = :'sig3')
+    and not exists (select 1 from signal_event where signal_id = :'sig3' and step = 'reopened'),
+  'a signal a person closed as Not a signal stays closed when the notice concerns us again');
 -- ───────────── the switch ─────────────
 update app_setting set value = 'false'::jsonb where key = 'signal_auto_open';
 set role authenticated;
