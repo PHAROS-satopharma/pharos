@@ -25,6 +25,7 @@ import { caseReportLabel, dueLine, mlmLabel, orderPapers, withPaperDecision } fr
 import { paperStateKey, useMlmMonitored, usePaperStates } from './paperState';
 import { PRESETS, cairoDayOf, presetDays, rangeError, rangeFromSearch, rangeLabel, type DayRange } from './range';
 import { ReadEmail } from './ReadEmail';
+import { OpenCase } from '../cases/OpenCase';
 import { classesLine, relationTag } from './relation';
 import type {
   Decision,
@@ -549,6 +550,7 @@ function PaperItem({
         {p.title}
       </p>
       {state?.case_report ? <p className="scr-due">{dueLine(state)}</p> : null}
+      {state?.case_report ? <OpenCase documentId={p.document_id} /> : null}
       {pubmed || pmc ? (
         <p className="scr-paper-links">
           {pubmed ? (

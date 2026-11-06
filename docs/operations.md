@@ -730,6 +730,63 @@ November 2026): a valid serious case reaches the Egyptian Drug Authority within 
   covered from the next day; nothing is stored when neither the list nor the match has changed. A failure
   warns and keeps the last list.
 
+## Individual case reports (Cases)
+
+The **Cases** tab (migration 0059) holds each individual case safety report from the source document to the
+file the authority takes. A case opens three ways:
+
+- **Upload.** A reviewer or an administrator drops the report on *Cases → New case*: a PDF, a photo of a form, a
+  Word file (.docx), a saved email (.eml) or a text file, at most 10 MB, with day zero (the day the company first
+  received it; today or within the last year). The `case-intake` function checks what the file really is from
+  its bytes, stores it in the archive under its SHA-256 (never overwritten) and opens the case.
+- **A literature paper.** On an ingredient's page, a paper flagged *Possible case report* has **Open a case**.
+  Day zero is the day PHAROS found the paper. PHAROS fetches the paper's PubMed record and, when PubMed Central
+  holds it openly, its full text, and archives them as one text file. A paper opens one case at most; once open,
+  the paper shows a link to its case.
+- **Forwarded email.** A reviewer or an administrator forwards the report to pharos@satopharma.com with the word
+  CASE in the subject. Every 4-hourly run opens a case for it with the forwarding person as its creator and the
+  day the message is dated (Cairo) as day zero. The sender must be the person's own address in People, and the
+  receiving mail server's check (or PHAROS's own DKIM check) must pass for it; anything else is left unread.
+
+**Reading.** As soon as a case opens, the app starts `.github/workflows/case-read.yml` with only the case's id.
+It reads the archived original back, checks its SHA-256, and sends the document to the case reader (Anthropic's
+Claude, model `claude-opus-5-5`) with the names of the watched ingredients. The reader fills the case form
+(patient, reporter, products, reactions with their seriousness criteria and outcome, a narrative) and quotes the
+words of the document behind each field; a field the document does not state stays empty. The answer is kept
+unchanged in `safety_case.extracted`; the form the team works on is `data`. The reader never decides
+seriousness, never codes MedDRA and never confirms. When the app could not reach GitHub, the "Cases" step of the
+next 4-hourly run reads the case. A passing failure (the service busy, the network) is tried again on the next
+run; after three tries, or for a document the reader cannot take, the case shows *Could not be read* with the
+reason and **Read again**.
+
+**What leaves PHAROS.** Only the document goes to the reader, over the Anthropic API, under the company's own API
+account and its data terms. Nothing else from the database is sent.
+
+**Checking and confirming.** The case page shows the document (**Open the document**), the four minimum criteria
+of a valid case (an identifiable patient, an identifiable reporter, a suspect product, a reaction) as *Present* or
+*Missing*, the clock, and the form with the quotes under each part. A reviewer corrects the form against the
+document, decides seriousness, chooses the ingredient, and presses **Save** or **Confirm the case**. The database
+refuses a confirmation without the four criteria, the ingredient and the seriousness decision. **Not a valid
+case** needs a comment. Two people changing one case at once: the second is told to reload.
+
+**The clock.** Day zero plus 15 days, or plus 90 once a reviewer says the case is not serious; until then it
+counts as serious. The list shows the days left, and the clock in red once the day has passed.
+
+**Sent, follow-up.** After sending, **Record as sent** keeps the day and the authority's reference. A follow-up
+**Reopen**s the case with a comment and, when new information arrived, a new day zero.
+
+**The E2B(R3) file.** For a confirmed or sent case, **Make the E2B file** builds the ICH E2B(R3) message
+(`collectors/cases/e2b.py`) from the confirmed form and archives it under `reports/cases/<case number>/`, with its
+SHA-256 shown on the case. Each reaction needs its MedDRA LLT code and version, typed by the reviewer from the
+MedDRA browser (PHAROS holds no MedDRA licence and never invents a code). Until the first file has passed the
+Egyptian Drug Authority's gateway test, the file is a prepared draft to check before sending.
+
+**History.** Every step (received, read, saved, confirmed, not valid, sent, reopened, the E2B file, notes) is one
+row in `case_event`, append-only, with the person (or PHAROS) and a copy of the form at each save and
+confirmation.
+
+**Actions minutes.** One reading is one short run of `case-read.yml` (about two minutes with the package cache).
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings

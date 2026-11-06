@@ -635,9 +635,11 @@ SQL test: `supabase/tests/japan_code.sql`; web: `japanCode.test.ts`.
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | web; functions |
 | `SUPABASE_SERVICE_ROLE_KEY` | functions |
 | `SUPABASE_DB_URL` | collectors |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | collectors; archive-url |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | collectors; archive-url; case-intake |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_BOT_USERNAME` | collectors; webhook |
-| `GITHUB_DISPATCH_TOKEN`, `GITHUB_REPO` | probe-source |
+| `GITHUB_DISPATCH_TOKEN`, `GITHUB_REPO` | probe-source; case-intake |
+| `ANTHROPIC_API_KEY` | collectors/cases: the case reader (case-read.yml and the "Cases" step of collect.yml). Without it cases wait unread and the run warns |
+| `PHAROS_E2B_SENDER`, `PHAROS_E2B_RECEIVER` | collectors/cases/e2b.py (optional: the sender and receiver identifiers in the E2B(R3) file; default `SATOPHARMA` and `EDA`) |
 | `NCBI_API_KEY` | pubmed; literature-search (optional: 10 NCBI requests a second instead of 3) |
 | `ADMIN_TELEGRAM_CHAT_ID` | pg_cron watchdog (stored in Supabase Vault) |
 | `PHAROS_IMAP_HOST`, `PHAROS_IMAP_PORT`, `PHAROS_IMAP_USER`, `PHAROS_IMAP_PASSWORD` | collectors (Fimea/TGA newsletters in pharos@satopharma.com). satopharma.com mail is Turbify (Yahoo MX `mx-biz.mail.am0.yahoodns.net`), so it uses Yahoo/Turbify IMAP with a per-mailbox app password. |

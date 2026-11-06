@@ -2,6 +2,7 @@
 # pdftoppm, pdfinfo), tesseract-ocr with jpn kor fin swe dan nor isl deu fra ita spa por nld ara,
 # fonts-noto-cjk (PDF report), and `playwright install --with-deps chromium`.
 httpx==0.28.1
+anthropic==1.17.0
 psycopg[binary]==3.2.3
 boto3==1.35.90
 pyyaml==6.0.2

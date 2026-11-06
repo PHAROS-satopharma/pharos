@@ -10,6 +10,8 @@ import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { MePage, PasswordForm } from '../features/me/MePage';
 import { ReportsPage } from '../features/reports/ReportsPage';
+import { CasesPage } from '../features/cases/CasesPage';
+import { CaseView } from '../features/cases/CaseView';
 import { Button } from '../ui/Button';
 import { Empty, Loading } from '../ui/States';
 import { PharosMark } from '../ui/PharosMark';
@@ -123,6 +125,8 @@ export function AppRoutes() {
         <Route path="ingredients/:id" element={<IngredientScreen />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="cases" element={<CasesPage />} />
+        <Route path="cases/:id" element={<CaseView />} />
         <Route path="people" element={managesPeople ? <PeoplePage /> : <Navigate to="/" replace />} />
         <Route path="me" element={<MePage />} />
         {/* The screens removed in November 2026: an old link opens Ingredients, never an empty page. */}

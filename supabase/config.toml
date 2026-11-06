@@ -103,6 +103,9 @@ verify_jwt = true
 [functions.literature-search]
 verify_jwt = true
 
+[functions.case-intake]
+verify_jwt = true
+
 # Telegram cannot send a Supabase token; the function checks X-Telegram-Bot-Api-Secret-Token instead.
 [functions.telegram-webhook]
 verify_jwt = false

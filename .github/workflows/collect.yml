@@ -200,6 +200,28 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.mlm || echo "::warning::EMA's literature monitoring list could not be read; the last one is kept."
 
+      # Individual case reports (collectors/cases, 0059): opens a case for every report a reviewer forwarded to the
+      # PHAROS mailbox with CASE in the subject, reads every case still waiting (the app starts case-read.yml at
+      # once; this is the safety net when GitHub could not be reached), and makes every E2B file asked for. Every
+      # 4 hours, never on a dry run (a reading is real work on a real case). A failure is recorded on the case and
+      # never fails the run.
+      - name: Cases
+        if: ${{ !cancelled() && (steps.which.outputs.schedule == '4h' || steps.which.outputs.schedule == 'all') && !inputs.dry_run }}
+        timeout-minutes: 20
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          PHAROS_IMAP_HOST: ${{ secrets.PHAROS_IMAP_HOST }}
+          PHAROS_IMAP_PORT: ${{ secrets.PHAROS_IMAP_PORT }}
+          PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
+          PHAROS_IMAP_PASSWORD: ${{ secrets.PHAROS_IMAP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+        run: python -m collectors.cases --mail --waiting || echo "::warning::Cases could not be read; the reason is on each case in Cases."
+
       # Packs on request (collectors/report_pack.py, 0048): a PSUR pack or an inspection pack asked for on Reports
       # is made by the next run, one request per run, in at most 15 minutes (a pack not finished waits for the next
       # run; after three tries it is marked failed). Always the last step, after the collection whatever it did;

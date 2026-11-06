@@ -1,7 +1,7 @@
 // archive-url — a 10-minute link to one archived original in R2.
 // {r2_key} → {url}. Only for a signed-in person, and only for a key that a row they can read points to
 // (document, attachment, SPC snapshot, inbound mail, weekly or monthly report, a pack made on request, EURD
-// list). Database backups are never served.
+// list, a case's source file or E2B file). Database backups are never served.
 import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
 import { presignR2Get } from "./sigv4.ts";
@@ -33,6 +33,9 @@ serve(async (req) => {
     db.from("report_request").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
     // EMA's EURD list as archived by collectors/eurd.py (0045: the readiness line reads its rows).
     db.from("eurd_entry").select("eurd_id", { count: "exact", head: true }).eq("r2_key", r2Key),
+    // A case's source file and its E2B(R3) file (0053, collectors/cases).
+    db.from("safety_case").select("id", { count: "exact", head: true }).eq("r2_key", r2Key),
+    db.from("safety_case").select("id", { count: "exact", head: true }).eq("e2b_r2_key", r2Key),
   ]);
   const known = checks.some((c) => !c.error && (c.count ?? 0) > 0);
   if (!known) throw new HttpError(404, "That file is not in the archive.");
