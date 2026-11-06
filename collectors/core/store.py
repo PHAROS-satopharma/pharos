@@ -245,12 +245,12 @@ class Store:
             "select id, inn_en, atc_code from ingredient where active order by inn_en")
 
     def class_words(self, lang: str = "en") -> dict[str, list[str]]:
-        """Each active ingredient's words of the drug classes it searches (enabled links) in ``lang``, by its
-        English INN."""
+        """Each active ingredient's words of the drug classes it searches in the literature (links enabled and
+        literature, 0051) in ``lang``, by its English INN. Only the PubMed watch reads it."""
         rows = self.db.fetchall(
             """select i.inn_en, ct.term
                  from ingredient i
-                 join ingredient_class ic on ic.ingredient_id = i.id and ic.enabled
+                 join ingredient_class ic on ic.ingredient_id = i.id and ic.enabled and ic.literature
                  join class_term ct on ct.class_id = ic.class_id and ct.lang = %(l)s
                 where i.active
                 order by i.inn_en, ct.term""", {"l": lang})

@@ -73,4 +73,13 @@ describe('the search profile', () => {
       'Quinolone antibacterials',
     ]);
   });
+
+  it('marks the English words of a class kept out of the literature search, and only those', () => {
+    const noticesOnly: LinkedClass = { ...group, link: { relation: 'group', enabled: true, literature: false } };
+    const words = profileWords(names, [noticesOnly]);
+    expect(words.filter((w) => w.notInLiterature).map((w) => `${w.lang}:${w.term}`)).toEqual(['en:fluoroquinolone']);
+    expect(words.find((w) => w.term === 'Fluorchinolon')?.notInLiterature).toBeUndefined();
+    expect(words.find((w) => w.term === 'levofloxacin')?.notInLiterature).toBeUndefined();
+    expect(profileWords(names, [group]).some((w) => w.notInLiterature)).toBe(false);
+  });
 });
