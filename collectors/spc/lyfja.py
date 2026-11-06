@@ -24,7 +24,7 @@ imports are "Samhliða innflutningur leyfi"), ``category`` ("Lyf fyrir menn"), `
 from __future__ import annotations
 
 from collectors.spc.bdpm import fold
-from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_date
+from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_revision
 from collectors.spc.sections import eu_label_sections, missing_core
 
 SOURCE_ID = "spc-lyfja"
@@ -124,5 +124,5 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     missing = missing_core(sections)
     if missing:
         raise SnapshotError(f"Sérlyfjaskrá {product['product_name']} SmPC: section {', '.join(missing)} not found")
-    return Snapshot(sections=sections, doc_date=label_date(sections.get("10")), lang=LANG, source_url=url,
+    return Snapshot(sections=sections, doc_date=label_revision(sections), lang=LANG, source_url=url,
                     original_sha256=f.sha256)

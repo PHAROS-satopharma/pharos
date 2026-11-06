@@ -16,6 +16,13 @@ message is sent; ``replay.yml`` runs it from GitHub and puts the result in the r
   reads the label (Procoralan 5 mg, item 200906066: 23 Sep 2017 against 10 Nov 2017).
 
     python -m collectors.spc.replay nedrug <item code>
+
+* the Netherlands, CBG: ``metadata.csv`` names each product's current SmPC and the one before it
+  (``SMPC_VORIGE_VERSIE``, in the CBG's archive, stamped "Oude versie" across every page: the stamp is taken out);
+  the two are compared, read the way ``cbg.read_smpc`` reads the label (Carivalan 12,5 mg/7,5 mg, RVG 117810:
+  2 Dec 2022 against 30 Apr 2024, a new contra-indication in 4.3).
+
+    python -m collectors.spc.replay cbg <RVG number>
 """
 
 from __future__ import annotations
@@ -27,7 +34,7 @@ import zipfile
 
 from collectors.core.archive import Archive
 from collectors.core.context import FetchContext
-from collectors.spc import nedrug
+from collectors.spc import cbg, nedrug
 from collectors.spc.dailymed import parse_spl
 from collectors.spc.diff import diff_sections
 from collectors.spc.sections import watched_changes
@@ -107,6 +114,22 @@ def replay_nedrug(ctx, seq: str) -> dict:
     return out
 
 
+def replay_cbg(ctx, rvg: str) -> dict:
+    row = next((r for r in cbg._rows(ctx) if (r.get("REGISTRATIENUMMER") or "").strip() == rvg), None)
+    if row is None:
+        raise ReplayError(f"CBG {rvg}: not in metadata.csv")
+    now, before = (row.get("SMPC_FILENAAM") or "").strip(), (row.get("SMPC_VORIGE_VERSIE") or "").strip()
+    if not now or not before:
+        raise ReplayError(f"CBG {rvg}: metadata.csv names {'no previous' if now else 'no'} SmPC")
+    a, _ = cbg.read_smpc(ctx, before, f"{rvg} previous SmPC", archived=True)
+    b, _ = cbg.read_smpc(ctx, now, f"{rvg} SmPC")
+    date_a, date_b = cbg.archive_date(before), cbg.cbg_date(row.get("SMPC_WIJZIG_DATUM"))
+    out = compare(a, b)
+    out.update(source="CBG", label=f"{rvg} {(row.get('PRODUCTNAAM') or '').strip()}",
+               versions=(str(date_a), str(date_b)), dates=(date_a, date_b))
+    return out
+
+
 def summary(result: dict) -> str:
     lines = [f"## Label change replay: {result['source']} {result['label']}",
              f"Version {result['versions'][0]} ({result['dates'][0]}) against version {result['versions'][1]} "
@@ -121,12 +144,15 @@ def summary(result: dict) -> str:
 
 
 def main(argv: list[str]) -> int:
-    if not ((len(argv) == 4 and argv[0] == "dailymed") or (len(argv) == 2 and argv[0] == "nedrug")):
+    if not ((len(argv) == 4 and argv[0] == "dailymed") or (len(argv) == 2 and argv[0] in ("nedrug", "cbg"))):
         print(__doc__)
         return 2
     ctx = FetchContext(None, "spc-replay", archive=Archive(enabled=False), public_only=True)
     try:
-        result = replay_dailymed(ctx, *argv[1:]) if argv[0] == "dailymed" else replay_nedrug(ctx, argv[1])
+        if argv[0] == "dailymed":
+            result = replay_dailymed(ctx, *argv[1:])
+        else:
+            result = (replay_nedrug if argv[0] == "nedrug" else replay_cbg)(ctx, argv[1])
     finally:
         ctx.close()
     text = summary(result)

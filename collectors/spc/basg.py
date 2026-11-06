@@ -28,7 +28,7 @@ import re
 from collectors.core.context import FetchError, ParseError
 from collectors.parsers.base import parse_date
 from collectors.spc.bdpm import fold
-from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_date, run_cache, terms_for
+from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_revision, run_cache, terms_for
 from collectors.spc.sections import eu_label_sections, missing_core
 
 SOURCE_ID = "spc-basg"
@@ -164,7 +164,7 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     missing = missing_core(sections)
     if missing:
         raise SnapshotError(f"BASG {product['national_id']} Fachinformation: section {', '.join(missing)} not found")
-    doc_date = label_date(sections.get("10"))
+    doc_date = label_revision(sections)
     if doc_date is None and extra.get("valid"):
         doc_date = parse_date(extra["valid"])
     return Snapshot(sections=sections, doc_date=doc_date, lang=LANG, source_url=url, original_sha256=f.sha256)

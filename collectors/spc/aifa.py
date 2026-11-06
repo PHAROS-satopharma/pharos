@@ -26,7 +26,7 @@ from urllib.parse import quote
 
 from collectors.parsers.base import parse_date
 from collectors.spc.bdpm import fold
-from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_date, terms_for
+from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_revision, terms_for
 from collectors.spc.sections import eu_label_sections, missing_core
 
 SOURCE_ID = "spc-aifa"
@@ -182,6 +182,6 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     missing = missing_core(sections)
     if missing:
         raise SnapshotError(f"AIFA {product['national_id']} RCP: section {', '.join(missing)} not found")
-    return Snapshot(sections=sections, doc_date=published(text) or label_date(sections.get("10")), lang=LANG,
+    return Snapshot(sections=sections, doc_date=published(text) or label_revision(sections), lang=LANG,
                     source_url=url,
                     original_sha256=f.sha256)

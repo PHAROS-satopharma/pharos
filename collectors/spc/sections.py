@@ -381,10 +381,56 @@ def eu_wanted(key: str) -> bool:
     return bare == "10" or bare in WATCHED_EU or ".".join(bare.split(".")[:2]) in WATCHED_EU
 
 
+EDGE_LINES = 6            # lines at the top and at the bottom of a page where a running header or footer sits
+_DIGITS = re.compile(r"\d+")
+
+
+def _line_key(line: str) -> str:
+    return _DIGITS.sub("#", " ".join(line.split())).lower()
+
+
+def strip_running_lines(text: str) -> str:
+    """``text`` (pages joined with form feeds) without its running headers and footers: a line at the top or bottom
+    of at least half the pages, digits aside ("Sandoz B.V.   Page 5/22", "1311-V14b", "Oktober 2025"), and a short
+    line printed once on most pages wherever it falls (the CBG's "Oude versie" stamp). They change with every new
+    version of the file, and left in they would make every section of it look revised (CBG Carvedilol Sandoz,
+    December 2025 against July 2026: all of 4.2–4.9). A file of fewer than four pages is left as it is."""
+    pages = text.split("\f")
+    if len(pages) < 4:
+        return text
+    lines = [p.splitlines() for p in pages]
+    edge: dict[str, int] = {}
+    anywhere: dict[str, int] = {}
+    for page in lines:
+        filled = [i for i, ln in enumerate(page) if ln.strip()]
+        ends = set(filled[:EDGE_LINES] + filled[-EDGE_LINES:])
+        counts: dict[str, int] = {}
+        for i in filled:
+            k = _line_key(page[i])
+            counts[k] = counts.get(k, 0) + 1
+        for k in {_line_key(page[i]) for i in ends if len(page[i].strip()) <= 120}:
+            edge[k] = edge.get(k, 0) + 1
+        for k, n in counts.items():
+            if n == 1 and len(k) <= 40:
+                anywhere[k] = anywhere.get(k, 0) + 1
+    many = len(pages)
+    running = {k for k, n in edge.items() if n * 2 >= many} | {k for k, n in anywhere.items() if n * 5 >= many * 3}
+    if not running:
+        return text
+    out = []
+    for page in lines:
+        filled = [i for i, ln in enumerate(page) if ln.strip()]
+        ends = set(filled[:EDGE_LINES] + filled[-EDGE_LINES:])
+        out.append("\n".join(ln for i, ln in enumerate(page)
+                             if not ((i in ends or len(_line_key(ln)) <= 40) and _line_key(ln) in running)))
+    return "\f".join(out)
+
+
 def eu_label_sections(text: str) -> dict[str, str]:
     """The kept sections of a national SmPC file, each SmPC on its own: one file can hold two (Infomed's
-    Ivabradina Aurovitas: one per strength), and the second must not run on inside the first one's section 10."""
-    return {k: v for k, v in split_smpc_sections(text).items() if eu_wanted(k)}
+    Ivabradina Aurovitas: one per strength), and the second must not run on inside the first one's section 10.
+    The file's running headers and footers are taken out first (``strip_running_lines``)."""
+    return {k: v for k, v in split_smpc_sections(strip_running_lines(text)).items() if eu_wanted(k)}
 
 
 def cut_annex_i(text: str) -> str:

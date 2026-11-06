@@ -29,7 +29,7 @@ from datetime import date
 
 from collectors.core.context import FetchError, ParseError
 from collectors.parsers.base import parse_date
-from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, label_date, run_cache, terms_for
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, label_revision, run_cache, terms_for
 from collectors.spc.sections import eu_label_sections, missing_core
 
 SOURCE_ID = "spc-medsafe"
@@ -148,5 +148,5 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     missing = missing_core(sections)
     if missing:
         raise SnapshotError(f"Medsafe {product['national_id']}: section {', '.join(missing)} not found")
-    return Snapshot(sections=sections, doc_date=label_date(sections.get("10")), lang=LANG, source_url=url,
+    return Snapshot(sections=sections, doc_date=label_revision(sections), lang=LANG, source_url=url,
                     original_sha256=f.sha256)

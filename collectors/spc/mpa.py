@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from collectors.parsers.base import parse_date
 from collectors.spc.bdpm import fold
-from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_date, terms_for
+from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, label_revision, terms_for
 from collectors.spc.sections import eu_label_sections, missing_core
 
 SOURCE_ID = "spc-mpa"
@@ -148,7 +148,7 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     missing = missing_core(sections)
     if missing:
         raise SnapshotError(f"MPA {product['national_id']} SmPC: section {', '.join(missing)} not found")
-    doc_date = label_date(sections.get("10"))
+    doc_date = label_revision(sections)
     if doc_date is None and extra.get("approved"):
         doc_date = parse_date(extra["approved"])
     return Snapshot(sections=sections, doc_date=doc_date, lang=LANG, source_url=url, original_sha256=f.sha256)

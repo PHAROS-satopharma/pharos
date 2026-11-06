@@ -1,7 +1,7 @@
 """PHAROS — shared types for the SPC / label watch country modules.
 
-Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi, nedrug, hc_dpd, medsafe)
-defines:
+Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi, nedrug, hc_dpd, medsafe,
+cbg, famhp, aifa, mpa, infomed, hpra, basg, lyfja) defines:
 
 * ``SOURCE_ID`` — its ``source`` row (``spc-cima`` …, ``kind: spc``), ``COUNTRY`` and ``LANG``;
 * ``discover(ctx, ingredient) -> list[Product]`` — the products authorised for one active
@@ -166,3 +166,14 @@ def label_date(text: str | None) -> date | None:
         if m and 1 <= int(m.group(1)) <= 12:
             return _day(int(m.group(2)), int(m.group(1)), 1)
     return None
+
+
+_SECTION_10 = re.compile(r"^(?:smpc\d+:)?10$")
+
+
+def label_revision(sections: dict[str, str]) -> date | None:
+    """A label file's revision date: the latest ``label_date`` of the section 10 of each SmPC in it. One file can
+    hold two SmPCs and leave the first one's section 10 empty (Infomed 604022: the date is in the second's)."""
+    found = [d for k, v in sections.items() if _SECTION_10.match(k) and (d := label_date(v))]
+    return max(found) if found else None
+

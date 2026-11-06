@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from datetime import date, datetime
 
 from collectors.core.context import FetchError
@@ -93,13 +94,29 @@ def listed_version(product: dict) -> str | None:
 
 
 
-def read_smpc(ctx, url: str, label: str) -> tuple[dict[str, str], str | None]:
+# The stamp across every page of an archived SmPC (``SMPC_VORIGE_VERSIE``), read into the text where it falls.
+ARCHIVE_STAMP = re.compile(r"Oude versie")
+_ARCHIVE_DATE = re.compile(r"_smpc(?:_[a-z]{2})?_(\d{4})(\d{2})(\d{2})_v\d+\.pdf$", re.I)
+
+
+def archive_date(url: str) -> date | None:
+    """The date in an archived SmPC's file name: ``h117810_smpc_20221202_v0005.pdf`` → 2022-12-02."""
+    m = _ARCHIVE_DATE.search(url or "")
+    try:
+        return date(*(int(g) for g in m.groups())) if m else None
+    except ValueError:
+        return None
+
+
+def read_smpc(ctx, url: str, label: str, *, archived: bool = False) -> tuple[dict[str, str], str | None]:
     f = fetch_label(ctx, url, accept="application/pdf")
     if f.status != 200 or not f.is_pdf:
         raise SnapshotError(f"CBG {label}: HTTP {f.status}{'' if f.status != 200 else ', not a PDF'}")
     from collectors.pdf import extract_text
 
     text, _method, _words = extract_text(f.content, LANG)
+    if archived:
+        text = ARCHIVE_STAMP.sub("", text)
     sections = eu_label_sections(text)
     missing = missing_core(sections)
     if missing:
