@@ -59,6 +59,10 @@ def test_the_eurd_interval_is_worked_out_as_on_the_web():
     assert rp.interval_for("2026-12-01", "3 years") == (date(2023, 12, 2), date(2026, 12, 1))
     assert rp.interval_for(date(2024, 2, 29), "1 year") == (date(2023, 3, 1), date(2024, 2, 29))
     assert rp.interval_for(None, "3 years") is None
+    # a DLP a short month cut (31 Aug and 28 Feb): the next DLP gives the day, so the interval starts on 1 Sep
+    assert rp.interval_for(date(2027, 2, 28), "6 months", "2027-08-31") == (date(2026, 9, 1), date(2027, 2, 28))
+    assert rp.interval_for("2026-11-30", "6 months", "2027-05-30") == (date(2026, 5, 31), date(2026, 11, 30))
+    assert rp.interval_for("2026-03-15", "6 months", "2026-09-15") == (date(2025, 9, 16), date(2026, 3, 15))
 
 
 def test_the_footer_fits_beside_the_credit():

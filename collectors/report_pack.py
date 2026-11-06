@@ -144,13 +144,26 @@ def _add_months(day: date, months: int) -> date:
     return date(y, m, min(day.day, calendar.monthrange(y, m)[1]))
 
 
-def interval_for(dlp: Any, frequency: str | None) -> tuple[date, date] | None:
+def previous_dlp(dlp: date, months: int, next_dlp: Any = None) -> date:
+    """The DLP one frequency before ``dlp``. A DLP on a month's last day may be a later day a short month cut (28 Feb
+    for a 31st): the next DLP, when the row has one, gives the day the cycle is on. Without it the day is kept, so a
+    cut interval may repeat a few days the previous PSUR covered, never leave any out."""
+    import calendar
+
+    nxt = as_day(next_dlp)
+    last_of_month = (dlp + timedelta(days=1)).day == 1
+    cycle_day = max(dlp.day, nxt.day) if nxt and last_of_month else dlp.day
+    first = _add_months(dlp.replace(day=1), -months)
+    return first.replace(day=min(cycle_day, calendar.monthrange(first.year, first.month)[1]))
+
+
+def interval_for(dlp: Any, frequency: str | None, next_dlp: Any = None) -> tuple[date, date] | None:
     """The reporting interval that ends at the data lock point: the day after the DLP one frequency earlier, to
     the DLP itself."""
     d, months = as_day(dlp), frequency_months(frequency)
     if not d or not months:
         return None
-    return _add_months(d, -months) + timedelta(days=1), d
+    return previous_dlp(d, months, next_dlp) + timedelta(days=1), d
 
 
 class Budget:
@@ -455,7 +468,7 @@ def _signals(findings: dict, titles: dict[str, str]) -> list[dict]:
 def _eurd(rows: list[dict]) -> list[dict]:
     out = []
     for r in rows:
-        iv = interval_for(r.get("dlp"), r.get("frequency"))
+        iv = interval_for(r.get("dlp"), r.get("frequency"), r.get("next_dlp"))
         out.append({"substance": r.get("substance") or "", "combination": bool(r.get("combination")),
                     "frequency": r.get("frequency") or "", "dlp": day_text(r.get("dlp")),
                     "submission": day_text(r.get("submission_date")), "next_dlp": day_text(r.get("next_dlp")),

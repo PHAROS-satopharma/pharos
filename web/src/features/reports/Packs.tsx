@@ -70,8 +70,8 @@ function AskForm({ isAdmin }: { isAdmin: boolean }) {
     queryKey: ['eurd-entry', ingredient],
     enabled: kind === 'psur' && ingredient !== '',
     queryFn: async () =>
-      unwrap<Pick<EurdEntry, 'dlp' | 'frequency'>[] | null>(
-        await supabase.from('eurd_entry').select('dlp,frequency').eq('ingredient_id', ingredient).order('eurd_id'),
+      unwrap<Pick<EurdEntry, 'dlp' | 'frequency' | 'next_dlp'>[] | null>(
+        await supabase.from('eurd_entry').select('dlp,frequency,next_dlp').eq('ingredient_id', ingredient).order('eurd_id'),
       ) ?? [],
   });
 
