@@ -107,17 +107,41 @@ describe('readiness on the ingredient row', () => {
 
   it('adds the facts she needs under the line: labels, Japan, EURD, EMA, Telegram', () => {
     expect(readinessNotes(ready)).toEqual([
+      'No name in Arabic, Japanese and Korean; notices in those languages are matched by its other names only',
       '3 label products in Japan, Spain',
       'PSUR every 7 years, data lock point 1 Dec 2031, submission 29 Feb 2032',
       'Literature monitored by EMA',
       'Telegram: Sama Mosaad',
     ]);
     expect(readinessNotes(fresh)).toEqual([
+      'No name in French and German; notices in those languages are matched by its other names only',
       'No Japan code yet, so Japan’s label watch cannot find its package inserts',
       'Not on the EURD list',
       'Literature not monitored by EMA',
     ]);
     expect(readinessNotes({ ...fresh, eurd: { ...fresh.eurd, list_read: false } })).toContain('EURD list not read yet');
+  });
+
+  it('names the languages it has no name in, which never clear by themselves', () => {
+    const one: Readiness = { ...ready, names: { languages_with_a_name: 14, of: 15, missing: ['da'] } };
+    expect(readinessNotes(one)[0]).toBe('No name in Danish; notices in Danish are matched by its other names only');
+    expect(readinessItems(one)).toEqual([]);
+    expect(readinessLine(one)).toBe('Ready');
+    const four: Readiness = { ...ready, names: { languages_with_a_name: 11, of: 15, missing: ['da', 'is', 'nb', 'sv'] } };
+    expect(readinessNotes(four)[0]).toBe(
+      'No name in Danish, Icelandic, Norwegian Bokmål and Swedish; notices in those languages are matched by its other names only',
+    );
+    const many: Readiness = {
+      ...ready,
+      names: { languages_with_a_name: 6, of: 15, missing: ['da', 'fi', 'is', 'it', 'ja', 'ko', 'nb', 'nl', 'sv'] },
+    };
+    expect(readinessNotes(many)[0]).toBe(
+      'No name in 9 of 15 languages; notices in those languages are matched by its other names only',
+    );
+    const all: Readiness = { ...ready, names: { languages_with_a_name: 15, of: 15, missing: [] } };
+    expect(readinessNotes(all).some((n) => n.startsWith('No name in'))).toBe(false);
+    const none: Readiness = { ...ready, names: { languages_with_a_name: 0, of: 15, missing: ['en'] } };
+    expect(readinessNotes(none).some((n) => n.startsWith('No name in'))).toBe(false);
   });
 
   it('names up to three countries, then counts them', () => {
