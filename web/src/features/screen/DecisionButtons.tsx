@@ -47,10 +47,9 @@ interface SentRow {
  * paper's buttons pass it on through onDecision, so the papers under the same notice show it too. Under
  * the decision, the five-day clock to the Egyptian Drug Authority (0041, 0050) and "Sent to the authority".
  *
- * `finding` is the notice's clock as the screen's data holds it (finding_state); the screen passes it down (null
- * for a paper, whose own 15- and 90-day dates are shown by the paper). The cache is written here under
- * `queryKey`, never read through a second observer: a second useQuery on the same key with no queryFn would take
- * over the query's options and break the reload after a refusal.
+ * `finding` is the notice's clock as the screen's data holds it (finding_state); the screen passes it down. The
+ * cache is written here under `queryKey`, never read through a second observer: a second useQuery on the same
+ * key with no queryFn would take over the query's options and break the reload after a refusal.
  */
 export function DecisionButtons({
   mention,

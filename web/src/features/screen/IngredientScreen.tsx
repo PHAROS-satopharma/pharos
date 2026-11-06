@@ -224,7 +224,7 @@ function Body({
         )}
       </section>
 
-      <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} queryKey={queryKey} />
+      <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} findings={data.findings} queryKey={queryKey} />
     </>
   );
 }
@@ -369,12 +369,15 @@ function Literature({
   lit,
   from,
   to,
+  findings,
   queryKey,
 }: {
   ing: ScreenIngredient;
   lit: ScreenLiterature;
   from: string;
   to: string;
+  /** The clocks of the notices on the screen (finding_state): a paper's notice has one too. */
+  findings: Findings;
   queryKey: readonly unknown[];
 }) {
   const qc = useQueryClient();
@@ -464,7 +467,14 @@ function Literature({
       {papers.length ? (
         <ol className="scr-papers">
           {papers.map((p) => (
-            <PaperItem key={p.document_id} p={p} state={states[p.document_id]} queryKey={queryKey} onDecision={onDecision} />
+            <PaperItem
+              key={p.document_id}
+              p={p}
+              state={states[p.document_id]}
+              findings={findings}
+              queryKey={queryKey}
+              onDecision={onDecision}
+            />
           ))}
         </ol>
       ) : null}
@@ -502,11 +512,13 @@ function LiveCount({ label, count, url, error }: { label: string; count: number 
 function PaperItem({
   p,
   state,
+  findings,
   queryKey,
   onDecision,
 }: {
   p: Paper;
   state: PaperState | undefined;
+  findings: Findings;
   queryKey: readonly unknown[];
   onDecision: (issueId: string, d: Decision) => void;
 }) {
@@ -555,7 +567,14 @@ function PaperItem({
           ) : null}
         </p>
       ) : null}
-      {state ? <DecisionButtons mention={state} queryKey={queryKey} finding={null} onDecision={onDecision} /> : null}
+      {state ? (
+        <DecisionButtons
+          mention={state}
+          queryKey={queryKey}
+          finding={state.issue_id ? (findings[state.issue_id] ?? null) : null}
+          onDecision={onDecision}
+        />
+      ) : null}
     </li>
   );
 }
