@@ -1,0 +1,38 @@
+# PHAROS — the weekly matching audit (collectors/match_audit.py): stored notices that name a watched ingredient
+# without being linked to it are linked as history (no message), and English names RxNorm gives only to another
+# substance are flagged on the Ingredients screen. Sunday 00:53 UTC (02:53 Cairo in winter, 03:53 in summer),
+# before the weekly report at 05:00. Never at the same time as a collection (shared "collectors" group).
+name: PHAROS matching audit
+
+on:
+  schedule:
+    - cron: "53 0 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collectors
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - name: Python packages
+        run: pip install -r collectors/requirements.txt
+
+      - name: Matching audit
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python -m collectors.match_audit

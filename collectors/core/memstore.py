@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from contextlib import contextmanager
@@ -66,6 +67,8 @@ class MemoryStore:
         # term id -> {"changed_at", "rematched_at"}; a term without an entry was already checked against the past
         self.term_state: dict[str, dict] = {}
         self.rematch_job: dict[str, dict] = {}
+        self.match_audit: list[dict] = []                 # the weekly matching audit's rows (0075)
+        self.audit_name_rows: list[dict] = []             # what audit_names() returns
         self.report_request: dict[str, dict] = {}         # id -> the row of 0048
 
     @contextmanager
@@ -694,6 +697,9 @@ class MemoryStore:
             rows.append(d)
             if len(rows) >= limit:
                 break
+        return self._with_context(rows)
+
+    def _with_context(self, rows: list[dict]) -> list[dict]:
         out = []
         for d in rows:
             links = [x for x in self.issue_document if x["document_id"] == d["id"] and x["method"] != "suggested"]
@@ -716,6 +722,31 @@ class MemoryStore:
                     1 for x in self.document.values() if x.get("r2_key") == d["r2_key"]) > 1,
             })
         return out
+
+    # ───────────────────────────── the matching audit ─────────────────────────────
+    def audit_terms(self) -> list[Term]:
+        return [t for t in self.load_terms() if t.ingredient_id and t.kind in ("inn", "salt", "brand", "code")]
+
+    def audit_candidates(self, words: list[str]) -> list[str]:
+        low = [w.casefold() for w in words]
+        out = []
+        for d in sorted(self.document.values(), key=lambda x: x["id"]):
+            if (self.source.get(d["source_id"]) or {}).get("kind", "safety") in ("spc", "literature"):
+                continue
+            hay = "\n".join([d.get("title_orig") or "", json.dumps(d.get("structured"), ensure_ascii=False)]
+                            + [t["text"] for t in self.document_text if t["document_id"] == d["id"]]).casefold()
+            if any(w in hay for w in low):
+                out.append(d["id"])
+        return out
+
+    def audit_documents(self, ids: list[str]) -> list[dict]:
+        return self._with_context([self.document[i] for i in sorted(ids) if i in self.document])
+
+    def audit_names(self) -> list[dict]:
+        return list(self.audit_name_rows)
+
+    def record_match_audit(self, rows: list[dict]) -> None:
+        self.match_audit.extend(rows)
 
     def rematch_advance(self, job_id: str, *, cursor: str, checked: int = 0, reread: int = 0,
                         matched: int = 0, issues_created: int = 0) -> None:
