@@ -22,9 +22,12 @@ insert into regulator (id, country_code, country_name, name, languages, homepage
 insert into source (id, regulator_id, kind, channel, url, parser, languages, page_url, enabled) values
   ('ci-ci-lit', 'CI-CI-N', 'literature', 'api', 'https://eutils.example.test/', 'pubmed', '{en}',
    'https://pubmed.example.test/', true);
-insert into document (id, source_id, external_id, url, title_orig, lang, doc_type, published_date, first_seen_at) values
+-- Flagged as the collector flags a case report (collectors/parsers/pubmed.py), as every such paper is.
+insert into document (id, source_id, external_id, url, title_orig, lang, doc_type, published_date, first_seen_at,
+                      structured) values
   ('00000000-0000-0000-0000-00000053b001', 'ci-ci-lit', '53001', 'https://pubmed.ncbi.nlm.nih.gov/53001/',
-   'A case of hepatitis after CI casoxicam', 'en', 'literature', '2026-11-01', '2026-11-03 23:30+00');
+   'A case of hepatitis after CI casoxicam', 'en', 'literature', '2026-11-01', '2026-11-03 23:30+00',
+   '{"pmid": "53001", "case_report": {"reason": "title"}}');
 insert into issue (id, doc_type, title, anchor_document_id, first_date) values
   ('00000000-0000-0000-0000-00000053e001', 'literature', 'A case of hepatitis after CI casoxicam',
    '00000000-0000-0000-0000-00000053b001', '2026-11-01');
