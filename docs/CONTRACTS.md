@@ -197,8 +197,9 @@ create table regulator_page (id uuid pk, regulator_id text references regulator(
   , partial boolean, note text, unique (regulator_id, url));   -- admins write; audited
 create table country_look (id bigserial pk, person_id uuid, regulator_id text, looked_at timestamptz);
 v_my_country_look (regulator_id, looked_at)                 -- the caller's latest look per authority
-mark_country_looked(p_regulator text) returns timestamptz   -- stamps every authority of that country
-  -- for the caller; 42501 without a person, 22023 for an unknown authority
+mark_country_looked(p_regulator text, p_seen_to timestamptz default null) returns timestamptz
+  -- stamps every authority of that country for the caller at p_seen_to (the time the page read its list,
+  -- 0056), never later than now(); now() without it; 42501 without a person, 22023 for an unknown authority
 new_items(p_from timestamptz, p_to timestamptz default now()) returns table (document_id, source_id,
   regulator_id, regulator_name, country_name, country_code, source_kind, title_orig, lang, link,
   published_date, first_seen_at, doc_type, matched, r2_key, mime, email_id, email_r2_key)

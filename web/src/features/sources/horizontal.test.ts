@@ -6,6 +6,7 @@ import {
   countryCards,
   isFeedUrl,
   lastLook,
+  markLookedArgs,
   newSince,
   pageStatus,
   sinceFor,
@@ -262,5 +263,18 @@ describe('offReason', () => {
     expect(offReason({ enabled: true, health: 'ok', notes: 'Read from the news API.' })).toBeNull();
     expect(offReason({ enabled: false, health: 'blocked', notes: null })).toBeNull();
     expect(offReason({ enabled: false, health: 'blocked', notes: '  ' })).toBeNull();
+  });
+});
+
+describe('markLookedArgs', () => {
+  it('stamps the time the list was read, so a notice that arrived while the card was open stays new', () => {
+    // 6 Nov 2026 (finding 7 of the review of #103): the look was the time of the click
+    const readAt = '2026-11-06T08:00:00.000Z';
+    const args = markLookedArgs('BFARM', readAt);
+    expect(args).toEqual({ p_regulator: 'BFARM', p_seen_to: readAt });
+    const looks = new Map([['BFARM', args.p_seen_to]]);
+    const arrived = item('late', 'BFARM', '2026-11-06T08:17:00.000Z');   // the 4-hourly run, card still open
+    expect(newSince([arrived], ['BFARM'], new Date(lastLook({ regulators: [{ id: 'BFARM' } as CardRegulator] }, looks)!))
+      .map((i) => i.document_id)).toEqual(['late']);
   });
 });

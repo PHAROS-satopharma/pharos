@@ -137,7 +137,7 @@ end $$;
 reset role;
 select pg_temp.sh_assert(:sh_stranger = 0 and :sh_stranger_pages = 0, 'someone not on the team sees nothing');
 select pg_temp.sh_assert(not has_function_privilege('anon', 'public.new_items(timestamptz, timestamptz)', 'execute')
-    and not has_function_privilege('anon', 'public.mark_country_looked(text)', 'execute')
+    and not has_function_privilege('anon', 'public.mark_country_looked(text, timestamptz)', 'execute')
     and not has_table_privilege('anon', 'public.regulator_page', 'select'),
   'signed-out visitors can call and read none of it');
 
@@ -197,6 +197,17 @@ select pg_temp.sh_assert((select bool_and(person_id = (select id from person whe
   'a look is the signed-in person''s, at the database''s time');
 select pg_temp.sh_assert(:sh_admin_looks = 0 and :sh_admin_reads_all = 2,
   'each person has their own last look; the team reads every look');
+
+-- ───────────── the look is the time the list was read (0056) ─────────────
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+set role authenticated;
+select mark_country_looked('CI-SH-B', '2026-11-05 10:00+00')::text as sh_seen \gset
+select mark_country_looked('CI-SH-B', '2999-01-01 00:00+00') <= now() as sh_future \gset
+reset role;
+select pg_temp.sh_assert(:'sh_seen'::timestamptz = '2026-11-05 10:00+00'
+    and exists (select 1 from country_look where regulator_id = 'CI-SH-A' and looked_at = '2026-11-05 10:00+00'),
+  'a look stamps the time the page read its list, so a notice that arrived while it was open stays new');
+select pg_temp.sh_assert(:'sh_future', 'a look is never later than now');
 
 -- ───────────── the daily message: the new values and her subscription ─────────────
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
