@@ -491,20 +491,24 @@ class Store:
         self.db.execute("update report_request set status = 'queued', error = %(e)s where id = %(id)s::uuid",
                         {"id": request_id, "e": note[:1000]})
 
-    def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
+    def notified(self, person_id: str, issue_id: str, kind: str, *, real_only: bool = False) -> bool:
         """Delivered, or at least its text was: a PDF refused after the text went out still has a
-        message id, and sending the text again would repeat it."""
+        message id, and sending the text again would repeat it. With ``real_only`` a dry-run row does not
+        count (the daily digest: a manual dry run never takes a notice out of the real one)."""
         return self.db.fetchone(
             """select 1 from notification where person_id = %(p)s and issue_id = %(i)s
-                 and kind = %(k)s and (error is null or tg_message_id is not null) limit 1""",
-            {"p": person_id, "i": issue_id, "k": kind}) is not None
+                 and kind = %(k)s and (error is null or tg_message_id is not null)
+                 and (not %(r)s or not dry_run) limit 1""",
+            {"p": person_id, "i": issue_id, "k": kind, "r": real_only}) is not None
 
-    def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
-        """A ``kind`` message (with no issue) reached this person since ``since``, or went as a dry run."""
+    def notified_since(self, person_id: str, kind: str, since: datetime, *, dry_run: bool = False) -> bool:
+        """A ``kind`` message (with no issue) really reached this person since ``since``. A dry-run row counts
+        only with ``dry_run``, so a manual dry run never takes the day's real message (audit, 6 Nov 2026)."""
         return self.db.fetchone(
             """select 1 from notification where person_id = %(p)s and kind = %(k)s and sent_at >= %(s)s
-                 and (error is null or tg_message_id is not null) limit 1""",
-            {"p": person_id, "k": kind, "s": since}) is not None
+                 and (error is null or tg_message_id is not null)
+                 and (not dry_run or %(d)s) limit 1""",
+            {"p": person_id, "k": kind, "s": since, "d": dry_run}) is not None
 
     def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
         """The people a ``kind`` message (with no notice) really reached since ``since``: delivered, not a dry
@@ -537,13 +541,16 @@ class Store:
              "e": error, "s": summary})
 
     def last_notification_at(self, kind: str, *, delivered_only: bool = False,
-                             before: datetime | None = None) -> datetime | None:
+                             before: datetime | None = None, dry_run: bool = False) -> datetime | None:
+        """With ``delivered_only``: the last one that really went out; a dry-run row counts only with
+        ``dry_run``."""
         params: dict[str, Any] = {"k": kind}
         if before is not None:
             params["b"] = before
         row = self.db.fetchone(
             "select max(sent_at) as at from notification where kind = %(k)s"
             + (" and error is null" if delivered_only else "")
+            + (" and not dry_run" if delivered_only and not dry_run else "")
             + (" and sent_at < %(b)s" if before is not None else ""), params)
         return row["at"] if row else None
 

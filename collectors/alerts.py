@@ -244,7 +244,7 @@ class Notifier:
             return False
         # Only a digest that really went out counts: a refused one is tried again on the next run,
         # also when it went out to someone else.
-        last = self.store.last_notification_at("digest", delivered_only=True)
+        last = self.store.last_notification_at("digest", delivered_only=True, dry_run=self.dry_run)
         return (last is None or last.astimezone(CAIRO) < due_at
                 or bool(self.store.refused_people("digest", due_at)))
 
@@ -287,7 +287,7 @@ class Notifier:
             return 0
         # since the last digest of an earlier day: a retry today covers what today's first try did
         last = self.store.last_notification_at("digest", delivered_only=True,
-                                               before=self._digest_due_at())
+                                               before=self._digest_due_at(), dry_run=self.dry_run)
         since = last or (self.now() - timedelta(days=1))
         all_ids = self.store.class_only_issues_since(since)           # newest first
         papers = self.store.case_report_papers_since(since)           # newest first
@@ -305,9 +305,12 @@ class Notifier:
         sent = 0
         for person in self.store.subscribers("class_digest"):
             # a retry after someone else's refusal: only what this person does not have yet
+            # a real digest skips only what really went out: a manual dry run's rows never take a notice
+            real = not self.dry_run
             mine = [iss for iss in issues
-                    if not self.store.notified(person["person_id"], iss["id"], "digest")]
-            my_papers = [p for p in papers if not self.store.notified(person["person_id"], p["id"], "digest")]
+                    if not self.store.notified(person["person_id"], iss["id"], "digest", real_only=real)]
+            my_papers = [p for p in papers
+                         if not self.store.notified(person["person_id"], p["id"], "digest", real_only=real)]
             if not mine and not my_papers:
                 continue
             listed = [(iss["id"], entries[iss["id"]]) for iss in mine]
@@ -352,11 +355,13 @@ class Notifier:
         if not (due_at <= now.astimezone(CAIRO) < due_at + DIGEST_WINDOW):
             return 0
         people = [p for p in self.store.subscribers("new_items_digest")
-                  if not self.store.notified_since(p["person_id"], "new_items_digest", due_at)]
+                  if not self.store.notified_since(p["person_id"], "new_items_digest", due_at,
+                                                   dry_run=self.dry_run)]
         if not people:
             return 0
         # since the last message of an earlier day: a retry today covers what today's first try did
-        last = self.store.last_notification_at("new_items_digest", delivered_only=True, before=due_at)
+        last = self.store.last_notification_at("new_items_digest", delivered_only=True, before=due_at,
+                                               dry_run=self.dry_run)
         since = last or (now - timedelta(days=1))
         counts = self.store.new_item_counts(since, now)
         if not counts:
