@@ -18,6 +18,7 @@ import { cx } from '../../ui/cx';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
+import { Readiness } from './Readiness';
 import { SearchProfile } from './SearchProfile';
 import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
 
@@ -241,6 +242,7 @@ export function IngredientsPage() {
                           )}
                           {ofClass.length ? ` · ${ofClass.map((c) => c.name_en).join(', ')}` : ''}
                         </span>
+                        <Readiness ingredientId={i.id} active={i.active} />
                       </td>
                       <td className="col-names">
                         <span className="names-count">

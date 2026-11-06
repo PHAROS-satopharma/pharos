@@ -1,0 +1,287 @@
+-- PHAROS CI — any ingredient she adds is covered (0045): ingredient_readiness() and her subscription to every
+-- ingredient. Runs on the database ci.yml prepared: CI Admin (…a1, no Telegram), CI Reader (…b2), CI Reviewer
+-- (…c3, Telegram) and CI Admin Two (…d4, Telegram) exist. Everything here happens in one transaction that is
+-- rolled back at the end, so nothing is left behind.
+
+begin;
+
+create function pg_temp.ir_assert(ok boolean, msg text) returns void language plpgsql as $$
+begin
+  if not coalesce(ok, false) then raise exception 'FAIL: %', msg; end if;
+  raise notice 'ok: %', msg;
+end $$;
+
+create function pg_temp.ir_refused(sql text) returns text language plpgsql as $$
+begin
+  execute sql;
+  return null;
+exception when others then
+  return sqlstate || ' ' || sqlerrm;
+end $$;
+
+-- The readiness of CI readyamine, read as the reader (the screen) and kept for the assertions.
+create temp table ir_res (name text primary key, j jsonb);
+create function pg_temp.ir_read(which text) returns void language plpgsql as $$
+declare
+  v jsonb;
+begin
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', true);
+  set local role authenticated;
+  v := ingredient_readiness('00000000-0000-0000-0000-00000045a001');
+  reset role;
+  perform set_config('request.jwt.claims', '', true);
+  insert into ir_res values (which, v);
+end $$;
+create function pg_temp.ir(which text) returns jsonb language sql as $$
+  select j from ir_res where name = which
+$$;
+
+-- ───────────── a new ingredient, just saved: one English name, a class from the ATC code, nothing run yet ─────────────
+insert into ingredient (id, inn_en, atc_code) values
+  ('00000000-0000-0000-0000-00000045a001', 'CI readyamine', 'Z95ZZ01'),
+  ('00000000-0000-0000-0000-00000045a002', 'CI otherready', 'Z95ZZ02');
+insert into ingredient_term (id, ingredient_id, lang, term) values
+  ('00000000-0000-0000-0000-00000045c001', '00000000-0000-0000-0000-00000045a001', 'en', 'CI readyamine');
+insert into drug_class (id, code, name_en, origin) values
+  ('00000000-0000-0000-0000-00000045d001', 'Z95ZZ', 'CI readyoids', 'atc');
+insert into class_term (id, class_id, lang, term) values
+  ('00000000-0000-0000-0000-00000045d101', '00000000-0000-0000-0000-00000045d001', 'en', 'ci readyoids'),
+  ('00000000-0000-0000-0000-00000045d102', '00000000-0000-0000-0000-00000045d001', 'de', 'CI-Readyoide');
+insert into ingredient_class (ingredient_id, class_id) values
+  ('00000000-0000-0000-0000-00000045a001', '00000000-0000-0000-0000-00000045d001');
+-- Two countries with a label watch (one of them with a switched-off source too), and their languages.
+insert into regulator (id, country_code, country_name, name, languages, homepage) values
+  ('CI-IR-A', 'XR', 'CI Readyland', 'CI Readyland Agency', '{en,de}', 'https://ready.example.test/'),
+  ('CI-IR-B', 'XW', 'CI Waitland', 'CI Waitland Agency', '{sv}', null);
+insert into source (id, regulator_id, kind, channel, url, parser, languages, page_url, enabled) values
+  ('ci-ir-spc-a', 'CI-IR-A', 'spc', 'api', 'https://ready.example.test/spc.json', 'ci', '{en}',
+   'https://ready.example.test/products', true),
+  ('ci-ir-spc-b', 'CI-IR-B', 'spc', 'api', 'https://wait.example.test/spc.json', 'ci', '{sv}',
+   'https://wait.example.test/products', true),
+  ('ci-ir-spc-off', 'CI-IR-B', 'spc', 'api', 'https://wait.example.test/old.json', 'ci', '{sv}', null, false);
+
+select pg_temp.ir_read('new');
+
+select pg_temp.ir_assert(not (pg_temp.ir('new') ->> 'ready')::boolean, 'a freshly saved ingredient is not ready');
+select pg_temp.ir_assert(
+  (pg_temp.ir('new') -> 'names' ->> 'languages_with_a_name')::int = 1
+    and (pg_temp.ir('new') -> 'names' ->> 'of')::int >= 4
+    and pg_temp.ir('new') -> 'names' -> 'missing' ? 'de'
+    and pg_temp.ir('new') -> 'names' -> 'missing' ? 'sv'
+    and not pg_temp.ir('new') -> 'names' -> 'missing' ? 'en',
+  'names: one language has a name; the regulators'' other languages are missing');
+select pg_temp.ir_assert(
+  (pg_temp.ir('new') -> 'class' ->> 'atc')::boolean
+    and (pg_temp.ir('new') -> 'class' ->> 'classes')::int = 1
+    and (pg_temp.ir('new') -> 'class' ->> 'words')::int = 2
+    and not (pg_temp.ir('new') -> 'class' ->> 'confirmed')::boolean,
+  'class: one class with two words, not confirmed yet');
+select pg_temp.ir_assert(
+  not (pg_temp.ir('new') -> 'past_check' ->> 'done')::boolean
+    and (pg_temp.ir('new') -> 'past_check' ->> 'words_due')::int = 3
+    and not (pg_temp.ir('new') -> 'past_check' ->> 'job_running')::boolean,
+  'the check of the past: the name and both class words are due, no check is running');
+select pg_temp.ir_assert(
+  (pg_temp.ir('new') -> 'ncbi' ->> 'searches')::int = 0
+    and (pg_temp.ir('new') -> 'ncbi' ->> 'expected')::int = 4
+    and not (pg_temp.ir('new') -> 'ncbi' ->> 'look_back_done')::boolean
+    and pg_temp.ir('new') -> 'ncbi' -> 'last_run' = 'null'::jsonb,
+  'NCBI: four searches expected (the name and the English class word, in PubMed and PMC), none run');
+select pg_temp.ir_assert(
+  (pg_temp.ir('new') -> 'label_watch' ->> 'products')::int = 0
+    and not (pg_temp.ir('new') -> 'label_watch' ->> 'first_snapshot')::boolean
+    and not (pg_temp.ir('new') -> 'label_watch' ->> 'japan_code')::boolean
+    and pg_temp.ir('new') -> 'label_watch' -> 'waiting' = '["CI Readyland", "CI Waitland"]'::jsonb
+    and pg_temp.ir('new') -> 'label_watch' -> 'empty' = '[]'::jsonb
+    and pg_temp.ir('new') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-a' ->> 'country' = 'CI Readyland'
+    and (pg_temp.ir('new') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-a' ->> 'products')::int = 0
+    and not (pg_temp.ir('new') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-a' ->> 'read')::boolean
+    and pg_temp.ir('new') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-off' is null,
+  'label watch: no product yet; both countries wait for Monday; a switched-off source is not listed');
+select pg_temp.ir_assert(
+  not (pg_temp.ir('new') -> 'eurd' ->> 'found')::boolean
+    and not (pg_temp.ir('new') -> 'ema_mlm' ->> 'monitored')::boolean,
+  'EURD: not found; EMA literature monitoring: not monitored');
+select pg_temp.ir_assert(not pg_temp.ir('new') -> 'telegram' -> 'people' ? 'CI Reviewer',
+  'Telegram: nobody subscribed to it receives its messages yet');
+
+-- ───────────── the check of the past starts ─────────────
+insert into rematch_job (since, ingredient_term_ids) values
+  (current_date - 365, array['00000000-0000-0000-0000-00000045c001'::uuid]);
+select pg_temp.ir_read('running');
+select pg_temp.ir_assert(
+  (pg_temp.ir('running') -> 'past_check' ->> 'job_running')::boolean
+    and not (pg_temp.ir('running') -> 'past_check' ->> 'done')::boolean,
+  'while a check runs, the past is "running", not done');
+
+-- ───────────── everything that follows by itself has run ─────────────
+update rematch_job set finished_at = now() where finished_at is null;
+update ingredient_term set rematched_at = now() where ingredient_id = '00000000-0000-0000-0000-00000045a001';
+update class_term set rematched_at = now() where class_id = '00000000-0000-0000-0000-00000045d001';
+-- a German name, and the Japan code (a code is not a name: Japanese does not count as a language with a name)
+insert into ingredient_term (id, ingredient_id, lang, term, rematched_at) values
+  ('00000000-0000-0000-0000-00000045c002', '00000000-0000-0000-0000-00000045a001', 'de', 'CI Readyamin', now());
+insert into ingredient_term (id, ingredient_id, lang, country_code, term, kind, mode, source, rematched_at) values
+  ('00000000-0000-0000-0000-00000045c003', '00000000-0000-0000-0000-00000045a001', 'ja', 'JP', '1234567', 'code',
+   'exact', 'pmda', now());
+-- three of the four NCBI searches have finished their look-back
+insert into literature_search (db, query, kind, look_back_from, history_until, look_back_done_at) values
+  ('pubmed', 'ci readyamine', 'name', current_date - 365, current_date, now()),
+  ('pmc', 'ci readyamine', 'name', current_date - 365, current_date, now()),
+  ('pubmed', 'ci readyoids', 'class', current_date - 365, current_date, now());
+-- the label watch read both countries and found one product, with its first snapshot
+insert into run (id, trigger) values ('00000000-0000-0000-0000-00000045f001', 'cron');
+insert into source_run (run_id, source_id, started_at, error) values
+  ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-a', now(), null),
+  ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-b', now(), '1 product(s) without label text');
+insert into spc_product (id, ingredient_id, source_id, country_code, national_id, product_name) values
+  ('00000000-0000-0000-0000-00000045b001', '00000000-0000-0000-0000-00000045a001', 'ci-ir-spc-a', 'XR', 'R-1',
+   'CI Readyamine 10 mg');
+insert into spc_snapshot (spc_product_id, sha256, section_hashes) values
+  ('00000000-0000-0000-0000-00000045b001', 'ab', '{}'::jsonb);
+-- EMA's lists
+insert into eurd_entry (eurd_id, ingredient_id, substance, frequency, dlp, submission_date, generics_psur_required,
+                        procedure, list_version, list_date, sha256, r2_key)
+  values (9945, '00000000-0000-0000-0000-00000045a001', 'ci readyamine', '7 years', '2031-12-01', '2032-02-29', false,
+          'PSUSA/00009945/203112', 'EMA/630645/2012 Rev.165', '2026-10-21', 'ab', 'raw/ab');
+insert into mlm_entry (ingredient_id, group_id, group_name, named_group, list_name, sha256, r2_key)
+  values ('00000000-0000-0000-0000-00000045a001', 45, 'CI readyamine', true, 'CI list', 'cd', 'raw/cd');
+-- who hears of it: the reviewer subscribed to every ingredient (Telegram linked); not the administrator
+-- subscribed to every ingredient without Telegram; not the one subscribed to another ingredient only
+-- (ci.yml links the administrator's Telegram earlier; here, as the case needs, she has none)
+update person set telegram_chat_id = null where email = 'admin@example.test';
+insert into subscription (person_id, kind, ingredient_id)
+select p.id, 'ingredient', null from person p where p.email = 'reviewer@example.test';
+insert into subscription (person_id, kind, ingredient_id)
+select p.id, 'ingredient', null from person p where p.email = 'admin@example.test';
+insert into subscription (person_id, kind, ingredient_id)
+select p.id, 'ingredient', '00000000-0000-0000-0000-00000045a002' from person p where p.email = 'admin2@example.test';
+-- the administrator confirmed the class
+update drug_class set confirmed_at = now(), confirmed_by = (select id from person where email = 'admin@example.test')
+ where id = '00000000-0000-0000-0000-00000045d001';
+
+select pg_temp.ir_read('almost');
+select pg_temp.ir_assert(
+  not (pg_temp.ir('almost') ->> 'ready')::boolean
+    and (pg_temp.ir('almost') -> 'ncbi' ->> 'searches')::int = 3
+    and not (pg_temp.ir('almost') -> 'ncbi' ->> 'look_back_done')::boolean
+    and (pg_temp.ir('almost') -> 'past_check' ->> 'done')::boolean
+    and (pg_temp.ir('almost') -> 'past_check' ->> 'words_due')::int = 0,
+  'one NCBI search still to run keeps it from Ready, though the past is checked');
+
+insert into literature_search (db, query, kind, look_back_from, history_until, look_back_done_at) values
+  ('pmc', 'ci readyoids', 'class', current_date - 365, current_date, now());
+select pg_temp.ir_read('ready');
+
+select pg_temp.ir_assert((pg_temp.ir('ready') ->> 'ready')::boolean, 'with everything run, the ingredient is Ready');
+select pg_temp.ir_assert(
+  (pg_temp.ir('ready') -> 'names' ->> 'languages_with_a_name')::int = 2
+    and not pg_temp.ir('ready') -> 'names' -> 'missing' ? 'de'
+    and pg_temp.ir('ready') -> 'names' -> 'missing' ? 'sv',
+  'names: the German name counts, the Japan code does not');
+select pg_temp.ir_assert((pg_temp.ir('ready') -> 'class' ->> 'confirmed')::boolean, 'class: confirmed');
+select pg_temp.ir_assert(
+  (pg_temp.ir('ready') -> 'ncbi' ->> 'searches')::int = 4
+    and (pg_temp.ir('ready') -> 'ncbi' ->> 'look_back_done')::boolean
+    and (pg_temp.ir('ready') -> 'ncbi' ->> 'last_run') is not null,
+  'NCBI: all four searches ran and finished their look-back');
+select pg_temp.ir_assert(
+  (pg_temp.ir('ready') -> 'label_watch' ->> 'products')::int = 1
+    and (pg_temp.ir('ready') -> 'label_watch' ->> 'first_snapshot')::boolean
+    and (pg_temp.ir('ready') -> 'label_watch' ->> 'japan_code')::boolean
+    and pg_temp.ir('ready') -> 'label_watch' -> 'waiting' = '[]'::jsonb
+    and pg_temp.ir('ready') -> 'label_watch' -> 'empty' = '["CI Waitland"]'::jsonb
+    and (pg_temp.ir('ready') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-a' ->> 'products')::int = 1
+    and (pg_temp.ir('ready') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-a' ->> 'read')::boolean
+    and (pg_temp.ir('ready') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-b' ->> 'read')::boolean,
+  'label watch: one product with a snapshot; a read that only noted something counts as read; the Japan code is there');
+select pg_temp.ir_assert(
+  (pg_temp.ir('ready') -> 'eurd' ->> 'found')::boolean
+    and pg_temp.ir('ready') -> 'eurd' ->> 'frequency' = '7 years'
+    and pg_temp.ir('ready') -> 'eurd' ->> 'dlp' = '2031-12-01'
+    and pg_temp.ir('ready') -> 'eurd' ->> 'next_submission' = '2032-02-29'
+    and (pg_temp.ir('ready') -> 'ema_mlm' ->> 'monitored')::boolean,
+  'EURD: its row with the data lock point and submission date; monitored by EMA');
+select pg_temp.ir_assert(pg_temp.ir('ready') -> 'telegram' -> 'people' = '["CI Reviewer"]'::jsonb,
+  'Telegram: only the people with Telegram linked and a subscription covering it (every ingredient, or this one)');
+
+-- ───────────── the class above its group, switched off in its search profile (0049): nothing waits on it ─────────────
+insert into drug_class (id, code, name_en, origin) values
+  ('00000000-0000-0000-0000-00000045d002', 'Z95Z', 'CI readyparents', 'atc');
+insert into class_term (id, class_id, lang, term) values
+  ('00000000-0000-0000-0000-00000045d201', '00000000-0000-0000-0000-00000045d002', 'en', 'ci readyparents');
+insert into ingredient_class (ingredient_id, class_id, relation, enabled) values
+  ('00000000-0000-0000-0000-00000045a001', '00000000-0000-0000-0000-00000045d002', 'parent', false);
+select pg_temp.ir_read('parent');
+select pg_temp.ir_assert(
+  (pg_temp.ir('parent') ->> 'ready')::boolean
+    and (pg_temp.ir('parent') -> 'class' ->> 'classes')::int = 2
+    and (pg_temp.ir('parent') -> 'class' ->> 'words')::int = 2
+    and (pg_temp.ir('parent') -> 'past_check' ->> 'words_due')::int = 0
+    and (pg_temp.ir('parent') -> 'ncbi' ->> 'expected')::int = 4,
+  'a class switched off is linked but not searched: its words wait for no check of the past and no NCBI search');
+
+-- ───────────── the label watch answered, and found nothing: still ready; a country not yet read: not ─────────────
+delete from spc_product where id = '00000000-0000-0000-0000-00000045b001';
+select pg_temp.ir_read('nolabel');
+select pg_temp.ir_assert(
+  (pg_temp.ir('nolabel') ->> 'ready')::boolean
+    and (pg_temp.ir('nolabel') -> 'label_watch' ->> 'products')::int = 0
+    and pg_temp.ir('nolabel') -> 'label_watch' -> 'empty' = '["CI Readyland", "CI Waitland"]'::jsonb,
+  'no label in any watched country is an answer, not something still running');
+delete from source_run where source_id = 'ci-ir-spc-b';
+select pg_temp.ir_read('waiting');
+select pg_temp.ir_assert(
+  not (pg_temp.ir('waiting') ->> 'ready')::boolean
+    and pg_temp.ir('waiting') -> 'label_watch' -> 'waiting' = '["CI Waitland"]'::jsonb,
+  'a country whose label watch has not run since the ingredient was added is still waited for, by name');
+
+-- ───────────── an ingredient without an ATC code needs no class ─────────────
+update ingredient set atc_code = null where id = '00000000-0000-0000-0000-00000045a001';
+delete from ingredient_class where ingredient_id = '00000000-0000-0000-0000-00000045a001';
+insert into source_run (run_id, source_id, started_at, error) values
+  ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-b', now(), null);
+select pg_temp.ir_read('noatc');
+select pg_temp.ir_assert(
+  (pg_temp.ir('noatc') ->> 'ready')::boolean
+    and not (pg_temp.ir('noatc') -> 'class' ->> 'atc')::boolean
+    and (pg_temp.ir('noatc') -> 'class' ->> 'classes')::int = 0
+    and (pg_temp.ir('noatc') -> 'ncbi' ->> 'expected')::int = 2,
+  'without an ATC code there is no class to wait for, and only the name is searched');
+
+-- ───────────── who may ask ─────────────
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ff","role":"authenticated"}', false);
+set role authenticated;
+select pg_temp.ir_refused($q$select ingredient_readiness('00000000-0000-0000-0000-00000045a001')$q$) as ir_stranger \gset
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+set role authenticated;
+select pg_temp.ir_refused($q$select ingredient_readiness('00000000-0000-0000-0000-0000004500ff')$q$) as ir_unknown \gset
+reset role;
+select pg_temp.ir_assert(:'ir_stranger' like '42501%', 'someone signed in but not on the team is refused');
+select pg_temp.ir_assert(:'ir_unknown' like 'P0002%', 'an unknown ingredient is refused');
+select pg_temp.ir_assert(
+  not has_function_privilege('anon', 'public.ingredient_readiness(uuid)', 'execute')
+    and has_function_privilege('authenticated', 'public.ingredient_readiness(uuid)', 'execute'),
+  'signed-out visitors cannot call it; the team can');
+-- the report connects as the owner with no sign-in token: it reads the same answer
+select set_config('request.jwt.claims', '', false);
+select pg_temp.ir_assert((ingredient_readiness('00000000-0000-0000-0000-00000045a001') ->> 'ready')::boolean,
+  'the weekly report (a direct connection) reads the readiness');
+
+-- ───────────── her subscription: every ingredient, once, by her address ─────────────
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000045e1', 'Sama.Mosaad@satopharma.com');
+insert into person (auth_user_id, full_name, email, role) values
+  ('00000000-0000-0000-0000-0000000045e1', 'CI Sama', 'Sama.Mosaad@satopharma.com', 'admin');
+\i supabase/migrations/0045_ingredient_readiness.sql
+\i supabase/migrations/0045_ingredient_readiness.sql
+select pg_temp.ir_assert(
+  (select count(*) from subscription s join person p on p.id = s.person_id
+    where lower(p.email) = 'sama.mosaad@satopharma.com' and s.kind = 'ingredient' and s.ingredient_id is null) = 1,
+  'her subscription to every ingredient is added once, whatever the case of her address, and never twice');
+select pg_temp.ir_assert(
+  (select count(*) from subscription s join person p on p.id = s.person_id
+    where p.email = 'reader@example.test' and s.kind = 'ingredient') = 0,
+  'nobody else is subscribed by the migration');
+
+rollback;
