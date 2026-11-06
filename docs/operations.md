@@ -38,6 +38,21 @@ waits (at most 20 minutes, see *Packs on request*): the 4h, 12h and monthly runs
 
 ## Actions minutes budget
 
+**The repository is public since 6 November 2026, and GitHub's standard runners cost nothing for a public
+repository.** The 2,000 free minutes of the private plan were spent in the first three days (1,190 minutes on
+5 November alone, with the extra checks), and there was no card for a paid budget. The table below is the
+private-plan budget, kept because it shows what each job costs; it is a limit again only if the repository
+goes private.
+
+**What being public asks of every workflow:** the code, the docs and every run log can be read by anyone.
+Secrets stay hidden and are masked in logs, but a step's `env:` is printed at the head of its log, so a hand-run
+input put there is public. The two message workflows (*PHAROS Telegram message*, *PHAROS Telegram steps email*)
+read what was typed from the event file (`--from-event "$GITHUB_EVENT_PATH"`, `collectors/dispatch_inputs.py`)
+and their logs never say who it went to or what it said; their tests fail if an input reaches a step again.
+Never print a person's name, email address, Telegram chat or message text in a run log, and never upload a
+run artifact with data from the database: a public repository's artifacts can be downloaded by anyone.
+GitHub turns a public repository's schedules off after 60 days without a commit; a push turns them back on.
+
 The free plan for a private repository gives 2,000 minutes a month. PHAROS aims for about 1,100 or fewer.
 GitHub rounds each job up to a whole minute.
 
