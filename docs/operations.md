@@ -949,8 +949,9 @@ the days chosen and the same number of days just before:
 - *Label*: the same step finds the MeSH names in section 4.8 of our label (when it is in English) and in the
   reference product's latest English label (else any English label of the ingredient: SmPC 4.8 or the US "Adverse
   reactions"). A reaction is *In our label* when our label names it or a broader heading above it, *In the reference
-  label* when only that one does, and *Not in our label* when neither does. The same tag is on each coded reaction
-  of a case. A label is read again when it changes or a MeSH release is loaded.
+  label* when only that one does, and *Not in our label* when neither does; when no label of ours in English is
+  coded, a reaction the reference label does not name is *Not in the reference label* instead. The same tag is on
+  each coded reaction of a case. A label is read again when it changes or a MeSH release is loaded.
 
 Counting is not judging: the numbers and the label are shown side by side, and the team decides whether a term is
 a signal (Signals). *Not in our label* means no MeSH name was found in the text, which is a reason to read the
