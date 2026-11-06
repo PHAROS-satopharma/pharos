@@ -113,7 +113,7 @@
   {% endif %}{% endfor %}
 </table>
 
-<h3>Decisions taken this week</h3>
+<h3>Decisions taken {{ week.this }}</h3>
 {% if data.decisions %}
 <table>
   <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th><th>Due</th><th>Sent</th><th>Signal</th></tr></thead>
@@ -133,7 +133,7 @@
   </tbody>
 </table>
 {% else %}
-<div class="empty">No decision was taken this week.</div>
+<div class="empty">No decision was taken {{ week.this }}.</div>
 {% endif %}
 
 <h3>Each ingredient: ready or still preparing</h3>
@@ -156,8 +156,8 @@
 {% set a = data.authorities %}
 <section class="part">
 <h2><span class="n">02</span>Authorities read</h2>
-<p class="lede">The reads of each authority's own notices this week (safety notices and recalls). A country that was
-not read this week is to be checked by hand.</p>
+<p class="lede">The reads of each authority's own notices {{ week.this }} (safety notices and recalls). A country that was
+not read {{ week.this }} is to be checked by hand.</p>
 {% for group, rows in ((hers, a.hers), (others, a.others)) %}
 <h3>{{ group }}</h3>
 {% if rows %}
@@ -171,7 +171,7 @@ not read this week is to be checked by hand.</p>
     {% if r.read %}
     <td class="num">{{ r.runs }}</td><td class="num">{{ r.failed }}</td>
     {% else %}
-    <td class="num comment" colspan="2">Not read this week</td>
+    <td class="num comment" colspan="2">Not read {{ week.this }}</td>
     {% endif %}
     <td class="num">{{ r.new }}</td>
   </tr>
@@ -197,7 +197,7 @@ not read this week is to be checked by hand.</p>
 <section class="part">
 <h2><span class="n">03</span>Our ingredients by country</h2>
 <p class="lede">Each watched ingredient, answered for every country exactly as its Ingredients screen answers for
-this week. A notice found by the ingredient's class is marked "by class"; history was found when PHAROS first read
+{{ week.this }}. A notice found by the ingredient's class is marked "by class"; history was found when PHAROS first read
 an authority and was never alerted.</p>
 {% for i in data.ingredients %}
 <div class="ingredient">
@@ -252,7 +252,7 @@ an authority and was never alerted.</p>
   </tbody>
 </table>
 {% else %}
-<div class="empty">No label change this week.</div>
+<div class="empty">No label change {{ week.this }}.</div>
 {% endif %}
 </div>
 {% endfor %}
@@ -263,7 +263,7 @@ an authority and was never alerted.</p>
 <h2><span class="n">04</span>Literature</h2>
 <p class="lede">PubMed, PubMed Central and Europe PMC (which adds preprints and full texts PubMed misses), searched for
 each ingredient's name and the English words of its class.
-Every paper first seen this week. A paper that looks like a case report (PubMed lists it as one, or its title says
+Every paper first seen {{ week.this }}. A paper that looks like a case report (PubMed lists it as one, or its title says
 so) is listed first with day zero, the day PHAROS found it, and the dates to report a valid case: 15 days if
 serious, 90 if not.</p>
 {% for i in data.ingredients %}
@@ -299,15 +299,15 @@ serious, 90 if not.</p>
   </tbody>
 </table>
 {% else %}
-<div class="empty">No paper this week.</div>
+<div class="empty">No paper {{ week.this }}.</div>
 {% endif %}
 {% endfor %}
 </section>
 
 <section class="part">
 <h2><span class="n">05</span>Everything new, per authority</h2>
-<p class="lede">Every item the authorities published this week, matched or not, and who looked at the country in
-PHAROS this week.</p>
+<p class="lede">Every item the authorities published {{ week.this }}, matched or not, and who looked at the country in
+PHAROS {{ week.this }}.</p>
 {% for n in data.new %}
 {% if loop.first or n.group != loop.previtem.group %}<h3>{{ n.group }}</h3>{% endif %}
 <h4>{{ n.country }} · {{ n.authorities }}</h4>
@@ -325,9 +325,9 @@ PHAROS this week.</p>
   </tbody>
 </table>
 {% else %}
-<div class="empty">Nothing new this week.</div>
+<div class="empty">Nothing new {{ week.this }}.</div>
 {% endif %}
-<p class="comment">{% if n.looks %}Looked at by {{ looks_text(n.looks) }}{% else %}Not looked at in PHAROS this week.{% endif %}</p>
+<p class="comment">{% if n.looks %}Looked at by {{ looks_text(n.looks) }}{% else %}Not looked at in PHAROS {{ week.this }}.{% endif %}</p>
 {% endfor %}
 </section>
 
@@ -368,10 +368,10 @@ PHAROS this week.</p>
   </tbody>
 </table>
 {% else %}
-<div class="empty">No read failed this week.</div>
+<div class="empty">No read failed {{ week.this }}.</div>
 {% endif %}
 
-<h3>Sources not read this week</h3>
+<h3>Sources not read {{ week.this }}</h3>
 {% if ch.unread %}
 <table>
   <thead><tr><th>Country</th><th>Source</th></tr></thead>
@@ -382,7 +382,7 @@ PHAROS this week.</p>
   </tbody>
 </table>
 {% else %}
-<div class="empty">Every source switched on was read this week.</div>
+<div class="empty">Every source switched on was read {{ week.this }}.</div>
 {% endif %}
 
 <section class="closing">

@@ -1,5 +1,5 @@
-// The weeks of the weekly report: Cairo calendar weeks, Sunday to Saturday (Dr Sama's review, 6 Nov 2026), as
-// collectors/report_weekly.py makes them. Pure helpers, no I/O.
+// The weeks of the weekly report: Cairo calendar weeks, Sunday to Saturday (Dr Sama's review, 6 Nov 2026), and the
+// days of the daily report (owner, 6 Nov 2026), as collectors/report_weekly.py makes them. Pure helpers, no I/O.
 
 import { addDays, weekStartOf } from '../screen/range';
 
@@ -58,6 +58,33 @@ export function weekOptions(today: string): { value: string; label: string }[] {
 /** "PHAROS-weekly-2026-11-01.pdf": the week's Sunday, in the name the file is saved under. */
 export function weeklyFileName(sunday: string, ext: 'xlsx' | 'pdf'): string {
   return `PHAROS-weekly-${sunday.slice(0, 10)}.${ext}`;
+}
+
+/** A daily report as the daily_report table holds it (0083): one Cairo day, made the next morning at 07:00. */
+export interface DailyReport {
+  id: string;
+  day: string;
+  xlsx_r2_key: string;
+  xlsx_sha256: string;
+  pdf_r2_key: string;
+  pdf_sha256: string;
+  made_at: string;
+  git_sha: string | null;
+  made_by_run: string | null;
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** "Thu 5 Nov 2026", as the daily report's own label. */
+export function dayLabel(day: string): string {
+  const p = parts(day);
+  const weekday = WEEKDAYS[new Date(`${day.slice(0, 10)}T00:00:00Z`).getUTCDay()] ?? '';
+  return `${weekday} ${p.d} ${p.m} ${p.y}`;
+}
+
+/** "PHAROS-daily-2026-11-05.pdf": the day, in the name the file is saved under. */
+export function dailyFileName(day: string, ext: 'xlsx' | 'pdf'): string {
+  return `PHAROS-daily-${day.slice(0, 10)}.${ext}`;
 }
 
 /** Newest week first, for the list of reports. */

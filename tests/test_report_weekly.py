@@ -703,6 +703,79 @@ def test_make_weekly_report_archives_records_and_never_overwrites(tmp_path, monk
     assert (tmp_path / "archive" / "reports/weekly/2026-11-01/PHAROS-weekly-2026-11-01.pdf").exists()
 
 
+# ───────────────────────────── the daily report (owner, 6 Nov 2026) ─────────────────────────────
+
+NOV5 = rw.Day(date(2026, 11, 5))
+
+
+def test_a_day_runs_midnight_to_midnight_in_cairo_time():
+    assert NOV5.end == NOV5.start == date(2026, 11, 5)
+    assert NOV5.label == "Thu 5 Nov 2026" and NOV5.slug == "2026-11-05"
+    assert NOV5.footer == "Daily report · Thu 5 Nov 2026"
+    assert len(NOV5.footer) <= len(report.Month(date(2026, 9, 1)).footer)
+    # winter (UTC+2) and summer (UTC+3)
+    assert NOV5.bounds_utc() == (datetime(2026, 11, 4, 22, tzinfo=UTC), datetime(2026, 11, 5, 22, tzinfo=UTC))
+    assert rw.Day(date(2026, 8, 5)).bounds_utc() == (datetime(2026, 8, 4, 21, tzinfo=UTC),
+                                                    datetime(2026, 8, 5, 21, tzinfo=UTC))
+
+
+def test_the_daily_report_is_of_the_last_day_that_ended_in_cairo():
+    # Friday 6 Nov 2026 at 07:00 Cairo, when the schedule makes it
+    assert rw.yesterday(datetime(2026, 11, 6, 5, tzinfo=UTC)) == NOV5
+    # 00:30 Cairo on Friday is still Thursday in UTC
+    assert rw.yesterday(datetime(2026, 11, 5, 22, 30, tzinfo=UTC)) == NOV5
+    # 23:59 Cairo on Thursday: Thursday has not ended yet
+    assert rw.yesterday(datetime(2026, 11, 5, 21, 59, tzinfo=UTC)).start == date(2026, 11, 4)
+
+
+def test_the_command_refuses_a_wrong_day_before_it_connects(capsys):
+    with pytest.raises(SystemExit) as e:
+        report.main(["--day", "2026-11-31"])
+    assert e.value.code == 2
+    with pytest.raises(SystemExit) as e:
+        report.main(["--daily", "--week", "2026-11-01"])
+    assert e.value.code == 2
+
+
+def test_the_daily_report_is_the_weekly_one_read_for_one_day():
+    db = FakeDb()
+    data = rw.assemble(rw.gather_week(db, NOV5), NOV5, made_at=datetime(2026, 11, 6, 5, 2, tzinfo=UTC))
+    summary = dict(data["summary"])
+    assert summary["Report"] == "PHAROS — Daily screening report"
+    assert summary["Day (Cairo time)"] == "Thu 5 Nov 2026"
+    assert "Week (Cairo time)" not in summary
+    assert "Decisions taken on the day" in summary and "Sources not read on the day" in summary
+    html = rw.render_weekly_html(data)
+    assert "<title>PHAROS — Daily screening report · Thu 5 Nov 2026</title>" in html
+    assert "Daily screening report" in html and "Not read on the day — check it by hand" in html
+    assert "this week" not in html and "Weekly" not in html
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    assert wb.sheetnames == list(rw.SHEETS)
+    words = " ".join(str(v) for ws in wb.worksheets for row in ws.iter_rows(values_only=True) for v in row if v)
+    assert "this week" not in words and "Daily screening report" in words
+
+
+def test_make_daily_report_archives_and_records_the_day(tmp_path, monkeypatch):
+    for k in ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("ARCHIVE_DIR", str(tmp_path / "archive"))
+    monkeypatch.setenv("REPORT_DIR", str(tmp_path / "out"))
+    printed = []
+    monkeypatch.setattr(rw, "build_pdf", lambda html, footer: printed.append(footer) or b"%PDF-1.7 daily")
+    db = FakeDb()
+    out = rw.make_weekly_report(db, MemoryStore(), NOV5, dry_run=True)
+    assert out["daily"] == "2026-11-05"
+    row = db.written[-1]
+    assert row["s"] == date(2026, 11, 5)
+    assert row["pk"] == "reports/daily/2026-11-05/PHAROS-daily-2026-11-05.pdf"
+    assert row["xk"] == "reports/daily/2026-11-05/PHAROS-daily-2026-11-05.xlsx"
+    assert "insert into daily_report" in db.sql[-1] and "on conflict (day)" in db.sql[-1]
+    assert (tmp_path / "out" / "PHAROS-daily-2026-11-05.pdf").read_bytes() == b"%PDF-1.7 daily"
+    assert "PHAROS · Daily report · Thu 5 Nov 2026" in printed[0]
+    rw.make_weekly_report(db, MemoryStore(), NOV5, dry_run=True)
+    assert db.written[-1]["pk"] == "reports/daily/2026-11-05/PHAROS-daily-2026-11-05-r2.pdf"
+
+
 # ───────────────────────────── a real PDF ─────────────────────────────
 
 def _poppler() -> bool:

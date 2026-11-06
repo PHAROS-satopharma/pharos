@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   FIRST_WEEK,
+  dailyFileName,
+  dayLabel,
   lastCompleteWeek,
   newestWeekFirst,
   weekDays,
@@ -56,5 +58,17 @@ describe('weeklyFileName and newestWeekFirst', () => {
   it('lists the newest week first', () => {
     const rows = [{ week_start: '2026-11-01' }, { week_start: '2026-11-15' }, { week_start: '2026-11-08' }];
     expect(newestWeekFirst(rows).map((r) => r.week_start)).toEqual(['2026-11-15', '2026-11-08', '2026-11-01']);
+  });
+});
+
+describe('the daily report', () => {
+  it('names the day as the report does', () => {
+    expect(dayLabel('2026-11-05')).toBe('Thu 5 Nov 2026');
+    expect(dayLabel('2026-11-01')).toBe('Sun 1 Nov 2026');
+    expect(dayLabel('2027-01-02')).toBe('Sat 2 Jan 2027');
+  });
+  it('saves its files under the day', () => {
+    expect(dailyFileName('2026-11-05', 'pdf')).toBe('PHAROS-daily-2026-11-05.pdf');
+    expect(dailyFileName('2026-11-05T00:00:00', 'xlsx')).toBe('PHAROS-daily-2026-11-05.xlsx');
   });
 });

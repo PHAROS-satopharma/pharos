@@ -15,6 +15,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `trials.yml` | Wednesday 04:11 | Clinical trials of the watched ingredients from ClinicalTrials.gov (`collectors/trials.py`); only new or updated studies are fetched |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
+| `report.yml` | Every day, 07:00 Cairo | Daily report (XLSX + PDF) of the day before, Cairo midnight to midnight |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals and 10 report files (`reports/`, `reports/packs/`); checks the bucket lock |
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
@@ -99,6 +100,15 @@ the first thing to cut is the 4h schedule, to every 6 h.
 | `down` | The source failed 3 runs in a row (timeouts, HTTP errors) | Usually the regulator's site is down. It recovers by itself |
 | `blocked` | The site showed a bot check (for example Cloudflare, or a short page whose words say it is a security check). PHAROS never bypasses one. A page that lost its list but only carries a captcha in its code (a contact form) is "the page changed shape", not blocked | Use the newsletter by email (Fimea already does). This is not "down" |
 
+## The daily report
+
+The owner's word (6 Nov 2026): the outcome of every day, as well as the week. `report.yml` makes it every
+morning at 07:00 Cairo for the day before (midnight to midnight, Cairo): the weekly report's six sections, read
+from the same functions for one day, so a day and its week never give two answers. `reports/daily/<day>/
+PHAROS-daily-<day>.xlsx` and `.pdf` in R2, locked (made again: `-r2`, `-r3` …), recorded in `daily_report`
+(0083), shown first on the Reports tab and sent to the administrators on Telegram. By hand: *Actions → PHAROS
+daily and weekly report → Run workflow*, with the `day`. **The weekly report stays the one that is signed.**
+
 ## The weekly report
 
 Dr Sama's review (6 Nov 2026): some findings must reach the Egyptian Drug Authority within 5 days, so the
@@ -106,7 +116,7 @@ report covers one week, Sunday to Saturday in Cairo, and replaces the monthly on
 pharmacovigilance system master file.
 
 - **When.** `report.yml`, every Sunday at 05:00 Cairo, for the week that ended at midnight. By hand: *Actions →
-  PHAROS weekly report → Run workflow*, with the week's Sunday (`2026-11-01`), or nothing for the last week. A
+  PHAROS daily and weekly report → Run workflow*, with the week's Sunday (`2026-11-01`), or nothing for the last week. A
   day that is not a Sunday is refused before anything is read. `month` makes a month again in the old monthly
   format (never both at once).
 - **What it reads.** The Ingredients screen's own functions, so the report and the screen never give two
