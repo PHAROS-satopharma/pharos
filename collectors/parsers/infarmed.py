@@ -33,6 +33,11 @@ Options:
   keeps every family).
 * ``include_keywords`` / ``exclude_keywords``; ``max_pages`` (1) / ``backfill_pages`` (5).
 * ``circulares_url`` — the circulars page also read (default ``CIRCULARES``; ``""`` reads only Alertas).
+* ``circulares_all`` — keep every circular on that page, not only the alert series and recalls (false).
+  Dr Sama's own circulars page (6 Nov 2026) lists the same twenty: the alert filter left out safety
+  circulars outside the series — « Nolotil » (16/10/2026), « Medicamentos contendo compostos de ferro »
+  (04/09/2026), « Tavneos (avacopano) - recomendação de revogação… » (17/07/2026). A circular outside the
+  alert series that is not a recall is ``other``.
 * ``host_gap_s`` — seconds between two reads of www.infarmed.pt (default 5). Its Fortinet firewall
   answers a burst with a « Firewall Captcha Authentication » page as HTTP 200: the 5 Nov 2026 21:20 Cairo
   backfill read five Alertas pages and the circulars page in 9.8 s and got the captcha for the last one.
@@ -113,8 +118,10 @@ def circular_key(meta: str) -> tuple[int, str] | None:
 
 
 def parse_circulares(html, base_url: str, source: SourceConfig) -> list[Item]:
-    """The medicines circulars page: alert-series circulars and recalls only."""
+    """The medicines circulars page: alert-series circulars and recalls, or every circular
+    (``circulares_all``)."""
     lang = source.lang or "pt"
+    keep_all = bool((source.options or {}).get("circulares_all"))
     items: list[Item] = []
     for res in soup(html).select("div.result-item"):
         a = res.select_one("h3.title a[href]") or res.select_one("a[href]")
@@ -123,7 +130,8 @@ def parse_circulares(html, base_url: str, source: SourceConfig) -> list[Item]:
         title = node_text(a)
         meta = node_text(res.select_one(".result-resume")).strip('"“” ')
         posted = local_date(node_text(res.select_one(".result-path")), lang)
-        if not title or not (_ALERT_SERIES.search(meta) or doc_type_for(title) == "recall"):
+        alert = bool(_ALERT_SERIES.search(meta)) or doc_type_for(title) == "recall"
+        if not title or not (alert or keep_all):
             continue
         if not keep(source, title, meta):
             continue
@@ -132,7 +140,8 @@ def parse_circulares(html, base_url: str, source: SourceConfig) -> list[Item]:
         circ = _CIRC.search(meta)
         items.append(Item(
             external_id=f"infarmed:doc:{m_doc.group(1)}" if m_doc else url, url=url, title=title,
-            published=posted or local_date(meta, lang), doc_type=doc_type_for(title), lang=lang,
+            published=posted or local_date(meta, lang),
+            doc_type=doc_type_for(title) if alert else "other", lang=lang,
             body_text=meta or None, attachment_urls=[url],
             structured={"family": "Medicamento de uso humano",
                         "circular": circ.group(1) if circ else None}))
@@ -179,9 +188,17 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
             known = {circular_key(it.body_text or "") for it in out} - {None}
             for it in parse_circulares(f, f.final_url, source):
                 key = circular_key(it.body_text or "")
-                if key is None or key not in known:
-                    out.append(it)
+                if key in known or (key is None and _also_on_alertas(it, out)):
+                    continue
+                out.append(it)
     return out
+
+
+def _also_on_alertas(item: Item, alertas: list[Item]) -> bool:
+    """A circular posted without its number (« Medicamentos contendo compostos de ferro », 04/09/2026)
+    is the Alertas notice of the same day whose title begins with its title."""
+    title = item.title.casefold()
+    return any(a.published == item.published and a.title.casefold().startswith(title) for a in alertas)
 
 
 def fetch_detail(ctx, source: SourceConfig, item: Item) -> Item:

@@ -123,6 +123,7 @@ keeps httpx/httpcore at WARNING and redacts each log record.
 |---|---|---|
 | ema-dhpc | ema_dhpc | A1 |
 | ema-psusa | ema_psusa | A1 |
+| ema-news | generic_html (options in `sources.yaml`) | A2 |
 | fda-medwatch | feed | A1 |
 | fda-enforcement | openfda_enforcement | A1 |
 | mhra-dsu, mhra-alerts | govuk | A1 |
@@ -142,10 +143,10 @@ keeps httpx/httpcore at WARNING and redacts each log record.
 | ima-dhpc | ima_is | A2 |
 | infarmed-circulares | infarmed | A2 |
 | lu-dhpc | lu_sante | A2 |
-| swissmedic-hpc | swissmedic | A2 |
-| medsafe-dhcp, medsafe-comms | medsafe | A2 |
+| swissmedic-hpc, swissmedic-updates | swissmedic | A2 |
+| medsafe-dhcp, medsafe-comms, medsafe-prescriber-update | medsafe | A2 |
 | bfarm-risk | bfarm_risk | A2 |
-| pmda-revisions, pmda-urgent, pmda-msi, pmda-company-letters, pmda-proper-use | pmda | A2 |
+| pmda-revisions, pmda-urgent, pmda-msi, pmda-company-letters, pmda-proper-use, pmda-mhlw | pmda | A2 |
 | mfds-letters | mfds | A2 |
 | famhp-news | famhp | A2 |
 | cbg-news | cbg | A2 |
@@ -205,6 +206,11 @@ new_items(p_from timestamptz, p_to timestamptz default now()) returns table (doc
   -- or API address becomes the source's page (else the authority's home page), an openFDA recall
   -- links to FDA's Enforcement Report, and an e-mail item has no link (email_id / email_r2_key instead)
 ```
+
+A migration that changes her pages matches each row on (regulator, her address), so a page an admin has moved
+is left alone (0038 sets `read_by`, `note` and, for a dead address, `url`). A page of kind `dhpc` or
+`safety` with an empty `read_by` has a note starting "Not read:" that says why; a page whose address changed
+keeps her address in its note. `tests/test_regulator_pages.py` applies 0038 over the 0032 seed and checks both.
 
 The feed rule (`(\.(xml|json|rss|atom)([?#]|$)|/(rss|feed|atom)(/|[?#]|$)|^https?://api\.)`, case-blind) is
 the same in `new_items()`, `web/src/features/sources/horizontal.ts` and `tests/test_regulator_pages.py`;

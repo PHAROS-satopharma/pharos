@@ -16,8 +16,18 @@ Detail page: body ``#content``; originals ``/dam/swissmedic/…pdf``.
 
 doc_type: titles starting "DHPC" → ``dhpc``; "HPC" → ``safety_update``; otherwise ``safety_alert``.
 
+``page: updates`` — ``swissmedic-updates``, "New on this website",
+``https://www.swissmedic.ch/swissmedic/en/home/news/updates.html`` (checked 6 Nov 2026): everything
+Swissmedic posts — DHPCs and HPCs, batch recalls, Vigilance News, the Swissmedic Journal, guidance and
+forms — 40 teasers (about two months) in the same ``div.mod-teaser`` shape, newest first. Swissmedic
+has no feed of its own. Every teaser is kept. The Swissmedic Journal teaser links the same page every
+month, so the external id is the URL plus the date ("…swissmedic-journal.html@2026-11-05"). doc_type:
+"DHPC…" → ``dhpc``; "HPC…" or a link under ``health-professional-communication`` → ``safety_update``;
+"Batch recall…" → ``recall``; Vigilance News and the Journal → ``newsletter``; otherwise ``other``.
+
 Options:
 
+* ``page`` — ``updates`` for the list above; otherwise the HPC pages.
 * ``urls`` — mapping ``{lang: url}``; default: ``source.url`` with ``lang`` taken from the
   ``/swissmedic/<lang>/`` path segment.
 * ``include_keywords`` / ``exclude_keywords``.
@@ -43,8 +53,27 @@ def doc_type_for(title: str) -> str:
     return "safety_alert"
 
 
+def update_type(title: str, url: str) -> str:
+    """doc_type of a teaser on "New on this website"."""
+    t = title.lstrip().upper()
+    if t.startswith("DHPC"):
+        return "dhpc"
+    if t.startswith("HPC") or "health-professional-communication" in url.lower():
+        return "safety_update"
+    if t.startswith("BATCH RECALL"):
+        return "recall"
+    if "/vigilance-news/" in url.lower() or "swissmedic-journal" in url.lower():
+        return "newsletter"
+    return "other"
+
+
+def is_updates(source: SourceConfig) -> bool:
+    return str((source.options or {}).get("page", "")).lower() == "updates"
+
+
 def parse_list(html, base_url: str, source: SourceConfig, lang: str) -> list[Item]:
     doc = soup(html)
+    updates = is_updates(source)
     items: list[Item] = []
     for teaser in doc.select("div.mod-teaser"):
         a = teaser.select_one("h3 a[href]")
@@ -55,11 +84,14 @@ def parse_list(html, base_url: str, source: SourceConfig, lang: str) -> list[Ite
         if not title or not keep(source, title, subject):
             continue
         url = absolute(a["href"], base_url)
+        published = local_date(node_text(teaser.select_one("p.teaserDate")), lang)
+        ext = url
+        if updates and published:
+            ext = f"{url}@{published.isoformat()}"   # the Journal's page is the same every month
         items.append(Item(
-            external_id=url, url=url, title=title,
-            published=local_date(node_text(teaser.select_one("p.teaserDate")), lang),
-            doc_type=doc_type_for(title), lang=lang, body_text=subject or None,
-            structured={"subject": subject or None}))
+            external_id=ext, url=url, title=title, published=published,
+            doc_type=update_type(title, url) if updates else doc_type_for(title), lang=lang,
+            body_text=subject or None, structured={"subject": subject or None}))
     return items
 
 

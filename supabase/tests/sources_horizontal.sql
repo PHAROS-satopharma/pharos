@@ -1,4 +1,4 @@
--- PHAROS CI — the horizontal pass on Sources (0032, 0033). Runs on the database ci.yml prepared:
+-- PHAROS CI — the horizontal pass on Sources (0032, 0033, 0038). Runs on the database ci.yml prepared:
 -- CI Admin (…a1), CI Reader (…b2) and the source ci-test exist.
 
 create function pg_temp.sh_assert(ok boolean, msg text) returns void language plpgsql as $$
@@ -15,6 +15,42 @@ select pg_temp.sh_assert(exists (select 1 from regulator_page
   'BASG''s DHPC page is read by basg-dhpc');
 select pg_temp.sh_assert(not exists (select 1 from regulator_page where url !~ '^https://'),
   'every page of hers is an https address');
+
+-- ───────────── her pages read since 0038 ─────────────
+select pg_temp.sh_assert((select count(*) from regulator_page) = 65, 'her 65 pages, none added or lost');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'EMA' and kind = 'safety' and read_by = '{ema-news}'),
+  'EMA''s home page news is read by ema-news');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'SWISSMEDIC' and kind = 'safety' and read_by = '{swissmedic-updates}'),
+  'Swissmedic''s updates are read by swissmedic-updates');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'MEDSAFE' and label = 'Prescriber Update'
+                                    and read_by = '{medsafe-prescriber-update}'),
+  'Prescriber Update is read by medsafe-prescriber-update');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'PMDA' and label = 'Safety information announced by MHLW'
+                                    and read_by = '{pmda-mhlw}' and note like 'Read from the Japanese page%'),
+  'the MHLW announcements are read by pmda-mhlw, from the Japanese page');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'INFARMED' and kind = 'dhpc' and read_by = '{infarmed-circulares}'),
+  'Infarmed''s circulars are read by infarmed-circulares');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'MFDS' and kind = 'safety' and read_by = '{mfds-letters}'),
+  'the health.kr safety letters are read by mfds-letters');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'HPRA' and kind = 'safety'
+                                    and url = 'https://www.hpra.ie/safety-information/safety-notices'
+                                    and read_by = '{hpra-notices}'
+                                    and note like '%https://www.hpra.ie/homepage/about-us/publications-forms/newsletters%'),
+  'HPRA''s newsletters: the page that replaced her dead address, read by hpra-notices, her address in the note');
+select pg_temp.sh_assert(not exists (select 1 from regulator_page
+                                      where kind <> 'database' and read_by = '{}'
+                                        and coalesce(note, '') not like 'Not read:%'),
+  'every safety and DHPC page of hers is read, or its note says why not');
+select pg_temp.sh_assert((select string_agg(regulator_id, ',' order by regulator_id) from regulator_page
+                           where kind <> 'database' and read_by = '{}') = 'FDA,HC',
+  'only FDA''s press announcements and Health Canada''s InfoWatch are not read');
 
 -- ───────────── two authorities of one country, one of another ─────────────
 insert into regulator (id, country_code, country_name, name, languages, homepage) values
