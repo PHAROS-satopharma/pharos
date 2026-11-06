@@ -7,7 +7,7 @@ another table, it goes in that part's own migration file, listed under "Who owns
 
 | Owner | Paths |
 |---|---|
-| Collectors core (A1) | `collectors/core/`, `collectors/parsers/{__init__,base,feed,ema_dhpc,ema_psusa,govuk,openfda_enforcement,hc_recalls,pubmed}.py`, `collectors/{run,matching,pdf,merge,alerts,report,backfill,probe,classes,rematch}.py`, `collectors/report_templates/`, `collectors/sources.yaml`, `collectors/requirements.txt`, `supabase/migrations/0003_seed_watchlist.sql`, `tests/test_{matching,merge,alerts,feed,ema,run,classes,rematch}*.py`, `supabase/migrations/0034_drug_classes_and_rematch.sql`, `tests/fixtures/{ema-*,fda-*,mhra-*,bfarm-rhb,basg-*,aemps-*,hsa-*,hc-*,pubmed,atc-classes}/` |
+| Collectors core (A1) | `collectors/core/`, `collectors/parsers/{__init__,base,feed,ema_dhpc,ema_psusa,govuk,openfda_enforcement,hc_recalls,pubmed}.py`, `collectors/{run,matching,pdf,merge,alerts,report,backfill,probe,classes,rematch}.py`, `collectors/report_templates/`, `collectors/sources.yaml`, `collectors/requirements.txt`, `supabase/migrations/0003_seed_watchlist.sql`, `tests/test_{matching,merge,alerts,feed,ema,run,classes,rematch,pubmed_ncbi}*.py`, `supabase/migrations/0034_drug_classes_and_rematch.sql`, `supabase/migrations/0035_literature_search.sql`, `tests/fixtures/{ema-*,fda-*,mhra-*,bfarm-rhb,basg-*,aemps-*,hsa-*,hc-*,pubmed,atc-classes}/` |
 | Collectors sources and SPC (A2) | `collectors/parsers/<every HTML, browser and email parser>.py`, `collectors/spc/`, `tests/test_{parsers,spc}*.py`, `tests/fixtures/<their sources>/` |
 | Platform (C) | `supabase/migrations/0002_ops.sql`, `supabase/functions/`, `supabase/config.toml`, `workers/`, `.github/workflows/`, `docs/{setup,operations,validation}.md`, `.env.example`, `pyproject.toml` (pytest, ruff config) |
 | Web (B) | `web/` |
@@ -79,6 +79,18 @@ def extract_text(content: bytes, lang_hint: str | None) -> tuple[str, str, int]:
 - `list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]` (required)
 - `fetch_detail(ctx, source, item: Item) -> Item` (optional): fills `body_text` and `attachment_urls` from the
   notice page.
+- `after_store(ctx, source, items, stored: set[str]) -> None` (optional): called after the run stored what it
+  could; `stored` holds every external id now in the database. The mailbox marks only stored mail as read;
+  `pubmed` records which searches finished their look-back.
+- `is_history(item) -> bool` (optional): the item is stored as history (no alert, no digest line), like a
+  backfill. `pubmed`: a paper found only by a search's first 12-month look-back.
+- `aliases(item) -> list[str]` (optional): other external ids the same item may already be stored under; the
+  runner skips the item when one is known. `pubmed`: a paper's PMC id (stored so before its PMID existed).
+- `STRUCTURED_FIELDS` (optional): paths in `structured` matched like text, always with confidence high.
+  `pubmed`: `query_term`, the search words that found the paper.
+
+The runner gives every parser `ctx.store` (the `Store`, or `MemoryStore` in tests); a source's
+`options.time_budget_min` replaces the 10-minute budget of a normal run (`pubmed`: 15).
 
 The registry loads parsers by name with `importlib.import_module(f"collectors.parsers.{name}")`, so adding a
 parser never edits a shared file. Parsers raise `ParseError` when the page shape is unrecognisable, and must
@@ -165,6 +177,11 @@ create table probe_result (id uuid pk default gen_random_uuid(), url text not nu
   references person(id), requested_at timestamptz default now(), status text default 'queued'
   check (status in ('queued','running','ok','failed')), channel_detected text, parser_detected text,
   items jsonb, error text, finished_at timestamptz);
+-- 0035: the NCBI searches the literature collector has run (written by the collector only; a team member reads).
+create table literature_search (db text check (db in ('pubmed','pmc')), query text /* lower case */,
+  kind text check (kind in ('name','class')), look_back_from date, history_until date,
+  look_back_done_at timestamptz /* null: the 12-month look-back is not finished */, last_searched_at timestamptz,
+  created_at timestamptz, primary key (db, query));
 -- RPCs callable by a signed-in person:
 create_link_token() returns text                          -- one-time Telegram code for the caller
 archive_hit_count(p_term text, p_lang text) returns int   -- how many archived texts contain the term
@@ -203,6 +220,7 @@ the web test reads it from the migration. Subscription kind `new_items_digest` i
 | `probe-source` | `{url}` | `{probe_id}` | admin. Fires `repository_dispatch` to `probe.yml`; the web app polls `probe_result`. |
 | `archive-url` | `{r2_key}` | `{url}` | anyone signed in. Pre-signed R2 GET, valid 10 minutes. |
 | `invite-person` | `{email, full_name, role}` | `{person_id}` | admin |
+| `literature-search` | `{ingredient_id, from, to}` (days `YYYY-MM-DD`, publication dates, both included) | `{ingredient:{id, inn_en}, from, to, checked_at, queries:[{label, kind:'name'\|'class', pubmed:{count, url, error?}, pmc:{count, url, error?}}], note?}` | anyone signed in. Live NCBI counts (esearch, `retmax=0`, `datetype=pdat`) for the ingredient's English INN and each English class word, as the daily literature watch searches them; `url` opens the same search on the PubMed / PMC website (`count` equals the website's). `count` is null with `error` when that database did not answer. At most 20 searches. Nothing is stored. Web: `features/literature/useLiteratureSearch.ts`. |
 | `telegram-webhook` | Telegram updates | — | Telegram only. Checks the secret-token header; handles `/start <code>`. |
 
 ## Drug classes and the check of the past (0034)
@@ -248,7 +266,7 @@ confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the call
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | collectors; archive-url |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_BOT_USERNAME` | collectors; webhook |
 | `GITHUB_DISPATCH_TOKEN`, `GITHUB_REPO` | probe-source |
-| `NCBI_API_KEY` | pubmed |
+| `NCBI_API_KEY` | pubmed; literature-search (optional: 10 NCBI requests a second instead of 3) |
 | `ADMIN_TELEGRAM_CHAT_ID` | pg_cron watchdog (stored in Supabase Vault) |
 | `PHAROS_IMAP_HOST`, `PHAROS_IMAP_PORT`, `PHAROS_IMAP_USER`, `PHAROS_IMAP_PASSWORD` | collectors (Fimea/TGA newsletters in pharos@satopharma.com). satopharma.com mail is Turbify (Yahoo MX `mx-biz.mail.am0.yahoodns.net`), so it uses Yahoo/Turbify IMAP with a per-mailbox app password. |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | deploy-web |
