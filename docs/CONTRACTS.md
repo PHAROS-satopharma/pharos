@@ -262,63 +262,6 @@ confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the call
   `set_issue_names_ingredient`; for classes `ingredients_for_classes`, `drug_class_id`, `create_drug_class`,
   `link_ingredient_class`.
 
-## The search profile: groups, the class above, groups by hand (0049)
-
-```sql
--- ingredient_class: + relation text not null default 'group' ('group' = its ATC level-4 group | 'parent' = the
---   level-3 class above it | 'manual' = a group given by hand), enabled boolean not null default true,
---   changed_at; audited. On 0049 every link of a class with origin 'hand' became 'manual'; everything else
---   'group', enabled. A link inserted by hand to a class with origin 'hand' is 'manual' (trigger).
--- Switching a link from off to on sets changed_at on every word of the class (trigger
--- class_search_enabled_again): the check of the past and the literature look-back run for it.
--- Everything that searches reads ENABLED links only: Store.load_terms, class_ingredients, class_words,
--- rematch_due_terms; literature-search; report_weekly SEARCHES_SQL; ingredient_screen's class_words,
--- class_languages and literature searches. A link that is off still shows on the Ingredients page and screen.
--- RPCs, administrators only (security definer; 42501 for anyone else):
-set_class_search(p_ingredient uuid, p_class uuid, p_enabled boolean) returns void   -- P0002 when not linked
-add_search_group(p_ingredient uuid, p_name_en text) returns uuid
-  -- trimmed, 2 to 120 characters; 22023 when the name looks like an ATC code (groups by hand are named in
-  -- words); reuses a class with the same name (case-insensitive) else inserts origin 'hand' with a code made
-  -- from the name; links it 'manual' (an existing link of any relation is switched on, never downgraded)
-unlink_search_group(p_ingredient uuid, p_class uuid) returns void
-  -- 'manual' links only: 22023 for a link from the ATC code (switch it off instead), P0002 when not linked
--- Not callable by the app:
-ingredient_match_relation(p_ingredient uuid, p_document uuid) returns text
-  -- how a document was found for an ingredient: 'name' (its own names) > 'group' > 'manual' > 'parent';
-  -- null when nothing matched. 'parent' is a class-level signal to assess, not a group match.
-```
-
-- The search mode on the Ingredients page is DERIVED, never stored: no class on (or none) = *Ingredient only*;
-  every class on = *Ingredient + groups*; some = *Custom* (`web/src/features/ingredients/searchProfile.ts`:
-  `profileMode`, `profileWords`, `switchesFor`; reusable by any screen).
-- `collectors/classes.py` links the level-4 group ON and the level-3 class above it OFF (`relation 'parent'`);
-  it never changes a class or a link that exists, so a switch set by hand stays. Manual run: *Actions ->
-  PHAROS collect -> Run workflow -> classes* runs only this step.
-- Store: `link_ingredient_class(ingredient_id, class_id, *, relation='group', enabled=True)` (on conflict
-  nothing); `memstore.set_class_search(ingredient_id, class_id, enabled)`.
-
-## Notices only: a class kept out of the literature search (0051)
-
-```sql
--- ingredient_class: + literature boolean not null default true; audited; dated in changed_at like enabled
---   (trigger ingredient_class_relation). Every link existing on 0051 stays in the literature.
--- It counts only while enabled. enabled and literature = the class's English words are also searched on PubMed
--- and PubMed Central; enabled and not literature = its words are matched in notices only (every language).
--- Readers of ENABLED AND LITERATURE: Store.class_words (the daily NCBI watch, collectors/parsers/pubmed.py),
--- literature-search, report_weekly SEARCHES_SQL, ingredient_screen's literature searches, ingredient_readiness
--- ncbi (expected and look_back_done). Everything else that 0049 lists still reads enabled alone: load_terms,
--- class_ingredients, rematch_due_terms, the screen's class_words and class_languages, readiness class words.
--- Switching literature never makes a word due for the check of the past. Papers already found are kept; a word
--- back in the literature after STALE_DAYS is looked back on again, after less its days are caught up.
-set_class_literature(p_ingredient uuid, p_class uuid, p_on boolean) returns void
-  -- administrators only (security definer; 42501 for anyone else); P0002 when not linked; null = true
-```
-
-- `ingredient_screen` classes gain `literature`; the screen's head says "NSAID (notices only)".
-- Web: `ClassLink.literature`; the class line's second switch **In the literature search** / **Notices only**
-  (administrators, shown while the class is searched); `profileWords` marks the English words of such a class
-  `notInLiterature`. Store twin: `memstore.set_class_literature(ingredient_id, class_id, on)`.
-
 ## The Ingredients screen (0039)
 
 ```sql
@@ -569,7 +512,7 @@ Web: Reports (`web/src/features/reports/ReportsPage.tsx`, `FileHash.tsx`), `web/
 (`SignOff.tsx`: query key `['sign-off', kind, id]`, reads `sign_off` and `record_fingerprint`; `signoff.ts`:
 `shortHash`, `signatureState`, `STATE_LABEL` "Fingerprint matches" / "File changed since signing",
 `defaultMeaning`), `styles/signoff.css`. Workflow: `db-backup.yml` verify-archive samples 50 originals plus 10
-`weekly_report` / `monthly_report` files. SQL test: `supabase/tests/sign_off_weekly.sql`; web: `signoff.test.ts`.
+`weekly_report` / `monthly_report` / made `report_request` (pack) files. SQL test: `supabase/tests/sign_off_weekly.sql`; web: `signoff.test.ts`.
 
 ## Packs on request (0048)
 
@@ -606,6 +549,63 @@ Workflow: `collect.yml` steps "Packs waiting?" and "Packs on request" (last; `!c
 20 minutes; never weekly or classes). Web: `web/src/lib/psur.ts` (`frequencyMonths`, `intervalFor`), `features/reports/packs.ts`,
 `Packs.tsx` (query key `['report-requests']`), `styles/reports-packs.css`. Tests: `tests/test_report_pack.py`,
 `tests/test_store_pg.py`, `supabase/tests/report_request.sql`, `packs.test.ts`, `psur.test.ts`.
+
+## The search profile: groups, the class above, groups by hand (0049)
+
+```sql
+-- ingredient_class: + relation text not null default 'group' ('group' = its ATC level-4 group | 'parent' = the
+--   level-3 class above it | 'manual' = a group given by hand), enabled boolean not null default true,
+--   changed_at; audited. On 0049 every link of a class with origin 'hand' became 'manual'; everything else
+--   'group', enabled. A link inserted by hand to a class with origin 'hand' is 'manual' (trigger).
+-- Switching a link from off to on sets changed_at on every word of the class (trigger
+-- class_search_enabled_again): the check of the past and the literature look-back run for it.
+-- Everything that searches reads ENABLED links only: Store.load_terms, class_ingredients, class_words,
+-- rematch_due_terms; literature-search; report_weekly SEARCHES_SQL; ingredient_screen's class_words,
+-- class_languages and literature searches. A link that is off still shows on the Ingredients page and screen.
+-- RPCs, administrators only (security definer; 42501 for anyone else):
+set_class_search(p_ingredient uuid, p_class uuid, p_enabled boolean) returns void   -- P0002 when not linked
+add_search_group(p_ingredient uuid, p_name_en text) returns uuid
+  -- trimmed, 2 to 120 characters; 22023 when the name looks like an ATC code (groups by hand are named in
+  -- words); reuses a class with the same name (case-insensitive) else inserts origin 'hand' with a code made
+  -- from the name; links it 'manual' (an existing link of any relation is switched on, never downgraded)
+unlink_search_group(p_ingredient uuid, p_class uuid) returns void
+  -- 'manual' links only: 22023 for a link from the ATC code (switch it off instead), P0002 when not linked
+-- Not callable by the app:
+ingredient_match_relation(p_ingredient uuid, p_document uuid) returns text
+  -- how a document was found for an ingredient: 'name' (its own names) > 'group' > 'manual' > 'parent';
+  -- null when nothing matched. 'parent' is a class-level signal to assess, not a group match.
+```
+
+- The search mode on the Ingredients page is DERIVED, never stored: no class on (or none) = *Ingredient only*;
+  every class on = *Ingredient + groups*; some = *Custom* (`web/src/features/ingredients/searchProfile.ts`:
+  `profileMode`, `profileWords`, `switchesFor`; reusable by any screen).
+- `collectors/classes.py` links the level-4 group ON and the level-3 class above it OFF (`relation 'parent'`);
+  it never changes a class or a link that exists, so a switch set by hand stays. Manual run: *Actions ->
+  PHAROS collect -> Run workflow -> classes* runs only this step.
+- Store: `link_ingredient_class(ingredient_id, class_id, *, relation='group', enabled=True)` (on conflict
+  nothing); `memstore.set_class_search(ingredient_id, class_id, enabled)`.
+
+## Notices only: a class kept out of the literature search (0051)
+
+```sql
+-- ingredient_class: + literature boolean not null default true; audited; dated in changed_at like enabled
+--   (trigger ingredient_class_relation). Every link existing on 0051 stays in the literature.
+-- It counts only while enabled. enabled and literature = the class's English words are also searched on PubMed
+-- and PubMed Central; enabled and not literature = its words are matched in notices only (every language).
+-- Readers of ENABLED AND LITERATURE: Store.class_words (the daily NCBI watch, collectors/parsers/pubmed.py),
+-- literature-search, report_weekly SEARCHES_SQL, ingredient_screen's literature searches, ingredient_readiness
+-- ncbi (expected and look_back_done). Everything else that 0049 lists still reads enabled alone: load_terms,
+-- class_ingredients, rematch_due_terms, the screen's class_words and class_languages, readiness class words.
+-- Switching literature never makes a word due for the check of the past. Papers already found are kept; a word
+-- back in the literature after STALE_DAYS is looked back on again, after less its days are caught up.
+set_class_literature(p_ingredient uuid, p_class uuid, p_on boolean) returns void
+  -- administrators only (security definer; 42501 for anyone else); P0002 when not linked; null = true
+```
+
+- `ingredient_screen` classes gain `literature`; the screen's head says "NSAID (notices only)".
+- Web: `ClassLink.literature`; the class line's second switch **In the literature search** / **Notices only**
+  (administrators, shown while the class is searched); `profileWords` marks the English words of such a class
+  `notInLiterature`. Store twin: `memstore.set_class_literature(ingredient_id, class_id, on)`.
 
 ## The Japan code of an ingredient that exists (0052)
 
