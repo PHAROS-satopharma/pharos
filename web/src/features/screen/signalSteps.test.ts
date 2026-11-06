@@ -37,7 +37,17 @@ const DATA: IngredientScreenData = {
   to: '2026-11-07',
   regulators: [],
   label_changes: [],
-  literature: { papers: 0, by_name: 0, by_class: 0, pubmed: 0, pmc: 0, by_query: [], first: [] },
+  literature: {
+    papers: 0,
+    by_name: 0,
+    by_class: 0,
+    pubmed: 0,
+    pmc: 0,
+    europepmc: 0,
+    preprints: 0,
+    by_query: [],
+    first: [],
+  },
   findings: { n1: finding, n2: { ...finding, signal: null } },
 };
 

@@ -734,6 +734,36 @@ packs and their files and cannot ask for one.
   anti-inflammatory". The stored papers can differ from these counts: the watch reads by entry date, the
   counts are by publication date.
 
+## Europe PMC literature (second source, migration 0066)
+
+- **What is searched.** The source `europepmc` (`collectors/parsers/europepmc.py`, regulator EBI) runs after
+  NCBI in the daily and literature runs and searches Europe PMC's REST API for the same words NCBI is searched
+  for: each active ingredient's English name and the English words of its classes in the literature search. Each
+  word is one exact phrase, `"word" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[from TO to]`, with
+  `synonym=false`, so it matches the title, the abstract and the full texts Europe PMC holds, plus preprints
+  (Research Square, medRxiv, bioRxiv …), which NCBI does not list.
+- **One paper, one document.** Before storing, the run looks every hit up among the papers the other literature
+  sources stored, by PMID, PMC id and DOI (case ignored). A paper NCBI already stored is not stored again: its
+  `structured.found_in` and the search's `db` list gain `europepmc`. The NCBI run does the same the other way,
+  so whichever source finds a paper first stores it. A new paper is a literature document with the same fields
+  as NCBI's, under its PMID, else its PMC id, else its Europe PMC id (a preprint's `PPR…`), linked to its
+  Europe PMC page and, when it has them, its PubMed and PMC pages.
+- **Preprints.** A paper from SRC:PPR has `preprint: true`. The Ingredients screen shows it with a *Preprint*
+  tag and "not peer reviewed", and the literature line counts Europe PMC beside PubMed and PMC and the preprints
+  apart. Europe PMC gives no language: its papers are stored as English. A preprint is typed "preprint", so it is
+  usually a possible case report by its title alone.
+- **Look-back and catch-up.** The same rules as NCBI (`literature_search` rows with `db = 'europepmc'`): a
+  new word reads 12 months as history, then each run reads from the last complete run minus 3 days.
+- **How fast.** Europe PMC first lists ids only (1,000 a page, under a second), then reads the new papers' records
+  100 at a time, half a second between requests. A run spends at most 6 minutes searching (words searched
+  before go first, then the look-backs; a word not reached keeps its row and goes first next time), stores at most
+  800 new papers and stops at 10 minutes. Volumes for 12 months on 6 November 2026: carvedilol 1,424 hits (14
+  preprints), paracetamol 6,925, metformin 15,618 (253 preprints); most are already stored from NCBI.
+- **Etiquette.** No key. The request says who we are in its User-Agent ("PHAROS pharmacovigilance literature
+  watch" and the company mailbox), never in the address, so no log line carries it.
+- **Case intake.** *Open a case* on a paper with no PMID or PMC id reads its Europe PMC record (the abstract)
+  and marks a preprint "not peer reviewed".
+
 ## Case reports in the literature
 
 A paper reporting a case with one of our products starts a clock the day PHAROS finds it (her decision, 6

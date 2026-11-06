@@ -389,8 +389,9 @@ select pg_temp.is_assert(
           and (j -> 'literature' ->> 'by_class')::int = 1
           and (j -> 'literature' ->> 'pubmed')::int = 1
           and (j -> 'literature' ->> 'pmc')::int = 2
-          and j -> 'literature' -> 'by_query' = '[{"query":"ci screenamine","kind":"name","pubmed":1,"pmc":1},'
-                                                 '{"query":"ci screenoids","kind":"class","pubmed":0,"pmc":1}]'::jsonb
+          and j -> 'literature' -> 'by_query' = '[{"query":"ci screenamine","kind":"name","pubmed":1,"pmc":1,"europepmc":0},'
+                                                 '{"query":"ci screenoids","kind":"class","pubmed":0,"pmc":1,'
+                                                 '"europepmc":0}]'::jsonb
           and pg_temp.is_docs(j -> 'literature' -> 'first') = 'b020,b021'
      from is_res where name = 'week'),
   'papers: in all, by database and by search of this ingredient, the name''s papers first');

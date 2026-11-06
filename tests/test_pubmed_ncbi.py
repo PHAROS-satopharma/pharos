@@ -520,3 +520,35 @@ def test_ncbi_has_its_own_time_budget(tmp_path):
     assert store.source["pubmed"]["last_ok_at"] < datetime.now(timezone.utc) - timedelta(hours=1)
     assert not store.literature_searches()[("pmc", "levofloxacin")]["look_back_done_at"]
     ctx.close()
+
+
+def test_a_paper_europe_pmc_stored_first_is_never_stored_again(tmp_path):
+    # Europe PMC (collectors/parsers/europepmc.py) ran first: one paper is stored there under its PMID, another
+    # under its PMC id only. NCBI finds both; each stays one document, which records that NCBI found it too.
+    store = live_like_store()
+    add_levofloxacin(store)
+    found = [{"query": "levofloxacin", "kind": "name", "db": ["europepmc"]}]
+    by_pmid = store.insert_document({
+        "source_id": "europepmc", "external_id": "42972474", "url": "https://europepmc.org/article/MED/42972474",
+        "title_orig": "A paper Europe PMC stored", "lang": "en", "doc_type": "literature", "is_backfill": True,
+        "published_date": date(2026, 10, 30),
+        "structured": {"pmid": "42972474", "pmcid": None, "found_in": ["europepmc"], "queries": found,
+                       "query_term": ["levofloxacin"]}})
+    by_pmcid = store.insert_document({
+        "source_id": "europepmc", "external_id": "PMC13730105",
+        "url": "https://europepmc.org/article/PMC/PMC13730105", "title_orig": "Clinical Significance of Urine Culture",
+        "lang": "en", "doc_type": "literature", "published_date": date(2026, 10, 30), "is_backfill": True,
+        "structured": {"pmid": None, "pmcid": "PMC13730105", "found_in": ["europepmc"], "queries": found,
+                       "query_term": ["levofloxacin"]}})
+    stats = run_pubmed(store, tmp_path, Ncbi(LEVO))
+    assert not stats.failed, stats.error
+    got = docs(store)
+    assert "42972474" not in got and "42979212" not in got and "PMC13730105" not in got
+    assert len(got) == 1 + 62 + 7 - 1 - 2
+    first = store.document[by_pmid]["structured"]
+    assert first["found_in"] == ["europepmc", "pmc", "pubmed"] and first["query_term"] == ["levofloxacin"]
+    assert first["queries"] == [{"query": "fluoroquinolones", "kind": "class", "db": ["pubmed"]},
+                                {"query": "levofloxacin", "kind": "name", "db": ["europepmc", "pmc"]}]
+    second = store.document[by_pmcid]["structured"]
+    assert "europepmc" in second["found_in"] and len(second["found_in"]) > 1
+    assert all(r["look_back_done_at"] for r in store.literature_searches().values())

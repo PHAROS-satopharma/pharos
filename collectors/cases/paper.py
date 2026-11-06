@@ -3,8 +3,9 @@ holds it openly, its full text, as one text file.
 
 Read through E-utilities with the literature collector's etiquette (``collectors/parsers/pubmed.py``), archived
 under ``sha256/`` as ``text/plain`` like every original, and set on the case (``r2_key``, ``sha256``, ``mime``,
-``bytes``) before the reader takes it. A paper without a PubMed or PMC id cannot be fetched: the case fails with a
-message and the reviewer uploads the article instead.
+``bytes``) before the reader takes it. A paper with neither id (a preprint the Europe PMC watch found) is read from
+its Europe PMC record instead: title and abstract (``collectors/parsers/europepmc.py``). A paper with none of the
+three ids cannot be fetched: the case fails with a message and the reviewer uploads the article instead.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from urllib.parse import quote
 
 from collectors.core.archive import Archive
 from collectors.core.context import FetchContext, FetchError
+from collectors.parsers import europepmc
 from collectors.parsers.pubmed import EUTILS, _common, _pace
 
 log = logging.getLogger("collectors.cases.paper")
@@ -37,18 +39,20 @@ def pmc_text(xml: bytes) -> str:
     return "\n".join(out)[:MAX_FULL_TEXT]
 
 
-def build_text(doc: dict, abstract: str, full: str) -> str:
+def build_text(doc: dict, abstract: str, full: str, record: str = "PubMed record") -> str:
     s = doc.get("structured") or {}
     head = [f"Title: {doc.get('title_orig') or ''}"]
     if s.get("authors"):
         head.append("Authors: " + ", ".join(a for a in s["authors"] if a))
     if s.get("journal") or s.get("pubdate"):
         head.append(f"Journal: {s.get('journal') or ''} {s.get('pubdate') or ''}".strip())
-    for label, key in (("PMID", "pmid"), ("PMCID", "pmcid"), ("DOI", "doi")):
+    for label, key in (("PMID", "pmid"), ("PMCID", "pmcid"), ("Europe PMC", "europepmc_id"), ("DOI", "doi")):
         if s.get(key):
             head.append(f"{label}: {s[key]}")
+    if s.get("preprint"):
+        head.append("Preprint: not peer reviewed")
     head.append(f"Link: {doc.get('url') or ''}")
-    parts = ["\n".join(head), "PubMed record:\n" + (abstract.strip() or "(no abstract)")]
+    parts = ["\n".join(head), f"{record}:\n" + (abstract.strip() or "(no abstract)")]
     parts.append("Full text (PubMed Central):\n" + full if full.strip()
                  else "Full text: not openly available in PubMed Central; only the record above was read.")
     return "\n\n".join(parts)
@@ -63,14 +67,18 @@ def fetch_source(db: Any, archive: Archive, case: dict, ctx: FetchContext | None
     if doc is None:
         raise ReadFailed("The paper behind this case no longer exists.")
     s = doc.get("structured") or {}
-    pmid, pmcid = s.get("pmid"), s.get("pmcid")
-    if not pmid and not pmcid:
-        raise ReadFailed("This paper has no PubMed or PMC id, so PHAROS cannot fetch it. Upload the article.")
+    pmid, pmcid, epmc = s.get("pmid"), s.get("pmcid"), s.get("europepmc_id")
+    if not pmid and not pmcid and not epmc:
+        raise ReadFailed("This paper has no PubMed, PMC or Europe PMC id, so PHAROS cannot fetch it. "
+                         "Upload the article.")
     own = ctx is None
     ctx = ctx or FetchContext(None, "cases", archive=archive)
     _pace(ctx)
+    record = "PubMed record" if pmid or pmcid else "Europe PMC record"
     try:
         abstract = ""
+        if not pmid and not pmcid:
+            abstract = europepmc.abstract(ctx, str(epmc))
         if pmid:
             abstract = ctx.get(f"{EUTILS}/efetch.fcgi?db=pubmed&id={quote(str(pmid))}&rettype=abstract"
                                f"&retmode=text{_common()}").text
@@ -82,11 +90,12 @@ def fetch_source(db: Any, archive: Archive, case: dict, ctx: FetchContext | None
             except (FetchError, ValueError) as exc:  # the record above is still worth reading
                 log.info("case %s: no PMC full text (%s)", case["ref"], exc)
     except FetchError as exc:
-        raise ReadFailed(f"PubMed could not be reached ({exc}).", passing=True) from exc
+        where = "PubMed" if pmid or pmcid else "Europe PMC"
+        raise ReadFailed(f"{where} could not be reached ({exc}).", passing=True) from exc
     finally:
         if own:
             ctx.close()
-    body = build_text(doc, abstract, full).encode("utf-8")
+    body = build_text(doc, abstract, full, record).encode("utf-8")
     sha, key = archive.put(body, "text/plain")
     row = db.fetchone(
         """update safety_case set r2_key = %(k)s, sha256 = %(s)s, mime = 'text/plain', bytes = %(b)s,

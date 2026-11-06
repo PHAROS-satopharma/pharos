@@ -163,6 +163,24 @@ class MemoryStore:
         return ({d["external_id"] for d in docs}
                 | {(d.get("structured") or {}).get("pmcid") for d in docs if (d.get("structured") or {}).get("pmcid")})
 
+    def literature_papers(self, source_id: str) -> list[dict]:
+        out = []
+        for d in self.document.values():
+            if d["source_id"] == source_id or (self.source.get(d["source_id"]) or {}).get("kind") != "literature":
+                continue
+            s = d.get("structured") or {}
+            out.append({"id": d["id"], "external_id": d["external_id"], "pmid": s.get("pmid"),
+                        "pmcid": s.get("pmcid"), "doi": s.get("doi")})
+        return out
+
+    def literature_found_also(self, found: dict[str, dict[str, str]], db: str) -> None:
+        from collectors.parsers._literature import found_also
+
+        for doc_id, queries in found.items():
+            d = self.document.get(doc_id)
+            if d is not None:
+                d["structured"] = found_also(d.get("structured"), db, queries)
+
     def literature_searches(self) -> dict[tuple[str, str], dict]:
         return {k: dict(v) for k, v in self.literature_search.items()}
 

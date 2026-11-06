@@ -1,0 +1,1919 @@
+{
+ "version": "6.9",
+ "hitCount": 56,
+ "request": {
+  "queryString": "\"carvedilol\" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]",
+  "resultType": "lite",
+  "cursorMark": "*",
+  "pageSize": 1000,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": [
+   {
+    "id": "PPR1350007",
+    "source": "PPR",
+    "doi": "10.21203/rs.3.rs-10956313/v1",
+    "title": "Carvedilol restores nitrergic relaxation and reduces oxidative stress in the corpus cavernosum of streptozotocin-induced diabetic rats",
+    "authorString": "ÇİLOĞLU BG, YILMAZ-ORAL D, SARI ZK, GUR S, ONAY-BESIKCI A.",
+    "pubYear": "2026",
+    "pubType": "preprint",
+    "bookOrReportDetails": {
+     "publisher": "Research Square",
+     "yearOfPublication": 2026
+    },
+    "isOpenAccess": "N",
+    "inEPMC": "N",
+    "inPMC": "N",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "N",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-26",
+    "firstIndexDate": "2026-10-27",
+    "versionNumber": 1
+   },
+   {
+    "id": "PMC13690626",
+    "source": "PMC",
+    "pmcid": "PMC13690626",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13690626"
+     ]
+    },
+    "title": "Efficacy of beta-blockers in preventing cardiotoxicity in breast cancer patients receiving anthracyclines: a GRADE-assessed systematic review and meta-analysis with trial sequential analysis",
+    "authorString": "Samperio V, Murrieta Bruciaga L, Castañeda Martínez J, Coronado Porchas V, Chen Liang A, Cruz Castillo Y, Ghonge A, Saripalli A, Schulz T.",
+    "journalTitle": "Front Cardiovasc Med",
+    "journalVolume": "13",
+    "journalIssn": "2297-055x",
+    "pubType": "systematic-review; review",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-24",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42897877",
+    "source": "MED",
+    "pmid": "42897877",
+    "doi": "10.1177/10600280261493520",
+    "title": "Evaluation of Clinical Outcomes of Selective Versus Nonselective Beta-Blockers Among Patients With Heart Failure With Reduced Ejection Fraction Receiving Sacubitril/Valsartan.",
+    "authorString": "Adjeroh L, Kamal KM, Raymond Guo L, Balla S, Wen S, Kido K.",
+    "journalTitle": "Ann Pharmacother",
+    "pubYear": "2026",
+    "journalIssn": "1060-0280; 1542-6270; ",
+    "pageInfo": "10600280261493520",
+    "pubType": "journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "N",
+    "inPMC": "N",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "N",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-19",
+    "firstIndexDate": "2026-10-21"
+   },
+   {
+    "id": "42968865",
+    "source": "MED",
+    "pmid": "42968865",
+    "pmcid": "PMC13724075",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13724075"
+     ]
+    },
+    "doi": "10.7759/cureus.117348",
+    "title": "Comparative Analysis of Various Antioxidants for Rehabilitating the Shear Bond Strength of Composite Resin to Bleached Enamel: An In Vitro Study.",
+    "authorString": "Gurijala R, Aravelli S, Penigalapati S, Mili SS, Kasam S, Ramachandruni N.",
+    "journalTitle": "Cureus",
+    "issue": "10",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2168-8184",
+    "pageInfo": "e117348",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-02",
+    "firstIndexDate": "2026-11-03"
+   },
+   {
+    "id": "42919976",
+    "source": "MED",
+    "pmid": "42919976",
+    "doi": "10.1007/s00210-026-06027-9",
+    "title": "Pharmacological interactions of carvedilol and curcumin nanomicelles in spontaneously hypertensive rats: a bliss and HSA analysis.",
+    "authorString": "Plantamura YAS, Allo M, Riedel J, Fuentes P, Riesco AS, Carranza A, Donato M, Garces M, Evelson P, Bernabeu E, Chiappetta D, Gorzalczany S, Höcht C.",
+    "journalTitle": "Naunyn Schmiedebergs Arch Pharmacol",
+    "pubYear": "2026",
+    "journalIssn": "0028-1298; 1432-1912; ",
+    "pubType": "journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "N",
+    "inPMC": "N",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "N",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-24",
+    "firstIndexDate": "2026-10-25"
+   },
+   {
+    "id": "42900969",
+    "source": "MED",
+    "pmid": "42900969",
+    "pmcid": "PMC13717103",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13717103"
+     ]
+    },
+    "doi": "10.1016/j.ijpddr.2026.100673",
+    "title": "Repurposed small-molecule inhibitors of Plasmodium falciparum calmodulins disrupt calcium homeostasis.",
+    "authorString": "Tammour A, Parveen S, Panda A, Ahmad S, Abbas M, Madhav H, Khan Z, Thalor A, Rath PP, Prakash N, Junaid IT, Mukhtar O, Gupta D, Mohmmed A, Malhotra P.",
+    "journalTitle": "Int J Parasitol Drugs Drug Resist",
+    "journalVolume": "32",
+    "pubYear": "2026",
+    "journalIssn": "2211-3207",
+    "pageInfo": "100673",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "pdb",
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-17",
+    "firstIndexDate": "2026-10-21"
+   },
+   {
+    "id": "42962313",
+    "source": "MED",
+    "pmid": "42962313",
+    "doi": "10.1016/j.ejmech.2026.119454",
+    "title": "Design and synthesis of carvedilol-derived dual-functional adjuvant agents with oral activity against doxorubicin cardiotoxicity and anticancer efficacy.",
+    "authorString": "Wu X, Mu X, Liu Q, Liu Y, Guo S, Guan M, Shen H, Hou W, Xu X, Ma Y, Dong C, Li H, Li J, Jia L, Mao F, Ni S.",
+    "journalTitle": "Eur J Med Chem",
+    "issue": "pt 3",
+    "journalVolume": "321",
+    "pubYear": "2026",
+    "journalIssn": "0223-5234; 1768-3254; ",
+    "pageInfo": "119454",
+    "pubType": "journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "N",
+    "inPMC": "N",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "N",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-27",
+    "firstIndexDate": "2026-10-31"
+   },
+   {
+    "id": "PMC13728584",
+    "source": "PMC",
+    "pmcid": "PMC13728584",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13728584"
+     ]
+    },
+    "title": "P058 Unmasking paediatric Takayasu arteritis: acute heart failure and isolated left ventricular dysfunction as a critical red flag",
+    "journalTitle": "Rheumatol Adv Pract",
+    "issue": "suppl 1",
+    "journalVolume": "10",
+    "pubYear": "2026",
+    "journalIssn": "2514-1775",
+    "pubType": "abstract",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-11-01",
+    "firstIndexDate": "2026-11-04"
+   },
+   {
+    "id": "42896200",
+    "source": "MED",
+    "pmid": "42896200",
+    "doi": "10.7326/annals-26-03907-oc",
+    "title": "Annals On Call - Carvedilol Versus Other Nonselective β-Blockers in Cirrhosis.",
+    "authorString": "Centor RM, Lin KJ, Simon TG.",
+    "journalTitle": "Ann Intern Med",
+    "issue": "10",
+    "journalVolume": "179",
+    "pubYear": "2026",
+    "journalIssn": "0003-4819; 1539-3704; ",
+    "pageInfo": "e2603907OC",
+    "pubType": "video-audio media",
+    "isOpenAccess": "N",
+    "inEPMC": "N",
+    "inPMC": "N",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "N",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-01",
+    "firstIndexDate": "2026-10-21"
+   },
+   {
+    "id": "42974550",
+    "source": "MED",
+    "pmid": "42974550",
+    "pmcid": "PMC13726794",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13726794"
+     ]
+    },
+    "doi": "10.7759/cureus.117398",
+    "title": "Cirrhotic Cardiomyopathy and Related Cardiocirculatory Dysfunction: A Systematic Review of Therapeutic Responses and Cardiorenal Outcomes.",
+    "authorString": "Nashed SM, Nathaniel E, Khan MS, Ward-Bradley C, Al-Ramahi A, Sabeen F, Nasir A, Saeed R, Khan AH.",
+    "journalTitle": "Cureus",
+    "issue": "10",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2168-8184",
+    "pageInfo": "e117398",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-03",
+    "firstIndexDate": "2026-11-04"
+   },
+   {
+    "id": "42958440",
+    "source": "MED",
+    "pmid": "42958440",
+    "pmcid": "PMC13721243",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13721243"
+     ]
+    },
+    "doi": "10.1186/s40959-026-00515-w",
+    "title": "Pharmacologic prevention of cardiotoxicity in breast cancer: a Bayesian network meta-analysis and meta-regression.",
+    "authorString": "Al-Shammari AS, Ibrahim A, Islam MR, Al Sakini AS, Tabasum P, Zahra R, Almansouri NE, Aboueisha H, Hamdar H, Iqbal U, Lingamsetty S, Sattar Y, Abuelazm M, Albayyaa M, Ali A, Iliescu C, Al-Taii H, Khalife W.",
+    "journalTitle": "Cardiooncology",
+    "issue": "1",
+    "journalVolume": "12",
+    "pubYear": "2026",
+    "journalIssn": "2057-3804",
+    "pageInfo": "133",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-08-03",
+    "firstIndexDate": "2026-10-30"
+   },
+   {
+    "id": "42916126",
+    "source": "MED",
+    "pmid": "42916126",
+    "pmcid": "PMC13670896",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13670896"
+     ]
+    },
+    "doi": "10.1021/acs.analchem.6c04571",
+    "title": "Native Mass Spectrometry Reveals Ligand-Specific Conformational Heterogeneity of the β1-Adrenergic Receptor Using Nanobody Probes.",
+    "authorString": "Wang YQ, Lian GT, Chen YA, Chen R, Wu PY, Peng HH, Yen HY.",
+    "journalTitle": "Anal Chem",
+    "issue": "40",
+    "journalVolume": "98",
+    "pubYear": "2026",
+    "journalIssn": "0003-2700; 1520-6882; ",
+    "pageInfo": "29378-29388",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "gen",
+      "pdb"
+     ]
+    },
+    "firstPublicationDate": "2026-10-01",
+    "firstIndexDate": "2026-10-25"
+   },
+   {
+    "id": "42929255",
+    "source": "MED",
+    "pmid": "42929255",
+    "doi": "10.17235/reed.2026.12213/2026",
+    "title": "From Baveno VII to Baveno VIII: key innovations in risk stratification and personalized care for portal hypertension.",
+    "authorString": "Téllez L, Donate Ortega J, Fortea JI, Baiges A, Alvarado-Tapias E, Albillos Martínez A.",
+    "journalTitle": "Rev Esp Enferm Dig",
+    "pubYear": "2026",
+    "journalIssn": "1130-0108",
+    "pubType": "journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "N",
+    "inPMC": "N",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "N",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-26",
+    "firstIndexDate": "2026-10-27"
+   },
+   {
+    "id": "42910044",
+    "source": "MED",
+    "pmid": "42910044",
+    "pmcid": "PMC13686352",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13686352"
+     ]
+    },
+    "doi": "10.1002/ccr3.73771",
+    "title": "Heart Failure Progression in the Setting of Persistent Atrial Fibrillation, Frequent Premature Ventricular Complexes, and Malignancy-Related Limitations to Guideline-Directed Medical Therapy: A Case Report.",
+    "authorString": "Roger D, Shaker W, Yavari M, Thakur R, Castellani M, Siddiqi Z, Tiotsop M.",
+    "journalTitle": "Clin Case Rep",
+    "issue": "10",
+    "journalVolume": "14",
+    "pubYear": "2026",
+    "journalIssn": "2050-0904",
+    "pageInfo": "e73771",
+    "pubType": "case-study; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-21",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42898726",
+    "source": "MED",
+    "pmid": "42898726",
+    "pmcid": "PMC13678575",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13678575"
+     ]
+    },
+    "doi": "10.1155/jamc/9609425",
+    "title": "Tracing Hydrazine in Pharmaceuticals: Toxicological Concerns, Extraction Approaches, and Analytical Method Development.",
+    "authorString": "Donga BM, Pratiwi R, Hasanah AN.",
+    "journalTitle": "J Anal Methods Chem",
+    "journalVolume": "2026",
+    "pubYear": "2026",
+    "journalIssn": "2090-8865; 2090-8873; ",
+    "pageInfo": "9609425",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-19",
+    "firstIndexDate": "2026-10-21"
+   },
+   {
+    "id": "42950304",
+    "source": "MED",
+    "pmid": "42950304",
+    "pmcid": "PMC13585188",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13585188"
+     ]
+    },
+    "doi": "10.3138/cpj-25-0125",
+    "title": "Pill splitting for sustainability: Reducing the cost and environmental impact of medications.",
+    "authorString": "Pammett RT, Lu E, Emond C, Lam I.",
+    "journalTitle": "Can Pharm J (Ott)",
+    "issue": "4",
+    "journalVolume": "159",
+    "pubYear": "2026",
+    "journalIssn": "1715-1635; 1913-701x; ",
+    "pageInfo": "247-252",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-07-17",
+    "firstIndexDate": "2026-10-29"
+   },
+   {
+    "id": "42923775",
+    "source": "MED",
+    "pmid": "42923775",
+    "pmcid": "PMC13689743",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13689743"
+     ]
+    },
+    "doi": "10.4244/aij-d-26-00012",
+    "title": "Real-time visualisation of Impella-mediated left ventricular unloading during surgical repair of blowout free wall rupture.",
+    "authorString": "Hirasawa Y, Masuda S, Hori D, Tanimoto S, Ogata N.",
+    "journalTitle": "AsiaIntervention",
+    "issue": "3",
+    "journalVolume": "12",
+    "pubYear": "2026",
+    "journalIssn": "2426-3958; 2491-0929; ",
+    "pageInfo": "240-241",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "N",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-23",
+    "firstIndexDate": "2026-10-25"
+   },
+   {
+    "id": "42935976",
+    "source": "MED",
+    "pmid": "42935976",
+    "pmcid": "PMC13696462",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13696462"
+     ]
+    },
+    "doi": "10.3389/fped.2026.1941518",
+    "title": "Case Report: Pulmonary artery banding for an older child with end-stage dilated cardiomyopathy.",
+    "authorString": "Huang J, Sun L, Tang C, Cao Y, Liang X, Chang Y, Li X, Huang X, Huang J.",
+    "journalTitle": "Front Pediatr",
+    "journalVolume": "14",
+    "pubYear": "2026",
+    "journalIssn": "2296-2360",
+    "pageInfo": "1941518",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-12",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42968449",
+    "source": "MED",
+    "pmid": "42968449",
+    "pmcid": "PMC13725087",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13725087"
+     ]
+    },
+    "doi": "10.1002/prp2.70341",
+    "title": "Drug Utilization Patterns and WHO Prescribing Indicators Among Hypertensive Outpatients at Karnali Academy of Health Sciences, Nepal: A Cross-Sectional Study.",
+    "authorString": "Aryal B, Yadav BK, Sapkota B, Adhikari S.",
+    "journalTitle": "Pharmacol Res Perspect",
+    "issue": "6",
+    "journalVolume": "14",
+    "pubYear": "2026",
+    "journalIssn": "2052-1707",
+    "pageInfo": "e70341",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-12-01",
+    "firstIndexDate": "2026-11-03"
+   },
+   {
+    "id": "42928966",
+    "source": "MED",
+    "pmid": "42928966",
+    "pmcid": "PMC13696973",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13696973"
+     ]
+    },
+    "doi": "10.1111/liv.70947",
+    "title": "Blood- and Liver Stiffness-Based Non-Invasive Tests for Clinically Significant Portal Hypertension in Patients With cACLD and HCC.",
+    "authorString": "Balcar L, Haunold TJ, Jachs M, Semmler G, Simbrunner B, Stättermayer AF, Pereyra D, Schwarz C, Stremitzer S, Kaczirek K, Starlinger P, Quehenberger P, Trauner M, Scheiner B, Reiberger T, Pinter M, Mandorfer M.",
+    "journalTitle": "Liver Int",
+    "issue": "11",
+    "journalVolume": "46",
+    "pubYear": "2026",
+    "journalIssn": "1478-3223; 1478-3231; ",
+    "pageInfo": "e70947",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 1,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-11-01",
+    "firstIndexDate": "2026-10-26"
+   },
+   {
+    "id": "42923567",
+    "source": "MED",
+    "pmid": "42923567",
+    "pmcid": "PMC13689039",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13689039"
+     ]
+    },
+    "doi": "10.47895/amp.v60i15.13102",
+    "title": "Quality of Care of Patients with Stable and Stabilized Heart Failure with Reduced Ejection Fraction at the Medical Wards of a Tertiary Center in the Philippines: A Retrospective Cross-sectional Study.",
+    "authorString": "Mondido SMC, Punzalan FER, Enriquez KPDA, Roderos RAB, Santos NJC, Aya-Ay TAP, Sabando MJD, Tago BSAAB, Nelson ZOM, Maramara MKPA, Evangelista LKM.",
+    "journalTitle": "Acta Med Philipp",
+    "issue": "15",
+    "journalVolume": "60",
+    "pubYear": "2026",
+    "journalIssn": "0001-6071; 2094-9278; ",
+    "pageInfo": "107-117",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-08-15",
+    "firstIndexDate": "2026-10-25"
+   },
+   {
+    "id": "42959542",
+    "source": "MED",
+    "pmid": "42959542",
+    "pmcid": "PMC13717101",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13717101"
+     ]
+    },
+    "doi": "10.1016/j.jvscit.2026.102523",
+    "title": "Thoracic endovascular aortic repair-first hybrid repair without thoracotomy for type V thoracoabdominal aortic aneurysm.",
+    "authorString": "Fukunaga R, Ohki T, Shukuzawa K, Ozawa H, Kasa K, Nishide R, Yamagishi D.",
+    "journalTitle": "J Vasc Surg Cases Innov Tech",
+    "issue": "6",
+    "journalVolume": "12",
+    "pubYear": "2026",
+    "journalIssn": "2468-4287",
+    "pageInfo": "102523",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-09-19",
+    "firstIndexDate": "2026-10-31"
+   },
+   {
+    "id": "42965183",
+    "source": "MED",
+    "pmid": "42965183",
+    "pmcid": "PMC13722135",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13722135"
+     ]
+    },
+    "doi": "10.7759/cureus.117237",
+    "title": "Drug-Disease Interactions Causing Hemorrhagic Cardiac Tamponade.",
+    "authorString": "Torres-Mercado B, Delgado-Lopez X, Maldonado-Suarez J, Bermudez Nunez DR, Rodriguez Acosta JF.",
+    "journalTitle": "Cureus",
+    "issue": "9",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2168-8184",
+    "pageInfo": "e117237",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-09-30",
+    "firstIndexDate": "2026-11-01"
+   },
+   {
+    "id": "PMC13691538",
+    "source": "PMC",
+    "pmcid": "PMC13691538",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13691538"
+     ]
+    },
+    "title": "Atrioventricular Nodal Blocking Agents and Adverse Outcomes Following Cardioversion at a Rural Hospital",
+    "authorString": "Caverley Z, Li H, Spinelli K.",
+    "journalTitle": "J Arrhythm",
+    "issue": "5",
+    "journalVolume": "42",
+    "pubYear": "2026",
+    "journalIssn": "1880-4276; 1883-2148; ",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "N",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-01",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42950315",
+    "source": "MED",
+    "pmid": "42950315",
+    "pmcid": "PMC13446787",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13446787"
+     ]
+    },
+    "doi": "10.3138/cpj-25-0119",
+    "title": "Managing patients with heart failure: A contemporary practice tool for pharmacists.",
+    "authorString": "Barry AR, Koshman SL.",
+    "journalTitle": "Can Pharm J (Ott)",
+    "issue": "3",
+    "journalVolume": "159",
+    "pubYear": "2026",
+    "journalIssn": "1715-1635; 1913-701x; ",
+    "pageInfo": "163-170",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-04-09",
+    "firstIndexDate": "2026-10-29"
+   },
+   {
+    "id": "42911149",
+    "source": "MED",
+    "pmid": "42911149",
+    "pmcid": "PMC13718686",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13718686"
+     ]
+    },
+    "doi": "10.1016/j.jchf.2026.103376",
+    "title": "Bromocriptine for Myocardial Recovery in Peripartum Cardiomyopathy: Design and Rationale of the REBIRTH Trial.",
+    "authorString": "Wang T, Ibarra AJ, Simpson D, Kirsch J, Koczo A, Briller JE, Abebe KZ, McNamara D, Givertz MM.",
+    "journalTitle": "JACC Heart Fail",
+    "pubYear": "2026",
+    "journalIssn": "2213-1779; 2213-1787; ",
+    "pageInfo": "103376",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "N",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "nct",
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-21",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42964872",
+    "source": "MED",
+    "pmid": "42964872",
+    "pmcid": "PMC13722263",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13722263"
+     ]
+    },
+    "doi": "10.4103/jfmpc.jfmpc_113_26",
+    "title": "Predictors of drug-drug interactions in patients with heart failure.",
+    "authorString": "Tinjić S, Begić E, Janković S, Turalić A, Stanetić B.",
+    "journalTitle": "J Family Med Prim Care",
+    "issue": "7",
+    "journalVolume": "15",
+    "pubYear": "2026",
+    "journalIssn": "2249-4863; 2278-7135; ",
+    "pageInfo": "2504-2509",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-07-01",
+    "firstIndexDate": "2026-11-01"
+   },
+   {
+    "id": "42948581",
+    "source": "MED",
+    "pmid": "42948581",
+    "pmcid": "PMC13711409",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13711409"
+     ]
+    },
+    "doi": "10.1016/j.xjon.2026.102080",
+    "title": "Impact of left ventricular reshaping on postinfarction functional mitral regurgitation in a chronic swine model of advanced heart failure.",
+    "authorString": "Nakamae K, Miyagi C, Matsuda J, Hussaini SF, Watanabe T, Yuhara S, Morrison A, Nelson K, Konecny F, Onohara D.",
+    "journalTitle": "JTCVS Open",
+    "journalVolume": "33",
+    "pubYear": "2026",
+    "journalIssn": "2666-2736",
+    "pageInfo": "102080",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-08-23",
+    "firstIndexDate": "2026-10-29"
+   },
+   {
+    "id": "42899052",
+    "source": "MED",
+    "pmid": "42899052",
+    "pmcid": "PMC13679997",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13679997"
+     ]
+    },
+    "doi": "10.7759/cureus.116513",
+    "title": "Warfarin for Left Ventricular Thrombus in Nonischemic Cardiomyopathy With Acute Kidney Injury: A Case Report and Literature Review of Anticoagulation Strategies in Renal Impairment.",
+    "authorString": "Pack S, Chhokar V.",
+    "journalTitle": "Cureus",
+    "issue": "9",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2168-8184",
+    "pageInfo": "e116513",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "nct"
+     ]
+    },
+    "firstPublicationDate": "2026-09-18",
+    "firstIndexDate": "2026-10-21"
+   },
+   {
+    "id": "42953547",
+    "source": "MED",
+    "pmid": "42953547",
+    "pmcid": "PMC13716346",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13716346"
+     ]
+    },
+    "doi": "10.7759/cureus.117094",
+    "title": "Portal Vein Thrombosis and Hepatic Infarction as a Rare Complication of Disseminated Tuberculosis in Advanced HIV Disease: A Case Report From Mthatha Regional Hospital, South Africa.",
+    "authorString": "Nkomonye L, Zongo L, Mgumane S, Kaswa R.",
+    "journalTitle": "Cureus",
+    "issue": "9",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2168-8184",
+    "pageInfo": "e117094",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-09-28",
+    "firstIndexDate": "2026-10-30"
+   },
+   {
+    "id": "42938878",
+    "source": "MED",
+    "pmid": "42938878",
+    "pmcid": "PMC13702122",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13702122"
+     ]
+    },
+    "doi": "10.3390/cancers18203342",
+    "title": "Cardiovascular Magnetic Resonance for Early Detection of Cancer Therapy-Related Cardiac Dysfunction: From Multiparametric Tissue Signatures to Clinical Pathways.",
+    "authorString": "Zong Q, Sun C, Gu T, Shi E, Qu S.",
+    "journalTitle": "Cancers (Basel)",
+    "issue": "20",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2072-6694",
+    "pageInfo": "3342",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-16",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42943691",
+    "source": "MED",
+    "pmid": "42943691",
+    "pmcid": "PMC13707573",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13707573"
+     ]
+    },
+    "doi": "10.3390/molecules31203619",
+    "title": "Antioxidant Activity of a New Series of Carbazole-Derived Nitrones.",
+    "authorString": "Rojewski MJ, Hadjipavlou-Litina D, Głowacka IE, Marco-Contelles J, Piotrowska DG.",
+    "journalTitle": "Molecules",
+    "issue": "20",
+    "journalVolume": "31",
+    "pubYear": "2026",
+    "journalIssn": "1420-3049",
+    "pageInfo": "3619",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-11",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42958919",
+    "source": "MED",
+    "pmid": "42958919",
+    "pmcid": "PMC13720545",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13720545"
+     ]
+    },
+    "doi": "10.1113/ep093042",
+    "title": "Photobiomodulation as a contemporary antioxidant intervention in myocardial infarction.",
+    "authorString": "Batista GMDS, Teixeira ILA, Antonio EL, Serra AJ.",
+    "journalTitle": "Exp Physiol",
+    "pubYear": "2026",
+    "journalIssn": "0958-0670; 1469-445x; ",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 1,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-30",
+    "firstIndexDate": "2026-10-30"
+   },
+   {
+    "id": "42943226",
+    "source": "MED",
+    "pmid": "42943226",
+    "pmcid": "PMC13708138",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13708138"
+     ]
+    },
+    "doi": "10.3390/ph19101528",
+    "title": "Drug Utilization Patterns and Potential Drug-Drug Interaction Burden in Respiratory Prescriptions: A Real-World Community Pharmacy Study.",
+    "authorString": "Drăgoi MM, Chis AR, Ardelean SM, Udrescu M, Suciu L, Udrescu L.",
+    "journalTitle": "Pharmaceuticals (Basel)",
+    "issue": "10",
+    "journalVolume": "19",
+    "pubYear": "2026",
+    "journalIssn": "1424-8247",
+    "pageInfo": "1528",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-09-26",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42948728",
+    "source": "MED",
+    "pmid": "42948728",
+    "pmcid": "PMC13712353",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13712353"
+     ]
+    },
+    "doi": "10.1016/j.apsb.2026.06.003",
+    "title": "Antihypertensive drug-induced liver injury is rare, but strongly associated with HLA-B∗35:01.",
+    "authorString": "Dara L, Nicoletti P, Majeed CN, Dellinger A, Kleiner DE, Mohamed MG, Kushner T, Vuppalanchi R, Phillips EJ, Ostrov DA, Masood MU, Barnhart H, Gu J, Bonkovsky HL.",
+    "journalTitle": "Acta Pharm Sin B",
+    "issue": "10",
+    "journalVolume": "16",
+    "pubYear": "2026",
+    "journalIssn": "2211-3835; 2211-3843; ",
+    "pageInfo": "6676-6685",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-06-10",
+    "firstIndexDate": "2026-10-29"
+   },
+   {
+    "id": "42924824",
+    "source": "MED",
+    "pmid": "42924824",
+    "pmcid": "PMC13692543",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13692543"
+     ]
+    },
+    "doi": "10.3390/pathophysiology33040073",
+    "title": "Coronary Microvascular Dysfunction in ANOCA and INOCA: From Pathophysiological Endotypes to Precision Diagnosis and Treatment.",
+    "authorString": "Altic A, Jovanovic N, Džinić H, Ragupathi A, Cossettini FJ, Šehanović A, Baralic M, Sič A.",
+    "journalTitle": "Pathophysiology",
+    "issue": "4",
+    "journalVolume": "33",
+    "pubYear": "2026",
+    "journalIssn": "0928-4680; 1873-149x; ",
+    "pageInfo": "73",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-09-28",
+    "firstIndexDate": "2026-10-25"
+   },
+   {
+    "id": "42942135",
+    "source": "MED",
+    "pmid": "42942135",
+    "pmcid": "PMC13705335",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13705335"
+     ]
+    },
+    "doi": "10.3390/ijms27209371",
+    "title": "MicroRNAs' Therapeutic Potential in Multiple Human Diseases.",
+    "authorString": "Zhang H, Cai Z.",
+    "journalTitle": "Int J Mol Sci",
+    "issue": "20",
+    "journalVolume": "27",
+    "pubYear": "2026",
+    "journalIssn": "1422-0067",
+    "pageInfo": "9371",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-21",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42929952",
+    "source": "MED",
+    "pmid": "42929952",
+    "pmcid": "PMC13704759",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13704759"
+     ]
+    },
+    "doi": "10.3390/gels12100918",
+    "title": "Development and Optimization of a Lupeol-Loaded Bilosomal Gel for Enhanced Topical Therapy of Imiquimod-Induced Psoriasis.",
+    "authorString": "Hamza M, Samanta S, Khan MF, Roy S, Fatima Z, Gupta R, Gallo S, Srivastava N.",
+    "journalTitle": "Gels",
+    "issue": "10",
+    "journalVolume": "12",
+    "pubYear": "2026",
+    "journalIssn": "2310-2861",
+    "pageInfo": "918",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-13",
+    "firstIndexDate": "2026-10-27"
+   },
+   {
+    "id": "42940133",
+    "source": "MED",
+    "pmid": "42940133",
+    "pmcid": "PMC13702312",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13702312"
+     ]
+    },
+    "doi": "10.3390/biomedicines14102327",
+    "title": "Cardiorenal Syndrome: From Hemodynamic and Humoral Pathophysiology to New Frontiers in Modulation and Enabling Therapy-Part 1.",
+    "authorString": "Mauriello A, Cetoretta V, Del Giudice C, Correra A, Maratea AC, Gioia R, Liccardo B, Esposito G, Russo V, D'Andrea A.",
+    "journalTitle": "Biomedicines",
+    "issue": "10",
+    "journalVolume": "14",
+    "pubYear": "2026",
+    "journalIssn": "2227-9059",
+    "pageInfo": "2327",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-13",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42974013",
+    "source": "MED",
+    "pmid": "42974013",
+    "pmcid": "PMC13725066",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13725066"
+     ]
+    },
+    "doi": "10.3389/fcvm.2026.1981540",
+    "title": "Strategies to reduce microvascular obstruction and infarct size in patients with ST-elevation myocardial infarction.",
+    "authorString": "Rossignoli C, Portolan L, Pesarini G, Fezzi S, Galli V, Pacchioni A, Tavella D, Ribichini F, Scarsini R, Magistri M.",
+    "journalTitle": "Front Cardiovasc Med",
+    "journalVolume": "13",
+    "pubYear": "2026",
+    "journalIssn": "2297-055x",
+    "pageInfo": "1981540",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "nct"
+     ]
+    },
+    "firstPublicationDate": "2026-10-19",
+    "firstIndexDate": "2026-11-04"
+   },
+   {
+    "id": "42910030",
+    "source": "MED",
+    "pmid": "42910030",
+    "pmcid": "PMC13686320",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13686320"
+     ]
+    },
+    "doi": "10.7759/cureus.116661",
+    "title": "Missed Early Signs of Tuberculosis in Pregnancy: Insights From a Case Series of Disseminated Life-Threatening Maternal Disease and Adverse Fetal Outcomes.",
+    "authorString": "Singla R, Singh T, Yadav R, Suri V, Singh A, Sethi S.",
+    "journalTitle": "Cureus",
+    "issue": "9",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "2168-8184",
+    "pageInfo": "e116661",
+    "pubType": "journal article; case reports; case-report",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "N",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-09-21",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42904224",
+    "source": "MED",
+    "pmid": "42904224",
+    "pmcid": "PMC13682510",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13682510"
+     ]
+    },
+    "doi": "10.2147/vhrm.s630288",
+    "title": "Metabolic, Atherogenic, and Anthropometric Markers for Discrimination of Premature Coronary Artery Disease in a Predominantly Statin-Treated Cohort.",
+    "authorString": "Mirzohreh ST, Ghaffari S, Javanshir E, Dehghan M, Tarighat F, Mohammadifard N, Sarrafzadegan N, Roshanravan N, Zarepur E.",
+    "journalTitle": "Vasc Health Risk Manag",
+    "journalVolume": "22",
+    "pubYear": "2026",
+    "journalIssn": "1176-6344; 1178-2048; ",
+    "pageInfo": "630288",
+    "pubType": "research-article; validation study; multicenter study; journal article; observational study",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-16",
+    "firstIndexDate": "2026-10-23"
+   },
+   {
+    "id": "42903606",
+    "source": "MED",
+    "pmid": "42903606",
+    "pmcid": "PMC13681992",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13681992"
+     ]
+    },
+    "doi": "10.1016/j.jtumed.2026.09.009",
+    "title": "Cardiometabolic diseases and prescription patterns in a Kuwait tertiary-care hospital: A retrospective cross-sectional chart review.",
+    "authorString": "Shehab M, AlSayegh A, AlOmar H, Al-Fajri S, Ziyab AH.",
+    "journalTitle": "J Taibah Univ Med Sci",
+    "issue": "6",
+    "journalVolume": "21",
+    "pubYear": "2026",
+    "journalIssn": "1658-3612",
+    "pageInfo": "1083-1091",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-12",
+    "firstIndexDate": "2026-10-23"
+   },
+   {
+    "id": "42909325",
+    "source": "MED",
+    "pmid": "42909325",
+    "pmcid": "PMC13684872",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13684872"
+     ]
+    },
+    "doi": "10.3389/fphys.2026.1958014",
+    "title": "Mitochondrial remodeling in heart failure with reduced ejection fraction.",
+    "authorString": "Chen X.",
+    "journalTitle": "Front Physiol",
+    "journalVolume": "17",
+    "pubYear": "2026",
+    "journalIssn": "1664-042x",
+    "pageInfo": "1958014",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-07",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42943237",
+    "source": "MED",
+    "pmid": "42943237",
+    "pmcid": "PMC13708729",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13708729"
+     ]
+    },
+    "doi": "10.3390/ph19101540",
+    "title": "Screening of Bioactive Compounds in the Tianma-Gouteng Pair and Its Protective Effects on an L-NAME-Induced Trophoblast Organoid Injury Model.",
+    "authorString": "Zhang A, Rao B, Lu Y, Liu Y, Zheng A, Liu R, Liu X, He T, Wang CC, Li L.",
+    "journalTitle": "Pharmaceuticals (Basel)",
+    "issue": "10",
+    "journalVolume": "19",
+    "pubYear": "2026",
+    "journalIssn": "1424-8247",
+    "pageInfo": "1540",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-09-28",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42930824",
+    "source": "MED",
+    "pmid": "42930824",
+    "pmcid": "PMC13706029",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13706029"
+     ]
+    },
+    "doi": "10.3390/jfb17100489",
+    "title": "Electrospun Nanofiber Therapeutics for Localized Post-Surgical Breast Cancer Treatment.",
+    "authorString": "Tabatabaei ES, Sagir O, Bretches M, Long D, Yang SY, Asmatulu E.",
+    "journalTitle": "J Funct Biomater",
+    "issue": "10",
+    "journalVolume": "17",
+    "pubYear": "2026",
+    "journalIssn": "2079-4983",
+    "pageInfo": "489",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "nct",
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-09-28",
+    "firstIndexDate": "2026-10-27"
+   },
+   {
+    "id": "42900417",
+    "source": "MED",
+    "pmid": "42900417",
+    "pmcid": "PMC13683306",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13683306"
+     ]
+    },
+    "doi": "10.1186/s11671-026-04996-7",
+    "title": "Nanomedicines based on renewable materials for sustainable drug delivery and biomedical imaging applications.",
+    "authorString": "Kumar V, Zaman MMU, Wilén CE, Rosenholm JM, Bansal KK.",
+    "journalTitle": "Discov Nano",
+    "issue": "1",
+    "journalVolume": "21",
+    "pubYear": "2026",
+    "journalIssn": "2731-9229",
+    "pageInfo": "538",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-20",
+    "firstIndexDate": "2026-10-21"
+   },
+   {
+    "id": "42942524",
+    "source": "MED",
+    "pmid": "42942524",
+    "pmcid": "PMC13706709",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13706709"
+     ]
+    },
+    "doi": "10.3390/medicina62101993",
+    "title": "Prognostic Value of the C-Reactive Protein-to-Albumin Ratio in Patients Hospitalized with Atrioventricular Block: Association with In-Hospital Mortality and Temporary Pacemaker Requirement.",
+    "authorString": "Parsova KE, Pay L, Yumurtas AC, Cetin T, Mollaalioglu F, Dereli S, Hayıroglu MI, Gurkan K.",
+    "journalTitle": "Medicina (Kaunas)",
+    "issue": "10",
+    "journalVolume": "62",
+    "pubYear": "2026",
+    "journalIssn": "1010-660x; 1648-9144; ",
+    "pageInfo": "1993",
+    "pubType": "research-article; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-15",
+    "firstIndexDate": "2026-10-28"
+   },
+   {
+    "id": "42910274",
+    "source": "MED",
+    "pmid": "42910274",
+    "pmcid": "PMC13685790",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13685790"
+     ]
+    },
+    "doi": "10.1093/pcmedi/pbag028",
+    "title": "Human induced pluripotent stem cells and organoid models in space for investigating severe pediatric metabolic and congenital disorders.",
+    "authorString": "Benedetti S, Štupica H, Zuccotti GV, Weissig V, Marotta D, Pappone C, Tull A, Rubins KH, Beheshti A, Mason CE, Ferraro S.",
+    "journalTitle": "Precis Clin Med",
+    "issue": "4",
+    "journalVolume": "9",
+    "pubYear": "2026",
+    "journalIssn": "2096-5303; 2516-1571; ",
+    "pageInfo": "pbag028",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-09-29",
+    "firstIndexDate": "2026-10-24"
+   },
+   {
+    "id": "42903581",
+    "source": "MED",
+    "pmid": "42903581",
+    "pmcid": "PMC13681172",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13681172"
+     ]
+    },
+    "doi": "10.3389/fphys.2026.1955737",
+    "title": "Mapping the hepatic neural niche: from three-dimensional innervation architecture to periportal interoception and human translation.",
+    "authorString": "Wang K, Mei X, Gao H.",
+    "journalTitle": "Front Physiol",
+    "journalVolume": "17",
+    "pubYear": "2026",
+    "journalIssn": "1664-042x",
+    "pageInfo": "1955737",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-06",
+    "firstIndexDate": "2026-10-23"
+   },
+   {
+    "id": "42974159",
+    "source": "MED",
+    "pmid": "42974159",
+    "pmcid": "PMC13726623",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13726623"
+     ]
+    },
+    "doi": "10.2147/ijn.s646535",
+    "title": "Multifunctional Nanomedicine for Precision Theranostics in Hepatic Fibrosis: From Rational Design to Clinical Translation.",
+    "authorString": "Li Y, Gong Y, Li X, Yan S, Yu J, Qiu Z, Yang S, Yang X, Feng D.",
+    "journalTitle": "Int J Nanomedicine",
+    "journalVolume": "21",
+    "pubYear": "2026",
+    "journalIssn": "1176-9114; 1178-2013; ",
+    "pageInfo": "646535",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "doi"
+     ]
+    },
+    "firstPublicationDate": "2026-10-29",
+    "firstIndexDate": "2026-11-04"
+   },
+   {
+    "id": "42923076",
+    "source": "MED",
+    "pmid": "42923076",
+    "pmcid": "PMC13687593",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13687593"
+     ]
+    },
+    "doi": "10.1002/joa3.70492",
+    "title": "2026 Asia Pacific Heart Rhythm Society (APHRS) Guidelines (Part III) on Rate and Rhythm Control in Atrial Fibrillation.",
+    "authorString": "Chen M, Soejima K, Gunawardene M, Kojodjojo P, Liu H, Liu T, Miyazaki S, Morishima I, Sanders P, Tse HF, Yamaguchi T, Choi EK, Joung B, Krittayaphong R, Middeldorp M, Lip GYH, Pak HN, Chao TF, Kim YH, Chen SA.",
+    "journalTitle": "J Arrhythm",
+    "issue": "5",
+    "journalVolume": "42",
+    "pubYear": "2026",
+    "journalIssn": "1880-4276; 1883-2148; ",
+    "pageInfo": "e70492",
+    "pubType": "other; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-10-21",
+    "firstIndexDate": "2026-10-25"
+   },
+   {
+    "id": "42942747",
+    "source": "MED",
+    "pmid": "42942747",
+    "pmcid": "PMC13708214",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13708214"
+     ]
+    },
+    "doi": "10.3390/pharmaceutics18101215",
+    "title": "Engineering and Precision Delivery Strategies of Functionalized Extracellular Vesicles for Antitumor Therapy.",
+    "authorString": "Zhang X, Zhou X, Fu S, Liu X, Xie Y, Zhang Y, Fang Y, Yu J.",
+    "journalTitle": "Pharmaceutics",
+    "issue": "10",
+    "journalVolume": "18",
+    "pubYear": "2026",
+    "journalIssn": "1999-4923",
+    "pageInfo": "1215",
+    "pubType": "review-article; review; journal article",
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "citedByCount": 0,
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "hasLabsLinks": "N",
+    "hasTMAccessionNumbers": "N",
+    "firstPublicationDate": "2026-09-24",
+    "firstIndexDate": "2026-10-28"
+   }
+  ]
+ }
+}

@@ -137,6 +137,10 @@ export interface Paper {
   by_class: boolean;
   is_backfill: boolean;
   first_seen_at: string;
+  /** Its Europe PMC page, for a paper the Europe PMC watch stored (0066); a preprint has no other link. */
+  europepmc_url: string | null;
+  /** A preprint (medRxiv, bioRxiv, Research Square …): not peer reviewed (0066). */
+  preprint: boolean;
 }
 
 /** Why a paper looks like a case report: PubMed lists it as one, or its title says so. */
@@ -174,6 +178,8 @@ export interface PaperQuery {
   kind: 'name' | 'class';
   pubmed: number;
   pmc: number;
+  /** Found by Europe PMC (0066). */
+  europepmc: number;
 }
 
 export interface ScreenLiterature {
@@ -182,6 +188,10 @@ export interface ScreenLiterature {
   by_class: number;
   pubmed: number;
   pmc: number;
+  /** Papers Europe PMC found, whichever source stored them (0066). */
+  europepmc: number;
+  /** Of them, the preprints (0066). */
+  preprints: number;
   by_query: PaperQuery[];
   /** The first 50 papers; ingredient_papers() gives the rest. */
   first: Paper[];

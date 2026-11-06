@@ -406,7 +406,8 @@ function Literature({
         {lit.papers
           ? `${plural(lit.papers, 'paper', 'papers')} in these days: ${formatNumber(lit.by_name)} name the ingredient, ` +
             `${formatNumber(lit.by_class)} only its class · ${formatNumber(lit.pubmed)} in PubMed, ` +
-            `${formatNumber(lit.pmc)} in PubMed Central` +
+            `${formatNumber(lit.pmc)} in PubMed Central, ${formatNumber(lit.europepmc)} in Europe PMC` +
+            (lit.preprints ? ` · ${plural(lit.preprints, 'preprint', 'preprints')}, not peer reviewed` : '') +
             (cases ? ` · ${plural(cases, 'possible case report', 'possible case reports')}` : '')
           : 'No paper found by the daily literature watch in these days.'}
       </p>
@@ -425,6 +426,7 @@ function Literature({
               <th scope="col">Search</th>
               <th scope="col">PubMed</th>
               <th scope="col">PubMed Central</th>
+              <th scope="col">Europe PMC</th>
             </tr>
           </thead>
           <tbody>
@@ -435,6 +437,7 @@ function Literature({
                 </th>
                 <td>{formatNumber(q.pubmed)}</td>
                 <td>{formatNumber(q.pmc)}</td>
+                <td>{formatNumber(q.europepmc)}</td>
               </tr>
             ))}
           </tbody>
@@ -527,6 +530,7 @@ function PaperItem({
 }) {
   const pubmed = safeHref(p.pubmed_url);
   const pmc = safeHref(p.pmc_url);
+  const europepmc = safeHref(p.europepmc_url);
   const isCase = Boolean(state?.case_report);
   return (
     <li className={cx('scr-paper', p.is_backfill && 'is-history', isCase && 'is-case')}>
@@ -539,6 +543,14 @@ function PaperItem({
               Possible case report
             </Tag>
             <span className="scr-case-why">{caseReportLabel(state.case_report)}</span>
+          </>
+        ) : null}
+        {p.preprint ? (
+          <>
+            <Tag tone="warning" title="Posted on a preprint server before any peer review">
+              Preprint
+            </Tag>
+            <span className="scr-case-why">not peer reviewed</span>
           </>
         ) : null}
         {p.by_class ? (
@@ -557,7 +569,7 @@ function PaperItem({
       </p>
       {state?.case_report ? <p className="scr-due">{dueLine(state)}</p> : null}
       {state?.case_report ? <OpenCase documentId={p.document_id} /> : null}
-      {pubmed || pmc ? (
+      {pubmed || pmc || europepmc ? (
         <p className="scr-paper-links">
           {pubmed ? (
             <a href={pubmed} target="_blank" rel="noopener noreferrer">
@@ -567,6 +579,11 @@ function PaperItem({
           {pmc ? (
             <a href={pmc} target="_blank" rel="noopener noreferrer">
               PubMed Central
+            </a>
+          ) : null}
+          {europepmc ? (
+            <a href={europepmc} target="_blank" rel="noopener noreferrer">
+              Europe PMC
             </a>
           ) : null}
         </p>
