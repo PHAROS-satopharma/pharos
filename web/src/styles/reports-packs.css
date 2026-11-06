@@ -32,3 +32,7 @@
 .pack-status-failed {
   color: var(--danger);
 }
+.pack-form .btn,
+.pack-card .btn {
+  min-height: 44px;
+}
