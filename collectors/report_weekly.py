@@ -1082,7 +1082,7 @@ def make_weekly_report(db: Any, store: Any, week: Week | Day, *, dry_run: bool =
     (out_dir / f"{stem}.pdf").write_bytes(pdf)
     notifier = Notifier(store, store.settings(), dry_run=dry_run, archive=archive)
     notifier.admin_document(f"{stem}.pdf", pdf, f"{week.title}, {week.label}")
-    return {week.kind: week.slug, "xlsx_sha256": xlsx_sha, "pdf_sha256": pdf_sha}
+    return {"week" if week.kind == "weekly" else "day": week.slug, "xlsx_sha256": xlsx_sha, "pdf_sha256": pdf_sha}
 
 
 __all__ = ["Week", "Day", "yesterday", "week_starting", "last_complete_week", "gather_week", "assemble",

@@ -268,9 +268,14 @@ SIGNAL = {"id": "sig-1", "ref": "SIG-2026-001", "title": "Rote-Hand-Brief zu Flu
 class FakeDb:
     """Answers each query the report makes, and keeps every statement to be read back."""
 
-    def __init__(self):
+    def __init__(self, period=None):
         self.sql: list[str] = []
         self.written: list[dict] = []
+        # The days and the instants the report must ask for: the week of 1 Nov, or the day it is given.
+        period = period or NOV1
+        self.days = {"f": period.start, "t": period.end}
+        a, b = period.bounds_utc()
+        self.bounds = {"a": a, "b": b}
 
     def fetchone(self, sql, params=None):
         self.sql.append(sql)
@@ -292,7 +297,7 @@ class FakeDb:
             # How far the ingredient is prepared, as the Ingredients page reads it (0045).
             assert params == {"i": SCREEN["ingredient"]["id"]}
             return {"readiness": READINESS}
-        assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7), "i": SCREEN["ingredient"]["id"]}
+        assert params == {**self.days, "i": SCREEN["ingredient"]["id"]}
         if "label_changes(" in sql:
             # Our label under "Label changes" (0043): the changes of the week with the gap against our label.
             return {"changes": LABEL_CHANGES}
@@ -332,7 +337,7 @@ class FakeDb:
         if "class_term" in sql:
             return [{"query": "fluoroquinolone", "kind": "class"}, {"query": "levofloxacin", "kind": "name"}]
         if "screening_log(" in sql:
-            assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7)}
+            assert params == self.days
             return [_log("basg-src", "BASG", "Austria", "safety", 4),
                     _log("bfarm-src", "BfArM", "Germany", "safety", 3),
                     _log("pmda-src", "PMDA", "Japan", "safety", 0),
@@ -343,7 +348,7 @@ class FakeDb:
                     _log("ema-spc", "EMA", "European Union", "spc", 7),
                     _log("ncbi", "NCBI", "International", "literature", 7)]
         if "new_items(" in sql:
-            assert params == {"a": datetime(2026, 10, 31, 22, tzinfo=UTC), "b": datetime(2026, 11, 7, 22, tzinfo=UTC)}
+            assert params == self.bounds
             return [{"document_id": "d-new", "source_id": "bfarm-src", "regulator_id": "BfArM",
                      "regulator_name": "BfArM", "country_name": "Germany", "source_kind": "safety",
                      "title_orig": "Rote-Hand-Brief zu Fluorchinolonen", "lang": "de",
@@ -376,7 +381,7 @@ class FakeDb:
                      "title": "Rote-Hand-Brief zu Fluorchinolonen", "issue_id": "i-1"}]
         if "from authority_report" in sql:
             assert "withdrawn_at is null" in sql
-            assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7)}
+            assert params == self.days
             return [{"sent_on": date(2026, 11, 6), "reference": "EDA/2026/0042", "note": None,
                      "person": "Sama Hassan", "title": "Rote-Hand-Brief zu Fluorchinolonen", "issue_id": "i-1"}]
         if "from v_eda_clock" in sql:
@@ -738,7 +743,7 @@ def test_the_command_refuses_a_wrong_day_before_it_connects(capsys):
 
 
 def test_the_daily_report_is_the_weekly_one_read_for_one_day():
-    db = FakeDb()
+    db = FakeDb(NOV5)
     data = rw.assemble(rw.gather_week(db, NOV5), NOV5, made_at=datetime(2026, 11, 6, 5, 2, tzinfo=UTC))
     summary = dict(data["summary"])
     assert summary["Report"] == "PHAROS — Daily screening report"
@@ -762,9 +767,9 @@ def test_make_daily_report_archives_and_records_the_day(tmp_path, monkeypatch):
     monkeypatch.setenv("REPORT_DIR", str(tmp_path / "out"))
     printed = []
     monkeypatch.setattr(rw, "build_pdf", lambda html, footer: printed.append(footer) or b"%PDF-1.7 daily")
-    db = FakeDb()
+    db = FakeDb(NOV5)
     out = rw.make_weekly_report(db, MemoryStore(), NOV5, dry_run=True)
-    assert out["daily"] == "2026-11-05"
+    assert out["day"] == "2026-11-05"
     row = db.written[-1]
     assert row["s"] == date(2026, 11, 5)
     assert row["pk"] == "reports/daily/2026-11-05/PHAROS-daily-2026-11-05.pdf"
