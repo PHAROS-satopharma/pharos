@@ -5,14 +5,12 @@ import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatDateTime } from '../../lib/format';
-import { STATUS_LABEL } from '../../lib/labels';
 import type { IssueStatus } from '../../lib/types';
 import { Button } from '../../ui/Button';
 import { Field, Textarea } from '../../ui/Input';
 import { Notice } from '../../ui/States';
-import { StatusPill } from '../../ui/Tag';
 import { cx } from '../../ui/cx';
-import { choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
+import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
 import type { IngredientScreenData, Mention } from './types';
 
 class StaleDecisionError extends Error {
@@ -77,7 +75,7 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
       void qc.invalidateQueries({ queryKey: ['issues'] });
       void qc.invalidateQueries({ queryKey: ['issue', issueId] });
       void qc.invalidateQueries({ queryKey: ['issue-reviews', issueId] });
-      setDone(`Recorded as ${STATUS_LABEL[row.to_status]}.`);
+      setDone(`Recorded: ${DECISION_LABEL[row.to_status]}.`);
       setTarget(null);
       setReason('');
       setChanging(false);
@@ -100,7 +98,10 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
   return (
     <div className="scr-decision">
       <div className="scr-decision-now">
-        <StatusPill status={status} />
+        <span className={cx('status', `status-${status}`)}>
+          <span className="status-marker" aria-hidden />
+          {DECISION_LABEL[status]}
+        </span>
         {d ? (
           <span className="scr-decision-who">
             {d.person}, {formatDateTime(d.at)}
@@ -141,7 +142,7 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
             {target ? (
               <>
                 <Field
-                  label={needsReason(target) ? 'Why it is not relevant (required)' : 'Comment (optional)'}
+                  label={needsReason(target) ? "Why it doesn't concern us (required)" : 'Comment (optional)'}
                   hint="Kept with the decision for the record."
                 >
                   <Textarea
@@ -154,7 +155,7 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
                 </Field>
                 <div className="scr-decide-actions">
                   <Button type="submit" variant="primary" busy={save.isPending} disabled={reasonMissing}>
-                    Record: {STATUS_LABEL[target]}
+                    Record: {DECISION_LABEL[target]}
                   </Button>
                   {changing ? (
                     <Button
