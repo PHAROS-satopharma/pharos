@@ -32,3 +32,10 @@ begin
 end $$;
 create trigger class_linked after insert on ingredient_class
   for each row execute function class_linked();
+
+-- Once, on deploy: the classes a watched ingredient joined after their words were last checked (an ingredient
+-- added since, linked to a class that already had words) get their words checked against the past again.
+update class_term ct set changed_at = now()
+ where ct.rematched_at is not null
+   and exists (select 1 from ingredient_class ic join ingredient i on i.id = ic.ingredient_id
+                where ic.class_id = ct.class_id and ic.enabled and i.active and i.created_at > ct.rematched_at);

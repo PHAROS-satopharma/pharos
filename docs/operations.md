@@ -486,7 +486,8 @@ took its place.
   run gives it 15 minutes after the collection; `rematch.yml` runs it by hand for up to 45 minutes. It reads
   each notice's kept text, or its original again from R2 (page, PDF with OCR, attachments), skips words that
   already matched that notice, and files what it finds as history: no Telegram message, no digest. A
-  class-only issue its class's words had already found gains the ingredients that search the class now. Its
+  class-only issue its class's words had already found gains the ingredients that search the class now. On the
+  0055 deployment the words of every class a watched ingredient joined after they were last checked became due. Its
   progress is the `rematch_job` row (one open at a time): the next run continues from
   `cursor_document_id`; when it reaches the end its words are marked checked, and a word changed meanwhile
   waits for the next check. A list page shared by several notices is not read as any one notice's text.
