@@ -1,4 +1,6 @@
 """Shared drawing kit for the PHAROS handbook: fonts, colours, paragraph styles and page furniture."""
+from pathlib import Path
+
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -10,7 +12,8 @@ from reportlab.platypus import Paragraph
 W, H = A4
 F = "C:/Windows/Fonts/"
 SKILL = "C:/Users/satoh/.claude/skills/sato-pharma-identity/assets/fonts/"
-BRAND = "F:/Safety Notifications/web/public/brand/"
+# The app's own logo files, in this checkout (never another checkout's copy).
+BRAND = str(Path(__file__).resolve().parents[2] / "web" / "public" / "brand") + "/"
 
 for name, path in [
     ("Serif", F + "NotoSerif-Regular.ttf"), ("Serif-B", F + "NotoSerif-Bold.ttf"),
