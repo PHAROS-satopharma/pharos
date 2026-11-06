@@ -52,7 +52,7 @@ begin
 
   if exists (select 1 from run
               where schedule in ('daily', 'literature')
-                and started_at >= v_slot - interval '24 hours') then
+                and started_at >= v_slot - interval '15 minutes') then
     return 'already ran';
   end if;
 
