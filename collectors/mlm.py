@@ -8,7 +8,11 @@ and stores in ``mlm_entry`` the group of each watched ingredient: a group named 
 which it appears alone. A watched ingredient with no row is not covered. The case-report flag on literature
 notices reads it.
 
-Run weekly with the label watch; a list already stored (same SHA-256) is not read again.
+Run once a day with the daily collection. The list is matched against today's watched ingredients on every
+run, and the stored rows are replaced only when the list (its SHA-256) or what it gives the watched ingredients
+changed. Until 6 Nov 2026 it ran weekly and a list already stored was not read again, so an ingredient added
+after EMA's last list read "not monitored by EMA" (its literature cases looking like ours to report) until EMA
+published the next one, which can take months.
 
     python -m collectors.mlm            # read the list and store the watched rows
     python -m collectors.mlm --file x   # read a saved copy instead (no network)
@@ -85,6 +89,22 @@ def store(db, matched: list[dict], *, list_name: str, sha: str, r2_key: str) -> 
     return len(matched)
 
 
+def refresh(db, content: bytes, sha: str, list_name: str, put) -> int | None:
+    """Match the list against the active ingredients and store the result when it differs from what is stored
+    (another list, an ingredient added, watched again or retired); return how many rows were stored, or None
+    when nothing changed. ``put(content, mime)`` archives the list and returns ``(…, r2_key)``."""
+    rows = parse(content)
+    ingredients = db.fetchall("select id::text as id, inn_en from ingredient where active")
+    matched = match(rows, ingredients)
+    stored = db.fetchall("select ingredient_id::text as ingredient_id, group_id, sha256 from mlm_entry")
+    pairs = {(str(r["ingredient_id"]), int(r["group_id"])) for r in stored}
+    if (all(r["sha256"] == sha for r in stored)
+            and pairs == {(str(m["ingredient_id"]), int(m["group_id"])) for m in matched}):
+        return None
+    _, key = put(content, MIME)
+    return store(db, matched, list_name=list_name, sha=sha, r2_key=key)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.mlm", description=__doc__.split("\n\n")[0])
     p.add_argument("--file", help="read this saved copy instead of downloading the list")
@@ -113,15 +133,11 @@ def main(argv: list[str] | None = None) -> int:
     sha = sha256_hex(content)
     db = Db()
     try:
-        last = db.fetchone("select sha256 from mlm_entry limit 1")
-        if last and last["sha256"] == sha:
-            log.info("MLM list unchanged (%s); nothing to do", sha[:12])
-            return 0
-        rows = parse(content)
-        _, key = Archive().put(content, MIME)
-        ingredients = db.fetchall("select id::text as id, inn_en from ingredient where active")
-        n = store(db, match(rows, ingredients), list_name=list_name, sha=sha, r2_key=key)
-        log.info("MLM list %s: %d rows, %d watched ingredients monitored by EMA", list_name, len(rows), n)
+        n = refresh(db, content, sha, list_name, Archive().put)
+        if n is None:
+            log.info("MLM list %s unchanged and the watched ingredients' rows with it; nothing to do", list_name)
+        else:
+            log.info("MLM list %s: %d watched ingredient(s) monitored by EMA", list_name, n)
         return 0
     finally:
         db.close()

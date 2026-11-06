@@ -9,9 +9,9 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
-| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and up to 15 minutes of the check of the past |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and literature monitoring list (`collectors/mlm.py`), and up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **literature** | 10:41 and 18:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
-| `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch, then EMA's literature monitoring list (`collectors/mlm.py`) |
+| `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
@@ -215,7 +215,7 @@ the report:
   request*).
 - **Collection steps.** The morning escalation of late items (`collectors/escalate.py`) no longer runs. The
   morning message about the five-day clock (`collectors/reminders.py`, below) took its place. The daily EURD
-  list (`collectors/eurd.py`) and the weekly reading of EMA's literature monitoring list (`collectors/mlm.py`)
+  list (`collectors/eurd.py`) and the daily reading of EMA's literature monitoring list (`collectors/mlm.py`)
   were removed with it and put back in November 2026: the readiness line, the PSUR pack and the weekly report
   read the EURD list, and the Ingredients screen and the weekly report say whether EMA reads the literature for
   each ingredient (see *Case reports in the literature*).
@@ -715,12 +715,14 @@ November 2026): a valid serious case reaches the Egyptian Drug Authority within 
 - **The weekly report.** Section 04 lists the possible case reports first with day zero, the two dates and the
   decision, says whether EMA monitors the ingredient, and the summary counts *Possible case reports in the
   literature* and *Case reports with no decision yet*. The Excel sheet *NCBI papers* carries the same columns.
-- **EMA's literature monitoring.** `python -m collectors.mlm` (weekly, after the label watch) reads EMA's
+- **EMA's literature monitoring.** `python -m collectors.mlm` (daily, after the EURD list) reads EMA's
   medical literature monitoring list and keeps in `mlm_entry` the group of each watched ingredient EMA monitors
   (a group named after it, or one where it stands alone; a combination does not count). An ingredient with no
   row is *Not monitored by EMA*: its literature cases are ours to report. On the list valid from 1 June 2020,
-  ibuprofen, diclofenac and meloxicam are monitored; lornoxicam and levofloxacin are not. An unchanged list
-  (same SHA-256) is not read again; a failure warns and keeps the last list.
+  ibuprofen, diclofenac and meloxicam are monitored; lornoxicam and levofloxacin are not. The list is matched
+  against the watched ingredients on every run, so an ingredient added or retired between EMA's lists is
+  covered from the next day; nothing is stored when neither the list nor the match has changed. A failure
+  warns and keeps the last list.
 
 ## PRAC agendas
 
