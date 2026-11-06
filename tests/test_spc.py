@@ -355,6 +355,61 @@ def test_watch_product_baseline_then_change_opens_one_issue():
     assert watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT) is None   # only 10
     assert len(db.issues) == 1
     assert db.changes[-1]["s"] == ["10"] and db.changes[-1]["i"] is None
+    assert not db.gaps, "no label of ours: nothing to compare with"
+
+
+OUR_LABEL = {"id": "33333333-3333-3333-3333-333333333333", "ingredient_id": INGREDIENT["id"], "lang": "es",
+             "sections": {"4.4": "Lornoxicam reduce la agregación plaquetaria. "
+                                 "Riesgo de lesión hepática grave en tratamientos prolongados.",
+                          "4.8": "Náuseas."}}
+
+
+def test_a_change_is_compared_with_our_label_as_it_is_recorded():
+    db, ctx = SpcDb(), FakeCtx()
+    db.our_labels.append(OUR_LABEL)
+    base = "Lornoxicam reduce la agregación plaquetaria."
+    module = _Module(_snap(base), _snap(base + " Riesgo de lesión hepática."))
+    watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT)                  # baseline
+    assert watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT) is not None
+    assert len(db.changes) == 1 and len(db.gaps) == 1
+    g = db.gaps[0]
+    assert g["c"] == db.changes[0]["id"] and g["l"] == OUR_LABEL["id"]
+    gap = g["gap"]
+    assert gap["lang_match"] is True and gap["our_lang"] == "es" and gap["their_lang"] == "es"
+    assert [s["section"] for s in gap["sections"]] == ["4.4"]
+    added = gap["sections"][0]["added"]
+    assert [a["sentence"] for a in added] == ["Riesgo de lesión hepática."]
+    assert added[0]["status"] in ("covered", "partly") and "hepática" in added[0]["closest"]
+    assert gap["covered"] + gap["partly"] == 1 and gap["missing"] == 0
+
+
+def test_a_change_is_never_compared_with_our_label_in_another_language():
+    db, ctx = SpcDb(), FakeCtx()
+    db.our_labels.append({**OUR_LABEL, "lang": "en", "sections": {"4.4": "Risk of severe liver injury."}})
+    base = "Lornoxicam reduce la agregación plaquetaria."
+    module = _Module(_snap(base), _snap(base + " Riesgo de lesión hepática."))
+    watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT)
+    watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT)
+    assert len(db.gaps) == 1
+    gap = db.gaps[0]["gap"]
+    assert gap["lang_match"] is False and gap["sections"] == []
+    assert (gap["our_lang"], gap["their_lang"]) == ("en", "es")
+
+
+def test_a_failed_comparison_never_loses_the_change(monkeypatch):
+    from collectors.labels import recompute
+
+    def boom(*a, **k):
+        raise RuntimeError("no label_gap table yet")
+
+    monkeypatch.setattr(recompute, "gap_for_change", boom)
+    db, ctx = SpcDb(), FakeCtx()
+    db.our_labels.append(OUR_LABEL)
+    base = "Lornoxicam reduce la agregación plaquetaria."
+    module = _Module(_snap(base), _snap(base + " Riesgo de lesión hepática."))
+    watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT)
+    assert watch_product(db, ctx, module, "spc-cima", PRODUCT, INGREDIENT) is not None
+    assert len(db.changes) == 1 and len(db.issues) == 1 and not db.gaps
 
 
 def test_watch_product_without_archived_texts_compares_hashes():

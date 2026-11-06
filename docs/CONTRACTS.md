@@ -394,6 +394,41 @@ late or due within 2 days; `run.py` calls it after the new-items digest). Store:
 `eda_reminders(today, within_days)`. Web: `web/src/features/screen/clock.ts`, `DecisionButtons.tsx`,
 `styles/clock.css`. SQL test: `supabase/tests/eda_clock.sql`; Python: `tests/test_reminders.py`.
 
+## Our label under Label changes (0043)
+
+```sql
+spc_product.is_reference boolean not null default false   -- one per ingredient (partial unique index)
+set_reference_product(p_product uuid, p_on boolean) returns void
+  -- security definer; a reviewer or administrator (42501); P0002 for an unknown product; on = true clears the
+  -- other product of the same ingredient. Audited (audit_spc_product_reference, on the column only).
+label_gap (id, spc_change_id -> spc_change cascade, our_label_id -> our_label cascade, gap jsonb, computed_at,
+  unique (spc_change_id, our_label_id))
+  -- the collector's (direct connection) to write; the team reads (RLS my_role() is not null); anon nothing.
+  -- gap: {lang_match, our_lang, their_lang, covered, partly, missing,
+  --       sections: [{section, our_section, our_text, covered, partly, missing,
+  --                   added: [{sentence, status covered|partly|missing, score 0–1, closest|null}]}]}
+  -- lang_match false -> sections []. Only sections 4.1–4.9 (US and Japanese headings mapped) are compared.
+label_changes(p_ingredient uuid, p_from date, p_to date) returns jsonb
+  -- ingredient_screen_check() as 0039/0040 (team or the report's direct connection; 22023 days; P0002).
+  -- The changes DETECTED in the Cairo days (spc_change.created_at), the reference product first, then newest:
+  -- [{change_id, detected_at, detected_day, label_date, previous_label_date,
+  --   product: {id, name, mah, country_code, country_name, source_id, regulator_id, regulator_name, url,
+  --             is_reference},
+  --   lang (document.lang, else source.languages[1]), link (document_link, else product url, source page,
+  --   homepage), document_id, title, sections, diff (as stored), gap (label_gap.gap for the newest current
+  --   version of our label, else null), gap_at, our_label: {id, product_name, version, lang, uploaded_at,
+  --   uploaded_by (name)} | null, issue_id, issue_status, is_backfill, decision: {to_status, person, at, comment}}]
+```
+
+Collector: `collectors/labels/gap.py` (the check, pure), `collectors/labels/recompute.py` (`gap_for_change` when
+`collectors/spc/run.py` records a change; `recompute_gaps` after the SPC step of every normal run: the changes of
+the last 365 days with no row for a current version of our label, 500 per run). Weekly report: `gather_week`
+reads `label_changes()` per ingredient; `gap_summary()` words the gap. Web: `web/src/features/screen/LabelChanges.tsx`,
+`OurLabel.tsx`, `labelText.ts` (the section splitter), `queries.ts` (`useLabelChanges`, key
+`['label-changes', id, from, to]`; its `label_changes` Mentions carry `document_id = change_id` so
+`DecisionButtons` works unchanged), `web/src/lib/pdfText.ts`, `styles/labels.css`. SQL test:
+`supabase/tests/label_changes.sql`; Python: `tests/test_label_gap.py`, `tests/test_label_recompute.py`.
+
 ## Case reports in the literature (0044)
 
 ```sql
