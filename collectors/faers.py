@@ -22,11 +22,17 @@ least 2, chi-squared at least 4). A flag is a reason to look, not a finding: the
 the label.
 
 How an ingredient is found (checked on the live API, 6 Nov 2026). The INN in upper case is searched, exactly, in
-three fields at once: ``patient.drug.openfda.generic_name`` and ``substance_name`` (filled only for a product FDA could
+three fields at once (and its US name with it, RxNorm's name for the ingredient's rxcui, when that differs: FDA files
+paracetamol as ACETAMINOPHEN, 100,540 reports, and has none under PARACETAMOL): ``patient.drug.openfda.generic_name`` and ``substance_name`` (filled only for a product FDA could
 match to a US label: carvedilol 136,140 reports in each, lornoxicam, not sold in the US, none) and
 ``patient.drug.activesubstance.activesubstancename`` (the substance as FAERS coded it, also for foreign products:
 lornoxicam 396). Together carvedilol has 142,304. An exact search takes the whole value only, so a salt written
-with the substance ("CARVEDILOL PHOSPHATE", 2,975 reports) is not counted.
+with the substance ("CARVEDILOL PHOSPHATE", 2,975 reports) is not counted. When RxNorm does not answer, the
+ingredient is left for the next run rather than counted under its INN alone.
+
+A reaction is searched on its own by its exact name, but openFDA refuses some characters even in quotes (HTTP 400):
+FDA writes an apostrophe as ^ ("WERNICKE^S ENCEPHALOPATHY"). Such a reaction's words are searched as a phrase and
+its own count is read from those reports' reactions (152, the same as the exact count).
 
 openFDA answers 404 "No matches found" for nothing found (a zero, not a failure), refuses a ``count`` longer than 100
 without a key (403 API_KEY_MISSING), and has bad moments (a dropped connection, HTTP 500): every request is paced
@@ -52,7 +58,8 @@ log = logging.getLogger("collectors.faers")
 
 API = "https://api.fda.gov/drug/event.json"
 REACTION = "patient.reaction.reactionmeddrapt.exact"
-DRUG = "patient.drug.openfda.generic_name.exact"    # the drugs a report names, by generic name
+REACTION_WORDS = "patient.reaction.reactionmeddrapt"      # the same, analysed: searched by its words
+DRUG = "patient.drug.openfda.generic_name.exact"          # the drugs a report names, by generic name
 NAME_FIELDS = (
     "patient.drug.openfda.generic_name.exact",
     "patient.drug.openfda.substance_name.exact",
@@ -149,10 +156,20 @@ def _quoted(text: str) -> str:
     return '"' + " ".join(text.replace("\\", " ").replace('"', " ").split()) + '"'
 
 
-def name_search(inn: str) -> str:
-    """The INN in upper case, exactly, in the three fields that name a drug's substance."""
-    name = _quoted(inn.upper())
-    return "(" + " ".join(f"{f}:{name}" for f in NAME_FIELDS) + ")"
+def searched_names(inn: str, *others: str | None) -> list[str]:
+    """The INN and any other name (the US one), in capitals, each once."""
+    out: list[str] = []
+    for n in (inn, *others):
+        n = " ".join((n or "").upper().split())
+        if n and n not in out:
+            out.append(n)
+    return out
+
+
+def name_search(inn: str, *others: str | None) -> str:
+    """The INN and its US name when it differs, in upper case, exactly, in the three fields that name a drug's
+    substance."""
+    return "(" + " ".join(f"{f}:{_quoted(n)}" for f in NAME_FIELDS for n in searched_names(inn, *others)) + ")"
 
 
 # ───────────────────────────── openFDA ─────────────────────────────
@@ -295,8 +312,22 @@ class Background:
         if complete:
             return 0
         if reaction not in self._alone:
-            self._alone[reaction] = self.api.total(f"{REACTION}:{_quoted(reaction)} AND {self.whole}")
+            self._alone[reaction] = self._searched(reaction)
         return self._alone[reaction]
+
+    def _searched(self, reaction: str) -> int:
+        try:
+            return self.api.total(f"{REACTION}:{_quoted(reaction)} AND {self.whole}")
+        except OpenFdaError as exc:
+            if exc.status != 400:
+                raise
+        # openFDA refuses some characters even in quotes (FDA writes an apostrophe as ^: "WERNICKE^S
+        # ENCEPHALOPATHY"). Its words as a phrase find the reports, and their count by exact reaction gives its own.
+        words = " ".join(re.sub(r"[^0-9A-Za-z]+", " ", reaction).split())
+        if not words:
+            return 0
+        counts, _ = self.api.reactions(f"{REACTION_WORDS}:{_quoted(words)} AND {self.whole}")
+        return counts.get(reaction, 0)
 
     def quarter_count(self, q: date, reaction: str) -> int | None:
         """Reports of every drug with the reaction in one quarter, or None when it is below the list."""
@@ -304,23 +335,36 @@ class Background:
         return counts.get(reaction, 0 if complete else None)
 
 
-def co_drug(api: OpenFda, names: str, inn: str, reaction: str, whole: str) -> tuple[str | None, int | None]:
+def reaction_search(reaction: str) -> str:
+    """The reaction by its exact name; one with a character openFDA refuses even in quotes (FDA writes an apostrophe
+    as ^) by its words as a phrase, as Background._searched does."""
+    if re.fullmatch(r"[0-9A-Za-z ,()/.-]+", reaction):
+        return f"{REACTION}:{_quoted(reaction)}"
+    return f"{REACTION_WORDS}:{_quoted(' '.join(re.sub(r'[^0-9A-Za-z]+', ' ', reaction).split()))}"
+
+
+def co_drug(api: OpenFda, names: str, own: list[str], reaction: str, whole: str) -> tuple[str | None, int | None]:
     """The other drug most often named in the reports of the ingredient with the reaction, and in how many: a drug
-    taken with the ingredient can be what the reaction is reported for (0076). The ingredient itself, its salts and
-    the combinations that hold it are never the answer."""
-    own = re.compile(r"\b" + re.escape(" ".join(inn.upper().split())) + r"\b")
-    others = [(n, t) for t, n in api.drugs(f"{names} AND {REACTION}:{_quoted(reaction)} AND {whole}").items()
-              if not own.search(t.upper())]
+    taken with the ingredient can be what the reaction is reported for (0076). The ingredient under any of its
+    names, its salts and the combinations that hold it are never the answer."""
+    mine = [re.compile(r"\b" + re.escape(n) + r"\b") for n in own]
+    try:
+        named = api.drugs(f"{names} AND {reaction_search(reaction)} AND {whole}")
+    except OpenFdaError as exc:
+        if exc.status != 400:
+            raise
+        return None, None                    # never lose the ingredient's counts over one reaction's lookup
+    others = [(n, t) for t, n in named.items() if not any(m.search(t.upper()) for m in mine)]
     if not others:
         return None, None
     n, term = min(others, key=lambda nt: (-nt[0], nt[1]))          # the most, then by name
     return term, n
 
 
-def count_ingredient(api: OpenFda, bg: Background, inn: str) -> dict:
+def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None = None) -> dict:
     """Everything kept for one ingredient: the reports per quarter, and its most frequent reactions with their
-    quarters and their disproportion."""
-    names = name_search(inn)
+    quarters and their disproportion. ``us_name`` (RxNorm's) is searched too when it differs from the INN."""
+    names = name_search(inn, us_name)
     days = api.days(f"{names} AND {bg.whole}")
     per_q = by_quarter(days, bg.quarters)
     n_drug = sum(per_q.values())
@@ -342,17 +386,18 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str) -> dict:
         all_r = max(bg.whole_count(reaction), a)     # never fewer than the ingredient's own (the lists can drift)
         b, c = n_drug - a, all_r - a
         stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
-        drug, with_it = co_drug(api, names, inn, reaction, bg.whole) if stats.flagged else (None, None)
+        drug, with_it = (co_drug(api, names, searched_names(inn, us_name), reaction, bg.whole) if stats.flagged
+                         else (None, None))
         reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats),
                           "co_drug": drug, "co_reports": with_it})
-    return {"searched": inn.upper().strip(), "first_quarter": bg.quarters[0].isoformat(),
+    return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
             "quarters": quarters, "reactions": reactions, "counts": counts}
 
 
 # ───────────────────────────── the database ─────────────────────────────
 WAITING_SQL = """
-select i.id::text as id, i.inn_en
+select i.id::text as id, i.inn_en, i.rxcui
   from ingredient i
   left join faers_ingredient f on f.ingredient_id = i.id
  where i.active
@@ -405,9 +450,11 @@ def store(db: Any, ingredient: str, got: dict) -> None:
 
 
 def count_reports(db: Any, api: OpenFda, *, force: bool = False, ingredient: str | None = None,
-                  minutes: float = 45, today: date | None = None, clock: Callable[[], float] = time.monotonic) -> str:
+                  minutes: float = 45, today: date | None = None, clock: Callable[[], float] = time.monotonic,
+                  us_name: Callable[[str], str | None] | None = None) -> str:
     """Count every ingredient waiting for its FAERS counts; what was done, in words. The run logs are public: no
-    ingredient is named in them, only numbers."""
+    ingredient is named in them, only numbers. ``us_name`` gives RxNorm's name of an ingredient's rxcui; when it
+    fails the ingredient is left for the next run, since its INN alone can find none of its reports."""
     rows = db.fetchall(WAITING_SQL, {"force": force, "fresh": FRESH_DAYS, "one": ingredient})
     fresh = 0 if force else (db.fetchone(FRESH_SQL, {"fresh": FRESH_DAYS}) or {}).get("n", 0)
     later = f", {fresh} counted in the last {FRESH_DAYS} days" if fresh else ""
@@ -421,7 +468,8 @@ def count_reports(db: Any, api: OpenFda, *, force: bool = False, ingredient: str
             left += 1
             continue
         try:
-            got = count_ingredient(api, bg, r["inn_en"])
+            us = us_name(r["rxcui"]) if us_name and r.get("rxcui") else None
+            got = count_ingredient(api, bg, r["inn_en"], us)
             store(db, r["id"], got)
         except Exception as exc:              # one ingredient never stops the others
             failed += 1
@@ -452,6 +500,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from collectors.core.context import install_log_redaction
     from collectors.core.db import Db
+    from collectors.coding.drugs import RxNav
 
     install_log_redaction()   # the request addresses carry the key and the ingredient: never printed
     key = os.environ.get("OPENFDA_API_KEY", "").strip() or None     # a pasted secret can carry a newline
@@ -459,7 +508,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         with httpx.Client(timeout=90, headers={"User-Agent": "PHAROS pharmacovigilance monitor (Sato Pharma)"}) as client:
             api = OpenFda(http_getter(client), key)
-            print("faers:", count_reports(db, api, force=args.force, ingredient=args.ingredient, minutes=args.minutes))
+            rx = RxNav()
+            print("faers:", count_reports(db, api, force=args.force, ingredient=args.ingredient, minutes=args.minutes,
+                                          us_name=rx.name))
     finally:
         db.close()
     return 0
