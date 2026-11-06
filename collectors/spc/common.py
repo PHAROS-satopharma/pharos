@@ -8,6 +8,10 @@ Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pm
   whose list can break off partway (a page, a code or a search term that did not answer) returns a
   ``Listing`` with ``complete`` False: ``run.py`` then switches off no product it did not reach, and
   says so, instead of reading the missing ones as withdrawn;
+* ``listed_version(product) -> str | None`` (optional) — the label's version as the regulator's list gives it
+  (DailyMed's SPL version, PMDA's package id, CIMA's document date, EMA's last update, MHRA's document id).
+  ``run.py`` reads a label whose listed version moved first, and does not read again, for up to
+  ``RECHECK_DAYS``, a label whose listed version is the one its last snapshot was read at;
 * ``snapshot(ctx, product) -> Snapshot | None`` — the product's current label split into sections
   (``product`` = the ``spc_product`` row as a dict); ``None`` when no label is published. A label
   that could not be read (an HTTP error, a missing section, an unknown shape) raises — never a

@@ -137,7 +137,8 @@ class SpcDb:
             return dict(row)
         if q.startswith("insert into spc_snapshot"):
             row = {"id": str(uuid.uuid4()), "spc_product_id": p["p"], "doc_date": p["d"],
-                   "sha256": p["s"], "r2_key": p["k"], "section_hashes": _load(p["h"])}
+                   "sha256": p["s"], "r2_key": p["k"], "section_hashes": _load(p["h"]),
+                   "regulator_version": p.get("v")}
             self.snapshots.append(row)
             return {"id": row["id"]}
         if q.startswith("select id, sha256, r2_key, section_hashes from spc_snapshot"):
@@ -168,7 +169,13 @@ class SpcDb:
     def fetchall(self, sql: str, params=None):
         q = self._sql(sql)
         p = dict(params or {})
-        if q.startswith("select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot"):
+        if q.startswith("select distinct on (spc_product_id) spc_product_id, regulator_version from spc_snapshot"):
+            last: dict[str, dict] = {}
+            for r in self.snapshots:
+                if r["spc_product_id"] in p["ids"]:
+                    last[r["spc_product_id"]] = r
+            return [{"spc_product_id": k, "regulator_version": r.get("regulator_version")} for k, r in last.items()]
+        if q.startswith("select id, sha256, r2_key, section_hashes, doc_date, regulator_version from spc_snapshot"):
             rows = [dict(r) for r in self.snapshots if r["spc_product_id"] == p["p"]]
             return list(reversed(rows))[:p.get("n", len(rows))]
         if q.startswith("select id, ingredient_id, source_id, country_code, national_id") and "from spc_product" in q:
@@ -191,6 +198,10 @@ class SpcDb:
             self.links.append((q.split()[2], p))
         elif q.startswith("insert into match"):
             self.matches.append(p)
+        elif q.startswith("update spc_snapshot set regulator_version"):
+            for r in self.snapshots:
+                if r["id"] == p["i"]:
+                    r["regulator_version"] = p["v"]
         elif q.startswith("update spc_product set checked_at = now()"):
             self.clock_n = getattr(self, "clock_n", 0) + 1     # an ever-later "now"
             for row in self.products.values():

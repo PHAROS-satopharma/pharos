@@ -102,6 +102,11 @@ def discover(ctx, ingredient: dict) -> list[Product]:
     return list(found.values())
 
 
+def listed_version(product: dict) -> str | None:
+    """The ficha técnica's own date in the product list."""
+    return (product.get("extra") or {}).get("ft_date") or None
+
+
 def wanted(section: str) -> bool:
     parent = ".".join(section.split(".")[:2])
     return section == "10" or section in WATCHED_EU or parent in WATCHED_EU

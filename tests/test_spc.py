@@ -715,12 +715,15 @@ def test_dailymed_snapshot_of_a_real_label():
     ctx = FakeCtx({f"{dailymed.API}/spls/{setid}.xml": "spc-dailymed/spl_445d7cbf.xml"})
     snap = dailymed.snapshot(ctx, {"national_id": setid})
     assert snap.doc_date == date(2026, 11, 2) and snap.lang == "en"
-    assert list(snap.sections) == ["us:boxed_warning", "us:indications", "us:dosage_and_administration",
+    assert list(snap.sections) == ["us:recent_major_changes", "us:boxed_warning", "us:indications",
+                                   "us:dosage_and_administration",
                                    "us:contraindications", "us:warnings_and_precautions",
                                    "us:adverse_reactions", "us:drug_interactions",
                                    "us:specific_populations", "us:overdosage"]
     assert snap.sections["us:boxed_warning"].startswith("Cardiovascular Thrombotic Events")
     assert "Hepatotoxicity" in snap.sections["us:warnings_and_precautions"]
+    assert "Serious Skin Reactions" in snap.sections["us:recent_major_changes"]      # 7 Nov 2026: read too
+    assert snap.method == dailymed.SECTIONS_2
 
 
 def test_dailymed_snapshot_asks_as_dailymed_answers():
@@ -1027,3 +1030,90 @@ def test_cima_searches_the_spanish_name_too_for_combinations():
     cima.discover(ctx, {"inn_en": "lornoxicam", "atc_code": "M01AC05", "terms": {"es": ["lornoxicam"]}})
     urls = [r[1] for r in ctx.requests]
     assert CIMA + "/medicamentos?practiv1=LORNOXICAM&pagina=1" in urls
+
+
+# ───────────────────────────── versions, US precautions, an EPAR with several SmPCs (7 Nov 2026) ──────────
+
+
+def test_an_epar_with_two_smpcs_reads_each_on_its_own():
+    from collectors.spc.sections import split_smpc_sections, watched_changes
+
+    one = ("1. NAME OF THE MEDICINAL PRODUCT\nProcoralan 5 mg film-coated tablets\n"
+           "4. CLINICAL PARTICULARS\n4.4 Special warnings and precautions for use\nBradycardia 5 mg.\n"
+           "6. PHARMACEUTICAL PARTICULARS\n6.1 List of excipients\nLactose.\n"
+           "10. DATE OF REVISION OF THE TEXT\n11/2025\n")
+    two = one.replace("5 mg", "7.5 mg")
+    sections = split_smpc_sections(one + two)
+    assert sections["4.4"] == "Bradycardia 5 mg." and sections["smpc2:4.4"] == "Bradycardia 7.5 mg."
+    assert sections["10"] == "11/2025"                       # the second SmPC no longer runs on inside it
+    assert watched_changes(["smpc2:4.4", "smpc2:10", "10"]) == ["smpc2:4.4"]
+
+
+def test_a_single_smpc_keeps_its_keys():
+    from collectors.spc.sections import split_numbered, split_smpc_sections
+
+    text = ("1. NAME OF THE MEDICINAL PRODUCT\nX 8 mg\n4. CLINICAL PARTICULARS\n4.3 Contraindications\nNone.\n"
+            "10. DATE OF REVISION OF THE TEXT\n10/2026\n")
+    assert split_smpc_sections(text) == split_numbered(text)
+
+
+def test_us_old_format_precautions_are_read():
+    xml = b"""<document xmlns="urn:hl7-org:v3"><effectiveTime value="20250501"/>
+      <component><structuredBody>
+        <component><section><code code="34071-1"/><text>Liver warning.</text></section></component>
+        <component><section><code code="42232-9"/><text>General. Hepatic impairment.</text>
+          <component><section><code code="42228-7"/><text>Pregnancy Category C.</text></section></component>
+        </section></component>
+      </structuredBody></component></document>"""
+    sections, when = dailymed.parse_spl(xml)
+    assert "Pregnancy Category C." in sections["us:precautions"]      # sub-sections stay inside it
+    assert sections["us:warnings"] == "Liver warning." and when == date(2025, 5, 1)
+
+
+class _Versioned:
+    @staticmethod
+    def listed_version(product):
+        return (product.get("extra") or {}).get("v")
+
+
+def _row(pid, v, checked=None, ref=False):
+    return {"id": pid, "national_id": pid, "extra": {"v": v}, "checked_at": checked, "is_reference": ref}
+
+
+def test_a_label_the_regulator_revised_is_read_first_and_an_unchanged_one_waits():
+    from datetime import datetime, timedelta, timezone
+
+    from collectors.spc.run import SpcStats, _turn, plan_reads
+
+    lately = datetime.now(timezone.utc) - timedelta(days=3)
+    long_ago = datetime.now(timezone.utc) - timedelta(days=40)
+    ing = {"id": "i"}
+    queue = [(_row("same", "3", lately), ing), (_row("old", "3", long_ago), ing),
+             (_row("new", "5", lately), ing), (_row("ref", "3", lately, ref=True), ing),
+             (_row("never", "1"), ing)]
+    stats = SpcStats()
+    got = plan_reads(_Versioned, queue, {"same": "3", "old": "3", "new": "4", "ref": "3"}, stats)
+    got.sort(key=lambda pair: _turn(pair[0]))
+    assert [p["id"] for p, _i in got] == ["ref", "new", "never", "old"]
+    assert (stats.revised, stats.unchanged) == (1, 1)
+
+
+def test_a_source_without_listed_versions_reads_every_label():
+    from collectors.spc.run import SpcStats, plan_reads
+
+    queue = [(_row("a", "1"), {"id": "i"})]
+    assert plan_reads(object(), queue, {"a": "1"}, SpcStats()) == queue
+
+
+def test_the_snapshot_keeps_the_regulator_version_and_follows_it_on_the_same_text():
+    db, ctx = SpcDb(), FakeCtx()
+
+    class Module(_Versioned):
+        def snapshot(self, ctx, product):
+            return Snapshot(sections={"4.4": "Texto."}, lang="es")
+
+    product = dict(PRODUCT, extra={"v": "2026-10-01"})
+    watch_product(db, ctx, Module(), "spc-cima", product, INGREDIENT)
+    assert db.snapshots[-1]["regulator_version"] == "2026-10-01"
+    watch_product(db, ctx, Module(), "spc-cima", dict(product, extra={"v": "2026-11-02"}), INGREDIENT)
+    assert len(db.snapshots) == 1 and db.snapshots[-1]["regulator_version"] == "2026-11-02"

@@ -53,7 +53,7 @@ import logging
 import time
 import traceback
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
 from collectors.core.context import SourceBlocked, redact
@@ -73,6 +73,7 @@ MODULES = {
 }
 DEGRADED_AFTER = 2          # failed SPC runs in a row (weekly) before the source is 'degraded'
 RECENT_SNAPSHOTS = 10       # how far back a snapshot read the same way is looked for
+RECHECK_DAYS = 28           # a label at the version its last snapshot was read at is read again after this
 
 
 @dataclass
@@ -86,6 +87,8 @@ class SpcStats:
     errors: list[str] = field(default_factory=list)
     out_of_time: bool = False
     labels_left: int = 0         # products found but not read this run (out of time)
+    revised: int = 0             # labels read first: the regulator lists a new version
+    unchanged: int = 0           # labels not read: the regulator lists the version last read, read lately
     ingredients_left: int = 0    # ingredients not even looked up this run (out of time)
 
     def failed(self, ingredients: int) -> bool:
@@ -221,9 +224,49 @@ def mark_checked(db, product_id: str) -> None:
 
 
 def _turn(product: dict) -> tuple:
-    """Reading order within a source: our reference products, then labels never read, then the oldest read."""
+    """Reading order within a source: our reference products, then labels the regulator lists at a new version,
+    then labels never read, then the oldest read."""
     checked = product.get("checked_at")
-    return (not product.get("is_reference"), checked is not None, checked or "")
+    return (not product.get("is_reference"), not product.get("_revised"), checked is not None, checked or "")
+
+
+def last_versions(db, product_ids: list[str]) -> dict[str, str | None]:
+    """The regulator's version each product's newest snapshot was read at (0086)."""
+    if not product_ids:
+        return {}
+    rows = db.fetchall(
+        """select distinct on (spc_product_id) spc_product_id, regulator_version from spc_snapshot
+            where spc_product_id = any(%(ids)s::uuid[]) order by spc_product_id, fetched_at desc""",
+        {"ids": product_ids})
+    return {str(r["spc_product_id"]): r.get("regulator_version") for r in rows}
+
+
+def _recent(checked, days: int = RECHECK_DAYS) -> bool:
+    if not isinstance(checked, datetime):
+        return False
+    when = checked if checked.tzinfo else checked.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - when < timedelta(days=days)
+
+
+def plan_reads(module, queue: list[tuple[dict, dict]], versions: dict[str, str | None],
+               stats: SpcStats) -> list[tuple[dict, dict]]:
+    """Mark each product revised (the regulator lists a version other than the one last read) and leave out the
+    ones the regulator lists at the version last read, when read within ``RECHECK_DAYS``. A source without
+    ``listed_version`` reads every label in turn, as before."""
+    listed = getattr(module, "listed_version", None)
+    if listed is None:
+        return queue
+    out = []
+    for product, ing in queue:
+        now_v, last_v = listed(product), versions.get(product["id"])
+        if now_v and last_v and now_v != last_v:
+            product["_revised"] = True
+            stats.revised += 1
+        elif now_v and last_v == now_v and _recent(product.get("checked_at")) and not product.get("is_reference"):
+            stats.unchanged += 1
+            continue
+        out.append((product, ing))
+    return out
 
 
 def last_snapshot(db, product_id: str) -> dict | None:
@@ -234,7 +277,7 @@ def last_snapshot(db, product_id: str) -> dict | None:
 
 def recent_snapshots(db, product_id: str, limit: int = RECENT_SNAPSHOTS) -> list[dict]:
     return db.fetchall(
-        """select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot
+        """select id, sha256, r2_key, section_hashes, doc_date, regulator_version from spc_snapshot
             where spc_product_id = %(p)s order by fetched_at desc limit %(n)s""",
         {"p": product_id, "n": limit})
 
@@ -381,10 +424,17 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
         stats.no_label += 1
         return None
     stats.labels_read += 1
+    listed = getattr(module, "listed_version", None)
+    version = listed(product) if listed else None
     raw = canonical(snap)
     sha, key = ctx.archive(raw, "application/json")
     rows = recent_snapshots(db, product["id"])
     if rows and rows[0].get("sha256") == sha:
+        if version and rows[0].get("regulator_version") != version:
+            # a new version on the regulator's list with the same text: remember it, so the label is not
+            # taken as revised again next week
+            db.execute("update spc_snapshot set regulator_version = %(v)s where id = %(i)s",
+                       {"v": version, "i": rows[0]["id"]})
         return None
     prev, before = comparable(ctx, rows, snap.method)
     if rows and prev is None:
@@ -398,10 +448,11 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
                      snap.doc_date)
     with db.transaction():
         row = db.fetchone(
-            """insert into spc_snapshot (spc_product_id, doc_date, sha256, r2_key, section_hashes)
-               values (%(p)s, %(d)s, %(s)s, %(k)s, %(h)s) returning id""",
+            """insert into spc_snapshot (spc_product_id, doc_date, sha256, r2_key, section_hashes,
+                 regulator_version)
+               values (%(p)s, %(d)s, %(s)s, %(k)s, %(h)s, %(v)s) returning id""",
             {"p": product["id"], "d": snap.doc_date, "s": sha, "k": key,
-             "h": _json(hashes(snap.sections))})
+             "h": _json(hashes(snap.sections)), "v": version})
         snap_id = str(row["id"])
         stats.snapshots += 1
         if prev is None:
@@ -473,6 +524,11 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
                 # the products the list did not reach stay active, and their labels are read as usual
                 queue += [(row, ing) for row in known if row["id"] not in ids]
         stats.products += len(found) + (len([r for r in known if r["id"] not in ids]) if gaps else 0)
+    queue = plan_reads(module, queue, last_versions(db, sorted({p["id"] for p, _i in queue})), stats)
+    if stats.revised or stats.unchanged:
+        # counts, not errors: the source_run's error column holds only what went wrong
+        log.info("SPC %s: %d label(s) revised by the regulator, read first; %d at the version last read, "
+                 "not read again", source_id, stats.revised, stats.unchanged)
     queue.sort(key=lambda pair: _turn(pair[0]))      # stable: ingredient and listing order otherwise
     for n, (product, ing) in enumerate(queue):
         if deadline is not None and clock() >= deadline:
