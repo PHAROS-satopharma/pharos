@@ -8,8 +8,8 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | Workflow | When (UTC) | What it does |
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
-| `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) |
-| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls) and NCBI literature (PubMed and PubMed Central), the EURD list, then up to 15 minutes of the check of the past |
+| `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), the EURD list, then up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
@@ -138,7 +138,7 @@ first (A to Z, the European Union among them), then *Other authorities*. Each ca
 
 - **The pages you check**: her list (`regulator_page`, 0032), each marked *Read by the app*, *Partly read by
   the app*, *Read by the app, by e-mail subscription* or *Not read by the app — open it yourself*. A page
-  counts as read only while one of its sources is switched on.
+  counts as read only while one of its sources is switched on. A page not read says why in its note.
 - **New since you last looked (N)**: every item the country's authorities published since the person last
   pressed **Mark as looked at** on that card, or since Sunday 00:00 Cairo when they never did, and never more
   than 31 days back. Matched items carry *Matches a watched ingredient*. An item that came by e-mail with no
@@ -169,6 +169,23 @@ same list as the screen (`new_items()`). Nothing is sent on a day with nothing n
 tried again on the next run inside the window, to the people who did not get it. Anyone switches it on or
 off on the People screen: *New items on the authorities' pages, once a day*. Migration 0033 switches it on for
 Dr Sama only. While `telegram_dry_run` is on, the message is only written down.
+
+### Her pages: what reads each one (0038, 6 Nov 2026)
+
+Every safety and DHPC page of her list is read, except two whose sites refuse the servers PHAROS runs on.
+Each new source below was read from GitHub's runners before it was added.
+
+| Her page | Read by |
+|---|---|
+| EMA home page news | `ema-news`, EMA's news list (every news item, ten a page). Not `news.xml`: it carries only seven items and missed the oral GLP-1 opinion of 16 Oct 2026 |
+| Swissmedic updates | `swissmedic-updates`, "New on this website", everything Swissmedic posts (40 a page, about two months) |
+| Medsafe Prescriber Update | `medsafe-prescriber-update`: each article of the latest issue and the issue PDF (four issues a year) |
+| PMDA, safety information announced by MHLW | `pmda-mhlw`, from the Japanese page (the English one has not changed since June 2013). Rare: no expected gap |
+| Infarmed circulars | `infarmed-circulares`, which now keeps every circular of the medicines circulars page (`circulares_all`), not only the alert series |
+| HPRA newsletters | `hpra-notices`: her address no longer opens; each Drug Safety Newsletter is posted as a safety notice |
+| MFDS safety letters (health.kr) | `mfds-letters`: health.kr republishes MFDS's letters, all of which are on MFDS's own board |
+| Health Canada InfoWatch | Not read. canada.ca timed out every request from the runners (6 Nov 2026), with a browser's and with PHAROS's own user agent. Health Canada sends each issue by e-mail (MedEffect e-Notice) |
+| FDA press announcements | Not read. fda.gov answers the runners with its abuse-detection page. To have them read: subscribe the PHAROS mailbox to *FDA Press Releases* (the sign-up box at the bottom of fda.gov's press announcements page). `fda-email` already reads every message from `public.govdelivery.com`; then set the page's `read_by` to `{fda-email}` with a note starting "By e-mail subscription" |
 
 ## Turning real Telegram messages on
 
