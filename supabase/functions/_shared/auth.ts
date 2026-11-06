@@ -1,4 +1,4 @@
-// Who is calling: a signed-in, active person (and, when asked, an admin).
+// Who is calling: a signed-in, active person (and, when asked, an admin, or an admin who manages the people).
 import { HttpError } from "./cors.ts";
 import { serviceClient, userClient, type SupabaseClient } from "./supabase.ts";
 
@@ -6,7 +6,7 @@ export type Role = "admin" | "reviewer" | "reader";
 
 export interface Caller {
   userId: string;
-  person: { id: string; full_name: string; email: string | null; role: Role };
+  person: { id: string; full_name: string; email: string | null; role: Role; manages_people: boolean };
   jwt: string;
   /** Acts as the caller (row-level security applies). */
   db: SupabaseClient;
@@ -14,7 +14,10 @@ export interface Caller {
   svc: SupabaseClient;
 }
 
-export async function requirePerson(req: Request, opts: { admin?: boolean } = {}): Promise<Caller> {
+export async function requirePerson(
+  req: Request,
+  opts: { admin?: boolean; people?: boolean } = {},
+): Promise<Caller> {
   const header = req.headers.get("Authorization") ?? "";
   const m = header.match(/^Bearer\s+(.+)$/i);
   if (!m) throw new HttpError(401, "Sign in first.");
@@ -26,7 +29,7 @@ export async function requirePerson(req: Request, opts: { admin?: boolean } = {}
 
   const { data: person, error: pErr } = await svc
     .from("person")
-    .select("id, full_name, email, role")
+    .select("id, full_name, email, role, manages_people")
     .eq("auth_user_id", data.user.id)
     .eq("active", true)
     .maybeSingle();
@@ -34,6 +37,10 @@ export async function requirePerson(req: Request, opts: { admin?: boolean } = {}
   if (!person) throw new HttpError(403, "Your account has no access to PHAROS.");
   if (opts.admin && person.role !== "admin") {
     throw new HttpError(403, "Only an administrator can do this.");
+  }
+  // An administrator who does not manage the people (person.manages_people, migration 0053).
+  if (opts.people && !(person.role === "admin" && person.manages_people)) {
+    throw new HttpError(403, "Only the administrator who manages the people can do this.");
   }
 
   return { userId: data.user.id, person: person as Caller["person"], jwt, db: userClient(jwt), svc };

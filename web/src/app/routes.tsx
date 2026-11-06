@@ -103,7 +103,7 @@ function NotFound() {
 }
 
 export function AppRoutes() {
-  const { ready, session, person, personLoading, personFailed, isAdmin } = useAuth();
+  const { ready, session, person, personLoading, personFailed, managesPeople } = useAuth();
   const [choosePassword, setChoosePassword] = useState(mustChoosePassword);
 
   if (!supabaseConfigured) return <NotConfigured />;
@@ -123,7 +123,7 @@ export function AppRoutes() {
         <Route path="ingredients/:id" element={<IngredientScreen />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="people" element={isAdmin ? <PeoplePage /> : <Navigate to="/" replace />} />
+        <Route path="people" element={managesPeople ? <PeoplePage /> : <Navigate to="/" replace />} />
         <Route path="me" element={<MePage />} />
         {/* The screens removed in November 2026: an old link opens Ingredients, never an empty page. */}
         {REMOVED_PATHS.map((p) => (

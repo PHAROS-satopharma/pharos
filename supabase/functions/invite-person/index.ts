@@ -9,7 +9,7 @@ const ROLES = ["admin", "reviewer", "reader"] as const;
 type Role = (typeof ROLES)[number];
 
 serve(async (req) => {
-  const caller = await requirePerson(req, { admin: true });
+  const caller = await requirePerson(req, { admin: true, people: true });
   const body = await readJson<{ email?: string; full_name?: string; role?: string }>(req);
 
   const email = String(body.email ?? "").trim().toLowerCase();
