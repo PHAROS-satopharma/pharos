@@ -24,6 +24,7 @@ from tests.test_merge import add_doc, store_with_regulators
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 MIGRATION = ROOT / "supabase" / "migrations" / "0084_readiness_kick.sql"
+SLOTS = ROOT / "supabase" / "migrations" / "0090_fourth_literature_slot.sql"   # ops_readiness_slot() now
 _, SOURCES, _ = load_catalogue()
 
 
@@ -53,8 +54,9 @@ def test_a_backfill_never_holds_or_empties_the_collection_queue():
 
 def test_the_readiness_timer_retries_the_slots_collect_yml_runs():
     sql = MIGRATION.read_text(encoding="utf-8")
-    slots = re.findall(r"\('(daily|literature)',\s*time '(\d\d):(\d\d)'\)", sql)
-    assert sorted(slots) == [("daily", "02", "31"), ("literature", "10", "41"), ("literature", "18", "41")]
+    slots = re.findall(r"\('(daily|literature)',\s*time '(\d\d):(\d\d)'\)", SLOTS.read_text(encoding="utf-8"))
+    assert sorted(slots) == [("daily", "02", "31"), ("literature", "10", "41"), ("literature", "18", "41"),
+                             ("literature", "22", "41")]
     crons = _crons("collect.yml")
     for schedule, hh, mm in slots:
         assert any(re.fullmatch(rf"{int(mm)} (\S*,)?{int(hh)}(,\S*)? \* \* \*", c) for c in crons), (schedule, hh, mm)
