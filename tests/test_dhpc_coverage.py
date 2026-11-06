@@ -136,6 +136,39 @@ def test_mhra_roundup_letters_are_items_of_their_own():
     assert govuk.fetch_detail(ctx, CFG["mhra-alerts"], guanfacine) is guanfacine
 
 
+
+def test_one_bad_roundup_never_loses_the_feed():
+    # Audit of 6 Nov 2026: a roundup whose content-API answer is not JSON (a 200 maintenance page) raised
+    # ParseError out of list_items, so the run kept none of the feed's alerts and drug safety updates.
+    api = "https://www.gov.uk/api/content/drug-device-alerts/mhra-safety-roundup-october-2026"
+    ctx = FakeCtx({CFG["mhra-alerts"].url: "mhra-alerts/feed.atom",
+                   api: b"<html><body>GOV.UK is down for maintenance</body></html>"}, backfill=True)
+    ctx.list_errors = []
+    items = govuk.list_items(ctx, CFG["mhra-alerts"])
+    feed = parse_feed(fetched("mhra-alerts/feed.atom").content, CFG["mhra-alerts"], CFG["mhra-alerts"].url)
+    assert len(items) == len(feed)                        # every feed entry kept, no letters this run
+    assert not [i for i in items if (i.structured or {}).get("roundup")]
+    assert any("mhra-safety-roundup-october-2026" in e and "ParseError" in e for e in ctx.list_errors)
+
+
+def test_a_roundup_that_cannot_be_fetched_is_a_note_not_a_failure():
+    from collectors.core.context import FetchError
+
+    api = "https://www.gov.uk/api/content/drug-device-alerts/mhra-safety-roundup-october-2026"
+
+    class Timeout(FakeCtx):
+        def get(self, url, **kw):
+            if url == api:
+                raise FetchError(503, url)                # three server errors in a row
+            return super().get(url, **kw)
+
+    ctx = Timeout({CFG["mhra-alerts"].url: "mhra-alerts/feed.atom"}, backfill=True)
+    ctx.list_errors = []
+    items = govuk.list_items(ctx, CFG["mhra-alerts"])
+    assert any(i.external_id == "/drug-device-alerts/mhra-safety-roundup-october-2026" for i in items)
+    assert any("mhra-safety-roundup-october-2026" in e and "FetchError" in e for e in ctx.list_errors)
+
+
 # ─────────────────── Spain: the letters are only in AEMPS's « Cartas de seguridad » list ───────────────────
 
 def test_aemps_letters_are_read():
