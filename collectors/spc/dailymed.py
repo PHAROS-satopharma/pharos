@@ -96,7 +96,9 @@ def parse_spl(xml: bytes) -> tuple[dict[str, str], date | None]:
 
 def snapshot(ctx, product: dict) -> Snapshot | None:
     url = f"{API}/spls/{product['national_id']}.xml"
-    f = ctx.get(url, accept="application/xml")
+    # DailyMed answers HTTP 406 to "Accept: application/xml" alone (6 Nov 2026: every US label of the day's
+    # label watch); with a wildcard after it, it serves the same XML
+    f = ctx.get(url, accept="application/xml, */*;q=0.8")
     if f.status != 200 or not f.content:
         return None
     try:
