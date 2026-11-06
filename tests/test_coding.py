@@ -107,6 +107,25 @@ def test_the_newest_release_served_is_taken():
     assert url.endswith("/desc2026.gz") and data[:2] == b"\x1f\x8b"
 
 
+def test_a_release_the_client_unpacked_is_still_taken():
+    # NLM sends Content-Encoding: x-gzip, so httpx hands back the XML itself (dictionaries run, 6 Nov 2026).
+    from datetime import date
+
+    def get(url):
+        return Res(200, MESH_XML) if "2026" in url else Res(302)
+
+    year, data, url = mesh.newest(get, today=date(2026, 11, 6))
+    assert year == 2026 and data == MESH_XML
+    assert {r["ui"] for r in mesh.parse(data)}
+
+
+def test_an_html_page_is_not_a_release():
+    from datetime import date
+
+    with pytest.raises(RuntimeError):
+        mesh.newest(lambda url: Res(200, b"<html><body>Not found</body></html>"), today=date(2026, 11, 6))
+
+
 # ───────────────────────────── products ─────────────────────────────
 WATCHLIST = [{"id": "ing-carv", "inn_en": "Carvedilol", "rxcui": "20352", "names": ["carvedilol", "carvid", "dilatrend"]},
              {"id": "ing-melox", "inn_en": "Meloxicam", "rxcui": "41493", "names": ["meloxicam", "mobic"]}]

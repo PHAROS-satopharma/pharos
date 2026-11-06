@@ -198,6 +198,21 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.rematch || echo "::warning::The check of the past stopped with an error; the next run continues it."
 
+      # Medical coding of what the ingredient screen counts (collectors/coding, 0062): the MeSH headings NLM gave
+      # each literature paper of the last year, and the MeSH names in our labels and the reference labels. Once a
+      # day; a failure warns and never fails the collection (the next day continues).
+      - name: Coding
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
+        timeout-minutes: 15
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+        run: python -m collectors.coding --papers --labels || echo "::warning::Coding stopped with an error; the next day continues it."
+
       # EMA's medical literature monitoring list (which watched ingredients EMA screens itself), once a day, so
       # an ingredient added today is not shown as "not monitored by EMA" for a week. A failure warns and never
       # fails the collection; the list is matched against today's watched ingredients and stored only when that

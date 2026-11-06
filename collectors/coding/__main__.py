@@ -4,6 +4,9 @@
                                          load the newest MeSH release (the "PHAROS dictionaries" workflow)
     python -m collectors.coding --case ID   suggest the codes of one case now
     python -m collectors.coding --waiting   suggest the codes of every case asked for or read since last coded
+    python -m collectors.coding --papers    keep the MeSH headings of the literature papers (0062)
+    python -m collectors.coding --labels [--force]
+                                         find the MeSH names in our labels and the reference labels (0062)
 """
 
 from __future__ import annotations
@@ -20,9 +23,12 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.coding", description=__doc__.split("\n\n")[0])
     p.add_argument("--mesh", action="store_true", help="load the newest MeSH release")
     p.add_argument("--file", help="with --mesh: load this saved release instead of downloading it")
-    p.add_argument("--force", action="store_true", help="with --mesh: load even when the same release is loaded")
+    p.add_argument("--force", action="store_true",
+                   help="with --mesh: load even when the same release is loaded; with --labels: code every label")
     p.add_argument("--case", help="suggest the codes of this case")
     p.add_argument("--waiting", action="store_true", help="suggest the codes of every case waiting for them")
+    p.add_argument("--papers", action="store_true", help="keep the MeSH headings of the literature papers")
+    p.add_argument("--labels", action="store_true", help="find the MeSH names in the labels")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     if args.case and not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", args.case):
@@ -31,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     from collectors.core.context import install_log_redaction
 
     install_log_redaction()   # the run logs are public: no request address (a product's name) is printed
-    from collectors.coding import coder, mesh
+    from collectors.coding import coder, labels, mesh, papers
     from collectors.core.db import Db
 
     db = Db()
@@ -47,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
                 print("mesh:", mesh.load(db, force=args.force))
         if args.case or args.waiting:
             print("coding:", coder.code_waiting(db, case_id=args.case, make_reader=coder.default_reader))
+        if args.papers:
+            print("papers:", papers.code_papers(db))
+        if args.labels:
+            print("labels:", labels.code_labels(db, force=args.force))
     finally:
         db.close()
     return 0

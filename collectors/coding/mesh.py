@@ -1,4 +1,4 @@
-"""MeSH, the disease tree (C) and mental disorders (F03), loaded into ``mesh_descriptor`` and ``mesh_term``.
+"""MeSH, the disease tree (C), mental disorders (F03), suicide, self-injury and depression, loaded into ``mesh_descriptor`` and ``mesh_term``.
 
 NLM publishes one release a year (``desc<year>.gz``, the XML descriptors, about 17 MB). ``load()`` takes the newest
 release NLM serves and replaces the dictionary in one transaction when its SHA-256 differs from the one loaded.
@@ -18,8 +18,10 @@ from lxml import etree
 log = logging.getLogger("collectors.coding.mesh")
 
 URL = "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc{year}.gz"
-KEEP = ("C", "F03")          # diseases, and mental disorders
+# Diseases, mental disorders, and the behaviours a safety topic needs (suicide, self-injury; depression).
+KEEP = ("C", "F03", "F01.145.126.980", "F01.145.126.350")
 HEADERS = {"User-Agent": "PHAROS pharmacovigilance monitor (Sato Pharma)"}
+GZIP = bytes([0x1F, 0x8B])
 
 
 def parse(data: bytes) -> Iterator[dict]:
@@ -86,7 +88,9 @@ def newest(get: Any, today: date | None = None) -> tuple[int, bytes, str]:
     for y in (year, year - 1, year - 2):
         url = URL.format(year=y)
         res = get(url)
-        if res.status_code == 200 and res.content[:2] == b"\x1f\x8b":
+        # NLM labels the file Content-Encoding: x-gzip, so the client may hand back the XML unpacked.
+        body = res.content
+        if res.status_code == 200 and (body[:2] == GZIP or b"<DescriptorRecordSet" in body[:4096]):
             return y, res.content, url
         log.info("MeSH %d: not served yet (HTTP %s)", y, res.status_code)
     raise RuntimeError("NLM serves no MeSH release of the last two years")
