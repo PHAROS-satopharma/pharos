@@ -9,6 +9,7 @@ import {
   issueIdsOf,
   runningClock,
   withClockDecision,
+  withDecidedClock,
   withSent,
   withWithdrawn,
 } from './clock';
@@ -153,6 +154,18 @@ describe('the screen after a change', () => {
     const sentData = withSent(DATA, 'n1', sent);
     expect(withWithdrawn(sentData, 'n1', '2026-11-06').findings.n1).toMatchObject({ clock: 'running', days_left: 2, sent: null });
     expect(withWithdrawn(sentData, 'n1', '2026-11-12').findings.n1).toMatchObject({ clock: 'late', days_left: -4, sent: null });
+  });
+
+  it("shows the clock the database answers after a decision, also when day zero is the decision's day", () => {
+    // Audit of 6 Nov 2026: with app_setting.eda_day_zero = 'decision', Concerns us again moves day zero to the new
+    // decision's day (eda_clock, 0050); the screen kept the old due day and showed the notice late.
+    const fromDb: FindingState = { ...DATA.findings.n3, day_zero: '2026-11-09', due: '2026-11-14', days_left: 5, clock: 'running' };
+    const after = withDecidedClock(DATA, 'n3', fromDb, 'relevant', '2026-11-09');
+    expect(after.findings.n3).toEqual(fromDb);
+    expect(after.findings.n1).toBe(DATA.findings.n1);
+    // no answer (the read failed): the screen words the decision itself, from the due day it holds
+    const guessed = withDecidedClock(DATA, 'n3', null, 'relevant', '2026-11-09');
+    expect(guessed.findings.n3).toMatchObject({ clock: 'late', days_left: -3, due: '2026-11-06' });
   });
 
   it('leaves the screen alone for a notice it does not know', () => {
