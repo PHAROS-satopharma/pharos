@@ -386,6 +386,15 @@ def test_told_since_names_the_people_a_message_really_reached(store, tag):
     assert store.told_since("escalation", since, dry_run=True) == {p1, p3}
     assert store.told_since("new_items_digest", since) == set()
     assert store.told_since("escalation", datetime.now(timezone.utc) + timedelta(hours=1)) == set()
+    # a part refused after a delivered one: the reminder has not fully reached p1 until that part goes
+    store.insert_notification(person_id=p1, issue_id=None, kind="escalation", dry_run=False,
+                              tg_message_id=None, error="Too Many Requests", summary=f"reminder part 2 {tag}")
+    assert store.told_since("escalation", since) == set()
+    assert f"reminder ok {tag}" in store.delivered_texts(p1, "escalation", since)
+    assert f"reminder part 2 {tag}" not in store.delivered_texts(p1, "escalation", since)
+    store.insert_notification(person_id=p1, issue_id=None, kind="escalation", dry_run=False,
+                              tg_message_id=4244, error=None, summary=f"reminder part 2 {tag}")
+    assert store.told_since("escalation", since) == {p1}
 
 
 def test_new_item_counts_are_new_items_per_country(store, tag):
