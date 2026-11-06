@@ -215,3 +215,22 @@ def test_a_parent_class_is_shown_but_not_searched_until_switched_on(store, tag):
     row = store.db.fetchone("select relation, enabled from ingredient_class where ingredient_id = %(i)s and class_id = %(c)s",
                             {"i": ing, "c": parent})
     assert row == {"relation": "parent", "enabled": True}
+
+
+def test_a_class_kept_out_of_the_literature_is_searched_in_notices_only(store, tag):
+    """Migration 0051: ingredient_class.literature takes the class's words out of class_words (the PubMed and
+    PMC watch) and leaves them in load_terms (notices); every link starts in the literature."""
+    code = _code()
+    ing = _ingredient(store, tag, code + "01")
+    group = store.create_drug_class(code=code, name_en=f"Group {tag}", wikidata_qid=None, terms=[
+        {"lang": "en", "term": f"litword{tag}", "mode": "stem", "source": "wikidata"}])
+    store.link_ingredient_class(ing, group)
+    row = store.db.fetchone("select literature from ingredient_class where ingredient_id = %(i)s and class_id = %(c)s",
+                            {"i": ing, "c": group})
+    assert row == {"literature": True}
+    assert store.class_words("en")[f"testoxacin-{tag}"] == [f"litword{tag}"]
+    store.db.execute("update ingredient_class set literature = false where ingredient_id = %(i)s and class_id = %(c)s",
+                     {"i": ing, "c": group})
+    assert f"testoxacin-{tag}" not in store.class_words("en")
+    assert f"litword{tag}" in {t.term for t in store.load_terms() if t.class_id == group}
+    assert ing in store.class_ingredients()[group]

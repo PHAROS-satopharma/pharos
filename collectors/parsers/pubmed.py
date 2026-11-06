@@ -3,7 +3,8 @@
 Searches. Per active ingredient, each typed exactly as a person types it into the NCBI search box (unquoted, no
 field tag, so NCBI's automatic term mapping expands it as its websites do):
   name   the English INN (``ingredient.inn_en``)
-  class  each English word of the ingredient's drug classes (``class_term`` rows in English)
+  class  each English word of the ingredient's drug classes (``class_term`` rows in English) that are searched
+         and in the literature (``ingredient_class.enabled`` and ``.literature``, 0049 and 0051)
 Each search runs on ``db=pubmed`` and on ``db=pmc`` (full texts), by Entrez (entry) date, so a paper added late
 with an old publication date is still found. esearch is paged with ``retstart`` until every id is in; a window
 holding more ids than esearch serves for one search (9,999) is split in halves, and a single day over that is

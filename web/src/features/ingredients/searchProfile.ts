@@ -53,16 +53,19 @@ export interface ProfileWord {
   kind: WordKind;
   /** The class the word belongs to; null for the ingredient's own names. */
   from: string | null;
+  /** An English class word whose class is kept out of the literature search (0051): notices only. */
+  notInLiterature?: boolean;
 }
 
 export interface LinkedClass {
   cls: Pick<DrugClass, 'name_en'> & { class_term: Pick<ClassTerm, 'term' | 'lang' | 'mode'>[] };
-  link: Pick<ClassLink, 'relation' | 'enabled'>;
+  link: Pick<ClassLink, 'relation' | 'enabled'> & Partial<Pick<ClassLink, 'literature'>>;
 }
 
 /**
  * Every word PHAROS looks for: the ingredient's names first, then the words of the classes that are switched
- * on, each word once per language (the first source keeps it). A class switched off adds nothing.
+ * on, each word once per language (the first source keeps it). A class switched off adds nothing. An English word
+ * of a class kept out of the literature search is marked notInLiterature: notices only.
  */
 export function profileWords(terms: Pick<IngredientTerm, 'term' | 'lang' | 'mode'>[], classes: LinkedClass[]): ProfileWord[] {
   const seen = new Set<string>();
@@ -76,7 +79,17 @@ export function profileWords(terms: Pick<IngredientTerm, 'term' | 'lang' | 'mode
   for (const t of terms) add({ term: t.term, lang: t.lang, mode: t.mode, kind: 'name', from: null });
   for (const { cls, link } of classes) {
     if (!link.enabled) continue;
-    for (const t of cls.class_term) add({ term: t.term, lang: t.lang, mode: t.mode, kind: link.relation, from: cls.name_en });
+    const notInLiterature = link.literature === false;
+    for (const t of cls.class_term) {
+      add({
+        term: t.term,
+        lang: t.lang,
+        mode: t.mode,
+        kind: link.relation,
+        from: cls.name_en,
+        ...(notInLiterature && t.lang === 'en' ? { notInLiterature: true } : {}),
+      });
+    }
   }
   return out;
 }

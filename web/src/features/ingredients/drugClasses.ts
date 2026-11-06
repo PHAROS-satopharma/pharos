@@ -17,6 +17,11 @@ export interface ClassLink {
   relation: ClassRelation;
   /** Whether the class's words are looked for (notices, literature, the check of the past). */
   enabled: boolean;
+  /**
+   * Whether its English words are also searched on PubMed and PubMed Central (0051). Only counts while enabled;
+   * off keeps the words in notices only.
+   */
+  literature: boolean;
 }
 
 export interface ClassTerm {
@@ -44,7 +49,7 @@ export interface DrugClass {
 
 export const DRUG_CLASS_SELECT =
   'id,code,name_en,origin,confirmed_by,confirmed_at,' +
-  'class_term(id,lang,term,mode,source,changed_at,rematched_at),ingredient_class(ingredient_id,relation,enabled)';
+  'class_term(id,lang,term,mode,source,changed_at,rematched_at),ingredient_class(ingredient_id,relation,enabled,literature)';
 
 export const ORIGIN_LABEL: Record<ClassOrigin, string> = {
   atc: 'from the ATC code',

@@ -138,6 +138,7 @@ export function SearchProfile({
                       <span className="muted small">
                         {WORD_KIND_LABEL[w.kind]}
                         {w.from ? ` (${w.from})` : ''} · {MODE_LABEL[w.mode]}
+                        {w.notInLiterature ? ' · notices only, not the literature' : ''}
                       </span>
                     </span>
                   </li>
