@@ -7,7 +7,10 @@ point (DLP), the submission date, the next DLP for frequencies under a year, whe
 PSURs, and the procedure number. The readiness line on the Ingredients page and the weekly report read
 them (ingredient_readiness, migration 0045): PSUR frequency, data lock point and submission date.
 
-Run once a day with the daily collection; a list already stored (same SHA-256) is not read again.
+Run once a day with the daily collection. The list is matched against today's watched ingredients on every
+run, and the stored rows are replaced only when the list (its SHA-256) or what it gives the watched ingredients
+changed. Until 6 Nov 2026 a list already stored was not read again, so an ingredient added after EMA's last
+list had no PSUR dates (and read "not on the EURD list") until EMA published the next one.
 
     python -m collectors.eurd            # read the list and store the watched rows
     python -m collectors.eurd --file x   # read a saved copy instead (no network)
@@ -135,6 +138,22 @@ def store(db, meta: dict, matched: list[dict], *, sha: str, r2_key: str) -> int:
     return len(matched)
 
 
+def refresh(db, content: bytes, sha: str, put) -> int | None:
+    """Match the list against the active ingredients and store the result when it differs from what is stored
+    (another list, an ingredient added, watched again or retired); return how many rows were stored, or None
+    when nothing changed. ``put(content, mime)`` archives the list and returns ``(…, r2_key)``."""
+    meta, rows = parse(content)
+    ingredients = db.fetchall("select id::text as id, inn_en from ingredient where active")
+    matched = match(rows, ingredients)
+    stored = db.fetchall("select eurd_id, ingredient_id::text as ingredient_id, sha256 from eurd_entry")
+    pairs = {(int(r["eurd_id"]), str(r["ingredient_id"])) for r in stored}
+    if (all(r["sha256"] == sha for r in stored)
+            and pairs == {(int(m["eurd_id"]), str(m["ingredient_id"])) for m in matched}):
+        return None
+    _, key = put(content, MIME)
+    return store(db, meta, matched, sha=sha, r2_key=key)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.eurd", description=__doc__.split("\n\n")[0])
     p.add_argument("--file", help="read this saved copy instead of downloading the list")
@@ -157,16 +176,11 @@ def main(argv: list[str] | None = None) -> int:
     sha = sha256_hex(content)
     db = Db()
     try:
-        last = db.fetchone("select sha256 from eurd_entry limit 1")
-        if last and last["sha256"] == sha:
-            log.info("EURD list unchanged (%s); nothing to do", sha[:12])
-            return 0
-        meta, rows = parse(content)
-        _, key = Archive().put(content, MIME)
-        ingredients = db.fetchall("select id::text as id, inn_en from ingredient where active")
-        n = store(db, meta, match(rows, ingredients), sha=sha, r2_key=key)
-        log.info("EURD list %s (%s): %d rows, %d for watched ingredients", meta["version"], meta["list_date"],
-                 len(rows), n)
+        n = refresh(db, content, sha, Archive().put)
+        if n is None:
+            log.info("EURD list unchanged (%s) and the watched ingredients' rows with it; nothing to do", sha[:12])
+        else:
+            log.info("EURD list %s: %d row(s) stored for the watched ingredients", sha[:12], n)
         return 0
     finally:
         db.close()
