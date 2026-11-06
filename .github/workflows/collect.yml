@@ -6,7 +6,8 @@
 #   daily    02:31                       drug classes from the ATC code (a manual run can choose "classes" to run
 #                                        only that step); large JSON files (EMA medicines, Health
 #                                        Canada recalls …) and NCBI literature (PubMed and PubMed Central); the
-#                                        EURD list; the check of the past (15 minutes)
+#                                        EURD list; the check of the past (15 minutes); coding and the papers'
+#                                        open full text (Unpaywall)
 #   literature  10:41 and 18:41          the daily run's drug classes, NCBI literature (the enabled sources of
 #                                        kind literature) and check of the past again, so a new ingredient is
 #                                        ready within hours, not the next night; short when nothing is waiting
@@ -212,6 +213,18 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
         run: python -m collectors.coding --papers --labels || echo "::warning::Coding stopped with an error; the next day continues it."
+
+      # Legal open-access full text (collectors/fulltext.py, 0068): the DOI of each literature paper of the last year
+      # that has none yet (PubMed, every 30 days at most), then Unpaywall for each paper with a DOI not asked yet, or
+      # asked over 30 days ago without an open copy. At most 2,000 lookups and 11 minutes a run; what is left waits for
+      # the next day. A failure warns and never fails the collection.
+      - name: Open full text
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
+        timeout-minutes: 15
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+        run: python -m collectors.fulltext || echo "::warning::The open full-text lookups stopped with an error; the next day continues them."
 
       # EMA's medical literature monitoring list (which watched ingredients EMA screens itself), once a day, so
       # an ingredient added today is not shown as "not monitored by EMA" for a week. A failure warns and never

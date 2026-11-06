@@ -237,6 +237,12 @@
   font-size: 13px;
 }
 
+.scr-free-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ───────── her pages and what the app reads ───────── */
 .scr-more {
   margin-top: 12px;

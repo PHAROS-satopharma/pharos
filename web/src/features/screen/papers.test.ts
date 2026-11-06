@@ -4,8 +4,10 @@ import {
   caseReportLabel,
   chunk,
   dueLine,
+  licenceWords,
   mergePaperPages,
   mlmLabel,
+  openAccessTag,
   orderPapers,
   paperIssueIds,
   withPaperDecision,
@@ -130,5 +132,36 @@ describe("EMA's literature monitoring", () => {
     expect(mlmLabel(false)?.label).toBe('Not monitored by EMA');
     expect(mlmLabel(false)?.explain).toMatch(/ours to report/);
     expect(mlmLabel(undefined)).toBeNull();
+  });
+});
+
+describe('a free full text', () => {
+  it('names the licence as people say it', () => {
+    expect(licenceWords('cc-by')).toBe('CC BY');
+    expect(licenceWords('cc-by-nc-nd')).toBe('CC BY-NC-ND');
+    expect(licenceWords('cc0')).toBe('CC0');
+    expect(licenceWords('pd')).toBe('public domain');
+    expect(licenceWords('publisher-specific-oa')).toBe("publisher's open licence");
+    expect(licenceWords(null)).toBe('licence not stated');
+    expect(licenceWords('elsevier-specific: oa user license')).toBe('elsevier-specific: oa user license');
+  });
+
+  it('tags the link with the licence and the version', () => {
+    const tag = openAccessTag({
+      url: 'https://europepmc.org/articles/PMC1',
+      license: 'cc-by',
+      version: 'accepted',
+      host_type: 'repository',
+    });
+    expect(tag.label).toBe('CC BY · accepted manuscript');
+    expect(tag.explain).toBe(
+      'A legal open copy found by Unpaywall, at a repository (accepted manuscript). Check the licence before reusing it.',
+    );
+    expect(openAccessTag({ url: 'https://x.test/', license: null, version: null, host_type: null }).label).toBe(
+      'licence not stated',
+    );
+    expect(openAccessTag({ url: 'https://x.test/', license: null, version: 'submitted', host_type: 'publisher' }).label).toBe(
+      'licence not stated · preprint',
+    );
   });
 });

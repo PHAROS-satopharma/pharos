@@ -307,13 +307,16 @@ class FetchContext:
     def __init__(self, db: "Db | None", run_id: str, *, backfill: bool = False,
                  archive: Archive | None = None, dry_run: bool = False,
                  transport: httpx.BaseTransport | None = None,
-                 host_gap_s: float = HOST_GAP_S, public_only: bool = False) -> None:
+                 host_gap_s: float = HOST_GAP_S, public_only: bool = False,
+                 max_bytes: int = MAX_BYTES) -> None:
         self.db = db
         self.run_id = run_id
         self.backfill = backfill
         self.dry_run = dry_run
         self.archiver = archive if archive is not None else Archive()
         self.host_gap_s = host_gap_s
+        # A response larger than this is refused while it is read (an open-access PDF gets a smaller limit).
+        self.max_bytes = max_bytes
         # Refuse hosts that are not on the public internet (see the module docstring); the resolver is
         # replaceable so tests never reach real DNS.
         self.public_only = public_only
@@ -429,14 +432,14 @@ class FetchContext:
 
     def _read(self, method: str, url: str, hdrs: dict, data: dict | None,
               json: Any) -> tuple[httpx.Response, bytes]:
-        """One request, its body read in full (refused past MAX_BYTES)."""
+        """One request, its body read in full (refused past ``max_bytes``)."""
         with self._client.stream(method, url, headers=hdrs, data=data, json=json) as resp:
             chunks: list[bytes] = []
             total = 0
             for chunk in resp.iter_bytes():
                 total += len(chunk)
-                if total > MAX_BYTES:
-                    raise FetchError(resp.status_code, url, f"response over {MAX_BYTES} bytes")
+                if total > self.max_bytes:
+                    raise FetchError(resp.status_code, url, f"response over {self.max_bytes} bytes")
                 chunks.append(chunk)
         return resp, b"".join(chunks)
 
