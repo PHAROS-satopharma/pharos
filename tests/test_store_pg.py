@@ -658,3 +658,44 @@ def test_a_pack_request_that_fails_keeps_its_reason(store, tag):
     # a failed request never waits again: asking again makes a new one
     assert rid not in {r["id"] for r in store.db.fetchall(
         "select id::text as id from report_request where status in ('queued', 'building')")}
+
+
+class _RollBack(Exception):
+    """Raised to undo a test's rows that cannot be deleted (a signature, an audit row)."""
+
+
+def test_a_signed_signal_matches_in_the_inspection_pack(store, tag):
+    """The inspection pack's signatures read each record's fingerprint now on the collector's connection (no
+    session, so record_fingerprint() is null there): its SQL must compute a signal's exactly as 0048 does."""
+    from collectors import report_pack as rp
+
+    db = store.db
+    try:
+        with db.transaction():
+            who = _person(store, tag, "Signer", role="admin")
+            sig = db.fetchone(
+                """insert into signal (ref, title, opened_by, validation_due)
+                   values (%(r)s, %(t)s, %(p)s::uuid, current_date + 30) returning id::text as id""",
+                {"r": f"SIG-T-{tag}", "t": f"Test signal {tag}", "p": who})["id"]
+            db.execute("""insert into signal_event (signal_id, step, to_stage, person_id)
+                          values (%(s)s::uuid, 'opened', 'validation', %(p)s::uuid)""", {"s": sig, "p": who})
+            # the fingerprint a signer signs: record_fingerprint() in the CI Admin's session
+            db.execute("""select set_config('request.jwt.claims',
+                            '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true)""")
+            fp = db.fetchone("select record_fingerprint('signal', %(s)s::uuid) as fp", {"s": sig})["fp"]
+            db.execute("select set_config('request.jwt.claims', '', true)")
+            assert fp and len(fp) == 64
+            db.execute(
+                """insert into sign_off (record_kind, record_id, record_sha256, meaning, person_id, signed_name,
+                                         signed_role)
+                   values ('signal', %(s)s::uuid, %(fp)s, 'approved', %(p)s::uuid, 'Signer', 'admin')""",
+                {"s": sig, "fp": fp, "p": who})
+            now = datetime.now(timezone.utc)
+            rows = db.fetchall(rp.SIGNATURES_SQL, {"a": now - timedelta(hours=1), "b": now + timedelta(hours=1)})
+            mine = [r for r in rows if r["record_id"] == sig]
+            assert len(mine) == 1
+            assert mine[0]["signal_ref"] == f"SIG-T-{tag}"
+            assert mine[0]["fingerprint_now"] == fp, "a signal signed and unchanged must match its signature"
+            raise _RollBack
+    except _RollBack:
+        pass

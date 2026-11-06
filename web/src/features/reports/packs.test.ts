@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   daysLabel,
   daysProblem,
+  kindOptions,
   lastTwelveMonths,
   newestFirst,
   packFileName,
   packLabel,
+  packsFor,
   psurDays,
   statusText,
   stillWaiting,
@@ -108,5 +110,20 @@ describe('a request in words', () => {
     expect(newestFirst(rows).map((r) => r.id)).toEqual(['b', 'a']);
     expect(stillWaiting(rows)).toBe(true);
     expect(stillWaiting([rows[0]])).toBe(false);
+  });
+});
+
+describe('inspection packs are for administrators only', () => {
+  it('offers the inspection pack to an administrator only', () => {
+    expect(kindOptions(true).map((o) => o.value)).toEqual(['psur', 'inspection']);
+    expect(kindOptions(false).map((o) => o.value)).toEqual(['psur']);
+  });
+  it('lists only PSUR packs to a reviewer or a reader', () => {
+    const rows = [
+      { id: 'a', kind: 'psur' as const },
+      { id: 'b', kind: 'inspection' as const },
+    ];
+    expect(packsFor(rows, true).map((r) => r.id)).toEqual(['a', 'b']);
+    expect(packsFor(rows, false).map((r) => r.id)).toEqual(['a']);
   });
 });

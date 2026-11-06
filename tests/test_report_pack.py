@@ -335,7 +335,14 @@ class InspectionDb:
                      "record_id": "rq-1", "meaning": "reviewed", "signed_name": "Mona Adel",
                      "signed_role": "reviewer", "comment": "Read", "record_sha256": GOOD, "week_start": None,
                      "pack_kind": "psur", "from_day": date(2024, 1, 1), "to_day": date(2025, 12, 31), "month": None,
-                     "signal_ref": None, "fingerprint_now": "b" * 64}]
+                     "signal_ref": None, "fingerprint_now": "b" * 64},
+                    # a signal reads its fingerprint now only when the SQL has a branch for signals
+                    {"signed_at": datetime(2026, 7, 2, 9, tzinfo=UTC), "record_kind": "signal",
+                     "record_id": "sg-1", "meaning": "approved", "signed_name": "Sama Hassan",
+                     "signed_role": "admin", "comment": None, "record_sha256": GOOD, "week_start": None,
+                     "pack_kind": None, "from_day": None, "to_day": None, "month": None,
+                     "signal_ref": "SIG-2026-001",
+                     "fingerprint_now": GOOD if "when 'signal' then" in sql else None}]
         if "from authority_report ar" in sql:
             assert "withdrawn_at is null" not in sql            # a withdrawn report is evidence too
             return [{"sent_on": date(2026, 6, 8), "authority": "EDA", "reference": "EDA/2026/0042", "note": None,
@@ -373,8 +380,10 @@ def test_an_inspection_pack_holds_the_evidence_of_the_days():
     db, data = _inspection()
     assert [(c["country"], c["status"]) for c in data["coverage"]] == [
         ("Germany", "Read by the app"), ("Italy", "Not read by the app — open it yourself")]
-    assert [s["state"] for s in data["signatures"]] == ["Matches the file", "File changed since signing"]
+    assert [s["state"] for s in data["signatures"]] == ["Matches the file", "File changed since signing",
+                                                       "Matches the file"]
     assert data["signatures"][1]["record"] == "PSUR pack, 1 Jan 2024 – 31 Dec 2025"
+    assert data["signatures"][2]["record"] == "Signal SIG-2026-001"
     assert data["sent"][1]["withdrawn"].startswith("Withdrawn 9 Jun 2026, 15:00 by Sama Hassan: Sent twice")
     assert data["weekly"][0]["signed"] == ("Approved by Sama Hassan (Administrator), 8 Jun 2026, 12:00 — "
                                            "Matches the file")
@@ -484,6 +493,16 @@ def test_an_inspection_pack_is_made(env):
     assert [n["person_id"] for n in store.notification] == ["p-adm"]
 
 
+def test_an_inspection_pack_is_told_to_administrators_only(env):
+    store = env["store"]
+    # asked for before the reviewer's right was taken away: the reviewer is not told
+    store.add_report_request("inspection", INSP_REQ["from_day"], INSP_REQ["to_day"], "p-rev")
+    out = rp.fulfil_requests(InspectionDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert out["status"] == "done"
+    assert [n["person_id"] for n in store.notification] == ["p-adm"]
+    assert "pack ready" in store.notification[0]["summary"]
+
+
 def test_a_pack_out_of_time_waits_for_the_next_run_then_fails_after_three(env):
     store = env["store"]
     rid = _ask(store)
@@ -556,6 +575,8 @@ def test_packs_are_built_last_in_every_collection_run_but_never_stop_it():
     assert "python -m collectors.report_pack --waiting" in wf
     step = wf[wf.index("- name: Packs on request"):]
     assert "if: ${{ !cancelled()" in step.split("run:")[0]
+    # a dry run never takes a real request: it would mark it done with nothing archived
+    assert "&& !inputs.dry_run" in step.split("run:")[0]
     assert "timeout-minutes: 20" in step.split("run:")[0]
     assert "python -m collectors.report_pack" in step
     assert "::warning" in step                                  # a pack never fails the run
