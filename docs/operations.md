@@ -499,19 +499,40 @@ keeps that clock (migrations 0041 and 0050) per notice:
 - **The weekly report** adds "Reported to the authority this week" and "Due to the authority: N (M late)" to the
   summary and the columns *Due* and *Sent* (date · reference) to the decisions table.
 
-## Electronic sign-off
+## Inspection evidence
 
-- **Who signs what.** Nothing is signed in the app now. The weekly report is not signed in the app: it goes
-  into the SOP and the pharmacovigilance system master file. The monthly reports signed before November 2026
-  and the signals signed until the Signals screen was removed keep their signatures in `sign_off`.
+What an inspector can be shown for any week (0046, 0047; the Reports page).
+
+- **The files and their SHA-256.** Reports → Weekly reports lists every week with its PDF and Excel file and the
+  SHA-256 of each, as stored on the `weekly_report` row when the file was archived (`reports/weekly/…`, locked in
+  R2). The page shows the first and last eight characters; **Copy** copies the full value (where the browser
+  refuses the clipboard, the full value is shown to select by hand). The copy kept in the SOP or the
+  pharmacovigilance system master file is checked with `sha256sum <file>` (Linux, macOS) or
+  `certutil -hashfile <file> SHA256` (Windows): the same 64 characters mean the same file.
+- **Who signs.** A reviewer or an administrator signs a weekly report: "I have reviewed this report" (Reviewed)
+  or "I approve this report" (Approved); an administrator is offered Approved first, a reviewer Reviewed. A reader
+  sees the signatures and cannot sign. The monthly reports (administrators only) and the signals signed before
+  November 2026 keep their signatures in `sign_off`. Packs (PSUR, inspection) are signed once they are made:
+  until then `record_fingerprint('pack', …)` and `sign_record('pack', …)` answer "not yet".
 - **How.** The signer chooses what the signature means, types their password and may add a comment. The page
   signs in again with that password; `sign_record()` accepts the signature only when the token shows a password
   sign-in in the last five minutes, and stores the name and role at that moment, the meaning, the database
-  time and `record_fingerprint()` — the SHA-256 of the report's two files, or of the signal with its steps and
-  notices.
+  time and `record_fingerprint()` — for a weekly report the SHA-256 of `pdf_sha256 || ':' || xlsx_sha256` (as
+  the monthly report), for a signal the SHA-256 of the signal with its steps and notices. Someone who signs in
+  by e-mail link sets a password first under *My account*.
+- **What a signature proves.** That this person, with this role, chose this meaning at this database time for
+  these exact two files: the stored fingerprint is computed from the two file hashes, which are the hashes of
+  the locked files in R2. Under each signature the page says **Fingerprint matches** while the row still points
+  at those files, or **File changed since signing** when the week was made again (a new `-r2` file and new
+  hashes); the week can then be signed again, and the old signature stays.
 - **Never changed.** `sign_off` is append-only (a trigger refuses any update or delete, even by the database
-  owner). When a record changes after it was signed — a report made again, a signal reopened — the page marks
-  the signature "The record changed after this signature" and the record can be signed again.
+  owner). `audit_log` too (0046): a row trigger refuses every update and delete, a statement trigger every
+  truncate, for every role including the owner, and no API role holds those rights. Nothing in PHAROS ever
+  changed or removed an audit row; only a migration that drops the trigger could, and it would be in the
+  repository history.
+- **The archive check.** `db-backup.yml` verify-archive (Sundays 00:43 UTC) re-hashes 50 random originals and
+  10 random report files (the weekly and monthly PDF and Excel under `reports/`) against the database, checks
+  that an overwrite is refused, and records the result in `archive_check`.
 
 ## NCBI literature (PubMed and PubMed Central)
 

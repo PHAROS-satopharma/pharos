@@ -1,0 +1,231 @@
+/* Inspection evidence on the Reports page: each weekly report as a card with its two files, their SHA-256,
+   and the electronic signatures. Flat colour, square corners, 1px rules, tokens only. Phone first: everything
+   stacks in one column with 44px targets; from 760px the file rows and the form widen. */
+
+/* ───────── the weekly reports ───────── */
+.weekly-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+.weekly-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px 0 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.weekly-head .report-month {
+  overflow-wrap: anywhere;
+}
+
+/* ───────── the files and their SHA-256 ───────── */
+.evidence-files {
+  display: grid;
+  gap: 8px;
+}
+.evidence-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.evidence-download {
+  min-height: 44px;
+  min-width: 88px;
+}
+.evidence-hash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.evidence-hash-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.evidence-hash-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+}
+.evidence-copy.btn {
+  min-height: 44px;
+  min-width: 64px;
+}
+.evidence-hash-full {
+  flex-basis: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+/* ───────── the signatures ───────── */
+.signoff {
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.signoff-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.signoff-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.signoff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.signoff-item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0 8px 10px;
+  border-left: 1px solid var(--rule);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.signoff-item + .signoff-item {
+  margin-top: 8px;
+}
+.signoff-who,
+.signoff-what,
+.signoff-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.signoff-role,
+.signoff-what {
+  color: var(--muted);
+}
+.signoff-meaning {
+  color: var(--text);
+  font-weight: 600;
+}
+.signoff-state {
+  font-size: 12.5px;
+}
+.signoff-state .mono {
+  color: var(--muted);
+}
+.signoff-state-matches {
+  color: var(--sea);
+}
+.signoff-state-changed {
+  color: var(--danger);
+  font-weight: 600;
+}
+.signoff-state-unknown {
+  color: var(--muted);
+}
+.signoff-comment {
+  margin-top: 2px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.signoff-actions {
+  margin-top: 12px;
+}
+.signoff-actions .btn {
+  min-height: 44px;
+  width: 100%;
+}
+
+/* ───────── the signature form ───────── */
+.signoff-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.signoff-form-what {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+.signoff-meanings {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.signoff-meanings legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+.signoff-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  cursor: pointer;
+}
+.signoff-choice:hover {
+  border-color: var(--muted);
+}
+.signoff-choice.is-selected {
+  border-color: var(--text);
+  background: var(--surface-2);
+}
+.signoff-choice input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--text);
+}
+.signoff-form .field {
+  min-height: 44px;
+}
+.signoff-form-actions {
+  display: grid;
+  gap: 8px;
+}
+.signoff-form-actions .btn {
+  min-height: 44px;
+  width: 100%;
+}
+
+@media (min-width: 760px) {
+  .evidence-files {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 24px;
+  }
+  .signoff-actions .btn {
+    width: auto;
+  }
+  .signoff-form {
+    max-width: 36rem;
+  }
+  .signoff-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .signoff-form-actions .btn {
+    width: auto;
+  }
+}
