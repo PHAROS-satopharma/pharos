@@ -8,7 +8,8 @@
 --
 -- 1. ingredient_readiness(p_ingredient) returns jsonb: what has run and what is still to come, in facts the
 --    screen and the report turn into her words. Ready when the ingredient has a name in at least one
---    language, class words (or no ATC code, so no class to wait for), its check of the past is done, NCBI's
+--    language, its drug class is made (or no ATC code, so no class to wait for), its check of the past is
+--    done (its names and the words of the classes searched; a class switched off by 0049 waits for nothing), NCBI's
 --    look-back has finished for every expected search, every watched country's label watch has read since
 --    the ingredient was added (a watch that read and found no label is an answer), and at least one person
 --    with Telegram linked is subscribed to it (to every ingredient, or to this one). The Japan code, the
@@ -33,7 +34,8 @@ create or replace function ingredient_readiness(p_ingredient uuid) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
   v_ing        ingredient%rowtype;
-  v_classes    uuid[];
+  v_linked     int;         -- classes linked to it, searched or not
+  v_classes    uuid[];      -- the linked classes whose words are searched
   v_words      text[];      -- the English words NCBI searches: the name and the English class words
   v_names      jsonb;
   v_class      jsonb;
@@ -51,8 +53,13 @@ begin
   if not found then
     raise exception 'That ingredient is not on the watchlist.' using errcode = 'P0002';
   end if;
+  -- Every class linked to it (made from the ATC code by the daily run, or given by hand), and of them the ones
+  -- whose words are searched: a class switched off in its search profile (0049, ingredient_class.enabled; the
+  -- class above its group starts off) is searched nowhere, so nothing is waited for on its words. The column is
+  -- 0049's: PL/pgSQL reads it when the function runs, so 0045 can be applied before or after 0049.
+  select count(*) into v_linked from ingredient_class ic where ic.ingredient_id = p_ingredient;
   select coalesce(array_agg(ic.class_id), '{}') into v_classes
-    from ingredient_class ic where ic.ingredient_id = p_ingredient;
+    from ingredient_class ic where ic.ingredient_id = p_ingredient and ic.enabled;
 
   -- names: a name in how many of the languages the authorities write in (a code is not a name)
   with langs as (
@@ -67,10 +74,10 @@ begin
                                  where l.lang not in (select lang from named)), '[]'::jsonb))
     into v_names;
 
-  -- class: the classes made from the ATC code (or added by hand) and their words
+  -- class: the classes linked to it (made from the ATC code or added by hand), and the words of those searched
   select jsonb_build_object(
            'atc',       v_ing.atc_code is not null,
-           'classes',   cardinality(v_classes),
+           'classes',   v_linked,
            'words',     (select count(*) from class_term ct where ct.class_id = any (v_classes)),
            'confirmed', coalesce((select bool_and(dc.confirmed_at is not null) from drug_class dc
                                    where dc.id = any (v_classes)), false))
@@ -162,7 +169,7 @@ begin
     into v_telegram;
 
   v_ready := (v_names ->> 'languages_with_a_name')::int >= 1
-         and (not (v_class ->> 'atc')::boolean or (v_class ->> 'words')::int > 0)
+         and (not (v_class ->> 'atc')::boolean or v_linked > 0)
          and (v_past ->> 'done')::boolean
          and (v_ncbi ->> 'look_back_done')::boolean
          and ((v_labels ->> 'products')::int > 0 or v_labels -> 'waiting' = '[]'::jsonb)

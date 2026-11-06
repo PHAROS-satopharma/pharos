@@ -45,7 +45,7 @@ export function countryList(countries: string[]): string {
 export function readinessItems(r: Readiness): string[] {
   const items: string[] = [];
   if (r.names.languages_with_a_name === 0) items.push('no name to look for yet');
-  if (r.class.atc && r.class.words === 0) items.push('class words tonight');
+  if (r.class.atc && r.class.classes === 0) items.push('class words tonight');
   if (!r.past_check.done) items.push(r.past_check.job_running ? 'check of the past running' : 'check of the past tonight');
   if (!r.ncbi.look_back_done) items.push(r.ncbi.searches > 0 ? 'NCBI look-back running' : 'NCBI look-back tonight');
   if (r.label_watch.products === 0 && r.label_watch.waiting.length > 0) {

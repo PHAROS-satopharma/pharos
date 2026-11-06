@@ -422,7 +422,9 @@ ingredient_readiness(p_ingredient uuid) returns jsonb
   -- authenticated only (revoked from public and anon). One answer for the Ingredients page and the weekly report:
   -- {names:       {languages_with_a_name, of, missing: [lang]},      -- kind 'code' is not a name; of = every
   --                                                                 -- language of every regulator
-  --  class:       {atc, classes, words, confirmed},                 -- words = class_term rows of its classes
+  --  class:       {atc, classes, words, confirmed},                 -- classes = every linked class; words, the
+  --                                                                 -- past check and NCBI count only the classes
+  --                                                                 -- searched (ingredient_class.enabled, 0049)
   --  past_check:  {done, words_due, job_running},                   -- due: rematched_at null or < changed_at
   --  ncbi:        {searches, expected, look_back_done, last_run},   -- expected = 2 × (name ∪ English class words)
   --  label_watch: {products, by_source: {<source_id>: {country, regulator, products, read}},
@@ -434,14 +436,15 @@ ingredient_readiness(p_ingredient uuid) returns jsonb
   --  ema_mlm:     {monitored},
   --  telegram:    {people: [full_name]},   -- active, telegram linked, subscription 'ingredient' for all or this one
   --  ready}
-  -- ready = a name in ≥1 language ∧ (no ATC ∨ words > 0) ∧ past_check.done ∧ ncbi.look_back_done
+  -- ready = a name in ≥1 language ∧ (no ATC ∨ classes > 0) ∧ past_check.done ∧ ncbi.look_back_done
   --         ∧ (products > 0 ∨ waiting = []) ∧ telegram.people ≥ 1.  japan_code, eurd and ema_mlm never hold it back.
 subscription (Dr Sama, kind 'ingredient', ingredient_id null)  -- inserted by 0045 by her address, once (as 0033)
 ```
 
 Her words, shared by `web/src/features/ingredients/readiness.ts` and `collectors/report_weekly.py`
 (`readiness_items`, `readiness_text`; `tests/test_report_weekly.py` holds both to the same phrases): `Ready`, or
-`Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words tonight`,
+`Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words tonight`
+(an ATC code and no class yet),
 `check of the past running` | `tonight`, `NCBI look-back running` | `tonight`, `label watch on Monday (A, B)`
 (up to three country names, else `n countries`), `nobody receives its Telegram messages yet`.
 

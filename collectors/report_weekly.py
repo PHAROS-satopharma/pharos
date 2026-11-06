@@ -467,7 +467,7 @@ def readiness_items(r: dict) -> list[str]:
     items = []
     if int(names.get("languages_with_a_name") or 0) == 0:
         items.append("no name to look for yet")
-    if cls.get("atc") and int(cls.get("words") or 0) == 0:
+    if cls.get("atc") and int(cls.get("classes") or 0) == 0:
         items.append("class words tonight")
     if not past.get("done"):
         items.append("check of the past running" if past.get("job_running") else "check of the past tonight")

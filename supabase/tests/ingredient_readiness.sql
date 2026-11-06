@@ -203,6 +203,22 @@ select pg_temp.ir_assert(
 select pg_temp.ir_assert(pg_temp.ir('ready') -> 'telegram' -> 'people' = '["CI Reviewer"]'::jsonb,
   'Telegram: only the people with Telegram linked and a subscription covering it (every ingredient, or this one)');
 
+-- ───────────── the class above its group, switched off in its search profile (0049): nothing waits on it ─────────────
+insert into drug_class (id, code, name_en, origin) values
+  ('00000000-0000-0000-0000-00000045d002', 'Z95Z', 'CI readyparents', 'atc');
+insert into class_term (id, class_id, lang, term) values
+  ('00000000-0000-0000-0000-00000045d201', '00000000-0000-0000-0000-00000045d002', 'en', 'ci readyparents');
+insert into ingredient_class (ingredient_id, class_id, relation, enabled) values
+  ('00000000-0000-0000-0000-00000045a001', '00000000-0000-0000-0000-00000045d002', 'parent', false);
+select pg_temp.ir_read('parent');
+select pg_temp.ir_assert(
+  (pg_temp.ir('parent') ->> 'ready')::boolean
+    and (pg_temp.ir('parent') -> 'class' ->> 'classes')::int = 2
+    and (pg_temp.ir('parent') -> 'class' ->> 'words')::int = 2
+    and (pg_temp.ir('parent') -> 'past_check' ->> 'words_due')::int = 0
+    and (pg_temp.ir('parent') -> 'ncbi' ->> 'expected')::int = 4,
+  'a class switched off is linked but not searched: its words wait for no check of the past and no NCBI search');
+
 -- ───────────── the label watch answered, and found nothing: still ready; a country not yet read: not ─────────────
 delete from spc_product where id = '00000000-0000-0000-0000-00000045b001';
 select pg_temp.ir_read('nolabel');

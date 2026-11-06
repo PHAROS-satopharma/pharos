@@ -303,7 +303,7 @@ messages* (admins only):
 Nothing more is asked of her after Save. Each ingredient's row on the Ingredients page says how far the
 preparation has got, and the weekly report repeats it in section 1 (migration 0045, `ingredient_readiness()`):
 
-- **Ready** when the ingredient has a name in at least one language, its class words exist (or it has no ATC
+- **Ready** when the ingredient has a name in at least one language, its drug class is made (or it has no ATC
   code, so no class), its check of the past is done, NCBI's 12-month look-back has finished for every expected
   search, every watched country's label watch has read since it was added (a watch that read and found no label
   is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
