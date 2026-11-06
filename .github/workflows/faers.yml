@@ -1,4 +1,4 @@
-# PHAROS — FDA adverse-event report counts (collectors/faers.py, migration 0065). openFDA counts the reports of the
+# PHAROS — FDA adverse-event report counts (collectors/faers.py, migration 0071). openFDA counts the reports of the
 # FDA Adverse Event Reporting System (FAERS) for every active ingredient: the reports per quarter for the last 8
 # complete quarters, the most reported reactions, and every drug's for comparison. FAERS changes once a quarter, so
 # this runs weekly and an ingredient counted in the last 6 days is left; "force" counts every ingredient again. Only

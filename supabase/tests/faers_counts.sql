@@ -1,4 +1,4 @@
--- PHAROS CI — FDA adverse-event report counts (0065): ingredient_faers() with its quarters and the label tag, and who
+-- PHAROS CI — FDA adverse-event report counts (0071): ingredient_faers() with its quarters and the label tag, and who
 -- may read and write them. Runs after every migration and the acceptance checks in ci.yml, on the same database: the
 -- people CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3) exist. Everything here is rolled back.
 begin;

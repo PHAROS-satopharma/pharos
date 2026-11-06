@@ -117,7 +117,7 @@ const LISTED: Record<Exclude<Listed, null>, { label: string; tone: 'success' | '
 };
 
 /**
- * Section 06 of the Ingredients screen: FDA adverse event reports (ingredient_faers, 0065). The reports to the FDA
+ * Section 06 of the Ingredients screen: FDA adverse event reports (ingredient_faers, 0071). The reports to the FDA
  * Adverse Event Reporting System that name the ingredient, counted by openFDA for the last 8 complete quarters
  * (collectors/faers.py, weekly): the most reported reactions, the newest quarter and the whole period, how much more
  * often each is reported with this ingredient than with every other drug (PRR), and whether our label lists it.

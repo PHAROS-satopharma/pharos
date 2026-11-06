@@ -904,7 +904,7 @@ label, not a finding that the reaction is unexpected.
 ## FDA adverse event reports (FAERS)
 
 Section *06 FDA adverse event reports* of the Ingredients screen counts the reports to the FDA Adverse Event
-Reporting System (FAERS) that name the ingredient (migration 0065). The weekly workflow *PHAROS FAERS counts*
+Reporting System (FAERS) that name the ingredient (migration 0071). The weekly workflow *PHAROS FAERS counts*
 (`faers.yml`, Wednesday 04:13 Cairo; `python -m collectors.faers`) asks openFDA (`api.fda.gov/drug/event.json`) to
 count them; no report is downloaded, only numbers come back, and the log names no ingredient.
 

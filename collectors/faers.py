@@ -1,4 +1,4 @@
-"""FDA adverse-event report counts per watched ingredient (openFDA FAERS, migration 0065).
+"""FDA adverse-event report counts per watched ingredient (openFDA FAERS, migration 0071).
 
     python -m collectors.faers [--force] [--ingredient ID] [--minutes 45]
 

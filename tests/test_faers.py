@@ -1,4 +1,4 @@
-"""FDA adverse-event report counts (collectors/faers.py, migration 0065), with a fake openFDA: no network."""
+"""FDA adverse-event report counts (collectors/faers.py, migration 0071), with a fake openFDA: no network."""
 
 from __future__ import annotations
 
