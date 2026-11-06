@@ -39,7 +39,7 @@ def load(name: str) -> dict:
 
 RECORDS: dict[str, dict] = {"pubmed": {}, "pmc": {}}
 for _db, _names in {"pubmed": ["esummary-pubmed-levofloxacin.json", "esummary-pubmed-fluoroquinolones.json",
-                               "esummary.json"],
+                               "esummary.json", "esummary-pubmed-pmc-only-levofloxacin.json"],
                     "pmc": ["esummary-pmc-levofloxacin.json"]}.items():
     for _n in _names:
         _res = load(_n)["result"]
@@ -230,8 +230,47 @@ def test_a_paper_in_both_databases_is_one_item_with_both_links(tmp_path):
     assert not any(i.structured["class_only"] or i.structured["look_back"] for i in items)
     assert all(i.doc_type == "literature" for i in items)
     assert pubmed.aliases(by_id["42979212"]) == ["PMC13730105"] and pubmed.aliases(no_pmid) == []
-    # every PMC record in one batch, no PubMed record asked for twice
-    assert [c["db"] for c in ncbi.esummaries()] == ["pubmed", "pmc"]
+    # every PMC record in one batch, then PubMed once more for the types of the papers PMC alone found
+    assert [c["db"] for c in ncbi.esummaries()] == ["pubmed", "pmc", "pubmed"]
+    ctx.close()
+
+
+# ───────────────────────────── case reports ─────────────────────────────
+
+def test_the_case_report_flag():
+    assert pubmed.case_report(["Journal Article", "Case Reports"], "Hepatitis after X") == {"reason": "pubtype"}
+    assert pubmed.case_report(["Journal Article"], "Rash with X: a case of DRESS") == {"reason": "title"}
+    assert pubmed.case_report(None, "A CASE SERIES of tendon ruptures") == {"reason": "title"}
+    assert pubmed.case_report(["Case Reports"], "x: a case report") == {"reason": "pubtype"}   # the type wins
+    assert pubmed.case_report(["Journal Article"], "Showcase reports from the clinic") is None  # whole words
+    assert pubmed.case_report([], "A cohort study of X") is None
+    assert pubmed.case_report(None, "") is None
+
+
+def test_a_paper_pmc_alone_found_gets_its_pubmed_type_and_the_case_report_flag(tmp_path, monkeypatch):
+    monkeypatch.setattr(pubmed, "SUMMARY_BATCH", 20)
+    ncbi = Ncbi(LEVO)
+    ctx = context(tmp_path, ncbi)
+    items = pubmed.list_items(ctx, source(terms=["levofloxacin"], page_size=2))
+    by_id = {i.external_id: i for i in items}
+    # the PMC search alone found it; its PubMed record gives the publication type
+    prostatic = by_id["42979430"].structured
+    assert prostatic["found_in"] == ["pmc"] and prostatic["pubtype"] == ["Case Reports", "Journal Article"]
+    assert prostatic["case_report"] == {"reason": "pubtype"}
+    assert by_id["42979430"].url == "https://pmc.ncbi.nlm.nih.gov/articles/PMC13729746/"   # still the full text
+    assert by_id["42979440"].structured["pubtype"] == ["Journal Article", "Review"]
+    assert by_id["42979440"].structured["case_report"] is None
+    # not in PubMed yet: no type, so its title says it
+    assert by_id["PMC13727276"].structured["pubtype"] is None
+    assert by_id["PMC13727276"].structured["case_report"] == {"reason": "title"}
+    # found in both databases: the type came with the PubMed record
+    assert by_id["42979212"].structured["case_report"] is None
+    assert sum(1 for i in items if i.structured["case_report"]) == 10
+    # the PMIDs of the PMC-only papers, in batches, never a PMID already read
+    extra = ncbi.esummaries()[2:]
+    assert all(c["db"] == "pubmed" for c in extra) and len(extra) == 3           # 54 PMIDs in batches of 20
+    asked = [u for c in extra for u in c["id"].split(",")]
+    assert len(asked) == 54 and "42979430" in asked and not {"42980339", "42979212"} & set(asked)
     ctx.close()
 
 
