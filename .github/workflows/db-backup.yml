@@ -6,9 +6,10 @@
 #                 up, as plain backups/<date>.sql.gz, and the run shows a warning.
 #                 The R2 lifecycle rule on the backups/ prefix deletes copies after 90 days, so 90 are kept.
 # verify-archive  Sunday 00:43 UTC: re-downloads 50 random archived originals and 10 random report files
-#                 (reports/: the weekly and monthly PDF and Excel) and recomputes their sha256 against the
-#                 database, checks that an overwrite is refused (bucket lock), and records the result in
-#                 archive_check. Any failure fails the job, and GitHub emails the repository admins.
+#                 (reports/: the weekly and monthly PDF and Excel, and the packs under reports/packs/) and
+#                 recomputes their sha256 against the database, checks that an overwrite is refused (bucket
+#                 lock), and records the result in archive_check. Any failure fails the job, and GitHub emails
+#                 the repository admins.
 name: PHAROS database backup and archive check
 
 on:
@@ -115,8 +116,9 @@ jobs:
               union all
               select r2_key, sha256 from spc_snapshot where r2_key is not null
             ) s order by random() limit 50" > "$work/sample.tsv" || exit 1
-          # The weekly and monthly reports (reports/), sampled on their own so that a few report files are not
-          # outnumbered by thousands of originals: up to 10 of their PDF and Excel files each week.
+          # The weekly and monthly reports and the packs made on request (reports/, reports/packs/), sampled on
+          # their own so that a few report files are not outnumbered by thousands of originals: up to 10 of their
+          # PDF and Excel files each week.
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -At -F $'\t' -c "
             select r2_key, sha256 from (
               select pdf_r2_key  as r2_key, pdf_sha256  as sha256 from weekly_report
@@ -126,6 +128,10 @@ jobs:
               select pdf_r2_key, pdf_sha256 from monthly_report where pdf_r2_key is not null and pdf_sha256 is not null
               union all
               select xlsx_r2_key, xlsx_sha256 from monthly_report where xlsx_r2_key is not null and xlsx_sha256 is not null
+              union all
+              select pdf_r2_key, pdf_sha256 from report_request where status = 'done'
+              union all
+              select xlsx_r2_key, xlsx_sha256 from report_request where status = 'done'
             ) s order by random() limit 10" >> "$work/sample.tsv" || exit 1
 
           sampled=0; mismatched=0; missing=0; details="[]"; first=""

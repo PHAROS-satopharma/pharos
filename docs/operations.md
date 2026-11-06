@@ -9,12 +9,12 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
-| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then up to 15 minutes of the check of the past |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch, then EMA's literature monitoring list (`collectors/mlm.py`) |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
-| `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals; checks the bucket lock |
+| `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals and 10 report files (`reports/`, `reports/packs/`); checks the bucket lock |
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source, flagged as backfill, no alerts |
@@ -171,7 +171,8 @@ the report:
 
 - **Ingredients**: the vertical pass. One ingredient across every source for the days she chooses (below).
 - **Sources**: the horizontal pass. Each country's pages and everything its authorities newly published (below).
-- **Reports**: the screening reports.
+- **Reports**: the weekly reports, the PSUR and inspection packs made on request (*Packs on request*), and the
+  screening log, with each file's SHA-256 and its signatures (*Inspection evidence*).
 - **People** is a fourth tab for administrators only: who may sign in, their roles and messages.
 - **Me** (her initials, top right): Telegram, the messages she receives, password, theme and sign-out.
 
@@ -191,13 +192,16 @@ the report:
   Signals, Oversight, the PSUR builder and Our labels. An old link or bookmark to any of them
   (`/notifications`, `/issues`, `/issue/<id>`, `/signals`, `/signals/<id>`, `/oversight`, `/psur`, `/labels`)
   opens Ingredients, never an empty page. A notice's title on the Ingredients and Sources screens opens the
-  authority's own page for it. Decisions on a notice are recorded on the Ingredients screen.
-- **Collection steps.** The daily EURD list (`collectors/eurd.py`) and the morning escalation of late items
-  (`collectors/escalate.py`) no longer run; `eurd_entry` keeps the last list read. The morning message about the
-  five-day clock (`collectors/reminders.py`, below) took the escalation's place. The weekly reading of EMA's
-  literature monitoring list (`collectors/mlm.py`) was removed with them and put back on 6 November 2026: the
-  Ingredients screen and the weekly report say whether EMA reads the literature for each ingredient (see *Case
-  reports in the literature*).
+  authority's own page for it. Decisions on a notice are recorded on the Ingredients screen. Their work came
+  back inside the remaining screens: the signal steps under the decision (*The signal steps*), our label under
+  *Label changes* (*Our label and the label watch*), and the PSUR builder as the PSUR pack on Reports (*Packs on
+  request*).
+- **Collection steps.** The morning escalation of late items (`collectors/escalate.py`) no longer runs. The
+  morning message about the five-day clock (`collectors/reminders.py`, below) took its place. The daily EURD
+  list (`collectors/eurd.py`) and the weekly reading of EMA's literature monitoring list (`collectors/mlm.py`)
+  were removed with it and put back in November 2026: the readiness line, the PSUR pack and the weekly report
+  read the EURD list, and the Ingredients screen and the weekly report say whether EMA reads the literature for
+  each ingredient (see *Case reports in the literature*).
 - **Kept running.** Every source, the label (SPC) watch (its changes show on the Ingredients screen), NCBI
   literature, the check of the past, the PRAC agendas and minutes (`ema-prac`), the Telegram messages (new
   notices, the daily digests, source health) and the watchdog.
@@ -315,8 +319,9 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
   ingredient by the migration, so a new one is covered the moment it is saved.
 - Otherwise **Still preparing:** followed by what is still running or still to come, in order: *class words
-  tonight* (02:31 Cairo), *check of the past running* or *tonight*, *NCBI look-back running* or *tonight*,
-  *label watch on Monday (Japan, Spain)* naming the countries not yet read (03:23 Cairo), *nobody receives its
+  tonight* (the daily run, 02:31), *check of the past running* or *tonight*, *NCBI look-back running* or
+  *tonight*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
+  03:23), *nobody receives its
   Telegram messages yet*.
 - Under the line: how many label products were found and where (or *No label found in any watched country*),
   the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
@@ -462,16 +467,17 @@ took its place.
 
 ## Removed: Signals, Our labels, the PSUR builder, Oversight and the escalation
 
-Removed in November 2026 (see *What was removed* above). For the record of what they did:
+Removed as screens in November 2026 (see *What was removed* above). For the record of what they did:
 
 - **Signals** took a notice marked Relevant through validation, assessment, action and closed. Every step is a
-  row in `signal_event`, which nobody can change or delete; the rows stay. The due days are still in
-  `app_setting` `signal_due_days`.
+  row in `signal_event`, which nobody can change or delete; the rows stay. The same steps are now taken under
+  the decision on the Ingredients screen (see *The signal steps*).
 - **Our labels** kept the text of our own approved product information, section by section, and compared it
   with an originator's label change. The versions stay in the database, and since 6 Nov 2026 the same text is
   uploaded and read on the Ingredients screen, under *Label changes* (see *Our label and the label watch*).
 - **The PSUR builder** (`/psur`) gathered a PSUR interval's notices, label changes, literature, signals and
-  screening annex, with the interval from EMA's EURD list (`eurd_entry`, last list kept).
+  screening annex, with the interval from EMA's EURD list (`eurd_entry`). The PSUR pack on Reports does this
+  now (see *Packs on request*).
 - **Oversight** (`/oversight`) listed what was late (`overdue_items(day)`, still in the database; the review time
   is `app_setting` `review_due_days`). **The morning escalation** sent the late items to administrators on
   Telegram once a Cairo day (notification kind "Late items"). Neither runs now; the five-day clock's morning
@@ -566,7 +572,8 @@ What an inspector can be shown for any week (0046, 0047; the Reports page).
   changed or removed an audit row; only a migration that drops the trigger could, and it would be in the
   repository history.
 - **The archive check.** `db-backup.yml` verify-archive (Sundays 00:43 UTC) re-hashes 50 random originals and
-  10 random report files (the weekly and monthly PDF and Excel under `reports/`) against the database, checks
+  10 random report files (the weekly and monthly PDF and Excel under `reports/`, and the packs made under
+  `reports/packs/`) against the database, checks
   that an overwrite is refused, and records the result in `archive_check`.
 
 ## Packs on request
