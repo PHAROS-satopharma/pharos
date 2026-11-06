@@ -28,6 +28,12 @@ on:
         description: Or a month in the old monthly format, YYYY-MM (leave the week empty)
         type: string
         required: false
+      preview_key:
+        description: >-
+          A preview of a day or week on a new look: an age public key (age1…). The files are not archived,
+          recorded or sent; they are encrypted to this key and kept one day as the run's artifact
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -114,7 +120,22 @@ jobs:
           DAY: ${{ inputs.day }}
           WEEK: ${{ inputs.week }}
           MONTH: ${{ inputs.month }}
+          PREVIEW_KEY: ${{ inputs.preview_key }}
+          REPORT_DIR: ${{ runner.temp }}/report
         run: |
+          # A preview: the report of a day or week built into REPORT_DIR only, then encrypted (the repository is
+          # public, so a readable file never leaves the runner).
+          if [ -n "$PREVIEW_KEY" ]; then
+            [[ "$PREVIEW_KEY" =~ ^age1[0-9a-z]{58}$ ]] || { echo "preview_key must be an age public key"; exit 1; }
+            if [ -n "$DAY" ]; then python -m collectors.report --preview --day "$DAY"
+            elif [ -n "$WEEK" ]; then python -m collectors.report --preview --week "$WEEK"
+            else echo "a preview needs a day or a week"; exit 1; fi
+            sudo apt-get install -y -qq age > /dev/null
+            mkdir -p "$RUNNER_TEMP/sealed"
+            for f in "$REPORT_DIR"/*; do age -r "$PREVIEW_KEY" -o "$RUNNER_TEMP/sealed/$(basename "$f").age" "$f"; done
+            rm -rf "$REPORT_DIR"
+            exit 0
+          fi
           given=0
           for v in "$DAY" "$WEEK" "$MONTH"; do [ -n "$v" ] && given=$((given + 1)); done
           if [ "$given" -gt 1 ]; then echo "give a day, a week or a month, only one"; exit 1; fi
@@ -132,3 +153,12 @@ jobs:
           else
             python -m collectors.report
           fi
+
+      - name: The sealed preview
+        if: steps.gate.outputs.go == 'true' && inputs.preview_key != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sealed-preview
+          path: ${{ runner.temp }}/sealed/*.age
+          retention-days: 1
+          if-no-files-found: error
