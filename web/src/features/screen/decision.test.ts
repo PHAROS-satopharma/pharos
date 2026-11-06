@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
+import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
 import type { IngredientScreenData, Mention, ScreenRegulator } from './types';
 
 const mention = (document_id: string, issue_id: string | null): Mention => ({
@@ -82,12 +82,22 @@ describe('withDecision', () => {
 });
 
 describe('choices', () => {
-  it('never offers New or the status the notice already has', () => {
-    expect(choicesFor('new').map((c) => c.to)).toEqual(['reviewed', 'relevant', 'not_relevant']);
-    expect(choicesFor('not_relevant').map((c) => c.to)).toEqual(['reviewed', 'relevant']);
+  it('offers her two decisions, Concerns us and Doesn't concern us, and never the one already taken', () => {
+    expect(choicesFor('new').map((c) => c.label)).toEqual(['Concerns us', "Doesn't concern us"]);
+    expect(choicesFor('new').map((c) => c.to)).toEqual(['relevant', 'not_relevant']);
+    expect(choicesFor('reviewed').map((c) => c.to)).toEqual(['relevant', 'not_relevant']);
+    expect(choicesFor('relevant').map((c) => c.to)).toEqual(['not_relevant']);
+    expect(choicesFor('not_relevant').map((c) => c.to)).toEqual(['relevant']);
   });
 
-  it('asks for a reason only for Not relevant', () => {
+  it('names every status in her words', () => {
+    expect(DECISION_LABEL.new).toBe('No decision yet');
+    expect(DECISION_LABEL.reviewed).toBe('Reviewed, no decision yet');
+    expect(DECISION_LABEL.relevant).toBe('Concerns us');
+    expect(DECISION_LABEL.not_relevant).toBe("Doesn't concern us");
+  });
+
+  it("asks for a reason only for Doesn't concern us", () => {
     expect(needsReason('not_relevant')).toBe(true);
     expect(needsReason('relevant')).toBe(false);
     expect(needsReason(null)).toBe(false);
