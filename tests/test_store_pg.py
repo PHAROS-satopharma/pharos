@@ -314,6 +314,26 @@ def test_notified_since_counts_what_reached_the_person(store, tag):
     assert not store.notified_since(p, "new_items_digest", datetime.now(timezone.utc) + timedelta(hours=1))
 
 
+def test_told_since_names_the_people_a_message_really_reached(store, tag):
+    """The morning reminder's gate (collectors/reminders.py): a person counts as told when a delivered row of
+    the kind exists since ``since``; a refused row never counts; a dry-run row counts only for a dry run."""
+    p1 = _person(store, tag, "Told One")
+    p2 = _person(store, tag, "Told Two")
+    p3 = _person(store, tag, "Told Three")
+    since = datetime.now(timezone.utc) - timedelta(minutes=5)
+    assert store.told_since("escalation", since) == set()
+    store.insert_notification(person_id=p1, issue_id=None, kind="escalation", dry_run=False,
+                              tg_message_id=4242, error=None, summary=f"reminder ok {tag}")
+    store.insert_notification(person_id=p2, issue_id=None, kind="escalation", dry_run=False,
+                              tg_message_id=None, error="Forbidden", summary=f"reminder refused {tag}")
+    store.insert_notification(person_id=p3, issue_id=None, kind="escalation", dry_run=True,
+                              tg_message_id=None, error=None, summary=f"reminder dry {tag}")
+    assert store.told_since("escalation", since) == {p1}
+    assert store.told_since("escalation", since, dry_run=True) == {p1, p3}
+    assert store.told_since("new_items_digest", since) == set()
+    assert store.told_since("escalation", datetime.now(timezone.utc) + timedelta(hours=1)) == set()
+
+
 def test_new_item_counts_are_new_items_per_country(store, tag):
     country = f"Testland {tag}"
     store.upsert_regulator({"id": f"NI-{tag}", "country_code": "XN", "country_name": country,
