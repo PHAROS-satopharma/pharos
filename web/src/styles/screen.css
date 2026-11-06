@@ -118,6 +118,9 @@
   color: var(--muted);
   font-size: 13px;
 }
+.scr-section .table-wrap {
+  margin: 12px 0;
+}
 .scr-countries {
   border-top: 1px solid var(--rule);
 }

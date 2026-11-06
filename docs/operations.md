@@ -845,6 +845,27 @@ the case page. The chosen codes are saved and confirmed with the form, and kept 
 MedDRA only); the reviewer types them when the authority or a partner has coded the case. MeSH codes do not go
 into the E2B file.
 
+**What the coded terms say (migration 0062).** Section *05 Reactions by MeSH* of the Ingredients screen counts, for
+the days chosen and the same number of days just before:
+
+- *Cases*: the reactions as the reviewers coded them, in cases to confirm, confirmed or sent.
+- *Papers*: the literature papers of the ingredient (suggested links left out) whose MeSH headings NLM's indexers
+  marked "chemically induced" (qualifier Q000139) or put under Chemically-Induced Disorders (C25). The daily
+  *Coding* step of *PHAROS collect* (`python -m collectors.coding --papers --labels`) fetches the headings from
+  PubMed for every literature paper of the last year; a paper NLM has not indexed yet is asked again after 30 days.
+- *Safety topics* (`safety_topic`): 31 groups of MeSH descriptors with everything beneath them in the tree (liver
+  injury, severe skin reactions, QT prolongation, suicide and self-harm …), in place of MedDRA's SMQs, which need a
+  MedDRA licence. A topic is a search aid, not an SMQ.
+- *Label*: the same step finds the MeSH names in section 4.8 of our label (when it is in English) and in the
+  reference product's latest English label (else any English label of the ingredient: SmPC 4.8 or the US "Adverse
+  reactions"). A reaction is *In our label* when our label names it or a broader heading above it, *In the reference
+  label* when only that one does, and *Not in our label* when neither does. The same tag is on each coded reaction
+  of a case. A label is read again when it changes or a MeSH release is loaded.
+
+Counting is not judging: the numbers and the label are shown side by side, and the team decides whether a term is
+a signal (Signals). *Not in our label* means no MeSH name was found in the text, which is a reason to read the
+label, not a finding that the reaction is unexpected.
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings

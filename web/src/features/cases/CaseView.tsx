@@ -47,6 +47,7 @@ import {
   suggestionsFor,
 } from './caseForm';
 import { CodingSource, DrugCoding, MeshCoding } from './Coding';
+import { Listed } from './Listed';
 
 interface CaseRecord {
   id: string;
@@ -559,6 +560,7 @@ export function CaseView() {
                   edit({ ...draft, reactions: reactions.map((x, j) => (j === i ? { ...x, mesh_ui: ui, mesh_term: name } : x)) })
                 }
               />
+              <Listed ingredientId={record.ingredient_id} ui={r.mesh_ui} />
               <div className="case-criteria-pick">
                 {CRITERIA.map((k) => (
                   <Toggle
