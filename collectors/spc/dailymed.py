@@ -4,8 +4,13 @@ Source ``spc-dailymed``; country US; English.
 
 * Discovery: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name=<INN>&doctype=34391-3&pagesize=100&page=<n>``
   → ``{"data": [{"setid", "title", "spl_version", "published_date"}], "metadata": {"total_pages"}}``.
-  ``doctype`` 34391-3 (LOINC "human prescription drug label") keeps out veterinary and OTC labels
-  (meloxicam, 5 Nov 2026: 186 labels instead of 209); titles are kept as published.
+  ``doctype`` 34391-3 (LOINC "human prescription drug label") keeps out veterinary labels (meloxicam,
+  5 Nov 2026: 186 labels instead of 209); every page is read, up to ``MAX_PAGES`` (acetaminophen has 765
+  prescription labels, 6 Nov 2026: the old cap of 5 pages lost 265 of them). Over-the-counter labels
+  (doctype 34390-5) are watched when FDA approves the label itself: an NDA, an ANDA or an NDA authorized
+  generic (``OTC_APPROVED``; 6 Nov 2026: acetaminophen 292, guaifenesin 396, phenylephrine 8). The OTC
+  monograph labels (about 3,700 store brands of acetaminophen alone) are not read: their text is FDA's
+  monograph, which changes by an FDA order, not by a label of their own. Titles are kept as published.
   (An ingredient with no US product, such as lornoxicam, simply yields none.) A page that does not
   answer 200 fails the discovery: a partial list would switch off the products it missed.
 * Snapshot: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls/<setid>.xml`` (HL7 SPL,
@@ -31,34 +36,50 @@ LANG = "en"
 API = "https://dailymed.nlm.nih.gov/dailymed/services/v2"
 NS = {"v3": "urn:hl7-org:v3"}
 HUMAN_RX = "34391-3"  # LOINC document type: human prescription drug label
-MAX_PAGES = 5
+HUMAN_OTC = "34390-5"  # LOINC document type: human OTC drug label
+# The OTC labels FDA approves one by one (DailyMed marketing categories): NDA, ANDA, NDA authorized generic.
+OTC_APPROVED = ("C73594", "C73584", "C73605")
+MAX_PAGES = 40       # 4,000 labels per list: a bound against a runaway answer, not a cut of a real list
+
+
+def lists(term: str) -> list[tuple[str, str | None]]:
+    """The label lists read for one name: (query, marketing category of an OTC list)."""
+    q = f"drug_name={quote(term)}"
+    return [(f"{q}&doctype={HUMAN_RX}", None)] + [
+        (f"{q}&doctype={HUMAN_OTC}&marketing_category_code={c}", c) for c in OTC_APPROVED]
 
 
 def discover(ctx, ingredient: dict) -> list[Product]:
     found: dict[str, Product] = {}
     for term in terms_for(ingredient, "en")[:3]:
-        page = 1
-        while page <= MAX_PAGES:
-            url = f"{API}/spls.json?drug_name={quote(term)}&doctype={HUMAN_RX}&pagesize=100&page={page}"
-            f = ctx.get(url, accept="application/json")
-            if f.status != 200:
-                raise FetchError(f.status, url, f"DailyMed label list {url}: HTTP {f.status}")
-            data = f.json()
-            for row in data.get("data") or []:
-                setid = row.get("setid")
-                if not setid or setid in found:
-                    continue
-                found[setid] = Product(
-                    national_id=setid, product_name=(row.get("title") or setid).strip(),
-                    url=f"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={setid}",
-                    country_code=COUNTRY,
-                    extra={"spl_version": row.get("spl_version"),
-                           "published_date": row.get("published_date")})
-            total = int((data.get("metadata") or {}).get("total_pages") or 1)
-            if page >= total:
-                break
-            page += 1
+        for query, otc in lists(term):
+            _read_list(ctx, query, otc, found)
     return list(found.values())
+
+
+def _read_list(ctx, query: str, otc: str | None, found: dict[str, Product]) -> None:
+    page = 1
+    while page <= MAX_PAGES:
+        url = f"{API}/spls.json?{query}&pagesize=100&page={page}"
+        f = ctx.get(url, accept="application/json")
+        if f.status != 200:
+            raise FetchError(f.status, url, f"DailyMed label list {url}: HTTP {f.status}")
+        data = f.json()
+        for row in data.get("data") or []:
+            setid = row.get("setid")
+            if not setid or setid in found:
+                continue
+            found[setid] = Product(
+                national_id=setid, product_name=(row.get("title") or setid).strip(),
+                url=f"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={setid}",
+                country_code=COUNTRY,
+                extra={"spl_version": row.get("spl_version"),
+                       "published_date": row.get("published_date"),
+                       **({"otc_category": otc} if otc else {})})
+        total = int((data.get("metadata") or {}).get("total_pages") or 1)
+        if page >= total:
+            break
+        page += 1
 
 
 def _text(node) -> str:

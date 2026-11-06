@@ -382,7 +382,14 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   out, and leaves every name alone (`set_japan_codes()`, migration 0069; audited). A wrong code is named and nothing
   is saved. Japan's label watch reads every code at its next weekly run. Like any new word it is due for the check of the past that
   night (0034); the readiness line does not wait for that, since a code is not a name. Without a code the row says *No Japan code
-  yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
+  yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back. A code typed here is
+  trusted. A code PHAROS only took from a PMDA revision notice matched to the ingredient is read only when the
+  PMDA page's 一般名 names the ingredient in Japanese (a notice lists several ingredients, so its links reach all
+  of them); without a Japanese name it is skipped, and the run log says so.
+- **United States:** DailyMed's prescription labels are read to the last page (acetaminophen: 765), and the
+  over-the-counter labels FDA approves one by one (NDA, ANDA, NDA authorized generic: acetaminophen 292,
+  guaifenesin 396, phenylephrine 8 on 6 Nov 2026). The OTC monograph labels (about 3,700 store brands of
+  acetaminophen) are not read: their wording is FDA's monograph, changed by an FDA order, not by the label.
 
 ### Editing an ingredient on the watchlist
 

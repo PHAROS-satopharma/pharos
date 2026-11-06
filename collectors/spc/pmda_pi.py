@@ -12,7 +12,11 @@ Source ``spc-pmda``; country JP; Japanese, kept as published.
   it; lornoxicam = 1149036, ロルカム錠 and ロルノキシカム錠「KO」), (2) the ``general_list`` links
   PHAROS already stored from ``pmda-revisions`` documents matched to the ingredient, and (3) the
   environment variable ``SPC_PMDA_GENERAL_CODES`` (``inn_en=code,code;inn_en=code``). Without
-  any of them Japan watches nothing for that ingredient. The package id ``<company>_<YJ code>_<version>`` minus its version suffix is the
+  any of them Japan watches nothing for that ingredient. A code of kind (2) is only a guess: a
+  revision notice lists several ingredients, and its links reach every one matched to it. Its list
+  is kept only when the page's 一般名 (the ``th`` 一般名 cell, also the page ``<title>``: "イブプロフェン
+  Ｌ－リシン" for 2190417) names the ingredient in Japanese, compared after NFKC with spaces removed;
+  an ingredient without a Japanese name keeps none of them (logged). The package id ``<company>_<YJ code>_<version>`` minus its version suffix is the
   national id, so a new revision of the same insert is the same product.
 * Snapshot: the PDF ``https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/<package id>``,
   text by ``collectors.pdf.extract_text_by_columns`` (``jpn`` OCR fallback), split by 添付文書 heading
@@ -28,13 +32,17 @@ Source ``spc-pmda``; country JP; Japanese, kept as published.
 
 from __future__ import annotations
 
+import logging
 import os
 import re
+import unicodedata
 
 from collectors.parsers._html_util import absolute, local_date, node_text
 from collectors.parsers.base import soup
-from collectors.spc.common import Product, Snapshot
+from collectors.spc.common import Product, Snapshot, terms_for
 from collectors.spc.sections import split_japanese
+
+log = logging.getLogger(__name__)
 
 SOURCE_ID = "spc-pmda"
 COUNTRY = "JP"
@@ -72,23 +80,48 @@ def env_codes(inn_en: str) -> list[str]:
     return []
 
 
-def general_codes(ctx, ingredient: dict) -> list[str]:
-    codes: list[str] = []
+def code_sources(ctx, ingredient: dict) -> dict[str, bool]:
+    """Each 一般名 code to read, and whether it is trusted (``False``: only a revision notice's link)."""
+    codes: dict[str, bool] = {}
     db = getattr(ctx, "db", None)
     if db is not None and ingredient.get("id"):
         for row in db.fetchall(SQL_TERM_CODES, {"iid": ingredient["id"]}):
             m = _GENERAL_CODE.match(str(row.get("term") or "").strip().upper())
-            if m and m.group(1) not in codes:
-                codes.append(m.group(1))
+            if m:
+                codes[m.group(1)] = True
         for row in db.fetchall(SQL_CODES, {"iid": ingredient["id"]}):
             for link in row.get("links") or []:
                 m = _CODE.search(str(link))
-                if m and m.group(1) not in codes:
-                    codes.append(m.group(1))
+                if m:
+                    codes.setdefault(m.group(1), False)
     for c in env_codes(ingredient.get("inn_en") or ""):
-        if c not in codes:
-            codes.append(c)
+        codes[c] = True
     return codes
+
+
+def general_codes(ctx, ingredient: dict) -> list[str]:
+    return list(code_sources(ctx, ingredient))
+
+
+def _flat(text: str) -> str:
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", text or "")).casefold()
+
+
+def general_name(html) -> str:
+    """The page's 一般名: the cell beside the ``th`` 一般名, else the page title."""
+    doc = soup(html)
+    for th in doc.select("th"):
+        if node_text(th).strip() == "一般名":
+            cell = th.find_next_sibling(["td", "th"])
+            if cell is not None and node_text(cell).strip():
+                return node_text(cell).strip()
+    return node_text(doc.title).strip() if doc.title else ""
+
+
+def names_ingredient(name: str, ingredient: dict) -> bool:
+    flat = _flat(name)
+    return bool(flat) and any(len(_flat(t)) >= 2 and _flat(t) in flat
+                              for t in terms_for(ingredient, "ja", fallback_en=False))
 
 
 def parse_general_list(html, base_url: str) -> list[Product]:
@@ -120,9 +153,18 @@ def parse_general_list(html, base_url: str) -> list[Product]:
 
 def discover(ctx, ingredient: dict) -> list[Product]:
     found: dict[str, Product] = {}
-    for code in general_codes(ctx, ingredient):
+    has_ja = bool(terms_for(ingredient, "ja", fallback_en=False))
+    for code, trusted in code_sources(ctx, ingredient).items():
+        if not trusted and not has_ja:
+            log.info("PMDA %s: code %s from a revision notice skipped, no Japanese name to check it",
+                     ingredient.get("inn_en"), code)
+            continue
         f = ctx.get(GENERAL.format(code=code))
         if f.status != 200:
+            continue
+        if not trusted and not names_ingredient(general_name(f), ingredient):
+            log.info("PMDA %s: code %s from a revision notice skipped, its 一般名 is %r",
+                     ingredient.get("inn_en"), code, general_name(f))
             continue
         for p in parse_general_list(f, f.final_url):
             found.setdefault(p.national_id, p)

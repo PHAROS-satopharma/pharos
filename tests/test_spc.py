@@ -600,19 +600,63 @@ def test_bdpm_failed_bulk_file_raises_and_is_not_cached_as_empty():
 # ───────────────────────────── United States, DailyMed ─────────────────────────────
 
 DM_LIST = dailymed.API + "/spls.json?drug_name=meloxicam&doctype=34391-3&pagesize=100&page="
+DM_EMPTY = "spc-dailymed/spls_meloxicam_otc_nda.json"      # DailyMed's own answer for an empty list
+
+
+def _dm_otc(term: str, code: str) -> str:
+    return (f"{dailymed.API}/spls.json?drug_name={term}&doctype=34390-5"
+            f"&marketing_category_code={code}&pagesize=100&page=1")
 
 
 def test_dailymed_discovers_human_prescription_labels_on_every_page():
+    otc = {_dm_otc("meloxicam", c): DM_EMPTY for c in dailymed.OTC_APPROVED}
     ctx = FakeCtx({DM_LIST + "1": "spc-dailymed/spls_meloxicam_rx_p1.json",
-                   DM_LIST + "2": "spc-dailymed/spls_meloxicam_rx_p2.json"})
+                   DM_LIST + "2": "spc-dailymed/spls_meloxicam_rx_p2.json", **otc})
     got = dailymed.discover(ctx, {"inn_en": "meloxicam", "terms": {}})
-    assert [r[1] for r in ctx.requests] == [DM_LIST + "1", DM_LIST + "2"]   # doctype: no veterinary labels
+    # doctype: no veterinary labels; then the three FDA-approved OTC lists, empty for meloxicam
+    assert [r[1] for r in ctx.requests] == [DM_LIST + "1", DM_LIST + "2", *otc]
     assert len(got) == 186 and len({p.national_id for p in got}) == 186
     first = got[0]
     assert first.national_id == "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
     assert first.product_name == "MELOXICAM TABLET [ADVANCED RX OF TENNESSEE, LLC]"
     assert first.url == "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=" + first.national_id
     assert first.country_code == "US" and first.extra["spl_version"] == 3
+
+
+def test_dailymed_reads_a_prescription_list_past_five_pages():
+    # Acetaminophen had 765 prescription labels on 6 Nov 2026: the old cap of 5 pages kept 500.
+    def page(n: int) -> bytes:
+        rows = [{"setid": f"rx-{n}-{i}", "title": f"ACETAMINOPHEN {n}-{i}", "spl_version": 1}
+                for i in range(100 if n < 8 else 65)]
+        return json.dumps({"data": rows, "metadata": {"total_pages": 8}}).encode()
+
+    rx = dailymed.API + "/spls.json?drug_name=acetaminophen&doctype=34391-3&pagesize=100&page="
+    ctx = FakeCtx({**{rx + str(n): page(n) for n in range(1, 9)},
+                   **{_dm_otc("acetaminophen", c): DM_EMPTY for c in dailymed.OTC_APPROVED}})
+    got = dailymed.discover(ctx, {"inn_en": "acetaminophen", "terms": {}})
+    assert len(got) == 765
+
+
+def test_dailymed_watches_the_otc_labels_fda_approves_and_not_the_monograph_ones():
+    rx = dailymed.API + "/spls.json?drug_name=phenylephrine&doctype=34391-3&pagesize=100&page=1"
+    ctx = FakeCtx({rx: DM_EMPTY,
+                   _dm_otc("phenylephrine", "C73594"): "spc-dailymed/spls_phenylephrine_otc_nda.json",
+                   _dm_otc("phenylephrine", "C73584"): "spc-dailymed/spls_phenylephrine_otc_anda.json",
+                   _dm_otc("phenylephrine", "C73605"): "spc-dailymed/spls_phenylephrine_otc_ag.json"})
+    got = dailymed.discover(ctx, {"inn_en": "phenylephrine", "terms": {}})
+    assert len(got) == 8
+    by_id = {p.national_id: p for p in got}
+    assert by_id["7671d104-3c5c-4f63-b6b1-6c91c22592f8"].extra["otc_category"] == "C73594"   # Advil, NDA
+    assert by_id["76513fb2-7323-4f1f-8a10-92f8f603cf97"].extra["otc_category"] == "C73584"   # Sudafed PE, ANDA
+    asked = [r[1] for r in ctx.requests]
+    assert all("34390-5" not in u or "marketing_category_code=" in u for u in asked)   # no monograph list
+
+
+def test_dailymed_a_failed_otc_list_fails_the_discovery():
+    ctx = FakeCtx({DM_LIST + "1": "spc-dailymed/spls_meloxicam_rx_p1.json",
+                   DM_LIST + "2": "spc-dailymed/spls_meloxicam_rx_p2.json"})   # OTC lists: 404
+    with pytest.raises(FetchError):
+        dailymed.discover(ctx, {"inn_en": "meloxicam", "terms": {}})
 
 
 def test_dailymed_a_failed_page_fails_the_discovery():
