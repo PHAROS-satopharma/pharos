@@ -164,6 +164,91 @@ def test_a_paper_is_never_an_immediate_alert(monkeypatch):
     assert live.issue_alert(paper) == 0 and tg.messages == [] and tg.documents == []
 
 
+NINE_TEN = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)
+SCREEN_URL = "https://pharos-satopharma.pages.dev/ingredients/ing-1"
+
+
+def store_with_case_report(*, class_only: bool = False, is_backfill: bool = False,
+                           reason: str | None = "pubtype") -> tuple[MemoryStore, str, str]:
+    """The notice and the paper above; the paper found this morning, and a possible case report when ``reason``
+    says so (as collectors/parsers/pubmed.py stores it)."""
+    s, notice, paper = store_with_paper(class_only=class_only)
+    did = s.issue[paper]["anchor_document_id"]
+    s.document[did]["structured"] = {
+        "pmid": "42846100", "journal": "Drug Saf", "pubtype": ["Journal Article"],
+        **({"pubtype": ["Journal Article", "Case Reports"]} if reason == "pubtype" else {}),
+        "case_report": {"reason": reason} if reason else None}
+    s.document[did]["first_seen_at"] = NINE_TEN - timedelta(hours=3)
+    s.issue[paper]["created_at"] = NINE_TEN - timedelta(hours=3)
+    s.issue[paper]["is_backfill"] = is_backfill
+    s.issue[notice]["created_at"] = NINE_TEN - timedelta(hours=3)
+    return s, notice, paper
+
+
+def test_possible_case_reports_are_a_block_in_the_daily_digest():
+    # Her decision (6 Nov 2026): a paper that looks like a case report reaches her as a block in the daily message,
+    # with day zero and the 15-day date, once; never again the next day; never a real send in a dry run.
+    s, notice, paper = store_with_case_report()
+    s.issue[notice]["class_only"] = True                     # the class notice is in the digest as before
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: NINE_TEN)
+    assert n.digest_if_due() == 1                            # p1, the one class_digest subscriber
+    rows = [r for r in s.notification if r["kind"] == "digest"]
+    assert sorted(r["issue_id"] for r in rows) == sorted([notice, paper])
+    assert all(r["dry_run"] and r["person_id"] == "p1" for r in rows)
+    text = rows[0]["summary"]
+    assert text.startswith("<b>PHAROS</b> · class-wide notices · 4 Nov 2026")
+    assert text.index("Rote-Hand-Brief") < text.index("<b>Possible case reports (1)</b>") < text.index(
+        "Lornoxicam after knee surgery")
+    assert "Drug Saf" in text and "day zero 4 Nov 2026 · 15 days: 19 Nov 2026" in text
+    assert f'<a href="{SCREEN_URL}">Open the ingredient</a>' in text
+    for r in rows:
+        r["sent_at"] = NINE_TEN
+    next_day = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: NINE_TEN + timedelta(days=1))
+    assert next_day.digest_if_due() == 0                     # nothing new: no message, the paper not again
+    assert [r["issue_id"] for r in s.notification if r["kind"] == "digest"].count(paper) == 1
+
+
+def test_a_case_report_alone_makes_the_daily_message():
+    s, _, paper = store_with_case_report(reason="title")
+    assert s.class_only_issues_since(NINE_TEN - timedelta(days=1)) == []
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: NINE_TEN)
+    assert n.digest_if_due() == 1
+    row = s.notification[-1]
+    assert row["issue_id"] == paper and row["kind"] == "digest"
+    assert row["summary"].startswith("<b>PHAROS</b> · possible case reports · 4 Nov 2026")
+    assert "<b>Possible case reports (1)</b>" in row["summary"]
+    assert "class-wide" not in row["summary"]
+
+
+def test_a_case_report_reaches_the_subscriber_on_the_live_path(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, _, paper = store_with_case_report()
+    tg = RecordingTelegram()
+    n = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg, now=lambda: NINE_TEN)
+    assert n.digest_if_due() == 1
+    assert [c for c, _ in tg.messages] == [111] and "Possible case reports (1)" in tg.messages[0][1]
+    assert s.notified("p1", paper, "digest")
+    assert not Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                        now=lambda: NINE_TEN + timedelta(hours=2)).digest_due()
+
+
+def test_a_class_only_or_history_case_report_is_not_in_the_block():
+    for kw in ({"class_only": True}, {"is_backfill": True}):
+        s, notice, paper = store_with_case_report(**kw)
+        if kw.get("class_only"):
+            s.issue[notice]["class_only"] = False            # nothing else to send: the digest must stay quiet
+        n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: NINE_TEN)
+        assert n.digest_if_due() == 0, kw
+        assert not [r for r in s.notification if r["issue_id"] == paper], kw
+
+
+def test_a_paper_that_is_not_a_case_report_stays_off_telegram():
+    s, _, paper = store_with_case_report(reason=None)
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: NINE_TEN)
+    assert n.digest_if_due() == 0 and s.notification == []
+    assert s.case_report_papers_since(NINE_TEN - timedelta(days=1)) == []
+
+
 def test_a_class_paper_is_never_in_the_digest():
     s, notice, paper = store_with_paper(class_only=True)
     nine_ten = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)

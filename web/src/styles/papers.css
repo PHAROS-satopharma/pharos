@@ -1,0 +1,37 @@
+/* The papers on the Ingredients screen: possible case reports, their dates, and EMA's literature monitoring.
+   Flat colour and 1px rules only; the tokens of tokens.css. */
+
+.scr-mlm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  font-size: 13px;
+}
+.scr-mlm-label {
+  font-weight: 600;
+}
+.scr-mlm-explain {
+  color: var(--muted);
+}
+
+.scr-paper.is-case {
+  border-left: 3px solid var(--beacon-deep);
+  padding-left: 10px;
+}
+.scr-case-why {
+  color: var(--muted);
+}
+.scr-due {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.scr-paper-error {
+  margin: 8px 0 0;
+}

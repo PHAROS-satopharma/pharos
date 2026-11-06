@@ -46,6 +46,9 @@ class MemoryStore:
         self.ingredient: dict[str, dict] = {}
         self.terms: list[Term] = []
         self.ingredient_class: list[tuple[str, str]] = []  # (ingredient_id, class_id)
+        # (ingredient_id, class_id) -> {"relation": group|parent|manual, "enabled"}; a link without an entry
+        # is a searched group (the default of migration 0049)
+        self.ingredient_class_state: dict[tuple[str, str], dict] = {}
         self.spc_mah: dict[str, list[str]] = {}
         self.issue: dict[str, dict] = {}
         self.issue_document: list[dict] = []
@@ -76,6 +79,7 @@ class MemoryStore:
         self.drug_class[cls_id] = {"code": "NSAID", "name_en": "Non-steroidal anti-inflammatory drugs",
                                    "origin": "hand", "wikidata_qid": None}
         self.ingredient_class.append((ing_id, cls_id))
+        self.ingredient_class_state[(ing_id, cls_id)] = {"relation": "manual", "enabled": True}
         class_part, _, ing_part = sql.partition("insert into ingredient (")
         n = 0
         for m in _SEED_CLASS_ROW.finditer(class_part):
@@ -191,18 +195,26 @@ class MemoryStore:
         self.match.append(dict(m))
 
     # ───────────────────────────── watchlist ─────────────────────────────
+    def class_enabled(self, ingredient_id: str, class_id: str) -> bool:
+        """Whether the class's words are searched for this ingredient (ingredient_class.enabled)."""
+        return bool(self.ingredient_class_state.get((ingredient_id, class_id), {}).get("enabled", True))
+
+    def _searched_links(self) -> list[tuple[str, str]]:
+        """The (ingredient, class) links of watched ingredients whose class words are searched."""
+        return [(i, c) for i, c in self.ingredient_class
+                if self.ingredient.get(i, {}).get("active", True) and self.class_enabled(i, c)]
+
     def load_terms(self) -> list[Term]:
         active = {i for i, r in self.ingredient.items() if r.get("active", True)}
-        active_classes = {c for i, c in self.ingredient_class if i in active}
+        active_classes = {c for _, c in self._searched_links()}
         return [t for t in self.terms
                 if (t.ingredient_id and t.ingredient_id in active)
                 or (t.class_id and not t.ingredient_id and t.class_id in active_classes)]
 
     def class_ingredients(self) -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
-        for ing, cls in self.ingredient_class:
-            if self.ingredient.get(ing, {}).get("active", True):
-                out.setdefault(cls, []).append(ing)
+        for ing, cls in self._searched_links():
+            out.setdefault(cls, []).append(ing)
         return out
 
     def active_ingredients(self) -> list[dict]:
@@ -210,9 +222,9 @@ class MemoryStore:
 
     def class_words(self, lang: str = "en") -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
-        for ing, cls in self.ingredient_class:
+        for ing, cls in self._searched_links():
             row = self.ingredient.get(ing)
-            if row is None or not row.get("active", True):
+            if row is None:
                 continue
             words = sorted(t.term for t in self.terms if t.is_class and t.class_id == cls and t.lang == lang)
             if words:
@@ -347,21 +359,19 @@ class MemoryStore:
                 if p.get("role") in ("admin", "reviewer") and p.get("active", True) and p.get("telegram_chat_id")]
 
     def eda_reminders(self, today: date, within_days: int = 2) -> list[dict]:
-        """v_eda_clock in memory: a notice whose latest decision (self.review_event) is Concerns us and that no
-        authority_report not withdrawn answers; day zero is the Cairo day its anchor was first seen."""
+        """v_eda_clock in memory: a notice whose latest decision (self.review_event) is Concerns us and for which
+        no authority_report not withdrawn exists (whatever decision it answered: a report sent is never
+        forgotten, 0050); day zero is the Cairo day PHAROS first showed the notice, the day its row was created."""
         days = int(self.app_setting.get("eda_days") or 5)
         out = []
         for iid, iss in self.issue.items():
             decisions = sorted((e for e in self.review_event if e["issue_id"] == iid), key=lambda e: e["created_at"])
             if not decisions or decisions[-1]["to_status"] != "relevant":
                 continue
-            if any(a["issue_id"] == iid and a.get("withdrawn_at") is None
-                   and a.get("decision_id", decisions[-1].get("id")) == decisions[-1].get("id")
-                   for a in self.authority_report):
+            if any(a["issue_id"] == iid and a.get("withdrawn_at") is None for a in self.authority_report):
                 continue
             anchor = self.document.get(iss.get("anchor_document_id")) or {}
-            seen_at = anchor.get("first_seen_at") or iss["created_at"]
-            day_zero = seen_at.astimezone(ZoneInfo("Africa/Cairo")).date()
+            day_zero = iss["created_at"].astimezone(ZoneInfo("Africa/Cairo")).date()
             due = day_zero + timedelta(days=days)
             if due > today + timedelta(days=within_days):
                 continue
@@ -383,6 +393,12 @@ class MemoryStore:
     def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
         return any(n["person_id"] == person_id and n["kind"] == kind and n["sent_at"] >= since
                    and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+
+    def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
+        return {n["person_id"] for n in self.notification
+                if n["kind"] == kind and n.get("issue_id") is None and n.get("person_id")
+                and n["sent_at"] >= since and (n.get("error") is None or n.get("tg_message_id"))
+                and (dry_run or not n.get("dry_run"))}
 
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
         """new_items() in memory: no history, no label watch, no literature."""
@@ -440,6 +456,33 @@ class MemoryStore:
                 and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)]
         return [i for _, i in sorted(rows, reverse=True)]
 
+    def case_report_papers_since(self, since: datetime) -> list[dict]:
+        from collectors.parsers.pubmed import case_report
+
+        def paper(r: dict) -> bool:
+            d = self.document.get(r["anchor_document_id"]) or {}
+            return r.get("doc_type") == "literature" or (self.source.get(d.get("source_id")) or {}).get(
+                "kind") == "literature"
+
+        def flagged(d: dict) -> bool:
+            st = d.get("structured") or {}
+            if "case_report" in st:
+                return bool(st["case_report"])
+            return case_report(st.get("pubtype"), d.get("title_orig")) is not None
+
+        rows = []
+        for i, r in self.issue.items():
+            d = self.document.get(r["anchor_document_id"]) or {}
+            if (paper(r) and not r["class_only"] and not r["is_backfill"] and flagged(d)
+                    and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)):
+                ing_ids = [g for x, g in self.issue_ingredient if x == i]
+                names = sorted(self.ingredient.get(g, {}).get("inn_en") or g for g in ing_ids)
+                rows.append((r.get("current_since") or r["created_at"], i, {
+                    "id": i, "title_orig": d.get("title_orig"), "journal": (d.get("structured") or {}).get("journal"),
+                    "day_zero": d["first_seen_at"].astimezone(ZoneInfo("Africa/Cairo")).date(),
+                    "ingredient_ids": ing_ids, "ingredients": names}))
+        return [row for _, _, row in sorted(rows, key=lambda t: (t[0], t[1]), reverse=True)]
+
     # ───────────────────────────── drug classes ─────────────────────────────
     def ingredients_for_classes(self) -> list[dict]:
         out = []
@@ -471,9 +514,26 @@ class MemoryStore:
             self.term_state[tid] = {"changed_at": _now(), "rematched_at": None, "source": t["source"]}
         return cid
 
-    def link_ingredient_class(self, ingredient_id: str, class_id: str) -> None:
+    def link_ingredient_class(self, ingredient_id: str, class_id: str, *, relation: str = "group",
+                              enabled: bool = True) -> None:
+        if (ingredient_id, class_id) in self.ingredient_class:
+            return  # a link that exists is never changed
+        if relation == "group" and self.drug_class.get(class_id, {}).get("origin") == "hand":
+            relation = "manual"  # the database trigger ingredient_class_relation (0049)
+        self.ingredient_class.append((ingredient_id, class_id))
+        self.ingredient_class_state[(ingredient_id, class_id)] = {"relation": relation, "enabled": enabled}
+
+    def set_class_search(self, ingredient_id: str, class_id: str, enabled: bool) -> None:
+        """The app's set_class_search(): switching a class on again makes its words due for the check of the
+        past (trigger class_search_enabled_again)."""
         if (ingredient_id, class_id) not in self.ingredient_class:
-            self.ingredient_class.append((ingredient_id, class_id))
+            raise KeyError("That class is not linked to this ingredient.")
+        st = self.ingredient_class_state.setdefault((ingredient_id, class_id), {"relation": "group", "enabled": True})
+        if enabled and not st["enabled"]:
+            for t in self.terms:
+                if t.is_class and t.class_id == class_id:
+                    self.term_state.setdefault(t.id, {"rematched_at": None, "source": None})["changed_at"] = _now()
+        st["enabled"] = enabled
 
     # ───────────────────────────── the check of the past ─────────────────────────────
     def _due(self, term_id: str) -> bool:

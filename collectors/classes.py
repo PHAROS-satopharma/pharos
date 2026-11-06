@@ -6,6 +6,11 @@ levofloxacin J01MA12 → J01MA, Fluoroquinolones) becomes a drug class, and the 
 each regulator's own language. A class word only matches in its own language, and a notice that names only
 the class is history-free news for the daily digest, never an immediate message (``collectors/run.py``).
 
+The level-3 class above the group (the first four characters: J01M, Quinolone antibacterials) is made and
+linked too, as the ingredient's *parent* class, but its words are NOT searched until an administrator has read
+them and switched it on (ingredient_class.enabled, migration 0049): a wide class's words from Wikidata carry
+noise ("girase inhibitors"), and each English word costs a 12-month look-back on PubMed and PubMed Central.
+
 Where the words come from:
   1. WHO's ATC index names the group in English (atcddd.fhi.no, the class's name in the app).
   2. Wikidata: the item whose ATC code (P267) is the group, its labels and aliases in the 15 languages.
@@ -48,6 +53,7 @@ DRUG_CLASS_QID = "Q2585617"
 UA = f"PHAROS/1.0 (pharmacovigilance screening aid; {os.environ.get('CONTACT_EMAIL') or 'pharos@satopharma.com'})"
 
 _LEVEL4 = re.compile(r"^[A-Z]\d{2}[A-Z]{2}$")
+_LEVEL3 = re.compile(r"^[A-Z]\d{2}[A-Z]$")
 _QID = re.compile(r"^Q\d+$")
 _CJK = ("ja", "ko", "zh")
 _JUNK_CHARS = set("()[]{}:;/\\,\"!?=+*&%$#@|<>_~^`")
@@ -76,6 +82,17 @@ def level4(atc: str | None) -> str | None:
     """J01MA12 → J01MA; None when the code is too short to have a level-4 group."""
     code = (atc or "").strip().upper()[:5]
     return code if _LEVEL4.match(code) else None
+
+
+def level3(atc: str | None) -> str | None:
+    """J01MA12 → J01M, the class above the group; None when the code is too short."""
+    code = (atc or "").strip().upper()[:4]
+    return code if _LEVEL3.match(code) else None
+
+
+def sentence_case(name: str) -> str:
+    """WHO writes a level-3 class in capitals ("QUINOLONE ANTIBACTERIALS"); the app writes it as a name."""
+    return name[:1] + name[1:].lower() if name and not any(ch.islower() for ch in name) else name
 
 
 # ───────────────────────────── the words ─────────────────────────────
@@ -181,8 +198,8 @@ def _labels_query(where: str) -> str:
 
 
 def query_by_atc(code: str) -> str:
-    if not _LEVEL4.match(code):
-        raise ValueError(f"not an ATC level-4 code: {code!r}")
+    if not (_LEVEL4.match(code) or _LEVEL3.match(code)):
+        raise ValueError(f"not an ATC level-3 or level-4 code: {code!r}")
     return _labels_query(f'?item wdt:P267 "{code}" .')
 
 
@@ -232,7 +249,7 @@ class BuiltClass:
 def build_class(fetch: Fetch, code: str) -> BuiltClass:
     """Name and words of the ATC group ``code``. Network and changed-page errors propagate: the
     ingredient is simply tried again on the next daily run."""
-    name = who_name(fetch, code)
+    name = sentence_case(who_name(fetch, code) or "") or None
     found = _sparql(fetch, query_by_atc(code))
     how = "the ATC code on Wikidata"
     if not found and name:
@@ -267,34 +284,38 @@ class Summary:
 
 
 def run(store: Any, fetch: Fetch, *, dry_run: bool = False) -> Summary:
+    """Each watched ingredient's group (level 4, searched) and parent class (level 3, shown but not searched
+    until an administrator switches it on). An ingredient already linked to a code is left as it is."""
     out = Summary()
     made: dict[str, str | None] = {}
     for ing in store.ingredients_for_classes():
-        code = level4(ing.get("atc_code"))
-        if not code or code in (ing.get("class_codes") or []):
-            continue
-        if code not in made:
-            made[code] = store.drug_class_id(code)
-            if made[code] is None:
-                try:
-                    built = build_class(fetch, code)
-                except Exception as exc:  # one group failing never stops the others; tried again tomorrow
-                    log.warning("%s (%s): the class could not be made: %s", ing["inn_en"], code, exc)
-                    out.failed.append(f"{ing['inn_en']} ({code})")
-                    continue
-                log.info("%s %s: %d words in %d languages, from %s", code, built.name_en, len(built.terms),
-                         len({t["lang"] for t in built.terms}), built.how)
-                for t in built.terms:
-                    log.info("  %s  %s  (%s)", t["lang"], t["term"], t["mode"])
-                out.created.append(f"{code} {built.name_en}")
-                made[code] = "dry-run" if dry_run else store.create_drug_class(
-                    code=code, name_en=built.name_en, wikidata_qid=built.wikidata_qid, terms=built.terms)
-        class_id = made[code]
-        if class_id is None:
-            continue
-        if not dry_run:
-            store.link_ingredient_class(ing["id"], class_id)
-        out.linked.append(f"{ing['inn_en']} → {code}")
+        have = ing.get("class_codes") or []
+        for code, relation in ((level4(ing.get("atc_code")), "group"), (level3(ing.get("atc_code")), "parent")):
+            if not code or code in have:
+                continue
+            if code not in made:
+                made[code] = store.drug_class_id(code)
+                if made[code] is None:
+                    try:
+                        built = build_class(fetch, code)
+                    except Exception as exc:  # one class failing never stops the others; tried again tomorrow
+                        log.warning("%s (%s): the class could not be made: %s", ing["inn_en"], code, exc)
+                        out.failed.append(f"{ing['inn_en']} ({code})")
+                        continue
+                    log.info("%s %s: %d words in %d languages, from %s", code, built.name_en, len(built.terms),
+                             len({t["lang"] for t in built.terms}), built.how)
+                    for t in built.terms:
+                        log.info("  %s  %s  (%s)", t["lang"], t["term"], t["mode"])
+                    out.created.append(f"{code} {built.name_en}")
+                    made[code] = "dry-run" if dry_run else store.create_drug_class(
+                        code=code, name_en=built.name_en, wikidata_qid=built.wikidata_qid, terms=built.terms)
+            class_id = made[code]
+            if class_id is None:
+                continue
+            searched = relation == "group"
+            if not dry_run:
+                store.link_ingredient_class(ing["id"], class_id, relation=relation, enabled=searched)
+            out.linked.append(f"{ing['inn_en']} → {code}" + ("" if searched else " (off)"))
     return out
 
 

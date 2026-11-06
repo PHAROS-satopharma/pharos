@@ -21,6 +21,14 @@ the paper is linked to its ingredient (a name search) or to its drug class (a cl
 only class words found it: like a regulator's class-wide notice, it never alerts at once and goes to the daily
 class digest.
 
+Case reports. The publication types (``pubtype``: "Case Reports", "Review" …) are in a paper's PubMed record
+only, so for the papers PMC alone found the run reads their PubMed records too, by the PMID the PMC record
+carries (``articleids``), in the same batches of 200. ``structured.case_report`` is ``{"reason": "pubtype"}``
+when PubMed types the paper Case Reports, ``{"reason": "title"}`` when its title says "case report", "case
+series" or "a case of" (the words of ``v_case_report``, migration 0031), else null. A paper not in PubMed yet
+has no type, so only its title can say. The flag starts the reporting clock on the Ingredients screen (day zero
+is the Cairo day PHAROS found the paper) and puts the paper in the daily message (``collectors/alerts.py``).
+
 Windows. A search that has run before reads from the last complete run minus 3 days (at most 90 days back;
 ``lookback_days`` before the source's first complete run). A search never run (a newly added ingredient or class
 word, or one not run for 90 days) first looks back ``look_back_months`` (``class_look_back_months`` for a class
@@ -51,6 +59,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterable
@@ -82,6 +91,19 @@ SUMMARY_BATCH = 200
 MAX_NEW_ITEMS = 400           # the runner's default
 GAP_NO_KEY_S = 0.34           # NCBI: at most 3 requests a second without an API key …
 GAP_KEY_S = 0.11              # … and 10 with one
+CASE_REPORT_TYPE = "Case Reports"
+# the words of v_case_report (0031): \m and \M there, whole words here
+CASE_REPORT_TITLE = re.compile(r"\b(case report|case reports|case series|a case of)\b", re.IGNORECASE)
+
+
+def case_report(pubtype: list | None, title: str | None) -> dict | None:
+    """``{"reason": "pubtype"}`` when PubMed types the paper Case Reports, ``{"reason": "title"}`` when only its
+    title says so, else None."""
+    if CASE_REPORT_TYPE in (pubtype or []):
+        return {"reason": "pubtype"}
+    if CASE_REPORT_TITLE.search(title or ""):
+        return {"reason": "title"}
+    return None
 
 
 def _common() -> str:
@@ -338,10 +360,12 @@ class Paper:
         published = (parse_date(rec.get("sortpubdate") or rec.get("sortdate"))
                      or parse_date(rec.get("pubdate"), dayfirst=False))
         queries = sorted(self.kinds, key=str.casefold)
+        title = (rec.get("title") or rec.get("vernaculartitle") or "").strip() or self.external_id
+        pubtype = (self.pubmed or {}).get("pubtype")
         return Item(
             external_id=self.external_id,
             url=url or "",
-            title=(rec.get("title") or rec.get("vernaculartitle") or "").strip() or self.external_id,
+            title=title,
             published=published,
             doc_type="literature",
             lang=LANGS.get(langs[0], langs[0][:2]) if langs else "en",
@@ -354,7 +378,8 @@ class Paper:
                 "look_back": not self.normal,
                 "journal": rec.get("fulljournalname") or rec.get("source"),
                 "pubdate": rec.get("pubdate"), "authors": authors,
-                "pubtype": (self.pubmed or {}).get("pubtype"),
+                "pubtype": pubtype,
+                "case_report": case_report(pubtype, title),
                 "doi": _article_ids(self.pubmed).get("doi") or _article_ids(self.pmc).get("doi") or None,
                 "vernaculartitle": rec.get("vernaculartitle") or None,
             },
@@ -450,6 +475,12 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
         wanted = wanted[:int(opts.get("max_new_items", MAX_NEW_ITEMS))]
     records = {db: _esummary(ctx, db, [uid for d, uid in wanted if d == db]) for db in DBS}
     asked = set(wanted)
+    # The publication types of a paper PMC alone found are in its PubMed record: read those too.
+    pmc_only = list(dict.fromkeys(
+        pmid for pmid in (_pmid(_article_ids(rec).get("pmid")) for rec in records["pmc"].values())
+        if pmid and pmid not in records["pubmed"]))
+    if pmc_only:
+        records["pubmed"].update(_esummary(ctx, "pubmed", pmc_only))
 
     paper_of = _papers(records)
     for key, found in hits.items():

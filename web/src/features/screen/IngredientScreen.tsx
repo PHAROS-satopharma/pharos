@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import '../../styles/screen.css';
+import '../../styles/papers.css';
 import { errorMessage } from '../../lib/api';
 import { formatDate, formatDateTime, formatNumber } from '../../lib/format';
 import { DOC_TYPE_LABEL, languageName } from '../../lib/labels';
@@ -18,9 +20,22 @@ import { answerText, countryAnswers, readsText, summaryLine, toCheckByHand, type
 import { DecisionButtons } from './DecisionButtons';
 import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
+import { caseReportLabel, dueLine, mlmLabel, orderPapers, withPaperDecision } from './papers';
+import { paperStateKey, useMlmMonitored, usePaperStates } from './paperState';
 import { PRESETS, cairoDayOf, presetDays, rangeError, rangeFromSearch, rangeLabel, type DayRange } from './range';
 import { ReadEmail } from './ReadEmail';
-import type { IngredientScreenData, Mention, Paper, ScreenIngredient, ScreenLiterature } from './types';
+import { classesLine, relationTag } from './relation';
+import type {
+  Decision,
+  Findings,
+  IngredientScreenData,
+  Mention,
+  Paper,
+  PaperState,
+  PaperStates,
+  ScreenIngredient,
+  ScreenLiterature,
+} from './types';
 
 const PAGE_KIND: Record<PageKind, string> = {
   database: 'Drug database',
@@ -71,7 +86,7 @@ export function IngredientScreen() {
 function IngredientLine({ ing }: { ing: ScreenIngredient }) {
   const parts = [
     ing.atc_code ? `ATC ${ing.atc_code}` : 'No ATC code',
-    ing.classes.length ? ing.classes.map((c) => c.name_en).join(', ') : null,
+    classesLine(ing.classes),
     `Looked for by ${plural(ing.names, 'name', 'names')} in ${plural(ing.name_languages, 'language', 'languages')}` +
       (ing.class_words
         ? ` and ${plural(ing.class_words, 'class word', 'class words')} in ${plural(ing.class_languages, 'language', 'languages')}`
@@ -173,7 +188,7 @@ function Body({
           <SectionHead index="01" title="Her countries" aside={`${hers.length}`} />
           <div className="scr-countries">
             {hers.map((c) => (
-              <CountryBlock key={c.country} c={c} queryKey={queryKey} />
+              <CountryBlock key={c.country} c={c} findings={data.findings} queryKey={queryKey} />
             ))}
           </div>
         </section>
@@ -184,7 +199,7 @@ function Body({
           <SectionHead index="02" title="Other authorities" aside={`${others.length}`} />
           <div className="scr-countries">
             {others.map((c) => (
-              <CountryBlock key={c.country} c={c} queryKey={queryKey} />
+              <CountryBlock key={c.country} c={c} findings={data.findings} queryKey={queryKey} />
             ))}
           </div>
         </section>
@@ -201,7 +216,7 @@ function Body({
         {data.label_changes.length ? (
           <ol className="scr-mentions">
             {data.label_changes.map((m) => (
-              <MentionItem key={m.document_id} m={m} showWhere queryKey={queryKey} />
+              <MentionItem key={m.document_id} m={m} showWhere findings={data.findings} queryKey={queryKey} />
             ))}
           </ol>
         ) : (
@@ -209,12 +224,12 @@ function Body({
         )}
       </section>
 
-      <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} />
+      <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} findings={data.findings} queryKey={queryKey} />
     </>
   );
 }
 
-function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly unknown[] }) {
+function CountryBlock({ c, findings, queryKey }: { c: CountryAnswer; findings: Findings; queryKey: readonly unknown[] }) {
   const sources = new Map(c.sources.map((s) => [s.id, s]));
   const read = c.sources.filter((s) => listsItems(s.kind));
   const labels = sourceLabels(read, c.pages);
@@ -234,7 +249,7 @@ function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly un
       {c.mentions.length ? (
         <ol className="scr-mentions">
           {c.mentions.map((m) => (
-            <MentionItem key={m.document_id} m={m} showWhere={c.regulators.length > 1} queryKey={queryKey} />
+            <MentionItem key={m.document_id} m={m} showWhere={c.regulators.length > 1} findings={findings} queryKey={queryKey} />
           ))}
         </ol>
       ) : null}
@@ -284,9 +299,21 @@ function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly un
   );
 }
 
-function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolean; queryKey: readonly unknown[] }) {
+/** One mention; its notice's clock comes from the screen's data (`findings`), never from a second cache read. */
+function MentionItem({
+  m,
+  showWhere,
+  findings,
+  queryKey,
+}: {
+  m: Mention;
+  showWhere: boolean;
+  findings: Findings;
+  queryKey: readonly unknown[];
+}) {
   const href = safeHref(m.link);
   const sections = Array.isArray(m.sections) ? m.sections.filter((s) => typeof s === 'string') : [];
+  const byClass = relationTag(m);
   return (
     <li className={cx('scr-mention', m.is_backfill && 'is-history')}>
       <div className="scr-meta">
@@ -295,9 +322,9 @@ function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolea
         </span>
         {m.doc_type !== 'other' ? <span>{DOC_TYPE_LABEL[m.doc_type]}</span> : null}
         {showWhere ? <span>{m.regulator_name}</span> : null}
-        {m.by_class ? (
-          <Tag tone="quiet" title="Only words of its drug class matched, not the ingredient's own names">
-            By class
+        {byClass ? (
+          <Tag tone="quiet" title={byClass.title}>
+            {byClass.text}
           </Tag>
         ) : null}
         {m.is_backfill ? (
@@ -330,21 +357,47 @@ function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolea
       {!href && (m.email_id || m.email_r2_key) ? (
         <ReadEmail emailId={m.email_id} r2Key={m.email_r2_key} title={m.title} lang={m.lang} />
       ) : null}
-      <DecisionButtons mention={m} queryKey={queryKey} />
+      <DecisionButtons mention={m} queryKey={queryKey} finding={m.issue_id ? (findings[m.issue_id] ?? null) : null} />
     </li>
   );
 }
 
 // ───────────────────────────── the papers ─────────────────────────────
 
-function Literature({ ing, lit, from, to }: { ing: ScreenIngredient; lit: ScreenLiterature; from: string; to: string }) {
+function Literature({
+  ing,
+  lit,
+  from,
+  to,
+  findings,
+  queryKey,
+}: {
+  ing: ScreenIngredient;
+  lit: ScreenLiterature;
+  from: string;
+  to: string;
+  /** The clocks of the notices on the screen (finding_state): a paper's notice has one too. */
+  findings: Findings;
+  queryKey: readonly unknown[];
+}) {
+  const qc = useQueryClient();
   const [more, setMore] = useState(false);
   const [ask, setAsk] = useState(false);
   const extra = useMorePapers(ing.id, from, to, more);
   const live = useLiteratureSearch(ask ? ing.id : null, from, to);
-  const papers: Paper[] = [...lit.first, ...(extra.data?.pages.flat() ?? [])];
+  const loaded: Paper[] = [...lit.first, ...(extra.data?.pages.flat() ?? [])];
+  // what each paper's notice says, and whether it looks like a case report (0044); case reports first
+  const { states, error: stateError } = usePaperStates(ing.id, from, to, loaded);
+  const papers = orderPapers(loaded, states);
+  const cases = papers.filter((p) => states[p.document_id]?.case_report).length;
+  const mlm = mlmLabel(useMlmMonitored(ing.id).data);
   const left = lit.papers - papers.length;
   const canMore = left > 0 && (!more || Boolean(extra.hasNextPage));
+  // a decision on a paper's notice shows at once on every paper filed under it, on every page loaded
+  const onDecision = (issueId: string, d: Decision) =>
+    qc.setQueriesData<PaperStates>({ queryKey: paperStateKey(ing.id, from, to) }, (old) =>
+      old ? withPaperDecision(old, issueId, d) : old,
+    );
 
   return (
     <section className="scr-section" aria-label="Literature">
@@ -353,9 +406,16 @@ function Literature({ ing, lit, from, to }: { ing: ScreenIngredient; lit: Screen
         {lit.papers
           ? `${plural(lit.papers, 'paper', 'papers')} in these days: ${formatNumber(lit.by_name)} name the ingredient, ` +
             `${formatNumber(lit.by_class)} only its class · ${formatNumber(lit.pubmed)} in PubMed, ` +
-            `${formatNumber(lit.pmc)} in PubMed Central`
+            `${formatNumber(lit.pmc)} in PubMed Central` +
+            (cases ? ` · ${plural(cases, 'possible case report', 'possible case reports')}` : '')
           : 'No paper found by the daily literature watch in these days.'}
       </p>
+      {mlm ? (
+        <p className="scr-mlm">
+          <span className="scr-mlm-label">{mlm.label}</span>
+          <span className="scr-mlm-explain">{mlm.explain}</span>
+        </p>
+      ) : null}
 
       {lit.by_query.length ? (
         <table className="scr-queries">
@@ -407,9 +467,21 @@ function Literature({ ing, lit, from, to }: { ing: ScreenIngredient; lit: Screen
       {papers.length ? (
         <ol className="scr-papers">
           {papers.map((p) => (
-            <PaperItem key={p.document_id} p={p} />
+            <PaperItem
+              key={p.document_id}
+              p={p}
+              state={states[p.document_id]}
+              findings={findings}
+              queryKey={queryKey}
+              onDecision={onDecision}
+            />
           ))}
         </ol>
+      ) : null}
+      {stateError ? (
+        <Notice tone="error">
+          Whether these papers are case reports could not be read: {errorMessage(stateError)}
+        </Notice>
       ) : null}
       {canMore ? (
         <Button
@@ -437,14 +509,35 @@ function LiveCount({ label, count, url, error }: { label: string; count: number 
   );
 }
 
-function PaperItem({ p }: { p: Paper }) {
+function PaperItem({
+  p,
+  state,
+  findings,
+  queryKey,
+  onDecision,
+}: {
+  p: Paper;
+  state: PaperState | undefined;
+  findings: Findings;
+  queryKey: readonly unknown[];
+  onDecision: (issueId: string, d: Decision) => void;
+}) {
   const pubmed = safeHref(p.pubmed_url);
   const pmc = safeHref(p.pmc_url);
+  const isCase = Boolean(state?.case_report);
   return (
-    <li className={cx('scr-paper', p.is_backfill && 'is-history')}>
+    <li className={cx('scr-paper', p.is_backfill && 'is-history', isCase && 'is-case')}>
       <div className="scr-meta">
         <span className="scr-date">{formatDate(p.day)}</span>
         {p.journal ? <span>{p.journal}</span> : null}
+        {state?.case_report ? (
+          <>
+            <Tag tone="warning" title="A valid case is reported within 15 days if serious, 90 if not">
+              Possible case report
+            </Tag>
+            <span className="scr-case-why">{caseReportLabel(state.case_report)}</span>
+          </>
+        ) : null}
         {p.by_class ? (
           <Tag tone="quiet" title="Found by a word of its drug class, not by the ingredient's name">
             By class
@@ -459,6 +552,7 @@ function PaperItem({ p }: { p: Paper }) {
       <p className="scr-title" lang={p.lang ?? undefined}>
         {p.title}
       </p>
+      {state?.case_report ? <p className="scr-due">{dueLine(state)}</p> : null}
       {pubmed || pmc ? (
         <p className="scr-paper-links">
           {pubmed ? (
@@ -472,6 +566,14 @@ function PaperItem({ p }: { p: Paper }) {
             </a>
           ) : null}
         </p>
+      ) : null}
+      {state ? (
+        <DecisionButtons
+          mention={state}
+          queryKey={queryKey}
+          finding={state.issue_id ? (findings[state.issue_id] ?? null) : null}
+          onDecision={onDecision}
+        />
       ) : null}
     </li>
   );

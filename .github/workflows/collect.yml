@@ -3,10 +3,11 @@
 #
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
-#   daily    02:31                       drug classes from the ATC code; large JSON files (EMA medicines, Health
+#   daily    02:31                       drug classes from the ATC code (a manual run can choose "classes" to run
+#                                        only that step); large JSON files (EMA medicines, Health
 #                                        Canada recalls …) and NCBI literature (PubMed and PubMed Central); the
 #                                        EURD list; the check of the past (15 minutes)
-#   weekly   Monday 03:23                SPC / label watch
+#   weekly   Monday 03:23                SPC / label watch, EMA's literature monitoring list
 #   monthly  the 1st at 01:41            monthly sources (the report itself is report.yml)
 #
 # Telegram dry-run is NOT set here: the collectors read app_setting.telegram_dry_run (true until the owner
@@ -28,7 +29,7 @@ on:
       schedule:
         description: Which schedule to run
         type: choice
-        options: ["4h", "12h", "daily", "weekly", "monthly", "all"]
+        options: ["4h", "12h", "daily", "weekly", "monthly", "all", "classes"]
         default: "4h"
       source:
         description: Only this source id (optional)
@@ -74,7 +75,7 @@ jobs:
             "41 1 1 * *")    s=monthly ;;
             *)               s="${INPUT_SCHEDULE:-4h}" ;;
           esac
-          case "$s" in 4h|12h|daily|weekly|monthly|all) ;; *) echo "unknown schedule $s"; exit 1 ;; esac
+          case "$s" in 4h|12h|daily|weekly|monthly|all|classes) ;; *) echo "unknown schedule $s"; exit 1 ;; esac
           echo "schedule=$s" >> "$GITHUB_OUTPUT"
           # Only browser-engine runs need Playwright (12h, all, and the weekly SPC watch for JS-only sites).
           case "$s" in 12h|all|weekly) echo "browser=true" >> "$GITHUB_OUTPUT" ;; *) echo "browser=false" >> "$GITHUB_OUTPUT" ;; esac
@@ -117,12 +118,13 @@ jobs:
       # collection so that a new ingredient's class words are looked for from this run on. A failure warns and
       # never fails the collection; that ingredient is tried again the next day.
       - name: Drug classes
-        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all' || steps.which.outputs.schedule == 'classes'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python -m collectors.classes || echo "::warning::Some drug classes could not be made; they are tried again tomorrow."
 
       - name: Collect
+        if: steps.which.outputs.schedule != 'classes'
         env:
           # Secrets go to this step only, never to the job: the setup actions above never see them.
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -177,3 +179,15 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.rematch || echo "::warning::The check of the past stopped with an error; the next run continues it."
+
+      # EMA's medical literature monitoring list (which watched ingredients EMA screens itself), weekly. A
+      # failure warns and never fails the collection; an unchanged list (same SHA-256) is not read again.
+      - name: Literature monitoring list
+        if: steps.which.outputs.schedule == 'weekly' || steps.which.outputs.schedule == 'all'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python -m collectors.mlm || echo "::warning::EMA's literature monitoring list could not be read; the last one is kept."

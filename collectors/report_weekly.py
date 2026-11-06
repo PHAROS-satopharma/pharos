@@ -8,6 +8,8 @@ It is read from the same database functions as the app, so the report and the sc
 
   ingredient_screen(), ingredient_papers()   sections 3 and 4, per watched ingredient (migration 0039)
   ingredient_readiness()                     section 1, ready or still preparing, per ingredient (migration 0045)
+  paper_state(), mlm_monitored()             section 4: possible case reports, their dates and decisions, and
+                                             whether EMA reads the literature for the ingredient (0044)
   screening_log()                            sections 2 and 6 (migration 0040)
   new_items(), country_look                  section 5 (migration 0032)
 
@@ -371,7 +373,7 @@ select lower(regexp_replace(btrim(i.inn_en), '\s+', ' ', 'g')) as query, 'name' 
   from ingredient i where i.id = %(i)s::uuid
 union
 select lower(regexp_replace(btrim(ct.term), '\s+', ' ', 'g')), 'class'
-  from class_term ct join ingredient_class ic on ic.class_id = ct.class_id
+  from class_term ct join ingredient_class ic on ic.class_id = ct.class_id and ic.enabled
  where ic.ingredient_id = %(i)s::uuid and ct.lang = 'en'
 """
 
@@ -392,9 +394,17 @@ def gather_week(db: Any, week: Week) -> dict:
                       by_class, is_backfill, first_seen_at
                  from ingredient_papers(%(i)s::uuid, %(f)s, %(t)s)""", p)
         searches = db.fetchall(SEARCHES_SQL, p)
+        # the notice, decision and case-report dates of each paper listed, 200 papers a call
+        states: dict = {}
+        ids = [str(x["document_id"]) for x in papers]
+        for k in range(0, len(ids), 200):
+            rows = db.fetchall("select paper_state(%(ids)s::uuid[]) as state", {"ids": ids[k:k + 200]})
+            states.update((rows[0].get("state") if rows else None) or {})
+        mlm = db.fetchall("select mlm_monitored(%(i)s::uuid) as monitored", {"i": ing["id"]})
         # How far the ingredient is prepared, as the Ingredients page reads it (ingredient_readiness, 0045).
         ready = db.fetchone("select ingredient_readiness(%(i)s::uuid) as readiness", {"i": ing["id"]}) or {}
         screens.append({"screen": row.get("screen") or {}, "papers": papers, "searches": searches,
+                        "states": states, "mlm": bool(mlm[0]["monitored"]) if mlm else None,
                         "readiness": ready.get("readiness") or {}})
     raw = {
         "screens": screens,
@@ -536,12 +546,35 @@ def _mention(m: dict) -> dict:
     }
 
 
-def _paper(p: dict) -> dict:
+CASE_REASON = {"pubtype": "PubMed lists it as a case report", "title": "its title says so"}
+MLM_TEXT = {True: "Monitored by EMA (MLM): EMA reads the literature for this ingredient",
+            False: "Not monitored by EMA: cases in the literature are ours to report"}
+
+
+def _paper(p: dict, state: dict | None = None) -> dict:
+    """A paper as the report lists it, with what paper_state() (0044) says of it: whether it looks like a case
+    report and why, day zero (the Cairo day PHAROS found it) with the 15- and 90-day dates, and the decision on
+    its notice, worded as a notice's decision is."""
     pubmed, pmc = safe_link(p.get("pubmed_url")), safe_link(p.get("pmc_url"))
+    st = state or {}
+    case = st.get("case_report") or None
+    d = st.get("decision") or None
+    status = st.get("issue_status")
     return {"document_id": p.get("document_id"), "day": day_text(p.get("day")), "title": p.get("title") or "",
             "lang": p.get("lang"), "journal": p.get("journal") or "", "pubmed": pubmed,
             "pubmed_id": tail_id(pubmed), "pmc": pmc, "pmc_id": tail_id(pmc),
-            "by_class": bool(p.get("by_class")), "history": bool(p.get("is_backfill"))}
+            "by_class": bool(p.get("by_class")), "history": bool(p.get("is_backfill")),
+            "case_report": bool(case),
+            "case_reason": CASE_REASON.get((case or {}).get("reason"), "") if case else "",
+            "day_zero": day_text(st.get("day_zero")),
+            "due_serious": day_text(st.get("due_serious")),
+            "due_nonserious": day_text(st.get("due_nonserious")),
+            "status": status,
+            "decision": DECISION_LABEL.get(status or "new", NO_DECISION) if st.get("issue_id") else NO_DECISION,
+            "decided_by": (d or {}).get("person") or "",
+            "decided_at": cairo_time((d or {}).get("at")),
+            "reason": (d or {}).get("comment") or "",
+            "awaiting": not st.get("issue_id") or status in (None, "new", "reviewed")}
 
 
 def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
@@ -595,6 +628,9 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         lit = screen.get("literature") or {}
         counts = {q.get("query"): q for q in lit.get("by_query") or []}
         searches = sorted(entry["searches"], key=lambda s: (s["kind"] != "name", s["query"]))
+        states = entry.get("states") or {}
+        listed = [_paper(p, states.get(str(p.get("document_id")))) for p in entry["papers"]]
+        listed.sort(key=lambda x: not x["case_report"])          # possible case reports first, else as the screen
         ingredients.append({
             "id": ing.get("id"),
             "name": ing.get("inn_en") or "",
@@ -610,7 +646,9 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
                 "searches": [{"query": s["query"], "kind": "name" if s["kind"] == "name" else "class word",
                               "pubmed": int((counts.get(s["query"]) or {}).get("pubmed") or 0),
                               "pmc": int((counts.get(s["query"]) or {}).get("pmc") or 0)} for s in searches],
-                "list": [_paper(p) for p in entry["papers"]],
+                "list": listed,
+                "case_reports": sum(1 for x in listed if x["case_report"]),
+                "mlm": MLM_TEXT.get(entry.get("mlm"), ""),
             },
             # 1. Ready, or still preparing: the row's line on the Ingredients page (0045).
             "readiness": {"name": ing.get("inn_en") or "", "ready": bool((entry.get("readiness") or {}).get("ready")),
@@ -681,7 +719,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
     # 1. Summary
     found = {m["document_id"]: m for i in ingredients for c in i["countries"] for m in c["mentions"]}
     labels = {m["document_id"] for i in ingredients for m in i["label_changes"]}
-    papers = {p["document_id"] for i in ingredients for p in i["literature"]["list"]}
+    papers = {p["document_id"]: p for i in ingredients for p in i["literature"]["list"]}
     to_check_answers = sum(1 for i in ingredients for c in i["countries"] if c["check"])
     hers_read = sum(1 for r in authorities["hers"] if r["read"])
     others_read = sum(1 for r in authorities["others"] if r["read"])
@@ -702,6 +740,9 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         ("Of them, no decision yet", sum(1 for m in found.values() if m["awaiting"])),
         ("Label changes", len(labels)),
         ("Papers in PubMed and PubMed Central", len(papers)),
+        ("Possible case reports in the literature", sum(1 for p in papers.values() if p["case_report"])),
+        ("Case reports with no decision yet",
+         sum(1 for p in papers.values() if p["case_report"] and p["awaiting"])),
         ("Decisions taken this week", len(decisions)),
         ("Reported to the authority this week", len(sent)),
         ("Due to the authority", f"{len(due_now)} ({late_now} late)"),
@@ -776,11 +817,17 @@ def build_weekly_xlsx(data: dict) -> bytes:
                 for i in data["ingredients"] for s in i["literature"]["searches"]],
                [18, 36, 14, 10, 16])
     xlsx_sheet(wb, "NCBI papers",
-               ["Ingredient", "Date", "Title", "Journal", "PubMed", "PubMed Central", "By class", "History"],
+               ["Ingredient", "Date", "Title", "Journal", "PubMed", "PubMed Central", "By class", "History",
+                "Possible case report", "Day zero", "15 days", "90 days", "Decision", "Decided by",
+                "Decided (Cairo)", "Reason"],
                [[i["name"], p["day"], p["title"], p["journal"], p["pubmed"] or "", p["pmc"] or "",
-                 yes(p["by_class"]), yes(p["history"])]
+                 yes(p["by_class"]), yes(p["history"]),
+                 f"yes, {p['case_reason']}" if p["case_report"] else "",
+                 p["day_zero"] if p["case_report"] else "", p["due_serious"] if p["case_report"] else "",
+                 p["due_nonserious"] if p["case_report"] else "",
+                 p["decision"], p["decided_by"], p["decided_at"], p["reason"]]
                 for i in data["ingredients"] for p in i["literature"]["list"]],
-               [18, 14, 70, 30, 40, 46, 9, 9], links=True)
+               [18, 14, 70, 30, 40, 46, 9, 9, 30, 14, 14, 14, 22, 22, 18, 44], links=True)
     xlsx_sheet(wb, "Everything new",
                ["Group", "Country", "Authority", "Date", "Title (original)", "Language", "Link", "Kind", "Type",
                 "Matched the watchlist", "Looked at this week by"],
