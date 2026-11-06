@@ -392,7 +392,7 @@ def gather_week(db: Any, week: Week) -> dict:
                  from ingredient_papers(%(i)s::uuid, %(f)s, %(t)s)""", p)
         searches = db.fetchall(SEARCHES_SQL, p)
         screens.append({"screen": row.get("screen") or {}, "papers": papers, "searches": searches})
-    return {
+    raw = {
         "screens": screens,
         "log": db.fetchall("select * from screening_log(%(f)s, %(t)s)", days),
         "new_items": db.fetchall(
@@ -418,13 +418,47 @@ def gather_week(db: Any, week: Week) -> dict:
                  from source"""),
         "decisions": db.fetchall(
             """select re.created_at, re.from_status::text as from_status, re.to_status::text as to_status,
-                      re.comment, p.full_name as person, i.title
+                      re.comment, p.full_name as person, i.title, re.issue_id::text as issue_id
                  from review_event re
                  join person p on p.id = re.person_id
                  join issue i on i.id = re.issue_id
                 where re.created_at >= %(a)s and re.created_at < %(b)s
                 order by re.created_at""", {"a": a, "b": b}),
+        # The five-day clock (0041): what was reported to the authority in the week, and what is due now.
+        "sent": db.fetchall(
+            """select ar.sent_on, ar.reference, ar.note, p.full_name as person, i.title, ar.issue_id::text as issue_id
+                 from authority_report ar
+                 join person p on p.id = ar.person_id
+                 join issue i on i.id = ar.issue_id
+                where ar.withdrawn_at is null and ar.sent_on >= %(f)s and ar.sent_on <= %(t)s
+                order by ar.sent_on, lower(i.title), ar.id""", days),
+        "due": db.fetchall("select issue_id::text as issue_id, clock::text as clock from v_eda_clock"),
     }
+    raw["findings"] = _finding_states(db, sorted({d["issue_id"] for d in raw["decisions"] if d.get("issue_id")}))
+    return raw
+
+
+def _finding_states(db: Any, issue_ids: list[str]) -> dict:
+    """The clock of each notice decided this week, as finding_state() (0041) answers the screen."""
+    if not issue_ids:
+        return {}
+    row = db.fetchone("select finding_state(%(ids)s::uuid[]) as f", {"ids": issue_ids}) or {}
+    return row.get("f") or {}
+
+
+def clock_cells(f: dict | None) -> dict:
+    """The two clock columns of a decision row: the day the authority must have it by, and when it was sent
+    ("date · reference"). Empty when the clock is off, or the notice is unknown to finding_state()."""
+    if not f or f.get("clock") == "off":
+        return {"due": "", "sent": ""}
+    due = day_text(f.get("due"))
+    if f.get("clock") == "late":
+        due = f"{due} (late)"
+    s = f.get("sent") or {}
+    sent = day_text(s.get("on")) if s else ""
+    if sent and s.get("reference"):
+        sent = f"{sent} · {s['reference']}"
+    return {"due": due, "sent": sent}
 
 
 def _authority_cards(raw: dict) -> tuple[list[dict], list[dict]]:
@@ -590,10 +624,16 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         elif r["enabled"] and int(r["runs"]) == 0:
             unread.append(row)
 
+    findings = raw.get("findings") or {}
     decisions = [{"at": cairo_time(d["created_at"]), "title": d["title"] or "",
                   "decision": DECISION_LABEL.get(d["to_status"], d["to_status"]),
                   "before": DECISION_LABEL.get(d["from_status"], d["from_status"]),
-                  "person": d["person"], "reason": d["comment"] or ""} for d in raw["decisions"]]
+                  "person": d["person"], "reason": d["comment"] or "",
+                  **clock_cells(findings.get(d.get("issue_id") or ""))} for d in raw["decisions"]]
+    sent = [{"on": day_text(s["sent_on"]), "title": s["title"] or "", "reference": s["reference"] or "",
+             "person": s["person"], "note": s["note"] or ""} for s in raw.get("sent") or []]
+    due_now = raw.get("due") or []
+    late_now = sum(1 for r in due_now if r.get("clock") == "late")
 
     # 1. Summary
     found = {m["document_id"]: m for i in ingredients for c in i["countries"] for m in c["mentions"]}
@@ -620,6 +660,8 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         ("Label changes", len(labels)),
         ("Papers in PubMed and PubMed Central", len(papers)),
         ("Decisions taken this week", len(decisions)),
+        ("Reported to the authority this week", len(sent)),
+        ("Due to the authority", f"{len(due_now)} ({late_now} late)"),
         ("Country answers to check by hand", to_check_answers),
         ("Pages to check by hand", len(pages)),
         ("Sources whose reads failed", len(failed)),
@@ -630,7 +672,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
                ("Notices naming our ingredients", len(found)),
                ("To check by hand", len(pages) + len(failed) + len(unread))]
     return {"week": week, "made_at": made_at, "summary": summary, "figures": figures, "decisions": decisions,
-            "authorities": authorities, "ingredients": ingredients, "new": new,
+            "sent": sent, "authorities": authorities, "ingredients": ingredients, "new": new,
             "check": {"pages": pages, "failed": failed, "unread": unread}}
 
 
@@ -649,10 +691,10 @@ def build_weekly_xlsx(data: dict) -> bytes:
         return "yes" if v else ""
 
     xlsx_sheet(wb, "Decisions",
-               ["When (Cairo)", "Notice (original title)", "Decision", "Before", "By", "Reason"],
-               [[d["at"], d["title"], d["decision"], d["before"], d["person"], d["reason"]]
+               ["When (Cairo)", "Notice (original title)", "Decision", "Before", "By", "Reason", "Due", "Sent"],
+               [[d["at"], d["title"], d["decision"], d["before"], d["person"], d["reason"], d["due"], d["sent"]]
                 for d in data["decisions"]],
-               [18, 60, 22, 22, 22, 50])
+               [18, 60, 22, 22, 22, 50, 20, 30])
     a = data["authorities"]
     xlsx_sheet(wb, "Authorities read",
                ["Group", "Country", "Authorities", "Reads", "OK", "Failed", "New items"],
