@@ -198,6 +198,7 @@ jobs:
       # run; after three tries it is marked failed). Always the last step, after the collection whatever it did;
       # never in the weekly run (its 90 minutes are the label watch's) nor the classes run. Chromium and the fonts
       # are installed only when a request waits. A failure is recorded on the request and never fails the run.
+      # A dry run never makes a pack: it would take a real request, and the person who asked would not be told.
       - name: Packs waiting?
         id: packs
         if: ${{ !cancelled() && steps.which.outputs.schedule != 'weekly' && steps.which.outputs.schedule != 'classes' }}
@@ -229,7 +230,7 @@ jobs:
           if [ "$HIT" != "true" ]; then python -m playwright install --with-deps chromium
           else python -m playwright install-deps chromium; fi
       - name: Packs on request
-        if: ${{ !cancelled() && steps.packs.outputs.waiting == 'true' }}
+        if: ${{ !cancelled() && steps.packs.outputs.waiting == 'true' && !inputs.dry_run }}
         timeout-minutes: 20
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

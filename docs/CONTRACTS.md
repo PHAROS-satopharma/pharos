@@ -580,12 +580,16 @@ report_request (id uuid, kind text 'psur'|'inspection', ingredient_id uuid (psur
   waits), attempts int, started_at, pdf_r2_key, pdf_sha256, xlsx_r2_key, xlsx_sha256, made_at (all five
   required when done), git_sha, made_by_run)
   -- unique (kind, ingredient, from_day, to_day) while queued or building (report_request_one_waiting).
-  -- The team reads (my_role() is not null); no write for anon or authenticated; service_role holds nothing;
+  -- The team reads a PSUR pack, an admin an inspection pack too (my_role() is not null and (kind = 'psur' or
+  -- my_role() = 'admin')); archive-url follows it (the caller's session); no write for anon or authenticated;
+  -- service_role holds nothing;
   -- audited (audit_row). The collector writes on its direct connection (the owner).
 request_report(p_kind text, p_ingredient uuid, p_from date, p_to date) returns uuid   -- security definer:
-  -- reviewer or admin (42501); kind, ingredient and days checked (22023; an unknown ingredient P0002; more than
-  -- five years or a first day after signal_cairo_today() 22023). The same pack still waiting: its id.
+  -- reviewer or admin (42501), an inspection pack admin only (42501); kind, ingredient and days checked (22023;
+  -- an unknown ingredient P0002; more than five years or a first day after signal_cairo_today() 22023). The same
+  -- pack still waiting: its id. Otherwise 22023 when the caller already has 2 queued or building, or 5 are in all.
 record_fingerprint('pack', id)   -- sha256(pdf_sha256 || ':' || xlsx_sha256) of the request; null until made,
+  -- and null for an inspection pack unless the caller is an admin,
   -- so sign_record('pack', …) refuses a pack not made (22023) and signs a made one as a weekly report.
 ```
 
@@ -595,9 +599,11 @@ count), templates `report_templates/pack_base.html`, `pack_macros.html`, `psur.h
 `for update skip locked`; attempts + 1; returns `requested_by_name`, `ingredient_name`),
 `finish_report_request()`, `fail_report_request()`, `requeue_report_request()`; `MemoryStore` the same plus
 `add_report_request()`. Archive keys `reports/packs/<kind>/<id>/<stem>.pdf|.xlsx` (`put_named(revise=True)`);
-`archive-url` serves them. Telegram kind `report`, to the requester (`reminder_people()`) and `admins()`.
-Workflow: `collect.yml` steps "Packs waiting?" and "Packs on request" (last; `!cancelled()`; 20 minutes; never
-weekly or classes). Web: `web/src/lib/psur.ts` (`frequencyMonths`, `intervalFor`), `features/reports/packs.ts`,
+`archive-url` serves them. Telegram kind `report`, to the requester (`reminder_people()`) and `admins()`; an
+inspection pack to `admins()` only. `SIGNATURES_SQL` (the inspection pack's signatures) computes each record's
+fingerprint now as `record_fingerprint()` does, signals included.
+Workflow: `collect.yml` steps "Packs waiting?" and "Packs on request" (last; `!cancelled()`; never on a dry run;
+20 minutes; never weekly or classes). Web: `web/src/lib/psur.ts` (`frequencyMonths`, `intervalFor`), `features/reports/packs.ts`,
 `Packs.tsx` (query key `['report-requests']`), `styles/reports-packs.css`. Tests: `tests/test_report_pack.py`,
 `tests/test_store_pg.py`, `supabase/tests/report_request.sql`, `packs.test.ts`, `psur.test.ts`.
 

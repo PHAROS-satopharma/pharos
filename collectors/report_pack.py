@@ -294,6 +294,34 @@ def gather_psur(db: Any, req: dict, check: Callable[[], None] = _no_check) -> di
             "mlm": bool(mlm[0]["monitored"]) if mlm else None, "log": sum_screening_logs(logs)}
 
 
+# Every signature of the days, with the fingerprint of its record now, as record_fingerprint() (0047, 0048)
+# computes it for a signer.
+SIGNATURES_SQL = """select so.signed_at, so.record_kind::text as record_kind, so.record_id::text as record_id,
+                      so.meaning::text as meaning, so.signed_name, so.signed_role::text as signed_role, so.comment,
+                      so.record_sha256, w.week_start, rq.kind as pack_kind, rq.from_day, rq.to_day,
+                      m.month, sg.ref as signal_ref,
+                      case so.record_kind::text
+                        when 'weekly_report' then encode(sha256(convert_to(w.pdf_sha256 || ':' || w.xlsx_sha256, 'UTF8')), 'hex')
+                        when 'pack' then encode(sha256(convert_to(rq.pdf_sha256 || ':' || rq.xlsx_sha256, 'UTF8')), 'hex')
+                        when 'monthly_report' then encode(sha256(convert_to(m.pdf_sha256 || ':' || m.xlsx_sha256, 'UTF8')), 'hex')
+                        -- as record_fingerprint() in 0048: this connection has no session, so it cannot call it
+                        when 'signal' then encode(sha256(convert_to(jsonb_build_object(
+                                 'signal', to_jsonb(sg) - 'updated_at',
+                                 'events', (select coalesce(jsonb_agg(e.id order by e.created_at, e.id), '[]')
+                                              from signal_event e where e.signal_id = sg.id),
+                                 'issues', (select coalesce(jsonb_agg(si.issue_id order by si.issue_id), '[]')
+                                              from signal_issue si where si.signal_id = sg.id)
+                               )::text, 'UTF8')), 'hex')
+                      end as fingerprint_now
+                 from sign_off so
+                 left join weekly_report w on so.record_kind::text = 'weekly_report' and w.id = so.record_id
+                 left join report_request rq on so.record_kind::text = 'pack' and rq.id = so.record_id
+                 left join monthly_report m on so.record_kind::text = 'monthly_report' and m.id = so.record_id
+                 left join signal sg on so.record_kind::text = 'signal' and sg.id = so.record_id
+                where so.signed_at >= %(a)s and so.signed_at < %(b)s
+                order by so.signed_at, so.id"""
+
+
 def gather_inspection(db: Any, req: dict, check: Callable[[], None] = _no_check) -> dict:
     """What an inspection pack is made from: the screening log chunk by chunk, and the records of the days."""
     period = Period("inspection", as_day(req["from_day"]), as_day(req["to_day"]))
@@ -322,23 +350,7 @@ def gather_inspection(db: Any, req: dict, check: Callable[[], None] = _no_check)
                  join issue i on i.id = re.issue_id
                 where re.created_at >= %(a)s and re.created_at < %(b)s
                 order by re.created_at, re.id""", span),
-        "signatures": db.fetchall(
-            """select so.signed_at, so.record_kind::text as record_kind, so.record_id::text as record_id,
-                      so.meaning::text as meaning, so.signed_name, so.signed_role::text as signed_role, so.comment,
-                      so.record_sha256, w.week_start, rq.kind as pack_kind, rq.from_day, rq.to_day,
-                      m.month, sg.ref as signal_ref,
-                      case so.record_kind::text
-                        when 'weekly_report' then encode(sha256(convert_to(w.pdf_sha256 || ':' || w.xlsx_sha256, 'UTF8')), 'hex')
-                        when 'pack' then encode(sha256(convert_to(rq.pdf_sha256 || ':' || rq.xlsx_sha256, 'UTF8')), 'hex')
-                        when 'monthly_report' then encode(sha256(convert_to(m.pdf_sha256 || ':' || m.xlsx_sha256, 'UTF8')), 'hex')
-                      end as fingerprint_now
-                 from sign_off so
-                 left join weekly_report w on so.record_kind::text = 'weekly_report' and w.id = so.record_id
-                 left join report_request rq on so.record_kind::text = 'pack' and rq.id = so.record_id
-                 left join monthly_report m on so.record_kind::text = 'monthly_report' and m.id = so.record_id
-                 left join signal sg on so.record_kind::text = 'signal' and sg.id = so.record_id
-                where so.signed_at >= %(a)s and so.signed_at < %(b)s
-                order by so.signed_at, so.id""", span),
+        "signatures": db.fetchall(SIGNATURES_SQL, span),
         "sent": db.fetchall(
             """select ar.sent_on, ar.authority, ar.reference, ar.note, p.full_name as person, i.title,
                       ar.withdrawn_at, ar.withdraw_reason, wp.full_name as withdrawn_by
@@ -867,9 +879,10 @@ def pack_name(req: dict, data: dict | None = None) -> str:
 
 
 def _people_to_tell(store: Any, req: dict) -> list[dict]:
-    """The person who asked (a reviewer or an administrator with Telegram), then every administrator."""
+    """The person who asked (a reviewer or an administrator with Telegram), then every administrator. An
+    inspection pack is for administrators only: a reviewer who asked for one before that is not told."""
     out: dict[str, dict] = {}
-    for p in store.reminder_people():
+    for p in store.reminder_people() if req.get("kind") != "inspection" else ():
         if str(p["person_id"]) == str(req.get("requested_by")):
             out[str(p["person_id"])] = p
     for p in store.admins():

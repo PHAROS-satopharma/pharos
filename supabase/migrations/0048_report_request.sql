@@ -9,14 +9,18 @@
 --    days it covers, both included, at most five years; who asked and when; status queued → building → done or
 --    failed, with the reason (error) and how many times the build was started (attempts). When made: the two
 --    archive keys and their SHA-256, when, the code that made it (git_sha) and the GitHub Actions run
---    (made_by_run). A member of the team reads every request; nobody writes one from the app except through
---    request_report(); every change is in the audit log. The service key (service_role) holds no right on it,
+--    (made_by_run). A member of the team reads every PSUR pack; an inspection pack is read by administrators
+--    only (review, 6 Nov 2026: it holds the whole system's evidence). Nobody writes a request from the app except
+--    through request_report(); every change is in the audit log. The service key (service_role) holds no right on it,
 --    as 0050 did for authority_report: the collector writes on its direct connection (the owner).
--- 2. request_report(p_kind, p_ingredient, p_from, p_to): a reviewer or an administrator asks. The same pack asked
---    for again while it is still waiting or being made returns that request instead of a second one (one queued
---    or building per kind, ingredient and days). A pack already made can be asked for again (a new row).
+-- 2. request_report(p_kind, p_ingredient, p_from, p_to): a reviewer or an administrator asks for a PSUR pack; an
+--    inspection pack only an administrator. The same pack asked for again while it is still waiting or being made
+--    returns that request instead of a second one (one queued or building per kind, ingredient and days). A pack
+--    already made can be asked for again (a new row). At most two of one person's packs and five in all wait at
+--    once (each takes up to about 25 minutes of a collection run): another is refused until one is ready.
 -- 3. record_fingerprint(): the 'pack' branch (0047 said "not yet") reads report_request: the SHA-256 of
---    pdf_sha256 || ':' || xlsx_sha256, as the weekly and monthly reports. A pack not made yet has no files, so no
+--    pdf_sha256 || ':' || xlsx_sha256, as the weekly and monthly reports; an inspection pack's only for an
+--    administrator, as the table. A pack not made yet has no files, so no
 --    fingerprint, and sign_record() refuses it ("That record does not exist", 22023). sign_record() is unchanged:
 --    a reviewer or an administrator signs a pack ("Reviewed" / "Approved").
 -- The archive-url function serves report_request.pdf_r2_key and xlsx_r2_key (supabase/functions/archive-url).
@@ -56,7 +60,8 @@ create unique index report_request_one_waiting on report_request
   where status in ('queued', 'building');
 
 alter table report_request enable row level security;
-create policy report_request_read on report_request for select to authenticated using (my_role() is not null);
+create policy report_request_read on report_request for select to authenticated
+  using (my_role() is not null and (kind = 'psur' or my_role() = 'admin'));
 revoke all on report_request from public, anon;
 revoke insert, update, delete, truncate on report_request from authenticated;
 create trigger audit_report_request after insert or update or delete on report_request
@@ -73,6 +78,9 @@ begin
   end if;
   if p_kind is null or p_kind not in ('psur', 'inspection') then
     raise exception 'Choose a PSUR pack or an inspection pack.' using errcode = '22023';
+  end if;
+  if p_kind = 'inspection' and my_role() <> 'admin' then
+    raise exception 'Only an administrator can ask for an inspection pack.' using errcode = '42501';
   end if;
   if p_kind = 'psur' and p_ingredient is null then
     raise exception 'Choose the ingredient of the PSUR pack.' using errcode = '22023';
@@ -99,6 +107,15 @@ begin
      and from_day = p_from and to_day = p_to and status in ('queued', 'building');
   if v_id is not null then
     return v_id;
+  end if;
+  -- A pack takes up to about 25 minutes of a collection run: two of one person's and five in all wait at most.
+  perform pg_advisory_xact_lock(hashtext('report_request'));
+  if (select count(*) from report_request
+       where requested_by = my_person_id() and status in ('queued', 'building')) >= 2 then
+    raise exception 'Two packs of yours are already waiting; ask again when one is ready.' using errcode = '22023';
+  end if;
+  if (select count(*) from report_request where status in ('queued', 'building')) >= 5 then
+    raise exception 'Five packs are already waiting; ask again when one is ready.' using errcode = '22023';
   end if;
   begin
     insert into report_request (kind, ingredient_id, from_day, to_day, requested_by)
@@ -151,7 +168,7 @@ begin
     when 'pack' then
       -- null until the pack is made (no files yet): a pack is signed once it exists
       select encode(sha256(convert_to(r.pdf_sha256 || ':' || r.xlsx_sha256, 'UTF8')), 'hex') into v_sha
-        from report_request r where r.id = p_id;
+        from report_request r where r.id = p_id and (r.kind = 'psur' or my_role() = 'admin');
   end case;
   return v_sha;
 end $$;

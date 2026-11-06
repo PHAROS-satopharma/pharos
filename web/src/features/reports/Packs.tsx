@@ -18,10 +18,12 @@ import {
   type PackRequest,
   PACK_NAME,
   daysProblem,
+  kindOptions,
   lastTwelveMonths,
   newestFirst,
   packFileName,
   packLabel,
+  packsFor,
   psurDays,
   statusText,
   stillWaiting,
@@ -30,14 +32,9 @@ import '../../styles/reports-packs.css';
 
 type Row = PackRequest & { ingredient: { inn_en: string } | null; requester: string };
 
-const KIND_OPTIONS = [
-  { value: 'psur', label: 'PSUR pack: one ingredient' },
-  { value: 'inspection', label: 'Inspection pack: the whole system' },
-];
-
-function usePacks() {
+function usePacks(isAdmin: boolean) {
   return useQuery({
-    queryKey: ['report-requests'],
+    queryKey: ['report-requests', isAdmin],
     queryFn: async (): Promise<Row[]> => {
       const rows =
         unwrap<(PackRequest & { ingredient: { inn_en: string } | null })[] | null>(
@@ -47,16 +44,18 @@ function usePacks() {
             .order('requested_at', { ascending: false })
             .limit(50),
         ) ?? [];
-      const names = await personNames(rows.map((r) => r.requested_by));
-      return newestFirst(rows).map((r) => ({ ...r, requester: names.get(r.requested_by) ?? '' }));
+      // Inspection packs are for administrators only: the database reads them the same way (0048).
+      const mine = packsFor(rows, isAdmin);
+      const names = await personNames(mine.map((r) => r.requested_by));
+      return newestFirst(mine).map((r) => ({ ...r, requester: names.get(r.requested_by) ?? '' }));
     },
     // While a pack is on its way, the list is read again every minute.
     refetchInterval: (q) => (q.state.data && stillWaiting(q.state.data) ? 60_000 : false),
   });
 }
 
-/** The form a reviewer or an administrator asks for a pack with. */
-function AskForm() {
+/** The form a reviewer or an administrator asks for a pack with: an inspection pack, an administrator only. */
+function AskForm({ isAdmin }: { isAdmin: boolean }) {
   const qc = useQueryClient();
   const today = cairoToday();
   const ingredients = useIngredientList();
@@ -121,7 +120,7 @@ function AskForm() {
     >
       <div className="form-grid">
         <Field label="Pack">
-          <Select value={kind} options={KIND_OPTIONS} onChange={(e) => setKind(e.target.value as PackKind)} />
+          <Select value={kind} options={kindOptions(isAdmin)} onChange={(e) => setKind(e.target.value as PackKind)} />
         </Field>
         {kind === 'psur' ? (
           <Field label="Ingredient">
@@ -217,8 +216,8 @@ function PackCard({ r, save }: { r: Row; save: (key: string, filename: string) =
 
 /** Packs on request: the form (reviewers and administrators) and every pack asked for, newest first. */
 export function Packs() {
-  const { canReview } = useAuth();
-  const packs = usePacks();
+  const { canReview, isAdmin } = useAuth();
+  const packs = usePacks(isAdmin);
   const [error, setError] = useState<string | null>(null);
 
   async function save(key: string, filename: string) {
@@ -232,7 +231,7 @@ export function Packs() {
 
   return (
     <>
-      {canReview ? <AskForm /> : null}
+      {canReview ? <AskForm isAdmin={isAdmin} /> : null}
       {error ? <Notice tone="error">The file could not be downloaded: {error}</Notice> : null}
       {packs.isPending ? (
         <Loading label="Reading the packs" />
@@ -241,8 +240,8 @@ export function Packs() {
       ) : packs.data.length === 0 ? (
         <Empty title="No pack asked for yet.">
           <p>
-            A {PACK_NAME.psur} gathers what PHAROS found for one ingredient over its PSUR interval; an{' '}
-            {PACK_NAME.inspection.toLowerCase()} gathers the evidence an inspector asks for.
+            A {PACK_NAME.psur} gathers what PHAROS found for one ingredient over its PSUR interval
+            {isAdmin ? `; an ${PACK_NAME.inspection.toLowerCase()} gathers the evidence an inspector asks for` : ''}.
           </p>
         </Empty>
       ) : (

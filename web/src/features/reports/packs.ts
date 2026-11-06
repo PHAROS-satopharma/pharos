@@ -31,6 +31,18 @@ export interface PackRequest {
 
 export const PACK_NAME: Record<PackKind, string> = { psur: 'PSUR pack', inspection: 'Inspection pack' };
 
+/** The packs she may ask for: an inspection pack is for administrators only (request_report, 0048). */
+export function kindOptions(isAdmin: boolean): { value: PackKind; label: string }[] {
+  const options: { value: PackKind; label: string }[] = [{ value: 'psur', label: 'PSUR pack: one ingredient' }];
+  if (isAdmin) options.push({ value: 'inspection', label: 'Inspection pack: the whole system' });
+  return options;
+}
+
+/** The packs listed to her: a reviewer or a reader sees PSUR packs only (the database reads them the same way). */
+export function packsFor<T extends Pick<PackRequest, 'kind'>>(rows: T[], isAdmin: boolean): T[] {
+  return isAdmin ? rows : rows.filter((r) => r.kind === 'psur');
+}
+
 /** The most a pack covers (the database refuses more). */
 export const MAX_YEARS = 5;
 

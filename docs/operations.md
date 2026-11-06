@@ -52,6 +52,7 @@ GitHub rounds each job up to a whole minute.
 | CI (only the changed parts are checked) | about 40 | 3 | 120 |
 | deploy Supabase | about 10 | 3 | 30 |
 | deploy web | about 10 | 2 | 20 |
+| packs on request (inside a collection run, only when one is asked for) | as asked | about 25; at worst 3 tries, about 75 | not in the total |
 | **Total** | | | **about 1,157** |
 
 That is about 266 minutes a week, inside acceptance test 13's limit of 300, but a little above the aim of 1,100 a
@@ -60,6 +61,10 @@ literature), the daily run takes up to about 18 minutes: up to about 360 more mi
 of the past adds up to 15 minutes to a daily run only while one is open (a few days after an ingredient or
 words are added); with nothing due it ends in seconds. A backfill is a one-off, at most 300 minutes. Run it in
 a month with headroom.
+Each pack asked for on Reports adds about 25 minutes to the collection run that makes it, and a pack that runs
+out of time three times costs about 75 before it is marked failed. At most two of one person's packs and five
+in all wait at once (`request_report()` refuses another), so a busy month of packs stays within a few hundred
+minutes; a dry run never makes one.
 
 To check the real figure: *GitHub organisation → Settings → Billing → Usage*. If a month goes over 1,100,
 the first thing to cut is the 4h schedule, to every 6 h.
@@ -568,20 +573,27 @@ What an inspector can be shown for any week (0046, 0047; the Reports page).
 
 A PSUR pack (one ingredient) or an inspection pack (the whole system), asked for on Reports → Packs (0048, the
 QPPV plan's phase 15). A reviewer or an administrator chooses the pack, the ingredient for a PSUR pack, and the
-days: at most five years, the first day not in the future. A PSUR pack starts at the ingredient's EURD interval
+days: at most five years, the first day not in the future. An inspection pack is for administrators only: only
+an administrator asks for one, sees it on Reports, reads its files and signs it, and only administrators are
+told when it is made. A PSUR pack starts at the ingredient's EURD interval
 (the day after the previous data lock point to the next one, as EMA's list sets it), cut at today; an ingredient
-with no interval that has started, and an inspection pack, start at the last 12 months. A reader sees the packs
-and their files and cannot ask for one.
+with no interval that has started, and an inspection pack, start at the last 12 months. A reader sees the PSUR
+packs and their files and cannot ask for one.
 
 - **When it is made.** `request_report()` queues the request; the step "Packs on request", the last step of
   every `collect.yml` run except the weekly and the classes runs, makes the oldest one waiting, one per run,
   so within four hours. Chromium and the fonts are installed only when a request waits. The same pack asked for
   again while it waits is the same request; once made it can be asked for again (a new request, new files).
+  At most two of one person's packs wait at once ("Two packs of yours are already waiting; ask again when one
+  is ready.") and five in all ("Five packs are already waiting; …"). A dry run of `collect.yml` (`dry_run`)
+  never makes a pack: the step is skipped, so the request waits for the next real run.
 - **Time budget.** 15 minutes per request, checked between the pieces it is read in. A pack not finished waits
   for the next run, with the note "Took longer than 15 minutes; the next collection run goes on with it."; after
   three tries it is marked failed, with the reason. A run that died while making one leaves it "Being made now";
   after two hours the next run takes it again. A pack that fails is never retried by itself: the reason is on
-  the request, and it is asked for again on Reports. A pack never fails the collection run.
+  the request, and it is asked for again on Reports. A pack never fails the collection run. Printing the PDF has
+  no budget of its own, so a very large pack can reach the step's 20-minute limit; the run then dies with it
+  "Being made now", it is taken again after two hours, and it is marked failed after three tries.
 - **What it is read from.** The weekly report's own functions (`ingredient_screen()`, `ingredient_papers()`,
   `paper_state()`, `label_changes()`, `finding_state()`, `screening_log()`), in pieces of at most 366 days (the
   most each answers), summed: the pack, the weekly reports and the screens never disagree.
@@ -599,7 +611,8 @@ and their files and cannot ask for one.
   `reports/packs/<psur|inspection>/<request id>/` (never overwritten: a pack made again is stored as `-r2`),
   with the SHA-256 of each on the request, the code (`git_sha`) and the run that made it. Reports shows both
   files with their SHA-256 and the signatures, exactly as a weekly report.
-- **Who is told.** The person who asked (when their Telegram is linked) and every administrator: "pack ready",
+- **Who is told.** The person who asked (when their Telegram is linked) and every administrator; for an inspection
+  pack, administrators only: "pack ready",
   with the PDF attached up to 20 MB, or "pack not made" with the reason. Dry run as every message: with
   `telegram_dry_run` on, the notification is recorded and nothing is sent.
 
