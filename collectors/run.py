@@ -90,6 +90,7 @@ class Runner:
                  clock=time.monotonic) -> None:
         self.store = store
         self.ctx = ctx
+        ctx.store = store                 # a parser that remembers its searches (NCBI literature) reads it
         self.notifier = notifier
         self.settings = settings
         self.backfill = backfill
@@ -105,12 +106,12 @@ class Runner:
         self.clock = clock
         self.skipped: list[str] = []      # sources left for the next run when the time ran out
 
-    def out_of_time(self, source_started: float | None = None) -> bool:
+    def out_of_time(self, source_started: float | None = None, budget_s: float = SOURCE_BUDGET_S) -> bool:
         now = self.clock()
         if self.deadline is not None and now >= self.deadline:
             return True
         return (source_started is not None and not self.backfill
-                and now - source_started >= SOURCE_BUDGET_S)
+                and now - source_started >= budget_s)
 
     # ───────────────────────────── matching ─────────────────────────────
     def _match_item(self, module: ModuleType, item: Item, lang: str | None) -> list[Hit]:
@@ -186,7 +187,9 @@ class Runner:
         sha, key, mime, size = record
         # An old notice found by a regular run (a page that lists its whole archive) is history too:
         # it never alerts and never reaches the class-wide digest.
-        is_backfill = self.backfill or seed or not fresh
+        # A paper found by a search's first look-back (NCBI literature) is history too.
+        is_backfill = (self.backfill or seed or not fresh
+                       or bool(hasattr(module, "is_history") and module.is_history(item)))
         doc_row = {"source_id": src.id, "external_id": item.external_id, "url": item.url,
                    "title_orig": item.title, "lang": lang, "doc_type": item.doc_type,
                    "published_date": item.published, "sha256": sha, "r2_key": key, "mime": mime,
@@ -235,7 +238,10 @@ class Runner:
         if result.created:
             stats.issues_created += 1
             self.issues_created += 1
-        if (result.created or result.alert) and not is_backfill and not dm.class_only and dm.has_high:
+        # papers are read on the Ingredients screen and in the weekly report, never on Telegram
+        paper = src.kind == "literature" or item.doc_type == "literature"
+        if (result.created or result.alert) and not is_backfill and not dm.class_only and dm.has_high \
+                and not paper:
             stats.alerts.append(result.issue_id)
 
     def _country(self, regulator_id: str) -> str | None:
@@ -264,8 +270,11 @@ class Runner:
             seed = not self.backfill and (not known or prev.get("last_ok_at") is None)
             fresh: list[Item] = []
             ids: set[str] = set()
+            aliases = getattr(module, "aliases", lambda _: [])   # a paper stored under its PMC id
             for it in items:
                 if it.external_id in known or it.external_id in ids:
+                    continue
+                if any(a in known or a in ids for a in aliases(it)):
                     continue
                 if self.backfill and not bf.in_window(it, src, self.backfill_start):
                     continue
@@ -276,8 +285,9 @@ class Runner:
             item_errors: list[str] = []
             waiting = 0
             stored = set(known)  # every item now in the database: known before, or stored by this run
+            budget_s = float(src.options.get("time_budget_min", SOURCE_BUDGET_S / 60)) * 60
             for k, it in enumerate(fresh):
-                if self.out_of_time(started):
+                if self.out_of_time(started, budget_s):
                     waiting = len(fresh) - k
                     break
                 try:
@@ -443,6 +453,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    trigger = _trigger(args)    # before args.backfill turns into True/False below (False "is not None" too)
     backfill_months = args.backfill
     args.backfill = backfill_months is not None
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
@@ -477,7 +488,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sync_catalogue(store)
     slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
-    run_id = store.create_run(_trigger(args),
+    run_id = store.create_run(trigger,
                               os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"), slot)
     archive = Archive()
     t_start = time.monotonic()

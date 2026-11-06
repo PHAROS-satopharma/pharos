@@ -14,6 +14,7 @@
 #             detail: always | matched_only | never   (when to call fetch_detail)
 #             old_detail: matched_only   (a notice older than the alert age: fetch_detail only if its row matched)
 #             max_new_items: N            (new items per normal run; default 400, the time budget still applies)
+#             time_budget_min: N          (minutes per normal run; default 10)
 #             backfill_all: true                       (backfill keeps the whole history)
 #   enabled   only applied when the row is first created; afterwards an admin decides in the app.
 
@@ -278,7 +279,8 @@ sources:
     page: https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program
     parser: feed
     enabled: false
-    notes: "Off: FDA refuses GitHub's servers (abuse-detection page); MedWatch is read from its e-mail list (fda-email)."
+    # FDA answers GitHub's servers with its abuse-detection page; MedWatch comes in as fda-email.
+    notes: "Switched off on purpose: the FDA's site refuses our servers, so this page cannot be read. MedWatch alerts arrive by e-mail instead. Switched on, it only adds failed checks."
     languages: [en]
     schedule: 4h
     expected_max_gap_days: 21
@@ -772,7 +774,9 @@ sources:
     languages: [fr, nl]
     schedule: 12h
     expected_max_gap_days: 30
-    notes: "Off: famhp sits behind an F5 bot check that is never bypassed; its VIG-news is read from the mailbox (famhp-email). Switched on, it reads French and Dutch, one page each."
+    # famhp sits behind an F5 bot check that is never bypassed; VIG-news comes in as famhp-email.
+    # Switched on, it reads French and Dutch, one page each.
+    notes: "Switched off on purpose: famhp's site blocks automated reading. Its VIG-news bulletins arrive by e-mail instead. Switched on, it only adds failed checks."
     options:
       urls:
         fr: https://www.afmps.be/fr/news
@@ -825,7 +829,8 @@ sources:
     page: https://www.tga.gov.au/news/safety-alerts
     parser: tga
     enabled: false
-    notes: "Off: TGA cuts connections from datacenter addresses; its alerts are read from the mailbox (tga-email)."
+    # TGA (Akamai) cuts connections from datacenter addresses (ERR_HTTP2_PROTOCOL_ERROR); read as tga-email.
+    notes: "Switched off on purpose: TGA's site refuses our servers, so this page cannot be read. TGA's safety alerts and updates arrive by e-mail instead. Switched on, it only adds failed checks."
     languages: [en]
     schedule: 12h
     expected_max_gap_days: 30
@@ -838,7 +843,8 @@ sources:
     page: https://www.tga.gov.au/news/safety-updates
     parser: tga
     enabled: false
-    notes: "Off: TGA cuts connections from datacenter addresses; its alerts are read from the mailbox (tga-email)."
+    # TGA (Akamai) cuts connections from datacenter addresses (ERR_HTTP2_PROTOCOL_ERROR); read as tga-email.
+    notes: "Switched off on purpose: TGA's site refuses our servers, so this page cannot be read. TGA's safety alerts and updates arrive by e-mail instead. Switched on, it only adds failed checks."
     languages: [en]
     schedule: 12h
     expected_max_gap_days: 60
@@ -912,9 +918,12 @@ sources:
     page: https://pubmed.ncbi.nlm.nih.gov/
     parser: pubmed
     languages: [en]
-    schedule: weekly
+    schedule: daily
     expected_max_gap_days: 120
-    options: {lookback_days: 10, field: tiab, retmax: 200}
+    # PubMed and PubMed Central, every ingredient's name and English class words; a new word looks back
+    # 12 months first (collectors/parsers/pubmed.py). 800 papers in at most 15 minutes a run.
+    options: {lookback_days: 10, look_back_months: 12, page_size: 5000, max_new_items: 800,
+              time_budget_min: 15, backfill_all: true}
 
   # ───────────── Phase 2 (disabled until a live probe confirms them) ─────────────
   - id: ema-prac
@@ -993,7 +1002,9 @@ sources:
     schedule: 12h
     expected_max_gap_days: 60
     enabled: false
-    notes: "Off: mohap.gov.ae resets every connection from outside its accepted networks (from Egypt, an outside fetch service and GitHub's runners, 5 Nov 2026), so PHAROS cannot read it. The UAE is read from EDE instead (uae-ede)."
+    # mohap.gov.ae resets every connection from outside its accepted networks (from Egypt, an outside
+    # fetch service and GitHub's runners, 5 Nov 2026).
+    notes: "Switched off on purpose: the ministry's site refuses every connection from outside its own networks, so it cannot be read. The UAE is read from the Emirates Drug Establishment instead."
 
   - id: uae-ede
     regulator: UAE_EDE

@@ -229,6 +229,39 @@ export function sourceLabel(s: CardSource, pages: RegulatorPage[]): string {
   return where ? `${what} · ${where}` : what;
 }
 
+/** One card's labels. Two sources that would read the same ("Safety notices · tga.gov.au" twice, the
+ *  TGA alerts and updates pages) are told apart by the last part of the address they read. */
+export function sourceLabels(sources: CardSource[], pages: RegulatorPage[]): Map<string, string> {
+  const base = new Map(sources.map((s) => [s.id, sourceLabel(s, pages)]));
+  const seen = new Map<string, number>();
+  for (const l of base.values()) seen.set(l, (seen.get(l) ?? 0) + 1);
+  return new Map(
+    sources.map((s) => {
+      const l = base.get(s.id)!;
+      const tail = (seen.get(l) ?? 0) > 1 ? lastPathPart(sourcePage(s, null) ?? s.url) : '';
+      return [s.id, tail ? `${l} · ${tail}` : l];
+    }),
+  );
+}
+
+function lastPathPart(url: string): string {
+  try {
+    const part = new URL(url).pathname.split('/').filter(Boolean).pop() ?? '';
+    return decodeURIComponent(part).replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').trim();
+  } catch {
+    return '';
+  }
+}
+
+/** Why a source is not read, shown beside its switch: the reason a source was switched off (or why the site
+ *  refuses it) was kept only in the catalogue, so on 5 Nov 2026 the two TGA web pages were switched back on
+ *  with no reason in sight and failed every run while TGA's e-mails were already read. */
+export function offReason(s: { enabled: boolean; health: string; notes: string | null }): string | null {
+  const note = s.notes?.trim();
+  if (!note) return null;
+  return !s.enabled || s.health === 'blocked' ? note : null;
+}
+
 /** Label watch and literature have screens of their own: their figures are not item lists here. */
 export function listsItems(kind: SourceKind): boolean {
   return kind !== 'spc' && kind !== 'literature';

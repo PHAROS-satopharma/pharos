@@ -27,7 +27,8 @@ import {
   newSince,
   pageStatus,
   sinceFor,
-  sourceLabel,
+  offReason,
+  sourceLabels,
   sourcePage,
   type CountryCard,
   type NewItem,
@@ -401,6 +402,7 @@ function WeekFigures({
 }: Omit<CardShared, 'hz'> & { card: Card; week: NewItem[] }) {
   const [opened, setOpened] = useState<Opened>(null);
   const homepage = new Map(card.regulators.map((r) => [r.id, r.homepage]));
+  const labels = sourceLabels(card.sources, card.pages);
   const rows = card.sources.map((s) => {
     const t = totals.get(s.id);
     // label watch and literature have screens of their own: their figures here are the runs' own counts
@@ -460,7 +462,8 @@ function WeekFigures({
         {rows.map(({ s, t, listed, fresh, matched }) => {
           const page = sourcePage(s, homepage.get(s.regulator_id));
           const href = safeHref(page);
-          const label = sourceLabel(s, card.pages);
+          const label = labels.get(s.id) ?? s.id;
+          const why = offReason(s);
           const lastChecked = t?.lastRun ?? s.last_ok_at;
           return (
             <li key={s.id} className={cx('hz-run', !s.enabled && 'is-off')}>
@@ -508,6 +511,7 @@ function WeekFigures({
                   />
                 ) : null}
               </div>
+              {why ? <p className="hz-why">{why}</p> : null}
               {technical ? (
                 <p className="hz-tech">
                   {CHANNEL_LABEL[s.channel]} · {s.parser} · {SCHEDULE_LABEL[s.schedule]} · {HEALTH_LABEL[s.health].label}
@@ -523,7 +527,7 @@ function WeekFigures({
         <div className="hz-opened">
           <div className="hz-opened-head">
             <span>
-              {opened?.which === 'matched' ? 'Matched this week' : 'New this week'}: {sourceLabel(openRow.s, card.pages)}
+              {opened?.which === 'matched' ? 'Matched this week' : 'New this week'}: {labels.get(openRow.s.id)}
             </span>
             <Button size="sm" variant="quiet" onClick={() => setOpened(null)}>
               Close

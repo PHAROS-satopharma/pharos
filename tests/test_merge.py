@@ -170,3 +170,33 @@ def test_a_history_copy_leaves_a_history_issue_in_the_history():
     copy.is_backfill = True
     merge_document(s, copy, mahs=[])
     assert s.issue[r0.issue_id]["is_backfill"] is True
+
+
+def test_a_paper_never_looks_for_an_issue_to_join():
+    """A paper is its own issue (literature merges with nothing), so it never reads the other issues
+    of its ingredient: at PubMed Central's volume that read cost a query per issue per paper."""
+    s = store_with_regulators()
+    s.source["pubmed"] = {"id": "pubmed", "regulator_id": "FDA", "origin": "catalogue"}
+    first = add_doc(s, "pubmed", "Lornoxicam and the kidney", date(2026, 10, 1), "lornoxicam",
+                    doc_type="literature")
+    assert merge_document(s, first).created
+    asked: list = []
+    real = s.candidate_issues
+    s.candidate_issues = lambda *a, **k: asked.append(a) or real(*a, **k)
+    second = add_doc(s, "pubmed", "Lornoxicam in the elderly", date(2026, 10, 2), "lornoxicam",
+                     doc_type="literature")
+    r = merge_document(s, second)
+    assert r.created and r.link == "anchor" and asked == []
+    assert len(s.issue) == 2
+
+
+def test_issues_of_papers_are_never_candidates():
+    s = store_with_regulators()
+    s.source["pubmed"] = {"id": "pubmed", "regulator_id": "FDA", "origin": "catalogue"}
+    paper = add_doc(s, "pubmed", "Lornoxicam and the kidney", date(2026, 10, 1), "lornoxicam",
+                    doc_type="literature")
+    merge_document(s, paper)
+    notice = add_doc(s, "bfarm-rhb", "Rote-Hand-Brief zu Xefo (Lornoxicam)", date(2026, 10, 2), "Lornoxicam")
+    merge_document(s, notice)
+    got = s.candidate_issues({ING}, date(2026, 9, 1), date(2026, 11, 1))
+    assert [i["doc_type"] for i in got] == ["dhpc"]

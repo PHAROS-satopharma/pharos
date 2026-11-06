@@ -261,6 +261,32 @@ def test_a_crashed_run_is_never_recorded_as_ok(tmp_path, monkeypatch):
     assert finished == [False]
 
 
+@pytest.mark.parametrize(("argv", "event", "trigger"), [
+    (["--schedule", "12h"], "schedule", "cron"),
+    (["--schedule", "4h"], "repository_dispatch", "cron"),
+    (["--schedule", "daily"], "workflow_dispatch", "manual"),
+    (["--backfill", "12"], "workflow_dispatch", "backfill"),
+    (["--backfill"], "workflow_dispatch", "backfill"),
+])
+def test_each_run_records_what_started_it(tmp_path, monkeypatch, argv, event, trigger):
+    # Every run was recorded as a backfill, so the 12h run of 5 Nov 2026 22:53 UTC passed for the last 12-month
+    # backfill and migration 0034 marked levofloxacin's words as already checked against the stored notices.
+    from collectors import run as run_mod
+
+    class Recorded(Exception):
+        pass
+
+    def create_run(self, recorded_trigger, git_sha, schedule=None):
+        raise Recorded(recorded_trigger)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setattr(MemoryStore, "create_run", create_run)
+    with pytest.raises(Recorded) as recorded:
+        run_mod.main(["--no-db", *argv])
+    assert recorded.value.args[0] == trigger
+
+
 def test_nul_characters_never_reach_postgres():
     from collectors.core.db import _dumps, clean
 

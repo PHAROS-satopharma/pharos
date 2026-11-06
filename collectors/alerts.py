@@ -126,6 +126,11 @@ class Telegram:
         return self._call("sendDocument", chat_id, data=data)
 
 
+def is_paper(issue: dict) -> bool:
+    """An NCBI paper: never an immediate alert, never in the class digest."""
+    return issue.get("doc_type") == "literature" or issue.get("source_kind") == "literature"
+
+
 def is_dry_run(settings: dict, flag: bool = False) -> bool:
     return bool(flag or settings.get("telegram_dry_run", True) is not False
                 or os.environ.get("DRY_RUN") == "1" or not os.environ.get("TELEGRAM_BOT_TOKEN"))
@@ -196,9 +201,9 @@ class Notifier:
 
     def issue_alert(self, issue_id: str, only: set[str] | None = None) -> int:
         """Immediate message for an ingredient-specific new issue (to ``only`` these people, when
-        given). Returns messages written."""
+        given). Returns messages written. A paper is never sent: it is read in the app and the report."""
         issue = self.store.issue_for_alert(issue_id)
-        if not issue or issue.get("class_only") or issue.get("is_backfill"):
+        if not issue or issue.get("class_only") or issue.get("is_backfill") or is_paper(issue):
             return 0
         people = self.store.subscribers("ingredient", issue.get("ingredient_ids") or [])
         if not people:
