@@ -23,7 +23,7 @@ import { CodedReactions } from './CodedReactions';
 import { LabelChanges } from './LabelChanges';
 import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
-import { caseReportLabel, dueLine, mlmLabel, orderPapers, withPaperDecision } from './papers';
+import { caseReportLabel, dueLine, mlmLabel, openAccessTag, orderPapers, withPaperDecision } from './papers';
 import { paperStateKey, useMlmMonitored, usePaperStates } from './paperState';
 import { PRESETS, cairoDayOf, presetDays, rangeError, rangeFromSearch, rangeLabel, type DayRange } from './range';
 import { ReadEmail } from './ReadEmail';
@@ -530,6 +530,9 @@ function PaperItem({
 }) {
   const pubmed = safeHref(p.pubmed_url);
   const pmc = safeHref(p.pmc_url);
+  const oa = state?.open_access ?? null;
+  const free = oa ? safeHref(oa.url) : null;
+  const freeTag = oa && free ? openAccessTag(oa) : null;
   const europepmc = safeHref(p.europepmc_url);
   const isCase = Boolean(state?.case_report);
   return (
@@ -569,7 +572,7 @@ function PaperItem({
       </p>
       {state?.case_report ? <p className="scr-due">{dueLine(state)}</p> : null}
       {state?.case_report ? <OpenCase documentId={p.document_id} /> : null}
-      {pubmed || pmc || europepmc ? (
+      {pubmed || pmc || europepmc || free ? (
         <p className="scr-paper-links">
           {pubmed ? (
             <a href={pubmed} target="_blank" rel="noopener noreferrer">
@@ -585,6 +588,16 @@ function PaperItem({
             <a href={europepmc} target="_blank" rel="noopener noreferrer">
               Europe PMC
             </a>
+          ) : null}
+          {free && freeTag ? (
+            <span className="scr-free-text">
+              <a href={free} target="_blank" rel="noopener noreferrer">
+                Free full text
+              </a>
+              <Tag tone="quiet" title={freeTag.explain}>
+                {freeTag.label}
+              </Tag>
+            </span>
           ) : null}
         </p>
       ) : null}

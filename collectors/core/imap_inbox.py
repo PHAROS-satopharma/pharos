@@ -1,9 +1,10 @@
 """Read the PHAROS mailbox (pharos@satopharma.com) over IMAP into ``inbound_email``.
 
 The mailbox subscribes to newsletters (Fimea, TGA) whose web pages cannot be read directly. On each
-4h run, before the ``email_inbox`` sources, every UNSEEN message whose From domain is on a source's
-allow-list (``options.from_domains`` in sources.yaml) is archived as raw ``message/rfc822`` under
-``inbound/<YYYY-MM-DD>/<uuid>.eml``, written
+4h run, before the ``email_inbox`` sources, the Inbox and the spam folder are read (Yahoo files
+newsletters under "Bulk"; the folder is found by its IMAP Junk flag, else by name). Every UNSEEN
+message whose From domain is on a source's allow-list (``options.from_domains`` in sources.yaml) is
+archived as raw ``message/rfc822`` under ``inbound/<YYYY-MM-DD>/<uuid>.eml``, written
 to ``inbound_email`` and only then marked Seen. Other mail is never touched (read with BODY.PEEK).
 Never sends mail.
 
@@ -50,6 +51,8 @@ _DKIM_D = re.compile(r"(?:^|;)\s*d\s*=\s*([^;\s]+)", re.I)
 _AR_PROP = re.compile(r"(?<![\w.-])(header\.d|header\.i|header\.from|smtp\.mailfrom)\s*=\s*([^\s;()]+)",
                       re.I)
 _IP_LITERAL = re.compile(r"[\[(](?:IPv6:)?([0-9A-Fa-f:.]{3,})[\])]")
+_LIST_LINE = re.compile(rb'^\((?P<flags>[^)]*)\)\s+(?:"[^"]*"|NIL)\s+(?P<name>"(?:[^"\\]|\\.)*"|\S+)\s*$', re.I)
+_SPAM_NAMES = ("bulk", "bulk mail", "junk", "junk e-mail", "junk email", "spam")
 
 
 @dataclass
@@ -213,6 +216,39 @@ def _connect() -> imaplib.IMAP4:
     return conn
 
 
+def junk_folders(conn: Any) -> list[str]:
+    """The spam folder(s) of the mailbox: those LISTed with the Junk special-use flag, else those named
+    like one (Bulk, Junk, Spam). Never the Inbox. A server that cannot LIST gives none."""
+    try:
+        status, lines = conn.list()
+    except Exception:  # noqa: BLE001 - no folder list: the Inbox alone is read
+        return []
+    if status != "OK":
+        return []
+    flagged, named = [], []
+    for line in lines or []:
+        if not isinstance(line, bytes):
+            continue
+        m = _LIST_LINE.match(line.strip())
+        if not m:
+            continue
+        name = m.group("name").decode("utf-8", "replace")
+        if name.startswith('"'):
+            name = name[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+        flags = m.group("flags").decode("ascii", "replace").lower().split()
+        if name.upper() == "INBOX" or "\\noselect" in flags:
+            continue
+        if "\\junk" in flags:
+            flagged.append(name)
+        elif name.lower() in _SPAM_NAMES:
+            named.append(name)
+    return flagged or named
+
+
+def _quoted(mailbox: str) -> str:
+    return mailbox if mailbox.isalnum() else '"' + mailbox.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def insert_inbound(db: Any, row: dict) -> None:
     db.execute(
         """insert into inbound_email (source_id, received_at, from_addr, subject, r2_key, text_body,
@@ -230,12 +266,13 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
             connect: Callable[[], imaplib.IMAP4] | None = None,
             insert: Callable[[dict], None] | None = None,
             source_exists: Callable[[str], bool] | None = None,
-            mailbox: str = "INBOX", held: dict[str, int] | None = None,
+            mailboxes: Iterable[str] | None = None, held: dict[str, int] | None = None,
             authserv_domains: Iterable[str] | None = None,
             dkim_dns: Callable[..., bytes | None] | None = None) -> dict[str, int]:
     """Pull matching UNSEEN mail. ``allow`` maps source_id → From domains. Returns count per source.
     ``held`` (if given) receives, per source, the messages left unread because the sender could not be
-    verified or the message was too big.
+    verified or the message was too big. ``mailboxes``: the folders read, by default the Inbox and the
+    spam folder (``junk_folders``); the same rules apply in each, and nothing is moved or deleted.
 
     ``connect``, ``insert`` and ``source_exists`` are injectable for tests; by default the
     environment and ``ctx.db``; ``dkim_dns`` replaces the DNS lookup of our own DKIM check. A message whose source row is missing is skipped (left unread).
@@ -258,58 +295,64 @@ def collect(ctx: Any, allow: dict[str, list[str]], *,
     authserv = list(authserv_domains) if authserv_domains is not None else trusted_authserv_domains()
     conn = connect()
     try:
-        conn.select(mailbox)
-        status, data = conn.uid("SEARCH", None, "UNSEEN")
-        if status != "OK":
-            raise RuntimeError(f"IMAP search failed: {status}")
-        for uid in (data[0] or b"").split():
-            status, hdr = conn.uid("FETCH", uid,
-                                   "(BODY.PEEK[HEADER])")
-            if status != "OK" or not hdr or not isinstance(hdr[0], tuple):
+        boxes = list(mailboxes) if mailboxes is not None else ["INBOX", *junk_folders(conn)]
+        log.info("imap: reading %s", ", ".join(boxes))
+        for box in boxes:
+            status, _ = conn.select(_quoted(box))
+            if status != "OK":
+                log.warning("imap: folder %s could not be opened (%s); skipped", box, status)
                 continue
-            _, addr = parseaddr(email.message_from_bytes(hdr[0][1]).get("From", ""))
-            domain = addr.rsplit("@", 1)[-1].lower() if "@" in addr else ""
-            source_id = next((sid for sid, doms in allow.items() if domain_matches(domain, doms)),
-                             None)
-            if source_id is None:
-                continue  # not ours: left unread and untouched
-            head = hdr[0][1]
-            verified = sender_verified(head, allow[source_id], authserv)
-            if not verified and has_trusted_verdict(head, authserv):
-                log.warning("imap: message %s claims %s but the sender is not verified (trusting %s; "
-                            "saw %s); left unread", uid, domain, authserv, auth_summary(head))
-                held[source_id] = held.get(source_id, 0) + 1
-                continue
-            status, body = conn.uid("FETCH", uid, "(BODY.PEEK[])")
-            if status != "OK" or not body or not isinstance(body[0], tuple):
-                continue
-            raw = body[0][1]
-            if len(raw) > MAX_RAW_BYTES:
-                log.warning("imap: message %s is %d bytes; left unread", uid, len(raw))
-                held[source_id] = held.get(source_id, 0) + 1
-                continue
-            if not verified:
-                signer = dkim_verified(raw, allow[source_id], dkim_dns)
-                if signer is None:
+            status, data = conn.uid("SEARCH", None, "UNSEEN")
+            if status != "OK":
+                raise RuntimeError(f"IMAP search failed in {box}: {status}")
+            for uid in (data[0] or b"").split():
+                status, hdr = conn.uid("FETCH", uid,
+                                       "(BODY.PEEK[HEADER])")
+                if status != "OK" or not hdr or not isinstance(hdr[0], tuple):
+                    continue
+                _, addr = parseaddr(email.message_from_bytes(hdr[0][1]).get("From", ""))
+                domain = addr.rsplit("@", 1)[-1].lower() if "@" in addr else ""
+                source_id = next((sid for sid, doms in allow.items() if domain_matches(domain, doms)),
+                                 None)
+                if source_id is None:
+                    continue  # not ours: left unread and untouched
+                head = hdr[0][1]
+                verified = sender_verified(head, allow[source_id], authserv)
+                if not verified and has_trusted_verdict(head, authserv):
                     log.warning("imap: message %s claims %s but the sender is not verified (trusting %s; "
-                                "saw %s; own DKIM check: no valid signature from it); left unread",
-                                uid, domain, authserv, auth_summary(head))
+                                "saw %s); left unread", uid, domain, authserv, auth_summary(head))
                     held[source_id] = held.get(source_id, 0) + 1
                     continue
-                log.info("imap: message %s from %s: no server verdict; own DKIM check passed (d=%s)",
-                         uid, domain, signer)
-            if source_exists is not None and not source_exists(source_id):
-                log.warning("imap: no source row %s; message %s left unread", source_id, uid)
-                skipped.append(source_id)
-                continue
-            parsed = parse_message(raw)
-            key = eml_key(parsed.received_at)
-            _, key = ctx.archiver.put_named(key, raw, "message/rfc822")
-            insert({"source_id": source_id, "received_at": parsed.received_at,
-                    "from_addr": parsed.from_addr, "subject": parsed.subject, "r2_key": key,
-                    "text_body": parsed.text_body, "html_body": parsed.html_body})
-            conn.uid("STORE", uid, "+FLAGS", "(\\Seen)")
-            counts[source_id] += 1
+                status, body = conn.uid("FETCH", uid, "(BODY.PEEK[])")
+                if status != "OK" or not body or not isinstance(body[0], tuple):
+                    continue
+                raw = body[0][1]
+                if len(raw) > MAX_RAW_BYTES:
+                    log.warning("imap: message %s is %d bytes; left unread", uid, len(raw))
+                    held[source_id] = held.get(source_id, 0) + 1
+                    continue
+                if not verified:
+                    signer = dkim_verified(raw, allow[source_id], dkim_dns)
+                    if signer is None:
+                        log.warning("imap: message %s claims %s but the sender is not verified (trusting %s; "
+                                    "saw %s; own DKIM check: no valid signature from it); left unread",
+                                    uid, domain, authserv, auth_summary(head))
+                        held[source_id] = held.get(source_id, 0) + 1
+                        continue
+                    log.info("imap: message %s from %s: no server verdict; own DKIM check passed (d=%s)",
+                             uid, domain, signer)
+                if source_exists is not None and not source_exists(source_id):
+                    log.warning("imap: no source row %s; message %s left unread", source_id, uid)
+                    skipped.append(source_id)
+                    continue
+                parsed = parse_message(raw)
+                key = eml_key(parsed.received_at)
+                _, key = ctx.archiver.put_named(key, raw, "message/rfc822")
+                insert({"source_id": source_id, "received_at": parsed.received_at,
+                        "from_addr": parsed.from_addr, "subject": parsed.subject, "r2_key": key,
+                        "text_body": parsed.text_body, "html_body": parsed.html_body})
+                conn.uid("STORE", uid, "+FLAGS", "(\\Seen)")
+                counts[source_id] += 1
     finally:
         try:
             conn.logout()

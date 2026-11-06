@@ -1,4 +1,4 @@
--- PHAROS CI — the horizontal pass on Sources (0032, 0033, 0038). Runs on the database ci.yml prepared:
+-- PHAROS CI — the horizontal pass on Sources (0032, 0033, 0038, 0068). Runs on the database ci.yml prepared:
 -- CI Admin (…a1), CI Reader (…b2) and the source ci-test exist.
 
 create function pg_temp.sh_assert(ok boolean, msg text) returns void language plpgsql as $$
@@ -98,6 +98,14 @@ insert into document (id, source_id, external_id, url, title_orig, lang, first_s
    'Seen the week before', 'en', '2026-10-30 08:00+00', false, null);
 insert into match (document_id, ingredient_id, field, matched_text) values
   ('00000000-0000-0000-0000-00000007b001', '00000000-0000-0000-0000-00000007a001', 'title', 'CI horizonamine');
+-- The mailbox's first three mails (5 Nov 2026), subjects exactly as sent, stored as notices before 0068.
+insert into document (id, source_id, external_id, url, title_orig, lang, first_seen_at, is_backfill) values
+  ('00000000-0000-0000-0000-00000007b011', 'ci-sh-mail', 'email:j1', 'email:j1',
+   'automatisch antwoord - ADR - réponse automatique', 'fr', '2026-11-05 09:11+00', false),
+  ('00000000-0000-0000-0000-00000007b012', 'ci-sh-mail', 'email:j2', 'email:j2',
+   'RE: Inscription VIG-news / Flash VIG-news', 'fr', '2026-11-05 09:29+00', false),
+  ('00000000-0000-0000-0000-00000007b013', 'ci-sh-mail', 'email:j3', 'email:j3',
+   'Welcome to FDA''s Email Updates', 'en', '2026-11-05 08:37+00', false);
 
 -- ───────────── new_items, as a reader ─────────────
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
@@ -114,7 +122,19 @@ select count(*) as sh_open_end from new_items('2026-11-01 22:00+00', null) where
 select count(*) as sh_pages_reader from regulator_page \gset
 reset role;
 
-select pg_temp.sh_assert(:sh_n = 5, 'history, the label watch, literature and last week are left out');
+select pg_temp.sh_assert(:sh_n = 5,
+  'history, the label watch, literature, last week and a mail that is not a notice are left out');
+select pg_temp.sh_assert(exists (select 1 from document where id = '00000000-0000-0000-0000-00000007b012'),
+  'a mail that is not a notice is left out of the list, never deleted');
+select pg_temp.sh_assert(mail_not_a_notice('RE: Inscription VIG-news / Flash VIG-news')
+    and mail_not_a_notice('automatisch antwoord - ADR - réponse automatique')
+    and mail_not_a_notice('Welcome to FDA''s Email Updates')
+    and not mail_not_a_notice('Flash VIG-news: Réévaluation du lornoxicam')
+    and not mail_not_a_notice('Lääketurvallisuustiedote: lornoksikaami')
+    and not mail_not_a_notice('FDA MedWatch - Argatroban: Recall - Re-labeling')
+    and not mail_not_a_notice('Safety alert: Re-evaluation of ivabradine')
+    and not mail_not_a_notice(null),
+  'replies, automatic replies and welcome mails are not notices; a regulator''s notice is');
 select pg_temp.sh_assert(:'sh_links' =
     'ci-sh-feed:https://horizon.example.test/item-1 '
     || 'ci-sh-feed:https://horizon.example.test/safety '

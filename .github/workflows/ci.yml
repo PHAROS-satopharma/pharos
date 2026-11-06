@@ -646,7 +646,7 @@ jobs:
           PHAROS_TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
           set -o pipefail
-          python -m pytest -p no:cacheprovider -rs tests/test_store_pg.py tests/test_classes_store_pg.py tests/test_spc_pg.py | tee store-pg.log
+          python -m pytest -p no:cacheprovider -rs tests/test_store_pg.py tests/test_classes_store_pg.py tests/test_spc_pg.py tests/test_fulltext_pg.py | tee store-pg.log
           # A skip here would mean the database URL never arrived: that is a failure, not a pass.
           if grep -q "skipped" store-pg.log; then echo "::error::test_store_pg.py was skipped"; exit 1; fi
 

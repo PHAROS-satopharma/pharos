@@ -253,6 +253,21 @@ function lastPathPart(url: string): string {
   }
 }
 
+/** A mail source that has never received a notice is waiting, not working: the day it began waiting (the day
+ *  it was added), else null. TGA's and Fimea's mail sources read "Working" for days with nothing in them
+ *  (6 Nov 2026). The collector turns a source still waiting after its expected gap to "check it". */
+export function waitingForMail(s: {
+  enabled: boolean;
+  channel: string;
+  health: string;
+  last_item_at: string | null;
+  created_at: string | null;
+}): string | null {
+  if (!s.enabled || s.channel !== 'email' || s.last_item_at) return null;
+  if (s.health === 'down' || s.health === 'blocked' || s.health === 'degraded') return null;
+  return s.created_at;
+}
+
 /** Why a source is not read, shown beside its switch: the reason a source was switched off (or why the site
  *  refuses it) was kept only in the catalogue, so on 5 Nov 2026 the two TGA web pages were switched back on
  *  with no reason in sight and failed every run while TGA's e-mails were already read. */
