@@ -617,8 +617,9 @@ What an inspector can be shown for any week (0046, 0047; the Reports page).
   the locked files in R2. Under each signature the page says **Fingerprint matches** while the row still points
   at those files, or **File changed since signing** when the week was made again (a new `-r2` file and new
   hashes); the week can then be signed again, and the old signature stays.
-- **Never changed.** `sign_off` is append-only (a trigger refuses any update or delete, even by the database
-  owner). `audit_log` too (0046): a row trigger refuses every update and delete, a statement trigger every
+- **Never changed.** `sign_off` is append-only (a row trigger refuses any update or delete and a statement
+  trigger any truncate, even by the database owner, 0060; the service key holds no right to write a signature,
+  so only `sign_record()` adds one). `audit_log` too (0046): a row trigger refuses every update and delete, a statement trigger every
   truncate, for every role including the owner, and no API role holds those rights. Nothing in PHAROS ever
   changed or removed an audit row; only a migration that drops the trigger could, and it would be in the
   repository history.
