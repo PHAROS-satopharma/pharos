@@ -1,4 +1,4 @@
--- PHAROS CI — FDA adverse-event report counts (0071, 0076, 0078): ingredient_faers() with its quarters and the label tag, and who
+-- PHAROS CI — FDA adverse-event report counts (0071, 0076, 0078, 0081): ingredient_faers() with its quarters and the label tag, and who
 -- may read and write them. Runs after every migration and the acceptance checks in ci.yml, on the same database: the
 -- people CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3) exist. Everything here is rolled back.
 begin;
@@ -72,6 +72,8 @@ insert into faers_count (ingredient_id, quarter, reaction, reports, all_reports)
 
 update faers_reaction set co_drug = 'PARTNERINE', co_reports = 8, co_all_reports = 20
  where ingredient_id = '00000000-0000-0000-0000-00000065a001' and reaction = 'HEPATITIS';
+update faers_reaction set series_reports = 7, series_age = 61, series_sex = '2'
+ where ingredient_id = '00000000-0000-0000-0000-00000065a001' and reaction = 'NAUSEA';
 
 -- Read as CI Reader; the temp table that keeps the answer is made by the owner.
 create temp table f as select * from ingredient_faers(null) with no data;
@@ -98,6 +100,10 @@ select pg_temp.ci_assert((select (co_drug, co_reports, co_all_reports) = ('PARTN
                          and (select co_drug is null and co_reports is null and co_all_reports is null
                                 from f where reaction = 'NAUSEA'),
                          'the drug over-represented with a flagged reaction is given as the collector kept it (0078)');
+select pg_temp.ci_assert((select (series_reports, series_age, series_sex) = (7, 61, '2') from f where reaction = 'NAUSEA')
+                         and (select series_reports is null and series_age is null and series_sex is null
+                                from f where reaction = 'HEPATITIS'),
+                         'a flag standing on one repeated case series is given as the collector marked it (0081)');
 select pg_temp.ci_assert((select (mesh_ui, listed) = ('D006505', 'our_label') from f where reaction = 'HEPATITIS'),
                          'HEPATITIS is MeSH Hepatitis, under the liver heading our label names');
 select pg_temp.ci_assert((select (mesh_ui, listed) = ('D005076', 'reference') from f where reaction = 'RASH'),
