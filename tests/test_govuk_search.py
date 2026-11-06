@@ -44,8 +44,8 @@ def test_both_mhra_sources_read_the_search_api_and_backfill_everything():
         assert "filter_organisations=medicines-and-healthcare-products-regulatory-agency" in src.url
         assert f"filter_format={fmt}" in src.url
         assert src.options.get("backfill_all") is True
-    assert ALERTS.page == "https://www.gov.uk/drug-device-alerts"
-    assert DSU.page == "https://www.gov.uk/drug-safety-update"
+    assert ALERTS.page_url == "https://www.gov.uk/drug-device-alerts"
+    assert DSU.page_url == "https://www.gov.uk/drug-safety-update"
 
 
 def test_a_first_read_takes_the_newest_page_with_its_types():
