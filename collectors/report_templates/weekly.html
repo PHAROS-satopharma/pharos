@@ -7,10 +7,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&family=Noto+Sans+Arabic:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* The identity of the monthly report (monthly.html): the same paper, navy, rules and type. */
+  /* The identity of the monthly report (monthly.html): the same navy, rules and type, on white paper (a tinted
+     body left the printed margins white around it). */
   :root {
     --ink: #02224C;   /* the logo's navy */
-    --paper: #F6F4EF;
+    --paper: #FFFFFF;
     --rule: {{ page.rule }};
     --muted: {{ page.muted }};
     --sea: #1F4E5F;
@@ -25,12 +26,18 @@
   a { color: var(--sea); text-decoration: underline; text-decoration-thickness: .5px; word-break: break-all; }
 
   .masthead { display: flex; justify-content: space-between; align-items: flex-end;
-              border-bottom: 1px solid var(--ink); padding-bottom: 6mm; margin-bottom: 7mm; }
-  .logo { display: block; width: 45mm; height: auto; max-width: none; object-fit: contain; }
-  .meta { text-align: right; font: 400 8pt/1.5 var(--mono); color: var(--muted); }
-  .meta strong { display: block; font: 500 11pt/1.3 var(--sans); color: var(--ink); }
+              border-bottom: 1px solid var(--ink); padding-bottom: 5mm; margin-bottom: 8mm; }
+  .logo { display: block; width: 42mm; height: auto; max-width: none; object-fit: contain; }
+  .meta { text-align: right; font: 400 7.5pt/1.6 var(--mono); color: var(--muted); }
+  .meta strong { display: block; font: 500 6.5pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+                 color: var(--ink); }
 
-  h1 { font: 600 15pt/1.2 var(--sans); margin: 0 0 2mm; }
+  /* The cover: what the report is, the period it covers in large type, when it was made. */
+  .cover { margin: 0 0 7mm; }
+  .cover .kicker { margin-bottom: 2.5mm; }
+  h1 { font: 600 22pt/1.1 var(--sans); margin: 0; letter-spacing: -.01em; }
+  .cover .period { font: 400 15pt/1.25 var(--sans); color: var(--sea); margin: 1.5mm 0 3mm; }
+  .cover .scope { font: 400 8pt/1.5 var(--sans); color: var(--muted); max-width: 150mm; }
   h2 { font: 600 10.5pt/1.2 var(--sans); color: var(--sea); margin: 9mm 0 3mm;
        padding-bottom: 2mm; border-bottom: 1px solid var(--rule); break-after: avoid; }
   h2 .n { font: 500 8pt var(--mono); color: var(--muted); margin-right: 3mm; }
@@ -46,10 +53,23 @@
   .lede { color: var(--muted); margin: 0 0 3mm; }
 
   .figures { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink);
-             border-bottom: 1px solid var(--rule); }
-  .figure { padding: 3mm 3mm 3mm 0; border-right: 1px solid var(--rule); }
-  .figure:last-child { border-right: 0; }
-  .figure .v { font: 500 17pt/1.1 var(--mono); margin-top: 1.5mm; }
+             border-bottom: 1px solid var(--ink); }
+  /* the label takes two lines' room in every figure, so the four numbers stand on one line */
+  .figure { display: flex; flex-direction: column; justify-content: space-between; padding: 3mm 4mm 3.5mm;
+            border-left: 1px solid var(--rule); }
+  .figure:first-child { border-left: 0; padding-left: 0; }
+  .figure .micro { min-height: 2.4em; }
+  .figure .v { font: 500 20pt/1 var(--mono); margin-top: 2mm; }
+  .figure.alert .micro::before { content: ""; display: inline-block; width: 1.6mm; height: 1.6mm;
+                                 background: var(--beacon); margin-right: 1.2mm; vertical-align: .1mm; }
+
+  /* The summary: five short groups, two to a row. */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 9mm; row-gap: 5mm; }
+  .summary-grid h4 { margin: 0 0 1mm; color: var(--sea); }
+  .summary-grid table { border-top: 1px solid var(--ink); }
+  .summary-grid td { padding: 1.3mm 0; }
+  .summary-grid td.num { white-space: nowrap; padding-left: 3mm; }
+  .summary-grid .quiet td.num { color: var(--muted); }
 
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; font: 500 6.5pt/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase;
@@ -57,6 +77,9 @@
   td { border-bottom: 1px solid var(--rule); padding: 1.6mm 2mm 1.6mm 0; vertical-align: top; }
   tr { break-inside: avoid; }
   td.num, th.num { text-align: right; font-family: var(--mono); }
+  td.country, th.country { width: 32mm; white-space: nowrap; padding-right: 3mm; }
+  table.fixed { table-layout: fixed; }
+  td.id a, td.id { white-space: nowrap; word-break: normal; }
   td.code, .code { font: 400 7.5pt var(--mono); color: var(--muted); }
   .title-orig { font-weight: 500; unicode-bidi: plaintext; }
   .empty { color: var(--muted); padding: 3mm 0; border-bottom: 1px solid var(--rule); }
@@ -85,6 +108,11 @@
   .closing .rule { align-self: stretch; width: 1px; background: var(--rule); }
   .closing .text { display: flex; flex-direction: column; gap: 1mm; }
   .closing strong { font: 600 8.5pt/1.3 var(--sans); }
+
+  /* Everything new: a block per country that published something; the quiet ones in one line. */
+  .quiet-list { margin: 1mm 0 3mm; padding: 2mm 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+                color: var(--muted); }
+  .quiet-list strong { font-weight: 500; color: var(--ink); }
 </style>
 </head>
 <body>
@@ -94,24 +122,35 @@
 
 <header class="masthead">
   <img class="logo" src="{{ logo_src }}" alt="PHAROS — Pharmaceutical Alerts &amp; Regulatory Observation System">
-  <div class="meta"><strong>{{ week.name }}</strong>{{ week.label }}</div>
+  <div class="meta"><strong>Pharmacovigilance Department</strong>Made {{ data.made_text }} (Cairo)</div>
 </header>
 
-<h1>{{ title }}</h1>
-<p class="micro">{{ week.span }} · every source read in its own language · titles exactly as published</p>
+<div class="cover">
+  <p class="micro kicker">{{ title }}</p>
+  <h1>{{ week.name }}</h1>
+  <p class="period">{{ week.label }}</p>
+  <p class="scope">{{ week.span }}. Every source read in its own language; titles exactly as published.</p>
+</div>
 
 <div class="figures">
   {% for k, v in data.figures %}
-  <div class="figure"><div class="micro">{{ k }}</div><div class="v">{{ v }}</div></div>
+  <div class="figure{% if loop.last and v %} alert{% endif %}"><div class="micro">{{ k }}</div><div class="v">{{ v }}</div></div>
   {% endfor %}
 </div>
 
 <h2><span class="n">01</span>Summary</h2>
-<table>
-  {% for k, v in data.summary %}{% if k not in ("Report",) %}
-  <tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
-  {% endif %}{% endfor %}
-</table>
+<div class="summary-grid">
+  {% for heading, rows in data.summary_groups %}
+  <div>
+    <h4>{{ heading }}</h4>
+    <table>
+      {% for k, v in rows %}
+      <tr{% if v in (0, "0", "0 (0 late)", "0 (0 steps late)") %} class="quiet"{% endif %}><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endfor %}
+</div>
 
 <h3>Decisions taken {{ week.this }}</h3>
 {% if data.decisions %}
@@ -162,11 +201,11 @@ not read {{ week.this }} is to be checked by hand.</p>
 <h3>{{ group }}</h3>
 {% if rows %}
 <table>
-  <thead><tr><th>Country</th><th>Authorities</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">New items</th></tr></thead>
+  <thead><tr><th class="country">Country</th><th>Authorities</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">New items</th></tr></thead>
   <tbody>
   {% for r in rows %}
   <tr>
-    <td>{% if r.read and not r.failed %}<span class="dot fine"></span>{% else %}<span class="dot check"></span>{% endif %}{{ r.country }}</td>
+    <td class="country">{% if r.read and not r.failed %}<span class="dot fine"></span>{% else %}<span class="dot check"></span>{% endif %}{{ r.country }}</td>
     <td>{{ r.authorities }}</td>
     {% if r.read %}
     <td class="num">{{ r.runs }}</td><td class="num">{{ r.failed }}</td>
@@ -204,7 +243,8 @@ an authority and was never alerted.</p>
 <h3>{{ i.name }}<span class="sub">{% if i.atc %}{{ i.atc }}{% endif %}{% if i.classes %} · {{ i.classes }}{% endif %}</span></h3>
 <p class="summary">{{ i.summary }}</p>
 {% if i.countries %}
-<table>
+<table class="fixed">
+  <colgroup><col style="width: 34mm"><col style="width: 78mm"><col></colgroup>
   <thead><tr><th>Country</th><th>Answer</th><th>Reads</th></tr></thead>
   <tbody>
   {% for c in i.countries %}
@@ -271,7 +311,8 @@ serious, 90 if not.</p>
 <h3>{{ i.name }}<span class="sub">{{ l.papers }} {{ "paper" if l.papers == 1 else "papers" }} · {{ l.by_name }} by name · {{ l.by_class }} by class · {{ l.case_reports }} possible case {{ "report" if l.case_reports == 1 else "reports" }}</span></h3>
 {% if l.mlm %}<p class="comment">{{ l.mlm }}</p>{% endif %}
 <h4>Searches</h4>
-<table>
+<table class="fixed">
+  <colgroup><col><col style="width: 30mm"><col style="width: 22mm"><col style="width: 28mm"><col style="width: 24mm"></colgroup>
   <thead><tr><th>Search</th><th>Searched as</th><th class="num">PubMed</th><th class="num">PubMed Central</th><th class="num">Europe PMC</th></tr></thead>
   <tbody>
   {% for s in l.searches %}
@@ -281,7 +322,8 @@ serious, 90 if not.</p>
 </table>
 <h4>Papers</h4>
 {% if l.list %}
-<table>
+<table class="fixed">
+  <colgroup><col style="width: 20mm"><col><col style="width: 22mm"><col style="width: 24mm"><col style="width: 24mm"></colgroup>
   <thead><tr><th>Date</th><th>Title</th><th>PubMed</th><th>PubMed Central</th><th>Europe PMC</th></tr></thead>
   <tbody>
   {% for p in l.list %}
@@ -291,9 +333,9 @@ serious, 90 if not.</p>
       {% if p.journal %}<br><span class="comment">{{ p.journal }}</span>{% endif %}
       {% if p.case_report %}<br><span class="decision">Possible case report: {{ p.case_reason }}. Day zero {{ p.day_zero }} · 15 days {{ p.due_serious }} · 90 days {{ p.due_nonserious }}</span>{% endif %}
       <br><span class="decision"><strong>{{ p.decision }}</strong>{% if p.decided_by %} · {{ p.decided_by }}, {{ p.decided_at }}{% endif %}{% if p.reason %} · <span class="comment">{{ p.reason }}</span>{% endif %}</span></td>
-    <td class="code">{{ link(p.pubmed, p.pubmed_id) }}</td>
-    <td class="code">{{ link(p.pmc, p.pmc_id) }}</td>
-    <td class="code">{{ link(p.europepmc, p.europepmc_id) }}</td>
+    <td class="code id">{{ link(p.pubmed, p.pubmed_id) }}</td>
+    <td class="code id">{{ link(p.pmc, p.pmc_id) }}</td>
+    <td class="code id">{{ link(p.europepmc, p.europepmc_id) }}</td>
   </tr>
   {% endfor %}
   </tbody>
@@ -308,10 +350,13 @@ serious, 90 if not.</p>
 <h2><span class="n">05</span>Everything new, per authority</h2>
 <p class="lede">Every item the authorities published {{ week.this }}, matched or not, and who looked at the country in
 PHAROS {{ week.this }}.</p>
-{% for n in data.new %}
-{% if loop.first or n.group != loop.previtem.group %}<h3>{{ n.group }}</h3>{% endif %}
+{% for group in (hers, others) %}
+{% set rows = data.new | selectattr("group", "equalto", group) | list %}
+{% if rows %}
+<h3>{{ group }}</h3>
+{% set quiet = rows | rejectattr("items") | list %}
+{% for n in rows if n["items"] %}
 <h4>{{ n.country }} · {{ n.authorities }}</h4>
-{% if n["items"] %}
 <table>
   <tbody>
   {% for it in n["items"] %}
@@ -324,10 +369,13 @@ PHAROS {{ week.this }}.</p>
   {% endfor %}
   </tbody>
 </table>
-{% else %}
-<div class="empty">Nothing new {{ week.this }}.</div>
-{% endif %}
 <p class="comment">{% if n.looks %}Looked at by {{ looks_text(n.looks) }}{% else %}Not looked at in PHAROS {{ week.this }}.{% endif %}</p>
+{% endfor %}
+{% if quiet %}
+<p class="quiet-list"><strong>Nothing new {{ week.this }}:</strong>
+{% for n in quiet %}{{ n.country }}{% if n.looks %} (looked at by {{ looks_text(n.looks) }}){% endif %}{{ ", " if not loop.last else "." }}{% endfor %}</p>
+{% endif %}
+{% endif %}
 {% endfor %}
 </section>
 
@@ -337,11 +385,11 @@ PHAROS {{ week.this }}.</p>
 <h3>Her pages the app does not read in full</h3>
 {% if ch.pages %}
 <table>
-  <thead><tr><th>Country</th><th>Page</th><th>Status</th></tr></thead>
+  <thead><tr><th class="country">Country</th><th>Page</th><th>Status</th></tr></thead>
   <tbody>
   {% for p in ch.pages %}
   <tr>
-    <td>{{ p.country }}</td>
+    <td class="country">{{ p.country }}</td>
     <td>{{ p.label }}{% if p.kind %} <span class="comment">· {{ p.kind }}</span>{% endif %}<br>{{ link(p.url) }}</td>
     <td>{{ p.status }}{% if p.note %}<br><span class="comment">{{ p.note }}</span>{% endif %}</td>
   </tr>
@@ -355,11 +403,11 @@ PHAROS {{ week.this }}.</p>
 <h3>Sources whose reads failed</h3>
 {% if ch.failed %}
 <table>
-  <thead><tr><th>Country</th><th>Source</th><th class="num">Failed</th><th>Last failure</th></tr></thead>
+  <thead><tr><th class="country">Country</th><th>Source</th><th class="num">Failed</th><th>Last failure</th></tr></thead>
   <tbody>
   {% for r in ch.failed %}
   <tr>
-    <td>{{ r.country }}</td>
+    <td class="country">{{ r.country }}</td>
     <td>{{ r.authority }}<br><span class="comment">{{ r.source }}</span>{% if r.page %}<br>{{ link(r.page) }}{% endif %}</td>
     <td class="num">{{ r.failed }} of {{ r.runs }}</td>
     <td class="comment">{{ r.why }}</td>
@@ -374,10 +422,10 @@ PHAROS {{ week.this }}.</p>
 <h3>Sources not read {{ week.this }}</h3>
 {% if ch.unread %}
 <table>
-  <thead><tr><th>Country</th><th>Source</th></tr></thead>
+  <thead><tr><th class="country">Country</th><th>Source</th></tr></thead>
   <tbody>
   {% for r in ch.unread %}
-  <tr><td>{{ r.country }}</td><td>{{ r.authority }}<br><span class="comment">{{ r.source }}</span>{% if r.page %}<br>{{ link(r.page) }}{% endif %}</td></tr>
+  <tr><td class="country">{{ r.country }}</td><td>{{ r.authority }}<br><span class="comment">{{ r.source }}</span>{% if r.page %}<br>{{ link(r.page) }}{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>

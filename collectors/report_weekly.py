@@ -792,7 +792,12 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                                   "mentions": [_mention(m, findings) for m in c["mentions"]]})
         lit = screen.get("literature") or {}
         counts = {q.get("query"): q for q in lit.get("by_query") or []}
-        searches = sorted(entry["searches"], key=lambda s: (s["kind"] != "name", s["query"]))
+        # One row per search: a class word shared by two of the ingredient's classes is searched once.
+        searches, seen_search = [], set()
+        for srch in sorted(entry["searches"], key=lambda s: (s["kind"] != "name", s["query"])):
+            if (srch["query"], srch["kind"] == "name") not in seen_search:
+                seen_search.add((srch["query"], srch["kind"] == "name"))
+                searches.append(srch)
         states = entry.get("states") or {}
         listed = [_paper(p, states.get(str(p.get("document_id")))) for p in entry["papers"]]
         listed.sort(key=lambda x: not x["case_report"])          # possible case reports first, else as the screen
@@ -924,7 +929,22 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                ("New items", len(raw["new_items"])),
                ("Notices naming our ingredients", len(found)),
                ("To check by hand", len(pages) + len(failed) + len(unread))]
-    return {"week": week, "made_at": made_at, "summary": summary, "figures": figures, "decisions": decisions,
+    by_label = dict(summary)
+    groups = [(heading, [(k, by_label[k]) for k in keys if k in by_label]) for heading, keys in (
+        ("Screening", ("Reference countries read", "Other authorities read", "Reads of the authorities' notices",
+                       "Reads that failed", "New items published")),
+        ("What concerns our ingredients", ("Watched ingredients", "Notices naming our ingredients or their class",
+                                           "Of them, history (never alerted)", "Of them, no decision yet",
+                                           "Label changes")),
+        ("Literature", ("Papers in PubMed, PubMed Central and Europe PMC", "Possible case reports in the literature",
+                        "Case reports with no decision yet")),
+        ("Decisions and the five-day clock", (f"Decisions taken {week.this}", f"Reported to the authority {week.this}",
+                                              "Due to the authority", "Signals open")),
+        ("To check by hand", ("Country answers to check by hand", "Pages to check by hand",
+                              "Sources whose reads failed", f"Sources not read {week.this}")),
+    )]
+    return {"week": week, "made_at": made_at, "made_text": cairo_time(made_at), "summary": summary,
+            "summary_groups": groups, "figures": figures, "decisions": decisions,
             "readiness": readiness, "sent": sent, "authorities": authorities, "ingredients": ingredients,
             "new": new, "check": {"pages": pages, "failed": failed, "unread": unread}}
 
@@ -939,7 +959,9 @@ SHEETS = ("Summary", "Decisions", "Authorities read", "Ingredients by country", 
 def build_weekly_xlsx(data: dict) -> bytes:
     week: Week | Day = data["week"]
     wb = xlsx_workbook(f"{week.title}, {week.label}")
-    xlsx_summary(wb.active, data["summary"] + [(f"Readiness: {r['name']}", r["text"]) for r in data["readiness"]])
+    head = [r for r in data["summary"] if r[0] in ("Report", week.period_head, "Made (Cairo)")]
+    xlsx_summary(wb.active, head, groups=data["summary_groups"] + [
+        ("Each ingredient: ready or still preparing", [(r["name"], r["text"]) for r in data["readiness"]])])
 
     def yes(v: bool) -> str:
         return "yes" if v else ""
@@ -948,7 +970,7 @@ def build_weekly_xlsx(data: dict) -> bytes:
                ["When (Cairo)", "Notice (original title)", "Decision", "Before", "By", "Reason", "Due", "Sent", "Signal"],
                [[d["at"], d["title"], d["decision"], d["before"], d["person"], d["reason"], d["due"], d["sent"],
                  d["signal"]] for d in data["decisions"]],
-               [18, 60, 22, 22, 22, 50, 20, 30, 44])
+               [18, 60, 22, 22, 22, 50, 20, 30, 44], empty=f"No decision was taken {week.this}.")
     a = data["authorities"]
     xlsx_sheet(wb, "Authorities read",
                ["Group", "Country", "Authorities", "Reads", "OK", "Failed", "New items"],
@@ -998,7 +1020,8 @@ def build_weekly_xlsx(data: dict) -> bytes:
                  p["due_nonserious"] if p["case_report"] else "",
                  p["decision"], p["decided_by"], p["decided_at"], p["reason"]]
                 for i in data["ingredients"] for p in i["literature"]["list"]],
-               [18, 14, 70, 30, 40, 46, 46, 9, 9, 9, 30, 14, 14, 14, 22, 22, 18, 44], links=True)
+               [18, 14, 70, 30, 40, 46, 46, 9, 9, 9, 30, 14, 14, 14, 22, 22, 18, 44], links=True,
+               empty=f"No paper {week.this}.")
     xlsx_sheet(wb, "Everything new",
                ["Group", "Country", "Authority", "Date", "Title (original)", "Language", "Link", "Kind", "Type",
                 "Matched the watchlist", f"Looked at {week.this} by"],
@@ -1006,7 +1029,7 @@ def build_weekly_xlsx(data: dict) -> bytes:
                  it["link"] or ("By e-mail: open it in PHAROS" if it["by_email"] else ""), it["kind"],
                  it["doc_type"], yes(it["matched"]), _looks_text(n["looks"])]
                 for n in data["new"] for it in n["items"]],
-               [20, 18, 26, 14, 64, 12, 50, 16, 16, 12, 40], links=True)
+               [20, 18, 26, 14, 64, 12, 50, 16, 16, 12, 40], links=True, empty=f"Nothing new {week.this}.")
     ch = data["check"]
     xlsx_sheet(wb, "To check by hand",
                ["What", "Country", "Authority", "Page or source", "Kind", "Address", "Why"],
@@ -1017,7 +1040,7 @@ def build_weekly_xlsx(data: dict) -> bytes:
                   for r in ch["failed"]]
                + [[f"Not read {week.this}", r["country"], r["authority"], r["source"], r["kind"], r["page"] or "",
                    f"No read {week.this}"] for r in ch["unread"]],
-               [34, 18, 26, 36, 18, 50, 60], links=True)
+               [34, 18, 26, 36, 18, 50, 60], links=True, empty="Nothing to check by hand.")
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -1069,16 +1092,25 @@ REPORT_ROW = {
 }
 
 
-def make_weekly_report(db: Any, store: Any, week: Week | Day, *, dry_run: bool = False) -> dict:
-    """Makes, archives, records and sends the report of a week, or of a day (the same report, one day long)."""
+def make_weekly_report(db: Any, store: Any, week: Week | Day, *, dry_run: bool = False,
+                       preview: bool = False) -> dict:
+    """Makes, archives, records and sends the report of a week, or of a day (the same report, one day long).
+    A ``preview`` only writes the two files to REPORT_DIR: nothing is archived, recorded or sent (the owner sees a
+    new look on real data before it is merged)."""
     from collectors.alerts import Notifier
     from collectors.core.archive import Archive
 
     data = assemble(gather_week(db, week), week)
     xlsx = build_weekly_xlsx(data)
     pdf = build_pdf(render_weekly_html(data), render_footer(week))
-    archive = Archive()
     stem = file_stem(week)
+    if preview:
+        out_dir = Path(os.environ.get("REPORT_DIR", "."))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / f"{stem}.xlsx").write_bytes(xlsx)
+        (out_dir / f"{stem}.pdf").write_bytes(pdf)
+        return {"preview": stem}
+    archive = Archive()
     base = f"reports/{week.kind}/{week.slug}/{stem}"
     # A week or day made again never overwrites (bucket lock): it is stored as -r2, -r3 …; the row keeps the
     # latest, and the audit log the earlier ones.

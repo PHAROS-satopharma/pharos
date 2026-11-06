@@ -816,6 +816,50 @@ def test_the_report_says_which_period_it_covers():
     assert "Papers in PubMed, PubMed Central and Europe PMC" in _unread(NOV1)[1]
 
 
+def test_the_summary_groups_carry_every_figure_once():
+    for period in (NOV1, NOV5):
+        data = rw.assemble(rw.gather_week(FakeDb(period), period), period)
+        grouped = [k for _, rows in data["summary_groups"] for k, _ in rows]
+        head = {"Report", period.period_head, "Made (Cairo)"}
+        assert sorted(grouped) == sorted(k for k, _ in data["summary"] if k not in head)
+        assert [h for h, _ in data["summary_groups"]] == [
+            "Screening", "What concerns our ingredients", "Literature", "Decisions and the five-day clock",
+            "To check by hand"]
+
+
+def test_the_polished_files():
+    data = rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5, made_at=datetime(2026, 11, 6, 5, 2, tzinfo=UTC))
+    html = rw.render_weekly_html(data)
+    assert "<h1>Daily screening report</h1>" in html and '<p class="period">Thu 5 Nov 2026</p>' in html
+    assert "Made 6 Nov 2026, 07:02 (Cairo)" in html
+    assert html.count('<div class="summary-grid">') == 1
+    # a country with nothing new is named in one line, never given a block of its own
+    quiet = [n["country"] for n in data["new"] if not n["items"]]
+    assert quiet and all(f"<h4>{c} · " not in html for c in quiet)
+    assert "Nothing new on the day:</strong>" in html
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    for ws in wb.worksheets:
+        assert ws.sheet_view.showGridLines is False, ws.title
+        assert ws.page_setup.orientation == "landscape" and ws.page_setup.fitToWidth == 1, ws.title
+        assert "PHAROS — Daily screening report" in (ws.oddHeader.left.text or ""), ws.title
+    assert wb["Decisions"]["A2"].value == "No decision was taken on the day."
+    assert wb["Decisions"].print_title_rows == "1:1"
+    summary = [r[0] for r in wb["Summary"].iter_rows(values_only=True)]
+    assert "Screening" in summary and "To check by hand" in summary
+
+
+def test_a_preview_is_never_archived_recorded_or_sent(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARCHIVE_DIR", str(tmp_path / "archive"))
+    monkeypatch.setenv("REPORT_DIR", str(tmp_path / "out"))
+    monkeypatch.setattr(rw, "build_pdf", lambda html, footer: b"%PDF-1.7 preview")
+    db = FakeDb(NOV5)
+    assert rw.make_weekly_report(db, MemoryStore(), NOV5, preview=True) == {"preview": "PHAROS-daily-2026-11-05"}
+    assert db.written == [] and not any("insert into" in q for q in db.sql)
+    assert not (tmp_path / "archive").exists()
+    assert (tmp_path / "out" / "PHAROS-daily-2026-11-05.pdf").read_bytes() == b"%PDF-1.7 preview"
+    assert (tmp_path / "out" / "PHAROS-daily-2026-11-05.xlsx").exists()
+
+
 # ───────────────────────────── a real PDF ─────────────────────────────
 
 def _poppler() -> bool:
