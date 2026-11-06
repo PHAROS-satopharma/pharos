@@ -109,3 +109,19 @@ def test_a_key_by_hand_wins(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     monkeypatch.setattr(anthropic, "WorkloadIdentityCredentials", lambda **kw: pytest.fail("federation used"))
     claude.client()
+
+
+def test_the_check_says_it_is_not_set_up():
+    with pytest.raises(SystemExit):
+        claude.check()
+
+
+def test_the_check_names_the_way_in(monkeypatch):
+    federate(monkeypatch)
+
+    class Models:
+        def list(self, limit):
+            return iter([type("M", (), {"id": "claude-opus-5-5"})()])
+
+    monkeypatch.setattr(claude, "client", lambda: type("C", (), {"models": Models()})())
+    assert claude.check() == "Claude sign-in works (federation): claude-opus-5-5"
