@@ -1,0 +1,66 @@
+/* The readiness line under an ingredient's name on the Ingredients page (0045): Ready as a flat square tag, or
+   Still preparing with a square beacon marker, and the facts she needs under it. Tokens only; phone first. */
+
+.readiness {
+  display: block;
+  margin-top: 6px;
+  margin-left: 17px; /* as .ingredients .col-ingredient .cell-sub: under the name, past the disclosure */
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.readiness-loading {
+  color: var(--muted);
+}
+.readiness-wait {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--text);
+}
+.readiness-marker {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--beacon);
+  transform: translateY(1px);
+}
+.readiness-notes {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+/* The Japan code in the term editor: one field, the PMDA link and why the code is copied by hand. */
+.japan-code {
+  margin-top: 14px;
+}
+.japan-code .japan-code-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  align-items: start;
+}
+.japan-code .japan-code-why {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.japan-code .japan-code-why a {
+  color: var(--sea);
+}
+.japan-code .btn,
+.japan-code input {
+  min-height: 44px;
+}
+
+@media (min-width: 760px) {
+  .japan-code .japan-code-row {
+    grid-template-columns: minmax(160px, 240px) auto;
+  }
+  .japan-code .btn,
+  .japan-code input {
+    min-height: 0;
+  }
+}

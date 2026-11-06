@@ -6,6 +6,10 @@ import { MATCH_MODES, TERM_KINDS, type MatchMode, type TermKind } from '../../li
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { Select, type Option } from '../../ui/Select';
+import { isJapanCode } from './readiness';
+
+/** PMDA's search form (it answers a POST only; see docs/operations.md, "Adding an ingredient"). */
+const PMDA_SEARCH = 'https://www.pmda.go.jp/PmdaSearch/iyakuSearch/';
 
 export interface TermDraft {
   uid: string;
@@ -22,6 +26,12 @@ let seq = 0;
 export function newUid(): string {
   seq += 1;
   return `t${Date.now().toString(36)}${seq}`;
+}
+
+/** The Japan code: PMDA's product code, kept as a term of kind 'code' for Japan so the label watch can find the
+ *  package inserts (ingredient_term kind 'code', country JP, source 'pmda'). */
+export function isJapanCodeDraft(t: TermDraft): boolean {
+  return t.kind === 'code' && t.country === 'JP';
 }
 
 /** Japanese, Chinese and Korean are matched anywhere in the text; Latin scripts by word start. */
@@ -46,8 +56,22 @@ export function TermEditor({
   const [hits, setHits] = useState<Record<string, HitState>>({});
   const [addLang, setAddLang] = useState('');
 
-  const langs = [...new Set(terms.map((t) => t.lang))].sort((a, b) => languageName(a).localeCompare(languageName(b)));
+  // The Japan code is a term of kind 'code' for Japan: not a name, so it is not shown among the languages.
+  const japan = terms.find(isJapanCodeDraft);
+  const named = terms.filter((t) => !isJapanCodeDraft(t));
+  const langs = [...new Set(named.map((t) => t.lang))].sort((a, b) => languageName(a).localeCompare(languageName(b)));
   const missing = languages.filter((l) => !langs.includes(l));
+
+  function setJapanCode(code: string) {
+    if (japan) {
+      update(japan.uid, { term: code });
+    } else {
+      onChange([
+        ...terms,
+        { uid: newUid(), lang: 'ja', term: code, kind: 'code', mode: 'exact', exclusions: '', country: 'JP', source: 'pmda' },
+      ]);
+    }
+  }
 
   function update(uid: string, patch: Partial<TermDraft>) {
     onChange(terms.map((t) => (t.uid === uid ? { ...t, ...patch } : t)));
@@ -87,7 +111,7 @@ export function TermEditor({
         <fieldset key={lang} className="term-group">
           <legend className="term-group-head">
             <span className="term-group-name">{languageName(lang)}</span>
-            <span className="soft small">{terms.filter((t) => t.lang === lang).length} terms</span>
+            <span className="soft small">{named.filter((t) => t.lang === lang).length} terms</span>
           </legend>
           <div className="term-row term-row-head" aria-hidden>
             <span className="micro soft">Term, as written</span>
@@ -97,7 +121,7 @@ export function TermEditor({
             <span className="micro soft">Country</span>
             <span />
           </div>
-          {terms
+          {named
             .filter((t) => t.lang === lang)
             .map((t) => {
               const h = hits[t.uid];
@@ -183,6 +207,37 @@ export function TermEditor({
           Add
         </Button>
       </div>
+
+      <fieldset className="japan-code">
+        <legend className="term-group-head">
+          <span className="term-group-name">Japan code</span>
+          <span className="soft small">PMDA product code, for Japan’s label watch</span>
+        </legend>
+        <div className="japan-code-row">
+          <Input
+            aria-label="Japan code"
+            value={japan?.term ?? ''}
+            inputMode="text"
+            autoCapitalize="characters"
+            placeholder="e.g. 1149036"
+            onChange={(e) => setJapanCode(e.target.value.toUpperCase())}
+          />
+          <a className="btn btn-sm" href={PMDA_SEARCH} target="_blank" rel="noreferrer">
+            Open the PMDA search
+          </a>
+        </div>
+        {japan && japan.term.trim() && !isJapanCode(japan.term) ? (
+          <p className="small danger" role="status">
+            A Japan code has 7 characters (for example 1149036), or 12 for the YJ code that starts with them.
+          </p>
+        ) : null}
+        <p className="japan-code-why">
+          PMDA’s search answers a form, not an address, so PHAROS cannot look the package insert up by name. Search
+          the name there, open the product, and copy the code from the end of its address (…/GeneralList/
+          <span className="mono">code</span>). Without it the row says so; the ingredient is still watched everywhere
+          else.
+        </p>
+      </fieldset>
     </div>
   );
 }
