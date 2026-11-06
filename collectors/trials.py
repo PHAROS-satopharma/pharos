@@ -316,6 +316,8 @@ def run(db: Any, get: Get | None = None) -> str:
                         db.execute(UNLINK_SQL, {"i": ing["id"], "ids": ids})
                     db.execute(SEARCHED_SQL, {"i": ing["id"], "names": searched_names})
                 searched += 1
+                log.info("Clinical trials: %d of %d ingredients, %d studies fetched so far",
+                         searched + failed, len(ingredients), fetched)
             except Exception as exc:      # one ingredient never stops the others
                 failed += 1
                 log.warning("Clinical trials: one ingredient's search failed (%s)", type(exc).__name__)
