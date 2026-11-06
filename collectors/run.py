@@ -535,6 +535,15 @@ def main(argv: list[str] | None = None) -> int:
                         notifier.issue_alert(issue_id)
                     except Exception:  # noqa: BLE001 - one alert failing never stops the others
                         log.warning("alert for %s failed: %s", issue_id, traceback.format_exc())
+            if db is not None and not args.backfill and not args.source and not args.probe_id:
+                try:
+                    # our label against the label changes of the last year (label_gap, 0043): a new version of
+                    # our label uploaded on the screen is compared with them on this run
+                    from collectors.labels.recompute import recompute_gaps
+
+                    recompute_gaps(db)
+                except Exception:  # noqa: BLE001 - the comparison never fails the run
+                    log.warning("label gap check failed: %s", traceback.format_exc())
             if args.backfill:
                 notifier.admin_message(runner.summary.text(runner.issues_created))
             else:

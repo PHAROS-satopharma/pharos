@@ -37,6 +37,7 @@ import importlib
 import json
 import logging
 import time
+import traceback
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -276,11 +277,20 @@ def record_change(db, ctx, source_id: str, product: dict, ingredient: dict, snap
                      confidence) values (%(d)s, %(g)s, 'structured', %(t)s, %(s)s, 'high')""",
                 {"d": doc_id, "g": ingredient["id"], "t": product["product_name"],
                  "s": f"SPC {', '.join(alerting)}"})
-    db.execute(
+    row = db.fetchone(
         """insert into spc_change (spc_product_id, from_snapshot, to_snapshot, sections, diff,
-             issue_id) values (%(p)s, %(f)s, %(t)s, %(s)s, %(d)s, %(i)s)""",
+             issue_id) values (%(p)s, %(f)s, %(t)s, %(s)s, %(d)s, %(i)s) returning id""",
         {"p": product["id"], "f": prev_id, "t": snap_id, "s": sections, "d": _json(changes),
          "i": issue_id})
+    change_id = str(row["id"]) if row and row.get("id") else None
+    if change_id:
+        # Our label against this change (label_gap, 0043): the check never loses the change it describes.
+        try:
+            from collectors.labels import recompute
+
+            recompute.gap_for_change(db, change_id, ingredient["id"], changes, snap.lang)
+        except Exception:  # noqa: BLE001 - the comparison is caught up on the next run
+            log.warning("gap check for change %s failed: %s", change_id, traceback.format_exc())
     return issue_id
 
 

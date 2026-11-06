@@ -114,6 +114,8 @@ class SpcDb:
         self.links: list[tuple] = []
         self.matches: list[dict] = []
         self.products: dict[tuple[str, str], dict] = {}
+        self.our_labels: list[dict] = []        # current versions of our label: id, ingredient_id, lang, sections
+        self.gaps: list[dict] = []              # label_gap rows the change writer stored
 
     @contextmanager
     def transaction(self):
@@ -150,6 +152,11 @@ class SpcDb:
             row = {"id": str(uuid.uuid4()), "title": p["t"], "anchor": p["d"], "first_date": p["f"]}
             self.issues.append(row)
             return {"id": row["id"]}
+        if q.startswith("insert into spc_change"):
+            assert "returning id" in q
+            row = {"id": str(uuid.uuid4()), **p, "d": _load(p["d"])}
+            self.changes.append(row)
+            return {"id": row["id"]}
         raise AssertionError(f"unexpected fetchone: {q[:80]}")
 
     def fetchall(self, sql: str, params=None):
@@ -158,13 +165,18 @@ class SpcDb:
         if q.startswith("select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot"):
             rows = [dict(r) for r in self.snapshots if r["spc_product_id"] == p["p"]]
             return list(reversed(rows))[:p.get("n", len(rows))]
+        if "from our_label" in q:
+            assert "superseded_at is null" in q, "only the current version of our label is compared"
+            return [{"id": r["id"], "lang": r["lang"], "sections": r["sections"]}
+                    for r in self.our_labels if r["ingredient_id"] == p["i"]]
         raise AssertionError(f"unexpected fetchall: {self._sql(sql)[:80]}")
 
     def execute(self, sql: str, params=None) -> None:
         q = self._sql(sql)
         p = dict(params or {})
-        if q.startswith("insert into spc_change"):
-            self.changes.append({**p, "d": _load(p["d"])})
+        if q.startswith("insert into label_gap"):
+            assert "on conflict (spc_change_id, our_label_id) do update" in q
+            self.gaps.append({**p, "gap": _load(p["g"])})
         elif q.startswith(("insert into issue_document", "insert into issue_ingredient")):
             self.links.append((q.split()[2], p))
         elif q.startswith("insert into match"):

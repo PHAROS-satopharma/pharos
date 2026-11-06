@@ -396,6 +396,8 @@ def gather_week(db: Any, week: Week) -> dict:
                       by_class, is_backfill, first_seen_at
                  from ingredient_papers(%(i)s::uuid, %(f)s, %(t)s)""", p)
         searches = db.fetchall(SEARCHES_SQL, p)
+        # Our label under "Label changes" (0043): the changes detected in the week, with the gap against our label.
+        changes = db.fetchone("select label_changes(%(i)s::uuid, %(f)s, %(t)s) as changes", p) or {}
         # the notice, decision and case-report dates of each paper listed, 200 papers a call
         states: dict = {}
         ids = [str(x["document_id"]) for x in papers]
@@ -406,6 +408,7 @@ def gather_week(db: Any, week: Week) -> dict:
         # How far the ingredient is prepared, as the Ingredients page reads it (ingredient_readiness, 0045).
         ready = db.fetchone("select ingredient_readiness(%(i)s::uuid) as readiness", {"i": ing["id"]}) or {}
         screens.append({"screen": row.get("screen") or {}, "papers": papers, "searches": searches,
+                        "label_changes": changes.get("changes") or [],
                         "states": states, "mlm": bool(mlm[0]["monitored"]) if mlm else None,
                         "readiness": ready.get("readiness") or {}})
     raw = {
@@ -454,17 +457,18 @@ def gather_week(db: Any, week: Week) -> dict:
     }
     # The clock and the signal of every notice decided this week, and of every notice on a screen that concerns us
     # (its signal is shown on the notice, whenever the decision was taken).
-    concerned = {str(m["issue_id"]) for e in screens for m in _screen_mentions(e["screen"])
+    concerned = {str(m["issue_id"]) for e in screens for m in _screen_mentions(e)
                  if m.get("issue_id") and m.get("issue_status") == "relevant"}
     decided = {d["issue_id"] for d in raw["decisions"] if d.get("issue_id")}
     raw["findings"] = _finding_states(db, sorted(decided | concerned))
     return raw
 
 
-def _screen_mentions(screen: dict) -> list[dict]:
-    """Every notice an ingredient's screen lists: the authorities' mentions and the label changes."""
-    out = [m for r in screen.get("regulators") or [] for m in r.get("mentions") or []]
-    return out + list(screen.get("label_changes") or [])
+def _screen_mentions(entry: dict) -> list[dict]:
+    """Every notice an ingredient's part of the report lists: the authorities' mentions (ingredient_screen) and
+    the label changes (label_changes(), 0043)."""
+    out = [m for r in (entry.get("screen") or {}).get("regulators") or [] for m in r.get("mentions") or []]
+    return out + list(entry.get("label_changes") or [])
 
 
 def country_list(countries: list[str]) -> str:
@@ -590,6 +594,57 @@ def _mention(m: dict, findings: dict | None = None) -> dict:
     }
 
 
+def gap_summary(gap: dict | None, our_label: dict | None) -> str:
+    """One line on the gap between a label change and our label, as the Ingredients screen counts it."""
+    if not our_label:
+        return "No label of ours uploaded"
+    if not gap:
+        return "Not compared yet"
+    if not gap.get("lang_match"):
+        return "Not compared: different language"
+    return (f"Our label: {int(gap.get('covered') or 0)} covered, {int(gap.get('partly') or 0)} partly, "
+            f"{int(gap.get('missing') or 0)} missing")
+
+
+def _label_change(c: dict, findings: dict | None = None) -> dict:
+    """One label change as label_changes() (0043) answers it, worded for the report, with the signal its notice
+    opened (0042)."""
+    p = c.get("product") or {}
+    d = c.get("decision") or None
+    status = c.get("issue_status")
+    ours = c.get("our_label") or None
+    f = (findings or {}).get(str(c.get("issue_id") or "")) or {}
+    return {
+        "signal": signal_cell(f.get("signal")),
+        "id": c.get("change_id"),
+        "document_id": c.get("document_id"),
+        "day": f"Detected {day_text(c.get('detected_day'))}",
+        "label_day": day_text(c.get("label_date")) if c.get("label_date") else "",
+        "title": c.get("title") or "",
+        "lang": c.get("lang"),
+        "link": safe_link(c.get("link")),
+        "by_email": False,
+        "authority": p.get("regulator_name") or "",
+        "country": p.get("country_name") or "",
+        "product": p.get("name") or "",
+        "mah": p.get("mah") or "",
+        "reference": bool(p.get("is_reference")),
+        "doc_type": DOC_TYPE_LABEL["label_change"],
+        "words": "",
+        "by_class": False,
+        "history": bool(c.get("is_backfill")),
+        "sections": ", ".join(s for s in (c.get("sections") or []) if isinstance(s, str)),
+        "gap_summary": gap_summary(c.get("gap") or None, ours),
+        "our_label": f"{ours['product_name']}, {ours['version']}" if ours else "",
+        "status": status,
+        "decision": DECISION_LABEL.get(status or "new", NO_DECISION) if c.get("issue_id") else NO_DECISION,
+        "decided_by": (d or {}).get("person") or "",
+        "decided_at": cairo_time((d or {}).get("at")),
+        "reason": (d or {}).get("comment") or "",
+        "awaiting": not c.get("issue_id") or status in (None, "new", "reviewed"),
+    }
+
+
 CASE_REASON = {"pubtype": "PubMed lists it as a case report", "title": "its title says so"}
 MLM_TEXT = {True: "Monitored by EMA (MLM): EMA reads the literature for this ingredient",
             False: "Not monitored by EMA: cases in the literature are ours to report"}
@@ -683,7 +738,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
             "classes": ", ".join(c.get("name_en") or "" for c in ing.get("classes") or []),
             "summary": summary_line(h + o),
             "countries": countries,
-            "label_changes": [_mention(m, findings) for m in screen.get("label_changes") or []],
+            "label_changes": [_label_change(c, findings) for c in entry.get("label_changes") or []],
             "literature": {
                 "papers": int(lit.get("papers") or 0), "by_name": int(lit.get("by_name") or 0),
                 "by_class": int(lit.get("by_class") or 0), "pubmed": int(lit.get("pubmed") or 0),
@@ -764,7 +819,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
 
     # 1. Summary
     found = {m["document_id"]: m for i in ingredients for c in i["countries"] for m in c["mentions"]}
-    labels = {m["document_id"] for i in ingredients for m in i["label_changes"]}
+    labels = {m["id"] for i in ingredients for m in i["label_changes"]}
     papers = {p["document_id"]: p for i in ingredients for p in i["literature"]["list"]}
     to_check_answers = sum(1 for i in ingredients for c in i["countries"] if c["check"])
     hers_read = sum(1 for r in authorities["hers"] if r["read"])
@@ -848,11 +903,12 @@ def build_weekly_xlsx(data: dict) -> bytes:
                     m["words"], yes(m["by_class"]), yes(m["history"]), m["decision"], m["decided_by"],
                     m["decided_at"], m["reason"]])
         for m in i["label_changes"]:
-            rows.append([i["name"], "Label changes", m["country"], "", "", m["day"], m["title"],
-                         language(m["lang"]), m["link"] or "", m["authority"], m["doc_type"],
-                         m["sections"] and f"Sections changed: {m['sections']}" or m["words"],
-                         yes(m["by_class"]), yes(m["history"]), m["decision"], m["decided_by"], m["decided_at"],
-                         m["reason"]])
+            about = " · ".join(x for x in (m["sections"] and f"Sections changed: {m['sections']}",
+                                           m["label_day"] and f"Label dated {m['label_day']}", m["mah"],
+                                           m["reference"] and "Reference product") if x)
+            rows.append([i["name"], "Label changes", m["country"], m["gap_summary"], m["our_label"], m["day"],
+                         m["title"], language(m["lang"]), m["link"] or "", m["authority"], m["doc_type"], about,
+                         "", yes(m["history"]), m["decision"], m["decided_by"], m["decided_at"], m["reason"]])
     xlsx_sheet(wb, "Ingredients by country",
                ["Ingredient", "Group", "Country", "Answer", "Reads", "Date", "Notice (original title)",
                 "Language", "Link", "Authority", "Type", "Words matched", "By class", "History", "Decision",

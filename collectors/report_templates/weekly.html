@@ -239,12 +239,13 @@ an authority and was never alerted.</p>
   <tbody>
   {% for m in i.label_changes %}
   <tr class="mention">
-    <td class="code">{{ m.day }}</td>
+    <td class="code">{{ m.day }}{% if m.label_day %}<br>Label dated {{ m.label_day }}{% endif %}</td>
     <td>
-      <span class="title-orig" dir="auto">{{ m.title }}</span>{% if m.history %}<span class="tag">history</span>{% endif %}<br>
-      <span class="what">{{ m.authority }}, {{ m.country }}{% if m.sections %} · Sections changed: {{ m.sections }}{% endif %}</span><br>
+      <span class="title-orig" dir="auto">{{ m.title }}</span>{% if m.reference %}<span class="tag">Reference product</span>{% endif %}{% if m.history %}<span class="tag">history</span>{% endif %}<br>
+      <span class="what"><span dir="auto">{{ m.product }}</span>{% if m.mah %} · <span dir="auto">{{ m.mah }}</span>{% endif %} · {{ m.authority }}, {{ m.country }}{% if m.sections %} · Sections changed: {{ m.sections }}{% endif %}</span><br>
+      <span class="what">{{ m.gap_summary }}{% if m.our_label %} · <span dir="auto">{{ m.our_label }}</span>{% endif %}</span><br>
       {{ link(m.link) }}<br>
-      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}</span>{% if m.signal %}<br><span class="decision">Signal {{ m.signal }}</span>{% endif %}
+      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}{% if m.reason %} · <span class="comment">{{ m.reason }}</span>{% endif %}</span>{% if m.signal %}<br><span class="decision">Signal {{ m.signal }}</span>{% endif %}
     </td>
   </tr>
   {% endfor %}

@@ -1,0 +1,233 @@
+/* ───────── Our label under "Label changes" (section 03 of the Ingredients screen) ─────────
+   The originator's change, then what the collector found against our label: each added sentence tagged as said,
+   partly said or not said by our label. Flat colour, square corners, 1px rules; phone first, 44px targets. */
+
+/* ───────── the Our label panel ───────── */
+.lab-ours {
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--text);
+  background: var(--surface);
+}
+.lab-ours-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.lab-ours-title {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--muted);
+}
+.lab-ours-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lab-ours-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+.lab-ours-item strong {
+  font-weight: 600;
+}
+.lab-ours-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+.lab-ours .btn {
+  min-height: 44px;
+}
+.lab-ours-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.lab-ours-form .form-grid {
+  margin-bottom: 12px;
+}
+.lab-ours-form .field {
+  min-height: 44px;
+}
+.lab-preview {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+.lab-preview-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.lab-preview-list li {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+  border-top: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+.lab-preview-list li:first-child {
+  border-top: 0;
+}
+.lab-preview-num {
+  flex: 0 0 3.5em;
+  font-family: var(--font-mono);
+}
+.lab-preview-text {
+  color: var(--muted);
+}
+.lab-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ───────── one label change ───────── */
+.lab-change.is-reference {
+  padding-left: 14px;
+  border-left: 3px solid var(--text);
+}
+.lab-mah {
+  color: var(--muted);
+}
+.lab-gap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.lab-gap-counts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lab-gap-quiet {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.lab-sections {
+  margin: 8px 0 0;
+}
+.lab-section {
+  border-top: 1px solid var(--rule);
+}
+.lab-section:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+.lab-section > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 44px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 14px;
+  list-style: none;
+}
+.lab-section > summary::-webkit-details-marker {
+  display: none;
+}
+.lab-section > summary::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--text);
+  background: transparent;
+}
+.lab-section[open] > summary::before {
+  background: var(--text);
+}
+.lab-section-name {
+  font-family: var(--font-mono);
+}
+.lab-section-counts {
+  color: var(--muted);
+  font-size: 13px;
+}
+.lab-added {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.lab-added-item {
+  padding: 8px 0 8px 12px;
+  border-left: 3px solid var(--rule);
+}
+.lab-added-item + .lab-added-item {
+  margin-top: 6px;
+}
+.lab-added-covered {
+  border-left-color: var(--sea);
+}
+.lab-added-partly {
+  border-left-color: var(--beacon);
+}
+.lab-added-missing {
+  border-left-color: var(--danger);
+}
+.lab-theirs {
+  margin: 6px 0 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.lab-ours-says {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.lab-diff {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  font-size: 14px;
+}
+.lab-diff-head {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.lab-ctx {
+  color: var(--muted);
+}
+.lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.lab-actions .btn {
+  min-height: 44px;
+}
+
+@media (min-width: 760px) {
+  .lab-ours {
+    padding: 16px 22px;
+  }
+  .lab-actions .btn,
+  .lab-ours .btn {
+    min-height: 38px;
+  }
+}
