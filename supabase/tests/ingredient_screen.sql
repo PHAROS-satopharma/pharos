@@ -231,7 +231,7 @@ select pg_temp.is_refused($q$select ingredient_screen_check('00000000-0000-0000-
 reset role;
 
 -- the parent class switched on: its words count, and are due for the check of the past again
-update class_term set rematched_at = changed_at where id = '00000000-0000-0000-0000-00000037d201';
+update class_term set changed_at = '2026-01-01 00:00+00', rematched_at = '2026-01-01 00:00+00' where id = '00000000-0000-0000-0000-00000037d201';
 update ingredient_class set enabled = true
  where ingredient_id = '00000000-0000-0000-0000-00000037a001' and class_id = '00000000-0000-0000-0000-00000037d002';
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
