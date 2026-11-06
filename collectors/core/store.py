@@ -45,6 +45,12 @@ class Store:
     def transaction(self):
         return self.db.transaction()
 
+    def lock_issue_merge(self) -> None:
+        """Until this transaction ends, no other run places a document among the issues (merge.merge_document): a
+        backfill runs beside a collection (backfill.yml), and two runs each reading the other's anchor or copy
+        before it was committed would give one event two issues."""
+        self.db.execute("select pg_advisory_xact_lock(hashtext('pharos.merge_document'))")
+
     # ───────────────────────────── settings ─────────────────────────────
     def settings(self) -> dict[str, Any]:
         out = dict(DEFAULT_SETTINGS)
