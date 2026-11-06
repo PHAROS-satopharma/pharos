@@ -93,10 +93,12 @@ begin
   if tg_op = 'UPDATE'
      and old.withdrawn_at is null and new.withdrawn_at is not null
      and coalesce(current_setting('pharos.withdrawing', true), '') = new.id::text
+     -- null-safe: reference and note may be empty
      and (new.id, new.issue_id, new.authority, new.sent_on, new.reference, new.note, new.person_id,
           new.decision_id, new.created_at)
-         = (old.id, old.issue_id, old.authority, old.sent_on, old.reference, old.note, old.person_id,
-            old.decision_id, old.created_at) then
+         is not distinct from
+         (old.id, old.issue_id, old.authority, old.sent_on, old.reference, old.note, old.person_id,
+          old.decision_id, old.created_at) then
     return new;
   end if;
   raise exception 'authority_report is append-only';
