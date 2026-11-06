@@ -161,6 +161,13 @@ export interface PaperState extends Decided {
 /** The states of the papers on screen, by document id. A paper not yet answered has no entry. */
 export type PaperStates = Record<string, PaperState>;
 
+/** One page of papers as the screen holds it: paper_state() for its papers, and finding_state() for their notices
+ *  (the five-day clock and the signal), as the screen's mentions have them. */
+export interface PaperPage {
+  states: PaperStates;
+  findings: Findings;
+}
+
 /** One search the daily literature watch runs for this ingredient, and how many of the papers it found. */
 export interface PaperQuery {
   query: string;

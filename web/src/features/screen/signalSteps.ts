@@ -3,8 +3,8 @@
 // after a step. The database decides the stages and the due days.
 
 import { ACTION_OUTCOMES, SIGNAL_STAGES, type SignalOutcome, type SignalStage, type SignalStep } from '../../lib/types';
-import { dueLabel } from './clock';
-import type { FindingSignal, Findings, IngredientScreenData } from './types';
+import { dueLabel, type WithFindings } from './clock';
+import type { FindingSignal, Findings } from './types';
 
 /** A step she can take from the signal's stage, and what the form must ask for. */
 export interface NextStep {
@@ -120,8 +120,9 @@ export function isStaleSignal(error: { code?: string; message?: string } | null 
   return error.code === 'PH409' || (error.message ?? '').startsWith('STALE_SIGNAL');
 }
 
-/** The screen after a step: the notice's signal is replaced; its clock and the other notices are untouched. */
-export function withSignal(data: IngredientScreenData, issueId: string, signal: FindingSignal | null): IngredientScreenData {
+/** The screen (or a page of papers) after a step: the notice's signal is replaced; its clock and the other notices
+ *  are untouched. */
+export function withSignal<T extends WithFindings>(data: T, issueId: string, signal: FindingSignal | null): T {
   const f = data.findings[issueId];
   if (!f) return data;
   const findings: Findings = { ...data.findings, [issueId]: { ...f, signal } };
