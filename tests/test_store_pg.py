@@ -332,7 +332,17 @@ def test_notifications(store, tag):
         "select summary, sent_at from notification where summary like %(s)s",
         {"s": f"report % {tag}"})}
     assert store.last_notification_at("report") == at[f"report fail {tag}"]
-    assert store.last_notification_at("report", delivered_only=True) == at[f"report ok {tag}"]
+    assert store.last_notification_at("report", delivered_only=True, dry_run=True) == at[f"report ok {tag}"]
+    # what really went out: a dry-run row counts only for a dry run
+    store.insert_notification(person_id=None, issue_id=None, kind="report", dry_run=False,
+                              tg_message_id=31, error=None, summary=f"report real {tag}")
+    store.insert_notification(person_id=None, issue_id=None, kind="report", dry_run=True,
+                              tg_message_id=None, error=None, summary=f"report dry {tag}")
+    at = {r["summary"]: r["sent_at"] for r in store.db.fetchall(
+        "select summary, sent_at from notification where summary like %(s)s",
+        {"s": f"report % {tag}"})}
+    assert store.last_notification_at("report", delivered_only=True) == at[f"report real {tag}"]
+    assert store.last_notification_at("report", delivered_only=True, dry_run=True) == at[f"report dry {tag}"]
 
 
 def test_notified_since_counts_what_reached_the_person(store, tag):
@@ -344,6 +354,10 @@ def test_notified_since_counts_what_reached_the_person(store, tag):
     assert not store.notified_since(p, "new_items_digest", since)    # refused: tried again
     store.insert_notification(person_id=p, issue_id=None, kind="new_items_digest", dry_run=True,
                               tg_message_id=None, error=None, summary=f"dry {tag}")
+    assert not store.notified_since(p, "new_items_digest", since)    # a dry run never takes the real one
+    assert store.notified_since(p, "new_items_digest", since, dry_run=True)  # a dry run is once a day
+    store.insert_notification(person_id=p, issue_id=None, kind="new_items_digest", dry_run=False,
+                              tg_message_id=4243, error=None, summary=f"sent {tag}")
     assert store.notified_since(p, "new_items_digest", since)
     assert not store.notified_since(p, "digest", since)
     assert not store.notified_since(p, "new_items_digest", datetime.now(timezone.utc) + timedelta(hours=1))

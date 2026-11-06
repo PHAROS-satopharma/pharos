@@ -644,6 +644,40 @@ def test_next_new_items_message_counts_from_the_last_one():
     assert "United Kingdom: 1" in text and "Germany" not in text
 
 
+
+def test_a_dry_run_never_takes_the_days_real_new_items_message(monkeypatch):
+    # Audit of 6 Nov 2026: a manual collect run with dry_run at 09:10 wrote a dry-run row, the scheduled run
+    # at 11:10 read it as delivered and skipped her real message, and the next day counted from the dry run.
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, nine_ten = store_with_new_items()
+    dry = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: nine_ten)
+    assert dry.new_items_digest_if_due() == 1 and s.notification[-1]["dry_run"]
+    s.notification[-1]["sent_at"] = nine_ten
+    tg = RecordingTelegram()
+    live = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                    now=lambda: nine_ten + timedelta(hours=2))
+    assert live.new_items_digest_if_due() == 1               # the real message still goes to p1
+    assert [c for c, _ in tg.messages] == [111]
+    assert "since 3 Nov 2026, 11:10 Cairo time:" in tg.messages[0][1]    # not from the dry run's 09:10
+    assert "Germany: 2" in tg.messages[0][1]
+    assert dry.new_items_digest_if_due() == 0                # a dry run is still once a day
+
+
+def test_a_dry_run_never_takes_the_days_real_class_digest(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    s, iid = store_with_issue(class_only=True)
+    nine_ten = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)
+    s.issue[iid]["created_at"] = nine_ten - timedelta(hours=3)
+    dry = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: nine_ten)
+    assert dry.digest_if_due() == 1 and s.notification[-1]["dry_run"]
+    s.notification[-1]["sent_at"] = nine_ten
+    tg = RecordingTelegram()
+    live = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg,
+                    now=lambda: nine_ten + timedelta(hours=2))
+    assert live.digest_due()                                 # the dry run was not today's digest
+    assert live.digest_if_due() == 1 and len(tg.messages) == 1
+    assert not dry.digest_due()                              # a dry run is still once a day
+
 def test_a_refused_new_items_message_is_tried_again_for_who_missed_it(monkeypatch):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
     s, nine_ten = store_with_new_items()
