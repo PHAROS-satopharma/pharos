@@ -571,6 +571,24 @@ Web: Reports (`web/src/features/reports/ReportsPage.tsx`, `FileHash.tsx`), `web/
 `defaultMeaning`), `styles/signoff.css`. Workflow: `db-backup.yml` verify-archive samples 50 originals plus 10
 `weekly_report` / `monthly_report` files. SQL test: `supabase/tests/sign_off_weekly.sql`; web: `signoff.test.ts`.
 
+## The Japan code of an ingredient that exists (0052)
+
+```sql
+set_japan_code(p_ingredient uuid, p_code text) returns text
+  -- security definer; administrators only (as save_ingredient and the ingredient_term policy), 42501 for anyone
+  -- else; P0002 for an ingredient not on the watchlist; 22023 unless upper(trim(p_code)) matches isJapanCode
+  -- (readiness.ts): ^[0-9]{4}[0-9A-Z]{3}([0-9A-Z]{5})?$. Stores the first 7 characters as an ingredient_term
+  -- lang 'ja', country 'JP', kind 'code', mode 'exact', source 'pmda', verified_by = the caller; deletes the
+  -- ingredient's other JP code terms; touches no other term; returns the stored code. Audited by
+  -- audit_ingredient_term (0001). A new code is due for the check of the past (term_changed_at, 0034); the same
+  -- code again is not. Execute for authenticated only (revoked from public and anon).
+```
+
+Web: `JapanCodeField.tsx` (the field, shared by `TermEditor.tsx` and `JapanCodeEdit.tsx`), `JapanCodeEdit.tsx`
+(the open row of the Ingredients page, administrators; invalidates `['ingredients']` and
+`['ingredient-readiness', id]`), `japanCode.ts` (`japanCodeOf`, `currentJapanCode`, `pmdaGeneralListUrl`).
+SQL test: `supabase/tests/japan_code.sql`; web: `japanCode.test.ts`.
+
 ## Environment / secrets
 
 | Secret | Used by |

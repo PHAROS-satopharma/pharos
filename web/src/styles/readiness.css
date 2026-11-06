@@ -31,9 +31,14 @@
   color: var(--muted);
 }
 
-/* The Japan code in the term editor: one field, the PMDA link and why the code is copied by hand. */
+/* The Japan code (JapanCodeField.tsx): in the term editor, and on an ingredient's open row with Save (0052). One
+   field, the PMDA link and why the code is copied by hand. Below 760px everything stacks at full width, 44px. */
 .japan-code {
-  margin-top: 14px;
+  min-width: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  border-top: 2px solid var(--text); /* as .term-group: a fieldset without the browser's frame */
 }
 .japan-code .japan-code-row {
   display: grid;
@@ -55,12 +60,33 @@
   min-height: 44px;
 }
 
+.japan-code .japan-code-now {
+  margin: 2px 0 8px;
+  font-size: 13.5px;
+}
+.japan-code .japan-code-now a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--sea);
+}
+.japan-code .notice {
+  margin: 8px 0 0;
+}
+.japan-code-edit .japan-code {
+  margin-top: 0;
+}
+
 @media (min-width: 760px) {
   .japan-code .japan-code-row {
-    grid-template-columns: minmax(160px, 240px) auto;
+    grid-template-columns: minmax(160px, 240px);
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    justify-content: start;
   }
   .japan-code .btn,
-  .japan-code input {
+  .japan-code input,
+  .japan-code .japan-code-now a {
     min-height: 0;
   }
 }
