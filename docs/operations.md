@@ -386,7 +386,13 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   trusted. A code PHAROS only took from a PMDA revision notice matched to the ingredient is read only when the
   PMDA page's 一般名 names the ingredient in Japanese (a notice lists several ingredients, so its links reach all
   of them); without a Japanese name it is skipped, and the run log says so.
-- **United States:** DailyMed's prescription labels are read to the last page (acetaminophen: 765), and the
+- **One label, every ingredient in it:** a label that holds several watched ingredients (a cold remedy with
+  paracetamol, guaifenesin and phenylephrine) is watched once for each of them (migration 0079). A change to it
+  opens one issue, linked to all of them, and is alerted once. Before 0079 the first ingredient to list a label
+  kept it: Japan's acetaminophen inserts were filed under ivabradine, and paracetamol had none in Japan.
+- **United States:** DailyMed is searched by the ingredient's RxNorm code as well as its names, since a name
+  may not be the US one (paracetamol found none by name; acetaminophen's code 161 finds 791 prescription
+  labels). Its prescription labels are read to the last page (acetaminophen: 765 by name), and the
   over-the-counter labels FDA approves one by one (NDA, ANDA, NDA authorized generic: acetaminophen 292,
   guaifenesin 396, phenylephrine 8 on 6 Nov 2026). The OTC monograph labels (about 3,700 store brands of
   acetaminophen) are not read: their wording is FDA's monograph, changed by an FDA order, not by the label.

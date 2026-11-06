@@ -3,7 +3,10 @@
 For every active ingredient (or the ones given) and every enabled ``kind: spc`` source:
 
 1. **discover** the products authorised in that country (``spc_product``: upsert on
-   ``(source_id, national_id)``; products no longer listed are marked inactive);
+   ``(source_id, ingredient_id, national_id)``; products no longer listed are marked inactive). A label
+   that holds several watched ingredients (a cold remedy with paracetamol, guaifenesin and phenylephrine)
+   is one product per ingredient: until 0079 the first ingredient to list it kept it, and the others never
+   saw it (Japan's paracetamol inserts sat under ivabradine, 6 Nov 2026);
 2. **snapshot** each active product's label, split into sections in its own language; the section
    texts are archived as one canonical JSON object (``{"sections": {…}}``, sorted keys) whose
    sha256 is the snapshot's ``sha256`` and whose key is its ``r2_key``; ``section_hashes`` holds one
@@ -144,10 +147,10 @@ def load_sections(ctx, r2_key: str | None) -> dict[str, str] | None:
 
 def _ingredients(db, ids: list[str] | None) -> list[dict]:
     if ids:
-        rows = db.fetchall("select id, inn_en, atc_code from ingredient where id = any(%(ids)s::uuid[])",
+        rows = db.fetchall("select id, inn_en, atc_code, rxcui from ingredient where id = any(%(ids)s::uuid[])",
                            {"ids": ids})
     else:
-        rows = db.fetchall("select id, inn_en, atc_code from ingredient where active order by inn_en")
+        rows = db.fetchall("select id, inn_en, atc_code, rxcui from ingredient where active order by inn_en")
     for r in rows:
         r["id"] = str(r["id"])
         terms: dict[str, list[str]] = {}
@@ -170,7 +173,7 @@ def upsert_product(db, source_id: str, ingredient_id: str, p: Product) -> dict:
         """insert into spc_product (ingredient_id, source_id, country_code, national_id,
              product_name, mah, url, extra, active)
            values (%(ing)s, %(src)s, %(cc)s, %(nid)s, %(name)s, %(mah)s, %(url)s, %(extra)s, true)
-           on conflict (source_id, national_id) do update
+           on conflict (source_id, ingredient_id, national_id) do update
              set product_name = excluded.product_name, mah = excluded.mah,
                  url = coalesce(excluded.url, spc_product.url),
                  extra = spc_product.extra || excluded.extra, active = true
@@ -271,6 +274,7 @@ def record_change(db, ctx, source_id: str, product: dict, ingredient: dict, snap
     sections = [c["section"] for c in changes]
     alerting = watched_changes(sections)
     issue_id: str | None = None
+    linked: str | None = None          # an issue the same label already opened for another ingredient
     if alerting:
         title = change_title(product, alerting)
         doc = db.fetchone(
@@ -288,6 +292,26 @@ def record_change(db, ctx, source_id: str, product: dict, ingredient: dict, snap
                           "country_code": product.get("country_code"),
                           "sections": alerting, "all_changed_sections": sections,
                           "source_url": snap.source_url})})
+        if doc is None:
+            # The same label, read for another of its ingredients, already opened the issue: this ingredient
+            # joins it. Not returned, so the change is alerted once.
+            shared = db.fetchone(
+                """select i.id, d.id as document_id from document d
+                     join issue i on i.anchor_document_id = d.id
+                    where d.source_id = %(src)s and d.external_id = %(ext)s""",
+                {"src": source_id, "ext": f"spc:{product['national_id']}:{sha[:16]}"})
+            if shared is not None:
+                linked = str(shared["id"])
+                db.execute("""insert into issue_ingredient (issue_id, ingredient_id)
+                              values (%(i)s, %(g)s) on conflict do nothing""",
+                           {"i": linked, "g": ingredient["id"]})
+                db.execute(
+                    """insert into match (document_id, ingredient_id, field, matched_text, snippet, confidence)
+                       select %(d)s, %(g)s, 'structured', %(t)s, %(s)s, 'high'
+                        where not exists (select 1 from match
+                                           where document_id = %(d)s and ingredient_id = %(g)s)""",
+                    {"d": str(shared["document_id"]), "g": ingredient["id"], "t": product["product_name"],
+                     "s": f"SPC {', '.join(alerting)}"})
         if doc is not None:
             doc_id = str(doc["id"])
             row = db.fetchone(
@@ -311,7 +335,7 @@ def record_change(db, ctx, source_id: str, product: dict, ingredient: dict, snap
         """insert into spc_change (spc_product_id, from_snapshot, to_snapshot, sections, diff,
              issue_id) values (%(p)s, %(f)s, %(t)s, %(s)s, %(d)s, %(i)s) returning id""",
         {"p": product["id"], "f": prev_id, "t": snap_id, "s": sections, "d": _json(changes),
-         "i": issue_id})
+         "i": issue_id or linked})
     change_id = str(row["id"]) if row and row.get("id") else None
     if change_id:
         # Our label against this change (label_gap, 0043): the check never loses the change it describes. It

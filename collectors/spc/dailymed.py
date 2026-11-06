@@ -11,6 +11,10 @@ Source ``spc-dailymed``; country US; English.
   generic (``OTC_APPROVED``; 6 Nov 2026: acetaminophen 292, guaifenesin 396, phenylephrine 8). The OTC
   monograph labels (about 3,700 store brands of acetaminophen alone) are not read: their text is FDA's
   monograph, which changes by an FDA order, not by a label of their own. Titles are kept as published.
+  The lists are searched by the ingredient's RxNorm code (``rxcui=``, ``ingredient.rxcui``) and by its first
+  three English names. The code finds the labels whatever their name: paracetamol's names are not the US
+  name, and found nothing (0 of acetaminophen's 765 prescription labels, 6 Nov 2026), while ``rxcui=161``
+  finds 791. A name still finds the odd label not coded to RxNorm (levofloxacin: 144 by name, 143 by code).
   (An ingredient with no US product, such as lornoxicam, simply yields none.) A page that does not
   answer 200 fails the discovery: a partial list would switch off the products it missed.
 * Snapshot: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls/<setid>.xml`` (HL7 SPL,
@@ -42,17 +46,22 @@ OTC_APPROVED = ("C73594", "C73584", "C73605")
 MAX_PAGES = 40       # 4,000 labels per list: a bound against a runaway answer, not a cut of a real list
 
 
-def lists(term: str) -> list[tuple[str, str | None]]:
-    """The label lists read for one name: (query, marketing category of an OTC list)."""
-    q = f"drug_name={quote(term)}"
+def lists(q: str) -> list[tuple[str, str | None]]:
+    """The label lists read for one search (``drug_name=…`` or ``rxcui=…``): (query, OTC marketing category)."""
     return [(f"{q}&doctype={HUMAN_RX}", None)] + [
         (f"{q}&doctype={HUMAN_OTC}&marketing_category_code={c}", c) for c in OTC_APPROVED]
 
 
+def searches(ingredient: dict) -> list[str]:
+    """The ingredient's RxNorm code first, then its first three English names."""
+    out = [f"rxcui={quote(str(ingredient['rxcui']))}"] if ingredient.get("rxcui") else []
+    return out + [f"drug_name={quote(term)}" for term in terms_for(ingredient, "en")[:3]]
+
+
 def discover(ctx, ingredient: dict) -> list[Product]:
     found: dict[str, Product] = {}
-    for term in terms_for(ingredient, "en")[:3]:
-        for query, otc in lists(term):
+    for search in searches(ingredient):
+        for query, otc in lists(search):
             _read_list(ctx, query, otc, found)
     return list(found.values())
 
