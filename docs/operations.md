@@ -160,8 +160,8 @@ messages* (admins only):
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
 7. The NCBI literature watch searches PubMed and PubMed Central for its English name and its English class
-   words at its next daily run, looking back 12 months first (stored as history, no alerts). See NCBI
-   literature below.
+   words at its next daily run, looking back 12 months first (stored as history; papers never go to
+   Telegram). See NCBI literature below.
 
 ## Signals
 
@@ -245,10 +245,14 @@ notice shows our section to read side by side.
   person types it on the NCBI websites (no quotes, no field tag), so NCBI expands it the same way. The run reads
   by entry date, every page of results, and stores each paper once: under its PMID with both links when it is in
   both databases, under its PMC id when it is not in PubMed yet. A paper found only by a class word is
-  class-only: it goes to the daily class digest, never an immediate alert. A paper found by the name alerts like
-  any notice (PubMed Central adds full-text mentions: expect several a day for a common ingredient).
+  class-only.
+- **Never on Telegram.** A paper is never an immediate alert and never a line in the daily class digest, found
+  by the name or by a class word: papers are read on the Ingredients screen and in the weekly report, so the
+  authority notices are not buried (levofloxacin alone: 89 PubMed and 357 PubMed Central papers published in
+  October 2026). The runner skips a document of the literature source or type, the alert step skips an issue of
+  type literature, and the digest query leaves them out.
 - **Look-back.** A search word never searched before (a new ingredient, a new class word, or one not searched
-  for 90 days) first reads the last 12 months. What it finds is stored as history: no alert, no digest line.
+  for 90 days) first reads the last 12 months. What it finds is stored as history.
   After that each run reads from the last complete run minus 3 days. `literature_search` (migration 0035) holds
   one row per database and word: the look-back's days and, once every paper it found is stored, when it
   finished. To read a word's 12 months again, delete its two rows.

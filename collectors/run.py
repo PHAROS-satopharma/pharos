@@ -238,7 +238,10 @@ class Runner:
         if result.created:
             stats.issues_created += 1
             self.issues_created += 1
-        if (result.created or result.alert) and not is_backfill and not dm.class_only and dm.has_high:
+        # papers are read on the Ingredients screen and in the weekly report, never on Telegram
+        paper = src.kind == "literature" or item.doc_type == "literature"
+        if (result.created or result.alert) and not is_backfill and not dm.class_only and dm.has_high \
+                and not paper:
             stats.alerts.append(result.issue_id)
 
     def _country(self, regulator_id: str) -> str | None:

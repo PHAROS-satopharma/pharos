@@ -355,7 +355,7 @@ class Store:
         row = self.db.fetchone(
             """select i.id, i.title, i.doc_type::text as doc_type, i.first_date, i.class_only,
                       i.is_backfill, d.id as document_id, d.url, d.title_orig, d.lang,
-                      r.country_name, r.name as regulator_name,
+                      r.country_name, r.name as regulator_name, s.kind::text as source_kind,
                       (select array_agg(g.inn_en order by g.inn_en) from issue_ingredient ii
                          join ingredient g on g.id = ii.ingredient_id where ii.issue_id = i.id)
                         as ingredients
@@ -460,9 +460,13 @@ class Store:
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
         rows = self.db.fetchall(
-            """select id from issue
-                where class_only and not is_backfill and (created_at > %(s)s or current_since > %(s)s)
-                order by coalesce(current_since, created_at) desc""", {"s": since})
+            """select i.id from issue i
+                 join document d on d.id = i.anchor_document_id
+                 join source s on s.id = d.source_id
+                where i.class_only and not i.is_backfill
+                  and (i.created_at > %(s)s or i.current_since > %(s)s)
+                  and i.doc_type <> 'literature' and s.kind <> 'literature'   -- papers: never on Telegram
+                order by coalesce(i.current_since, i.created_at) desc""", {"s": since})
         return [str(r["id"]) for r in rows]
 
     # ───────────────────────────── probe ─────────────────────────────

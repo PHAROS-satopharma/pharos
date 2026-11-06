@@ -302,7 +302,7 @@ class MemoryStore:
         ing_ids = [g for i, g in self.issue_ingredient if i == issue_id]
         return {**iss, "document_id": d["id"], "url": d["url"], "title_orig": d["title_orig"],
                 "lang": d.get("lang"), "country_name": reg.get("country_name"),
-                "regulator_name": reg.get("name"), "ingredient_ids": ing_ids,
+                "regulator_name": reg.get("name"), "source_kind": src.get("kind"), "ingredient_ids": ing_ids,
                 "ingredients": sorted(self.ingredient[g]["inn_en"] for g in ing_ids
                                       if g in self.ingredient),
                 "attachments": [a for a in self.attachment.values() if a["document_id"] == d["id"]]}
@@ -369,8 +369,13 @@ class MemoryStore:
         return out
 
     def class_only_issues_since(self, since: datetime) -> list[str]:
+        def paper(r: dict) -> bool:                       # papers: never on Telegram
+            d = self.document.get(r["anchor_document_id"]) or {}
+            return r.get("doc_type") == "literature" or (self.source.get(d.get("source_id")) or {}).get(
+                "kind") == "literature"
+
         rows = [(r.get("current_since") or r["created_at"], i) for i, r in self.issue.items()
-                if r["class_only"] and not r["is_backfill"]
+                if r["class_only"] and not r["is_backfill"] and not paper(r)
                 and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)]
         return [i for _, i in sorted(rows, reverse=True)]
 
