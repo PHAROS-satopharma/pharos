@@ -312,7 +312,7 @@ vertical pass; the Sources screen is the horizontal one.
   linked to the page a person opens (the same link as on the Sources screen), the words that matched with their
   language, *By class* when only a class word matched, and *History* when it came from a backfill or the check of
   the past. An e-mail with no web page opens with **Read the e-mail**. Its notice shows its status and latest
-  decision (who, when, why); a reviewer or administrator records **Reviewed**, **Relevant** or **Not relevant**
+  decision (who, when, why); a reviewer or administrator records **Concerns us** or **Doesn't concern us**
   (a reason is required) right there, or **Change** after a decision. The decision shows at once on every
   mention filed under the same notice.
 - **Label changes** of products with the ingredient are listed apart, with the sections that changed.
