@@ -446,7 +446,7 @@ mlm_monitored(p_ingredient uuid) returns boolean   -- a row in mlm_entry; same r
 
 Collector: `structured.case_report` is set by `collectors/parsers/pubmed.py` (`case_report(pubtype, title)`);
 `Store.case_report_papers_since(since)` feeds the daily message's block (`collectors/alerts.py`,
-`Notifier.digest_if_due`); `collectors/mlm.py` fills `mlm_entry` weekly. Web: `web/src/features/screen/papers.ts`
+`Notifier.digest_if_due`); `collectors/mlm.py` fills `mlm_entry` daily. Web: `web/src/features/screen/papers.ts`
 (pure), `paperState.ts` (hooks), `styles/papers.css`. SQL test: `supabase/tests/case_reports_screen.sql`; Python:
 `tests/test_pubmed_ncbi.py`, `tests/test_alerts.py`, `tests/test_store_pg.py`, `tests/test_report_weekly.py`,
 `tests/test_mlm.py`.

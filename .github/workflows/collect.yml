@@ -158,8 +158,8 @@ jobs:
           python -m collectors.run "${args[@]}"
 
       # EMA's EURD list (PSUR frequencies and data lock points), once a day: the readiness line on the Ingredients
-      # page and the weekly report read its rows. A failure warns and never fails the collection; an unchanged
-      # list (same SHA-256) is not read again.
+      # page and the weekly report read its rows. A failure warns and never fails the collection; the list is
+      # matched against today's watched ingredients and stored only when that changed.
       - name: EURD list
         if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
         env:
@@ -186,10 +186,12 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.rematch || echo "::warning::The check of the past stopped with an error; the next run continues it."
 
-      # EMA's medical literature monitoring list (which watched ingredients EMA screens itself), weekly. A
-      # failure warns and never fails the collection; an unchanged list (same SHA-256) is not read again.
+      # EMA's medical literature monitoring list (which watched ingredients EMA screens itself), once a day, so
+      # an ingredient added today is not shown as "not monitored by EMA" for a week. A failure warns and never
+      # fails the collection; the list is matched against today's watched ingredients and stored only when that
+      # changed.
       - name: Literature monitoring list
-        if: steps.which.outputs.schedule == 'weekly' || steps.which.outputs.schedule == 'all'
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
