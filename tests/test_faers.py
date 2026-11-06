@@ -190,6 +190,25 @@ def test_the_key_is_sent_and_lifts_the_count_limit():
     assert keyed.gap == 0.25 and api_for(get).gap == 1.5
 
 
+
+def test_a_refused_key_is_dropped_and_the_count_goes_on_without_it(caplog):
+    seen: list[dict] = []
+
+    def get(params):
+        seen.append(dict(params))
+        if "api_key" in params:
+            return 403, {"error": {"code": "API_KEY_INVALID", "message": "An invalid api_key was supplied."}}
+        return 200, {"results": [{"term": "NAUSEA", "count": 3}]}
+
+    api = api_for(get, key="wrong")
+    with caplog.at_level("WARNING"):
+        assert api.reactions("x") == ({"NAUSEA": 3}, True)
+    assert seen[1] == {"search": "x", "count": faers.REACTION, "limit": "100"}      # no key, the keyless limit
+    assert api.key is None and api.gap == 1.5 and api.limit == 100
+    assert "API_KEY_INVALID" in caplog.text and "wrong" not in caplog.text
+    api.total("y")
+    assert "api_key" not in seen[-1] and len(seen) == 3                               # never sent again
+
 def test_requests_are_paced():
     sleeps: list[float] = []
     clock = iter([0.0, 0.0, 0.5, 0.5])
