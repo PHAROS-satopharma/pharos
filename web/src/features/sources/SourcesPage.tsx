@@ -234,7 +234,13 @@ function CountryCardView({ card, hz, ...rest }: CardShared & { card: Card }) {
             New since you last looked <span className="hz-n">({formatNumber(fresh.length)})</span>
             <span className="hz-since">{sinceWords}</span>
           </h3>
-          <Button busy={mark.isPending} onClick={() => (regIds[0] ? mark.mutate(regIds[0]) : undefined)}>
+          <Button
+            busy={mark.isPending}
+            disabled={!hz.readAt}
+            onClick={() =>
+              regIds[0] && hz.readAt ? mark.mutate({ regulatorId: regIds[0], readAt: hz.readAt }) : undefined
+            }
+          >
             Mark as looked at
           </Button>
         </div>

@@ -243,7 +243,8 @@ first (A to Z, the European Union among them), then *Other authorities*. Each ca
   check, from Sunday 00:00 Cairo. *New* and *Matched* open the items behind them.
 
 **Mark as looked at** stamps every authority of the country for the person pressing it (`mark_country_looked`),
-so Germany's two authorities clear together. Each person has their own looks. The *Sources* tab shows
+so Germany's two authorities clear together. The look is the time the page read its list, not the time of the
+click (0056): a notice that arrived while the card stayed open stays new. Each person has their own looks. The *Sources* tab shows
 "N new" across every country. Feed and API addresses are never shown as links; an administrator sees them,
 with the parser, schedule, health and last error, under **Technical details**.
 

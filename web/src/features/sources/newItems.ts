@@ -7,6 +7,7 @@ import {
   MAX_LOOKBACK_DAYS,
   cairoWeekStart,
   lastLook,
+  markLookedArgs,
   sinceFor,
   totalNew,
   type CardRegulator,
@@ -47,29 +48,38 @@ export function useMyLooks() {
   });
 }
 
-/** What the authorities published from `fromIso` to now (new_items, 0032), newest first. */
+/**
+ * What the authorities published from `fromIso` to now (new_items, 0032), newest first, with the time the
+ * list was read (taken before the request): what "Mark as looked at" stamps.
+ */
 export function useNewItems(fromIso: string | null) {
   return useQuery({
     queryKey: ['new-items', fromIso],
     enabled: fromIso !== null,
     staleTime: FIVE_MIN,
-    queryFn: () =>
-      fetchAllPages<NewItem>(async (from, to) =>
+    queryFn: async () => {
+      const readAt = new Date().toISOString();
+      const rows = await fetchAllPages<NewItem>(async (from, to) =>
         await supabase
           .rpc('new_items', { p_from: fromIso })
           .order('first_seen_at', { ascending: false })
           .order('document_id')
           .range(from, to),
-      ),
+      );
+      return { rows, readAt };
+    },
   });
 }
 
-/** "Mark as looked at": stamps every authority of the country as the signed-in person. */
+/**
+ * "Mark as looked at": stamps every authority of the country as the signed-in person, at the time the list on
+ * screen was read, so a notice that arrived while the card was open stays new (0056).
+ */
 export function useMarkLooked() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (regulatorId: string) =>
-      unwrap<string>(await supabase.rpc('mark_country_looked', { p_regulator: regulatorId })),
+    mutationFn: async ({ regulatorId, readAt }: { regulatorId: string; readAt: string }) =>
+      unwrap<string>(await supabase.rpc('mark_country_looked', markLookedArgs(regulatorId, readAt))),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['my-country-look'] }),
   });
 }
@@ -81,6 +91,8 @@ export interface HorizontalData {
   looks: Map<string, string>;
   /** Everything from the earliest point any card or the week's figures need. */
   items: NewItem[];
+  /** When those items were read; null until they are. "Mark as looked at" stamps this time. */
+  readAt: string | null;
   isPending: boolean;
   error: unknown;
 }
@@ -113,7 +125,8 @@ export function useHorizontal(): HorizontalData {
     weekStart,
     regulators: regulators.data ?? [],
     looks: looks.data ?? new Map(),
-    items: items.data ?? [],
+    items: items.data?.rows ?? [],
+    readAt: items.data?.readAt ?? null,
     isPending: regulators.isPending || looks.isPending || items.isPending,
     error: regulators.error ?? looks.error ?? items.error ?? null,
   };
