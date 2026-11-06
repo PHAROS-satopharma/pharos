@@ -199,7 +199,7 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
                         {r.flagged ? (
                           <Tag
                             tone="warning"
-                            title="At least 3 reports, a PRR of at least 2 and a chi-squared of at least 4 (Evans’ criteria)."
+                            title="Stands out among this ingredient’s reactions: at least 3 reports, the lower end of the PRR’s 95% interval at least 2, and a PRR at least twice the median PRR of the reactions shown. PHAROS’s own rule, not a published standard."
                           >
                             Disproportionate
                           </Tag>

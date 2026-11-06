@@ -968,8 +968,14 @@ count them; no report is downloaded, only numbers come back, and the log names n
   capitals); PHAROS holds no MedDRA licence and stores no MedDRA code.
 - **PRR, ROR and the flag**: each reaction's reports are compared with every drug's in a 2×2 table: PRR and ROR with
   their 95% confidence intervals and chi-squared with Yates' correction (`faers.disproportion`). *Disproportionate*
-  means Evans' criteria: at least 3 reports, PRR at least 2 and chi-squared at least 4. It is a reason to look, not a
-  signal: stimulated reporting, an indication's own symptoms and duplicates all raise a PRR.
+  means the reaction stands out in the ingredient's own profile: at least 3 reports, the lower end of its PRR's
+  95% interval at least 2, and a PRR at least twice the median PRR of the ingredient's 100 kept reactions (a reaction
+  no other drug has counts as the highest). This is PHAROS's own rule, not a published standard. Evans' criteria (3
+  reports, PRR 2, chi-squared 4) were used until 6 Nov 2026 and flagged 88 of paracetamol's 100: reports of a drug
+  often taken with others name more reactions than FDA's average report, so fatigue or nausea passed. On that day's
+  counts the new rule flags carvedilol 13 (BRASH syndrome, hyperkalaemia, cardiac failure), levofloxacin 22 (tendon
+  rupture, tendonitis), paracetamol 26 and phenylephrine 29. It is a reason to look, not a signal: stimulated
+  reporting, an indication's own symptoms and duplicates all raise a PRR.
 - **The label tag**: the reaction's name is matched to MeSH by its exact name (`coding_norm`), and the label tag is the
   one of section 05. A name MeSH does not have (OFF LABEL USE, for one) has no tag.
 - **The key**: `OPENFDA_API_KEY` (a repository secret, optional) allows 240 requests a minute and lists up to 1,000
