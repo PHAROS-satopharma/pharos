@@ -127,7 +127,7 @@ select pg_temp.cs_assert(
     and pg_temp.cs_paper('b004') -> 'decision' ->> 'comment' = 'A serious case with our product'
     and (pg_temp.cs_paper('b004') -> 'decision' ->> 'at') is not null,
   'a decided paper carries its status and the latest decision (who, when, comment)');
-select pg_temp.cs_assert(not :cs_mlm_a and not :cs_mlm_b and :cs_mlm_b2,
+select pg_temp.cs_assert(not :'cs_mlm_a'::boolean and not :'cs_mlm_b'::boolean and :'cs_mlm_b2'::boolean,
   'an ingredient is monitored by EMA only while it has a row in the literature monitoring list');
 select pg_temp.cs_assert(:'cs_too_many' like '22023%', 'more than 1,000 papers in one call are refused');
 
