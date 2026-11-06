@@ -264,11 +264,30 @@ _BLOCK_WORDS = re.compile(
 
 
 _BLOCK_PAGE_MAX = 100_000     # a security page is small (INFARMED's captcha: 26 KB; its list: 968 KB)
+_BLOCK_TEXT_MAX = 2_000       # and says little (INFARMED's captcha: 104 characters of words)
+
+
+def visible_words(html: str) -> str:
+    """What a reader sees of a page: its words, without scripts, styles, tags or attributes."""
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "lxml")
+    for tag in soup(["script", "style", "noscript", "template", "svg"]):
+        tag.decompose()
+    return " ".join(soup.get_text(" ").split())
 
 
 def looks_like_block_page(text: str) -> bool:
-    """A small page that carries no list and reads like a security check (any vendor)."""
-    return len(text) < _BLOCK_PAGE_MAX and bool(_BLOCK_WORDS.search(text))
+    """A small page that carries no list and SAYS it is a security check (any vendor).
+
+    The words are read from what the page shows, not its code: a page that lost its list but carries a
+    reCAPTCHA script or a "g-recaptcha" form (a contact or newsletter form) has changed shape; it is not
+    a bot check (finding 6 of the 6 Nov 2026 review of #90). A page with more to say than a security
+    page (``_BLOCK_TEXT_MAX``) is not one either."""
+    if len(text) >= _BLOCK_PAGE_MAX or not _BLOCK_WORDS.search(text):
+        return False
+    words = visible_words(text)
+    return len(words) < _BLOCK_TEXT_MAX and bool(_BLOCK_WORDS.search(words))
 
 
 def looks_like_challenge(text: str, status: int | None = None, headers: Any = None) -> bool:
