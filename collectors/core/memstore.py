@@ -726,9 +726,11 @@ class MemoryStore:
         j["documents_matched"] += matched
         j["issues_created"] += issues_created
 
-    def rematch_finish(self, job_id: str) -> None:
+    def rematch_finish(self, job_id: str, *, mark_checked: bool = True) -> None:
         j = self.rematch_job[job_id]
         j["finished_at"] = _now()
+        if not mark_checked:
+            return
         for tid in j["ingredient_term_ids"] + j["class_term_ids"]:
             st = self.term_state.get(tid)
             if st is not None and st["changed_at"] <= j["started_at"]:

@@ -192,8 +192,8 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
         </p>
         <p className="small muted">
           After saving, everything else follows by itself: within hours the group is added from the ATC code (searched) and
-          the class above it (shown, switched off until you have read its words), the notices PHAROS already holds from
-          the last 12 months are checked for these names (as history, no messages), and PubMed and PubMed Central are
+          the class above it (shown, switched off until you have read its words), every notice PHAROS already holds,
+          whatever its date, is checked for these names (as history, no messages), and PubMed and PubMed Central are
           searched 12 months back; on Monday the label watch reads every watched country. The search profile is set on
           the ingredient’s line, whose row says <strong>Still preparing</strong> until all of it has run, then{' '}
           <strong>Ready</strong>.

@@ -188,7 +188,7 @@ jobs:
         run: python -m collectors.eurd || echo "::warning::The EURD list could not be read; the PSUR dates keep the last list."
 
       # The check of the past (collectors/rematch.py): words saved after the notices arrived (a new ingredient,
-      # a new or changed name, a new class word) are looked for in the stored notices of the last 12 months, as
+      # a new or changed name, a new class word) are looked for in every stored notice, whatever its date, as
       # history: no Telegram message, no digest. 15 minutes a run, three runs a day (daily and literature); the
       # next run continues where it stopped (the "PHAROS check of the past" workflow runs it longer by hand). A
       # failure warns and never fails the collection.

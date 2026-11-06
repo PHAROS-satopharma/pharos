@@ -513,7 +513,8 @@ took its place.
 - **The check of the past** (`python -m collectors.rematch`). Notices are matched as they arrive, so a word
   saved later (a new ingredient, a new or changed name, an ingredient watched again after a pause, a new
   class word, and a class's words when a watched ingredient is linked to the class or watched again, 0055)
-  is "due" until the stored notices of the last 12 months have been checked with it. The daily
+  is "due" until every stored notice, whatever its date, has been checked with it (0072; until 6 November 2026
+  only the last 12 months, which left 48 older notices naming a watched ingredient unlinked). The daily
   run gives it 15 minutes after the collection; `rematch.yml` runs it by hand for up to 45 minutes. It reads
   each notice's kept text, or its original again from R2 (page, PDF with OCR, attachments), skips words that
   already matched that notice, and files what it finds as history: no Telegram message, no digest. A
@@ -521,7 +522,9 @@ took its place.
   0055 deployment the words of every class a watched ingredient joined after they were last checked became due. Its
   progress is the `rematch_job` row (one open at a time): the next run continues from
   `cursor_document_id`; when it reaches the end its words are marked checked, and a word changed meanwhile
-  waits for the next check. A list page shared by several notices is not read as any one notice's text.
+  waits for the next check. A check narrowed by hand (`--months`, the workflow's "months") marks nothing
+  checked: its words wait for the next full check. On the 0072 deployment every word became due again (except
+  the names found to belong to another substance), so the first checks after it read every stored notice. A list page shared by several notices is not read as any one notice's text.
   Literature has its own search and is not checked here.
 - **After the 0034 deployment** the words the 12-month backfill already covered are marked checked;
   everything added after it (levofloxacin, added 5 November 2026) is due, so the first daily run starts on it.
