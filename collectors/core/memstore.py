@@ -76,6 +76,9 @@ class MemoryStore:
     def transaction(self):
         yield self
 
+    def lock_issue_merge(self) -> None:
+        self.merge_locks = getattr(self, "merge_locks", 0) + 1   # one process: nothing to wait for
+
     # ───────────────────────────── seed ─────────────────────────────
     def load_seed(self, path: str | Path = SEED_SQL) -> tuple[str, str]:
         """Load the watchlist seed migration (lornoxicam + NSAID) so ``--no-db`` runs and tests use
