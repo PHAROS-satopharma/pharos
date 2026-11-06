@@ -545,7 +545,8 @@ keeps that clock (migrations 0041 and 0050) per notice:
 - **The clock on the screen.** Under the status of a notice on the Ingredients screen the clock reads
   "Authority: due Tue 11 Nov, 1 day left", "Authority: late by 3 days (was due Tue 3 Nov)" or "Sent to the
   authority 6 Nov 2026 · ref EDA/2026/0042". It shows nothing while the latest decision is not *Concerns us*.
-  Today is the database's Cairo day, never the phone's.
+  Today is the database's Cairo day, never the phone's. After a decision the screen reads the clock again from
+  the database, so with `eda_day_zero` = `decision` a new *Concerns us* shows its new due day at once.
 - **Sent to the authority.** A reviewer or administrator presses *Sent to the authority*, gives the day it was
   sent (between day zero and today), the reference and a note, and the clock stops. The row is in
   `authority_report` and nobody can change or delete it; the service key cannot read it. The database refuses a
