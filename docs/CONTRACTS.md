@@ -394,6 +394,43 @@ late or due within 2 days; `run.py` calls it after the new-items digest). Store:
 `eda_reminders(today, within_days)`. Web: `web/src/features/screen/clock.ts`, `DecisionButtons.tsx`,
 `styles/clock.css`. SQL test: `supabase/tests/eda_clock.sql`; Python: `tests/test_reminders.py`.
 
+## Signal steps inside the finding (0042)
+
+```sql
+app_setting signal_auto_open = 'true'   -- jsonb boolean; false: Concerns us opens nothing
+open_signal_as(p_issue uuid, p_title text, p_ingredient uuid, p_person uuid, p_comment text default null) returns uuid
+  -- the one code path that opens a signal: open_signal()'s checks and rows (signal, signal_issue, signal_event
+  -- 'opened' naming the notice) for a named person; granted to nobody (42501 for every API role).
+  -- open_signal() = open_signal_as(…, signal_require_reviewer(), …), signature and grants unchanged.
+signal_take_step_as(p_person uuid, p_signal, p_step, p_from_stage, p_comment, p_priority, p_outcome, p_owner, p_due)
+  -- signal_take_step()'s body for a named person; granted to nobody. signal_take_step() keeps its signature,
+  -- grants and guards: 42501 for a reader, 'PH409' 'STALE_SIGNAL …' when p_from_stage is not the stage now.
+trigger review_event_zz_open_signal  -- after insert on review_event, sorts after review_event_apply
+  -- to_status = relevant, signal_auto_open true, no signal_issue for the notice → open_signal_as(issue, the
+  --   notice's title, its single ingredient or null, new.person_id, 'Opened when the notice was marked Concerns
+  --   us[: comment]'). A notice with a signal (open or closed) opens no second one.
+  -- to_status = not_relevant and the notice's signal is at validation with no step beyond opened / notice_linked
+  --   / note → signal_take_step_as(new.person_id, …, 'not_validated', 'validation', 'Decision changed: <comment
+  --   | no reason given>'); otherwise the signal is left as it is.
+  -- A failure in either is a warning in the log; the decision is never refused.
+finding_state(p_issues uuid[]) returns jsonb   -- as 0041/0050, plus per notice
+  -- signal: null | {id, ref, title, stage, priority, outcome, next_step, next_due, overdue, owner, opened_at,
+  --   opened_by, steps: [{step, from_stage, to_stage, priority, outcome, person, at, comment}]}
+  -- next_step = validated | assessed | action_done by stage, null when closed; next_due and overdue are
+  -- v_signal_table's (the current stage's due day; late when before signal_cairo_today()); steps in order.
+```
+
+Collector: the morning reminder (`collectors/reminders.py`) adds, after the findings, the signal steps late or due
+within 2 days: store `signal_reminders(today, within_days)` reads `overdue_items(today + within + 1)` kind
+`signal` joined to `v_signal_table` (`signal_id, ref, title, ingredient, ingredient_id, stage, next_due,
+days_left`). Weekly report: `signal_cell()` on each decision row and each mention ("SIG-2026-001 · Validation ·
+due 5 Dec 2026"), summary "Signals open: N (M steps late)" from `v_signal_table`. Web:
+`web/src/features/screen/signalSteps.ts`, `SignalSteps.tsx` (rendered by `DecisionButtons` when
+`finding.signal` exists; `rpc('signal_take_step', {…, p_from_stage: signal.stage})`, then `finding_state` for the
+notice and `withSignal` on the screen's cache; PH409 reloads like a stale decision), `styles/signal-steps.css`.
+SQL test: `supabase/tests/signal_in_finding.sql`; vitest `signalSteps.test.ts`; Python `tests/test_reminders.py`,
+`tests/test_report_weekly.py`.
+
 ## Case reports in the literature (0044)
 
 ```sql

@@ -1,7 +1,17 @@
 // The answer of ingredient_screen() and ingredient_papers() (migration 0039): one ingredient across every
 // source, for a range of Cairo calendar days.
 
-import type { DocType, IssueStatus, SourceChannel, SourceHealth, SourceKind } from '../../lib/types';
+import type {
+  DocType,
+  IssueStatus,
+  SignalOutcome,
+  SignalPriority,
+  SignalStage,
+  SignalStep,
+  SourceChannel,
+  SourceHealth,
+  SourceKind,
+} from '../../lib/types';
 import type { RegulatorPage } from '../sources/horizontal';
 
 /** What a class is to the ingredient (migration 0049): its group, the class above it, or a group added by hand. */
@@ -181,7 +191,48 @@ export interface AuthoritySent {
 
 export type Clock = 'running' | 'late' | 'sent' | 'off';
 
-/** The five-day clock of one notice, as finding_state() answers it (migrations 0041 and 0050). */
+/** One step of a signal, as signal_event holds it: who took it, when, and what they wrote. */
+export interface SignalStepRow {
+  step: SignalStep;
+  from_stage: SignalStage | null;
+  to_stage: SignalStage;
+  priority: SignalPriority | null;
+  outcome: SignalOutcome | null;
+  /** The full name of the person who took it. */
+  person: string;
+  at: string;
+  comment: string | null;
+}
+
+/** The step that moves a signal on from its stage; nothing once it is closed. */
+export type SignalNextStep = 'validated' | 'assessed' | 'action_done';
+
+/**
+ * The signal a notice belongs to (migration 0042): opened by Concerns us, followed through validation,
+ * assessment and action to closed. The database decides the stage and the due days; the screen shows them
+ * and takes the next step through signal_take_step.
+ */
+export interface FindingSignal {
+  id: string;
+  /** SIG-2026-001, the name people use. */
+  ref: string;
+  title: string;
+  stage: SignalStage;
+  priority: SignalPriority | null;
+  outcome: SignalOutcome | null;
+  next_step: SignalNextStep | null;
+  /** The Cairo day the current stage is due (YYYY-MM-DD); null once closed. */
+  next_due: string | null;
+  overdue: boolean;
+  /** The full name of the owner, if one was assigned. */
+  owner: string | null;
+  opened_at: string;
+  opened_by: string;
+  /** Every step in order, the opening first. */
+  steps: SignalStepRow[];
+}
+
+/** The five-day clock of one notice, as finding_state() answers it (migrations 0041, 0050 and 0042). */
 export interface FindingState {
   /** The Cairo day PHAROS first showed the notice — the day it was created in PHAROS (YYYY-MM-DD). */
   day_zero: string;
@@ -193,6 +244,8 @@ export interface FindingState {
   clock: Clock;
   /** The latest report to the authority not withdrawn, under whatever decision — never forgotten, even while off. */
   sent: AuthoritySent | null;
+  /** The signal the notice belongs to (0042), or null while none was opened. */
+  signal: FindingSignal | null;
 }
 
 /** The clocks of the notices on the screen, by notice id. */

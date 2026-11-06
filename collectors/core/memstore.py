@@ -56,6 +56,8 @@ class MemoryStore:
         self.person: dict[str, dict] = {}
         self.review_event: list[dict] = []      # {id, issue_id, to_status, person_id, created_at}
         self.authority_report: list[dict] = []  # {id, issue_id, decision_id, sent_on, …, withdrawn_at, created_at}
+        self.signal: dict[str, dict] = {}       # {id, ref, title, ingredient_id, stage, priority, outcome, *_due, closed_at}
+        self.signal_issue: list[dict] = []      # {signal_id, issue_id}
         self.subscription: list[dict] = []
         self.notification: list[dict] = []
         self.probe_result: dict[str, dict] = {}
@@ -384,6 +386,25 @@ class MemoryStore:
                         "country": reg.get("country_name"), "day_zero": day_zero, "due": due,
                         "days_left": (due - today).days, "clock": "late" if today > due else "running"})
         out.sort(key=lambda r: (r["due"], (r["title"] or "").lower(), r["issue_id"]))
+        return out
+
+    def signal_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """overdue_items() kind 'signal' in memory, asked for the last day in reach (0042): every open signal
+        whose current stage is due within ``within_days`` or late, most late first."""
+        due_of = {"validation": "validation_due", "assessment": "assessment_due", "action": "action_due"}
+        out = []
+        for s in self.signal.values():
+            stage = s.get("stage")
+            if stage == "closed" or stage not in due_of:
+                continue
+            due = s.get(due_of[stage])
+            if due is None or due > today + timedelta(days=within_days):
+                continue
+            ing = self.ingredient.get(s.get("ingredient_id")) or {}
+            out.append({"signal_id": s["id"], "ref": s["ref"], "title": s.get("title"),
+                        "ingredient": ing.get("inn_en"), "ingredient_id": s.get("ingredient_id"), "stage": stage,
+                        "next_due": due, "days_left": (due - today).days})
+        out.sort(key=lambda r: (r["next_due"], r["ref"]))
         return out
 
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:

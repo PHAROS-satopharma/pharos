@@ -427,6 +427,33 @@ keeps that clock (migrations 0041 and 0050) per notice:
 - **The weekly report** adds "Reported to the authority this week" and "Due to the authority: N (M late)" to the
   summary and the columns *Due* and *Sent* (date · reference) to the decisions table.
 
+## The signal steps
+
+A finding that concerns us is a signal to follow through the steps of GVP Module IX. PHAROS opens it from the
+decision and keeps it inside the finding (migration 0042), so nothing is filled in twice:
+
+- **Concerns us opens the signal.** The moment a reviewer or administrator records *Concerns us*, the notice gets
+  a signal (SIG-2026-001 …) named after it, for its ingredient, opened by the person who decided, due for
+  validation in 30 Cairo days (`app_setting` `signal_due_days`). A notice has one signal at most: *Concerns us*
+  again later opens no second one. `app_setting` `signal_auto_open` (true) switches this off.
+- **Doesn't concern us closes it — if nothing was done yet.** While the signal is still in validation with no real
+  step taken, *Doesn't concern us* closes it as *not validated* with the words "Decision changed: <her reason>".
+  A signal already validated is left as it is and stays open on the screen.
+- **The steps, on the Ingredients screen.** Under the decision and the clock, the signal shows its reference, the
+  chain *Validate → Assess → Action → Closed* with the current stage lit, and the day the stage is due ("Validate
+  by Sun 6 Dec", marked **late** when past). A reviewer or administrator takes the next step there: *It is a
+  signal* (priority and why) or *Not a signal* (why); *Record the assessment* (outcome, and the day the action is
+  due when the outcome is a label update, an RMP update, a DHPC or a PSUR input); *Action done*; *Reopen*. Every
+  step needs words for the record; the history under the chain lists who took each step, when, and what they
+  wrote. Two people on one signal: the second step is refused and the screen reloads. Readers see the chain and
+  the history, no buttons.
+- **The morning reminder** lists, after the findings due to the authority, the signal steps late or due within two
+  days — "SIG-2026-001 · <notice> · levofloxacin · Validate · due Sat 7 Nov, 1 day left" — with the link to the
+  ingredient's screen; it goes even when no finding is due.
+- **The weekly report** shows the signal on each decision row and on each notice that concerns us (reference,
+  stage, due day, late), and "Signals open: N (M steps late)" in the summary; the Excel decisions sheet has the
+  column *Signal*.
+
 ## Electronic sign-off
 
 - **Who signs what.** Nothing is signed in the app now. The weekly report is not signed in the app: it goes

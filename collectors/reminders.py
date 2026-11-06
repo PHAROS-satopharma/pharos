@@ -11,6 +11,11 @@ with the exact text and sends nothing, like every other PHAROS message.
 Once a day means once to each person it really reached: a dry run never stands in for the real reminder, and a
 message Telegram refused is tried again at the next run while the people who got it are not told twice.
 
+After the findings, the same message lists the signal steps that are late or due within two days (migration
+0042: the signal Concerns us opened on the finding, waiting to be validated, assessed or acted on), each with
+its reference, the notice, the ingredient and the link to the screen where the step is taken. A message goes
+when either list has something in it.
+
     python -m collectors.reminders            # send if due
     python -m collectors.reminders --dry-run  # write what would go, send nothing
 """
@@ -33,6 +38,8 @@ WITHIN_DAYS = 2               # due today, tomorrow or the day after
 MAX_LINES = 40                # findings per message set; the rest are counted with a pointer to PHAROS
 SCREEN_URL = "https://pharos-satopharma.pages.dev/ingredients/{id}"
 AUTHORITY = "Egyptian Drug Authority"
+SIGNALS = "Signal steps"       # the header when no finding is due but a signal step is
+STAGE_WORD = {"validation": "Validate", "assessment": "Assess", "action": "Action"}   # the step each stage waits for
 
 
 def _day(d: date) -> str:
@@ -50,23 +57,45 @@ def due_text(due: date, days_left: int) -> str:
     return f"due {_day(due)}, {days_left} {'day' if days_left == 1 else 'days'} left"
 
 
-def build_messages(items: list[dict], today: date) -> list[str]:
-    """The reminder text for the findings (as the store lists them: most late first), split under
-    Telegram's limit."""
+def step_text(stage: str, due: date, days_left: int) -> str:
+    """"Validate · due Sat 7 Nov, 1 day left", "Assess · 3 days late (was due Tue 3 Nov)"."""
+    return f"{STAGE_WORD.get(stage, stage)} · {due_text(due, days_left)}"
+
+
+def _screen_link(ingredient_id: str | None) -> str:
+    return "  " + (SCREEN_URL.format(id=ingredient_id) if ingredient_id else SCREEN_URL.format(id="").rstrip("/"))
+
+
+def build_messages(items: list[dict], today: date, signals: list[dict] | tuple = ()) -> list[str]:
+    """The reminder text: the findings to report to the authority (as the store lists them: most late first),
+    then the signal steps due (0042), split under Telegram's limit."""
     late = sum(1 for i in items if int(i["days_left"]) < 0)
     due = len(items) - late
     n = len(items)
-    lines = [f"<b>{BRAND}</b> · {AUTHORITY} · {esc(fmt_date(today))}",
-             f"<b>{n} {'finding' if n == 1 else 'findings'} to report to the authority</b>",
-             f"{late} late, {due} due within {WITHIN_DAYS} days", ""]
+    lines = [f"<b>{BRAND}</b> · {AUTHORITY if items else SIGNALS} · {esc(fmt_date(today))}"]
+    if items:
+        lines += [f"<b>{n} {'finding' if n == 1 else 'findings'} to report to the authority</b>",
+                  f"{late} late, {due} due within {WITHIN_DAYS} days", ""]
     for it in items[:MAX_LINES]:
         where = " · ".join(esc(x) for x in (it.get("ingredient"), it.get("country")) if x)
         lines.append(f"• {esc_cut(it.get('title'), 160)}{' · ' + where if where else ''}"
                      f" · {esc(due_text(it['due'], int(it['days_left'])))}")
-        lines.append("  " + (SCREEN_URL.format(id=it["ingredient_id"]) if it.get("ingredient_id")
-                             else SCREEN_URL.format(id="").rstrip("/")))
+        lines.append(_screen_link(it.get("ingredient_id")))
     if n > MAX_LINES:
         lines.append(f"… and {n - MAX_LINES} more in PHAROS (Ingredients).")
+    if signals:
+        s_late = sum(1 for s in signals if int(s["days_left"]) < 0)
+        m = len(signals)
+        lines += ["" if items else "",
+                  f"<b>{m} signal {'step' if m == 1 else 'steps'} due</b>",
+                  f"{s_late} late, {m - s_late} due within {WITHIN_DAYS} days", ""]
+        for s in list(signals)[:MAX_LINES]:
+            where = esc(s["ingredient"]) if s.get("ingredient") else ""
+            lines.append(f"• {esc(s.get('ref'))} · {esc_cut(s.get('title'), 160)}{' · ' + where if where else ''}"
+                         f" · {esc(step_text(s['stage'], s['next_due'], int(s['days_left'])))}")
+            lines.append(_screen_link(s.get("ingredient_id")))
+        if m > MAX_LINES:
+            lines.append(f"… and {m - MAX_LINES} more signal steps in PHAROS (Ingredients).")
     messages, current = [], ""
     for line in lines:
         if current and len(current) + 1 + len(line) > MAX_MESSAGE_CHARS:
@@ -95,15 +124,16 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
         log.info("today's authority reminder has gone already" if told else "nobody with Telegram to remind")
         return 0
     items = store.eda_reminders(moment.date(), WITHIN_DAYS)
-    if not items:
-        log.info("nothing is due to the authority on %s", moment.date())
+    signals = store.signal_reminders(moment.date(), WITHIN_DAYS)
+    if not items and not signals:
+        log.info("nothing is due to the authority, and no signal step is due, on %s", moment.date())
         return 0
-    texts = build_messages(items, moment.date())
+    texts = build_messages(items, moment.date(), signals)
     for person in people:
         for text in texts:
             notifier._deliver(person, None, KIND, text)
-    log.info("authority reminder: %d findings to %d people (dry run: %s)", len(items), len(people),
-             notifier.dry_run)
+    log.info("morning reminder: %d findings and %d signal steps to %d people (dry run: %s)", len(items),
+             len(signals), len(people), notifier.dry_run)
     return len(people)
 
 

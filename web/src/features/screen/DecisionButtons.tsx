@@ -11,6 +11,7 @@ import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { canSend, clockLine, earliestSentDay, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
+import { SignalSteps } from './SignalSteps';
 import type { AuthoritySent, Decided, Decision, FindingState, IngredientScreenData } from './types';
 import '../../styles/clock.css';
 
@@ -229,6 +230,10 @@ export function DecisionButtons({
 
       {canReview && finding && !changing ? (
         <AuthorityActions issueId={issueId} finding={finding} queryKey={queryKey} onDone={setDone} />
+      ) : null}
+
+      {finding?.signal && !changing ? (
+        <SignalSteps issueId={issueId} signal={finding.signal} queryKey={queryKey} onDone={setDone} />
       ) : null}
 
       {save.isError ? (
