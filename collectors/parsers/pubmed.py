@@ -30,8 +30,9 @@ series" or "a case of" (the words of ``v_case_report``, migration 0031), else nu
 has no type, so only its title can say. The flag starts the reporting clock on the Ingredients screen (day zero
 is the Cairo day PHAROS found the paper) and puts the paper in the daily message (``collectors/alerts.py``).
 
-Windows. A search that has run before reads from the last complete run minus 3 days (at most 90 days back;
-``lookback_days`` before the source's first complete run). A search never run (a newly added ingredient or class
+Windows. A search that has run before reads from the last complete run minus 3 days, or from its own last
+search minus 3 days when that is earlier (a search switched off for a while: its paused days are caught up, as
+new); at most 90 days back, and ``lookback_days`` before the source's first complete run. A search never run (a newly added ingredient or class
 word, or one not run for 90 days) first looks back ``look_back_months`` (``class_look_back_months`` for a class
 word) of entry dates, and what that look-back finds is history (``is_history``: stored without an alert or a
 digest line, like a backfill). The ``literature_search`` table (migration 0035) remembers each search; a
@@ -217,6 +218,18 @@ def _normal_start(ctx: FetchContext, opts: dict, today: date) -> date:
     return max(start, today - timedelta(days=MAX_CATCH_UP_DAYS))
 
 
+def _caught_up(normal: Window, last_searched: datetime | None, today: date) -> Window:
+    """The daily window, reaching back to the search's own last day less 3 days when that is earlier. A search
+    switched off for a while (its ingredient paused, or its class word out of the literature) was not run while
+    the source's other searches were, so the source's last complete run alone would skip its paused days; the
+    days are read as new, as after an outage, and never more than 90 days back (past STALE_DAYS it looks back
+    again instead)."""
+    if last_searched is None:
+        return normal
+    own = max(last_searched.date() - timedelta(days=OVERLAP_DAYS), today - timedelta(days=MAX_CATCH_UP_DAYS))
+    return Window(own, today, False) if own < normal.start else normal
+
+
 def plan(ctx: FetchContext, search: Search, state: dict | None, opts: dict, today: date,
          remembered: bool) -> tuple[list[Window], dict]:
     """The windows ``search`` reads this run, and its ``literature_search`` row as it stands before this run
@@ -240,7 +253,7 @@ def plan(ctx: FetchContext, search: Search, state: dict | None, opts: dict, toda
     row = {"look_back_from": state["look_back_from"], "history_until": state["history_until"],
            "done": state.get("look_back_done_at") is not None}
     if row["done"]:
-        return [normal], row
+        return [_caught_up(normal, state.get("last_searched_at"), today)], row
     # a look-back cut short: its days again as history, then what was entered since as new
     until = row["history_until"]
     windows = [Window(row["look_back_from"], until, True)]
