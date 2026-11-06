@@ -10,7 +10,7 @@ import { Field, Textarea } from '../../ui/Input';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
-import type { IngredientScreenData, Mention } from './types';
+import type { Decided, Decision, IngredientScreenData } from './types';
 
 class StaleDecisionError extends Error {
   constructor() {
@@ -27,9 +27,18 @@ interface RecordedRow {
 
 /**
  * The notice a mention is filed under: its status and latest decision, and for a reviewer or administrator the
- * decisions that can follow. A decision shows at once on every mention of the same notice on the screen.
+ * decisions that can follow. A decision shows at once on every mention of the same notice on the screen; a
+ * paper's buttons pass it on through onDecision, so the papers under the same notice show it too.
  */
-export function DecisionButtons({ mention, queryKey }: { mention: Mention; queryKey: readonly unknown[] }) {
+export function DecisionButtons({
+  mention,
+  queryKey,
+  onDecision,
+}: {
+  mention: Decided;
+  queryKey: readonly unknown[];
+  onDecision?: (issueId: string, d: Decision) => void;
+}) {
   const { canReview, person } = useAuth();
   const qc = useQueryClient();
   const [changing, setChanging] = useState(false);
@@ -61,16 +70,14 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
       if (!issueId) return;
       // Other ranges and screens read again when next opened; this one shows the decision now.
       void qc.invalidateQueries({ queryKey: ['ingredient-screen'], refetchType: 'none' });
-      qc.setQueryData<IngredientScreenData>(queryKey, (old) =>
-        old
-          ? withDecision(old, issueId, {
-              to_status: row.to_status,
-              person: person?.full_name ?? 'You',
-              at: row.created_at,
-              comment: row.comment,
-            })
-          : old,
-      );
+      const decision: Decision = {
+        to_status: row.to_status,
+        person: person?.full_name ?? 'You',
+        at: row.created_at,
+        comment: row.comment,
+      };
+      qc.setQueryData<IngredientScreenData>(queryKey, (old) => (old ? withDecision(old, issueId, decision) : old));
+      onDecision?.(issueId, decision);
       void qc.invalidateQueries({ queryKey: ['issues'] });
       void qc.invalidateQueries({ queryKey: ['issue', issueId] });
       void qc.invalidateQueries({ queryKey: ['issue-reviews', issueId] });
