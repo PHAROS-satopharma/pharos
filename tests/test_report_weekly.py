@@ -483,7 +483,11 @@ def test_the_pdf_and_excel_say_how_far_each_ingredient_is():
     assert html.index("Each ingredient: ready or still preparing") < html.index('<span class="n">02</span>')
     wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
     rows = list(wb["Summary"].iter_rows(values_only=True))
-    assert ("Readiness: levofloxacin", rw.readiness_text(READINESS)) in [(r[0], r[1]) for r in rows]
+    # under its own heading on the Summary sheet, one row per ingredient
+    labels = [r[0] for r in rows]
+    assert "Each ingredient: ready or still preparing" in labels
+    assert ("levofloxacin", rw.readiness_text(READINESS)) in [(r[0], r[1]) for r in rows]
+    assert labels.index("Each ingredient: ready or still preparing") < labels.index("levofloxacin")
 
 
 def test_clock_cells_say_due_late_and_sent_in_her_words():
@@ -779,6 +783,114 @@ def test_make_daily_report_archives_and_records_the_day(tmp_path, monkeypatch):
     assert "PHAROS · Daily report · Thu 5 Nov 2026" in printed[0]
     rw.make_weekly_report(db, MemoryStore(), NOV5, dry_run=True)
     assert db.written[-1]["pk"] == "reports/daily/2026-11-05/PHAROS-daily-2026-11-05-r2.pdf"
+
+
+def _unread(period, **changes):
+    """The countries listed as "not read" when the sources named in ``changes`` are changed as given."""
+    raw = rw.gather_week(FakeDb(period), period)
+    raw["sources"] = [{**src, **changes.get(src["id"], {})} for src in raw["sources"]]
+    data = rw.assemble(raw, period, made_at=datetime(2026, 11, 8, 3, 2, tzinfo=UTC))
+    return [r["country"] for r in data["check"]["unread"]], dict(data["summary"])
+
+
+def test_a_source_added_after_the_period_is_never_listed_as_not_read():
+    """The 5 Nov daily report listed EMA's news page, Swissmedic's updates, Europe PMC and the FDA and Health Canada
+    e-mails as "not read on the day": they were added on 6 Nov."""
+    assert _unread(NOV1)[0] == ["Australia", "Japan"]
+    later = {"created_at": datetime(2026, 11, 8, 9, tzinfo=UTC)}            # after Sat 7 Nov, Cairo midnight
+    assert _unread(NOV1, **{"pmda-src": later})[0] == ["Australia"]
+    during = {"created_at": "2026-11-03T09:00:00+00:00"}                     # added during the week: still due
+    assert _unread(NOV1, **{"pmda-src": during})[0] == ["Australia", "Japan"]
+    assert _unread(NOV5, **{"pmda-src": {"created_at": "2026-11-05T22:30:00+00:00"}})[0] == ["Australia"]
+
+
+def test_a_weekly_source_is_not_due_every_day():
+    weekly = {"schedule": "weekly"}
+    assert _unread(NOV5, **{"tga-src": weekly})[0] == ["Japan"]
+    assert _unread(NOV5, **{"tga-src": {"schedule": "daily"}})[0] == ["Australia", "Japan"]
+    # the weekly report still lists it
+    assert _unread(NOV1, **{"tga-src": weekly})[0] == ["Australia", "Japan"]
+
+
+def test_the_report_says_which_period_it_covers():
+    for period, span in ((NOV1, "Sunday to Saturday, Cairo time"), (NOV5, "Midnight to midnight, Cairo time")):
+        html = rw.render_weekly_html(rw.assemble(rw.gather_week(FakeDb(period), period), period))
+        assert f'<p class="scope">{span}. Every source read in its own language' in html
+    assert "Sunday to Saturday" not in rw.render_weekly_html(rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5))
+    assert "Papers in PubMed, PubMed Central and Europe PMC" in _unread(NOV1)[1]
+
+
+def test_the_summary_groups_carry_every_figure_once():
+    for period in (NOV1, NOV5):
+        data = rw.assemble(rw.gather_week(FakeDb(period), period), period)
+        grouped = [k for _, rows in data["summary_groups"] for k, _ in rows]
+        head = {"Report", period.period_head, "Made (Cairo)"}
+        assert sorted(grouped) == sorted(k for k, _ in data["summary"] if k not in head)
+        assert [h for h, _ in data["summary_groups"]] == [
+            "Screening", "What concerns our ingredients", "Literature", "Decisions and the five-day clock",
+            "To check by hand"]
+
+
+def test_the_polished_files():
+    data = rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5, made_at=datetime(2026, 11, 6, 5, 2, tzinfo=UTC))
+    html = rw.render_weekly_html(data)
+    assert "<h1>Daily screening report</h1>" in html and '<p class="period">Thu 5 Nov 2026</p>' in html
+    assert "Made 6 Nov 2026, 07:02 (Cairo)" in html
+    assert html.count('<div class="summary-grid">') == 1
+    # a country with nothing new is named in one line, never given a block of its own
+    quiet = [n["country"] for n in data["new"] if not n["items"]]
+    assert quiet and all(f"<h4>{c} · " not in html for c in quiet)
+    assert "Nothing new on the day:</strong>" in html
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    for ws in wb.worksheets:
+        assert ws.sheet_view.showGridLines is False, ws.title
+        assert ws.page_setup.orientation == "landscape" and ws.page_setup.fitToWidth == 1, ws.title
+        assert "PHAROS — Daily screening report" in (ws.oddHeader.left.text or ""), ws.title
+    assert wb["Decisions"]["A2"].value == "5 Nov 2026, 12:12"              # the fixture's decision
+    quiet_day = load_workbook(io.BytesIO(rw.build_weekly_xlsx({**data, "decisions": []})))
+    assert quiet_day["Decisions"]["A2"].value == "No decision was taken on the day."
+    assert wb["Decisions"].print_title_rows == "$1:$1"           # the header row on every printed page
+    summary = [r[0] for r in wb["Summary"].iter_rows(values_only=True)]
+    assert "Screening" in summary and "To check by hand" in summary
+
+
+def test_the_findings_come_first_with_their_links_and_decisions():
+    data = rw.assemble(rw.gather_week(FakeDb(NOV1), NOV1), NOV1)
+    expected = [(i["name"], m["title"]) for i in data["ingredients"]
+                for m in [m for c in i["countries"] for m in c["mentions"]] + i["label_changes"] + i["literature"]["list"]]
+    assert expected and [(f["ingredient"], f["title"]) for f in data["findings"]] == expected
+    kinds = {f["what"] for f in data["findings"]}
+    assert "Notice" in kinds and "Label change" in kinds
+    html = rw.render_weekly_html(data)
+    assert html.index("What was found about our ingredients") < html.index('<div class="summary-grid">')
+    for f in data["findings"]:
+        if f["link"]:
+            assert f'href="{f["link"]}"' in html
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    assert wb.sheetnames[:2] == ["Summary", "Findings"]
+    rows = list(wb["Findings"].iter_rows(min_row=2, values_only=True))
+    assert [(r[0], r[5]) for r in rows] == expected
+    assert [r[8] for r in rows] == [f["decision"] for f in data["findings"]]
+
+
+def test_no_finding_is_said_in_words():
+    data = rw.assemble(rw.gather_week(FakeDb(NOV1), NOV1), NOV1)
+    data["findings"] = []
+    assert "Nothing about our ingredients was found this week" in rw.render_weekly_html(data)
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    assert wb["Findings"]["A2"].value == "Nothing about our ingredients was found this week."
+
+
+def test_a_preview_is_never_archived_recorded_or_sent(tmp_path, monkeypatch):
+    monkeypatch.setenv("ARCHIVE_DIR", str(tmp_path / "archive"))
+    monkeypatch.setenv("REPORT_DIR", str(tmp_path / "out"))
+    monkeypatch.setattr(rw, "build_pdf", lambda html, footer: b"%PDF-1.7 preview")
+    db = FakeDb(NOV5)
+    assert rw.make_weekly_report(db, MemoryStore(), NOV5, preview=True) == {"preview": "PHAROS-daily-2026-11-05"}
+    assert db.written == [] and not any("insert into" in q for q in db.sql)
+    assert not (tmp_path / "archive").exists()
+    assert (tmp_path / "out" / "PHAROS-daily-2026-11-05.pdf").read_bytes() == b"%PDF-1.7 preview"
+    assert (tmp_path / "out" / "PHAROS-daily-2026-11-05.xlsx").exists()
 
 
 # ───────────────────────────── a real PDF ─────────────────────────────

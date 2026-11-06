@@ -118,6 +118,8 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
         return 0
     midnight = datetime.combine(moment.date(), time(0), CAIRO)
     notifier = notifier or Notifier(store, store.settings(), dry_run=dry_run)
+    if now is not None:
+        notifier.now = now      # the rows it writes carry the same clock the day window is cut from
     # Once a day, per person: whoever the reminder really reached today is not told again. Only a delivered
     # message counts (a refused one is tried again now); a dry run stands in only for another dry run.
     told = store.told_since(KIND, midnight, dry_run=notifier.dry_run)
@@ -141,7 +143,8 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
                 continue
             if failed:
                 store.insert_notification(person_id=person["person_id"], issue_id=None, kind=KIND,
-                                          dry_run=notifier.dry_run, tg_message_id=None, error=failed, summary=text)
+                                          dry_run=notifier.dry_run, tg_message_id=None, error=failed, summary=text,
+                                          sent_at=notifier.now())
                 continue
             if notifier._deliver(person, None, KIND, text) is None and not notifier.dry_run:
                 failed = "held back: an earlier part was refused"

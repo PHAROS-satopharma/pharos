@@ -43,6 +43,11 @@ export function packsFor<T extends Pick<PackRequest, 'kind'>>(rows: T[], isAdmin
   return isAdmin ? rows : rows.filter((r) => r.kind === 'psur');
 }
 
+/** The packs of the ingredient chosen in the form, or every pack when none is chosen. */
+export function packsOf<T extends Pick<PackRequest, 'kind' | 'ingredient_id'>>(rows: T[], ingredient: string): T[] {
+  return ingredient ? rows.filter((r) => r.kind === 'psur' && r.ingredient_id === ingredient) : rows;
+}
+
 /** The most a pack covers (the database refuses more). */
 export const MAX_YEARS = 5;
 

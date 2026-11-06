@@ -1,5 +1,9 @@
-# PHAROS — scheduled collection. ONE job per trigger; runs never overlap (shared "collectors" group with
-# backfill). Times are UTC; Cairo is UTC+2 in winter and UTC+3 in summer.
+# PHAROS — scheduled collection. ONE job per trigger; runs never overlap (shared "collectors" group with the
+# check of the past and the matching audit; a backfill has its own group and runs beside it). GitHub keeps only
+# ONE waiting run per group: a newer run queued behind a running one cancels the run already waiting. The
+# database's back-up timers ask again for a slot whose run never started (0007 for 4h, 12h, weekly, monthly;
+# 0084 every hour for the readiness slots daily and literature). Times are UTC; Cairo is UTC+2 in winter and
+# UTC+3 in summer.
 #
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
@@ -26,7 +30,7 @@ on:
     - cron: "41 10,18 * * *"
     - cron: "23 3 * * 1"
     - cron: "41 1 1 * *"
-  # The database's back-up timer (supabase/migrations/0007) for a slot GitHub's cron skipped.
+  # The database's back-up timers (supabase/migrations/0007, 0084) for a slot whose run never started.
   repository_dispatch:
     types: [collect]
   workflow_dispatch:
@@ -64,7 +68,7 @@ jobs:
     runs-on: ubuntu-24.04
     # daily and literature: 80, for the drug classes before the collection and the check of the past after it;
     # every run but the weekly one keeps 20 minutes for a pack asked for on Reports (the last step), so 60 by default
-    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.schedule == '41 10,18 * * *' || github.event.client_payload.schedule == 'daily') && 80 || 60)) }}
+    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.schedule == '41 10,18 * * *' || github.event.client_payload.schedule == 'daily' || github.event.client_payload.schedule == 'literature') && 80 || 60)) }}
     env:
       # The collectors stop starting new notices and sources this many minutes in, so the run ends
       # cleanly (screening log, alerts, digest) instead of being killed by the timeout above.
