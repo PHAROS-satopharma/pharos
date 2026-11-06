@@ -1,0 +1,89 @@
+/* The phone app (November 2026): the three screening tabs, and People for administrators, in a bar at the foot
+   of the screen below 760px, in place of the old Menu button. Flat: a 1px rule on top, labelled tabs at least
+   48px tall, the current tab in the accent colour with a 2px beacon rule. No icons, shadow or gloss.
+
+   index.html sets viewport-fit=cover so the page may reach under a phone's notch and gesture bar; the
+   safe-area insets below keep every word clear of them (each inset is 0 on a screen without them). */
+
+body {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+}
+
+.tabbar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .tabbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: flex;
+    padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    border-top: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  /* Two classes, so the global a and a:hover colours never win over a tab. */
+  .tabbar .tabbar-link {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: 56px;
+    margin-top: -1px;
+    padding: 6px 4px;
+    border-top: 2px solid transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color var(--ease),
+      border-color var(--ease);
+  }
+  .tabbar .tabbar-link.is-active {
+    border-top-color: var(--beacon);
+    color: var(--beacon-deep);
+  }
+  /* the focus ring stays inside the bar, which sits on the screen's edge */
+  .tabbar .tabbar-link:focus-visible {
+    outline-offset: -3px;
+  }
+  .tabbar-label {
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tabbar .hz-tab-count {
+    min-height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    line-height: 14px;
+  }
+  /* The page ends above the bar (the bar's own safe-area inset is the body's bottom padding). */
+  .app {
+    padding-bottom: 56px;
+  }
+}
+
+@media (max-width: 760px) and (hover: hover) {
+  .tabbar .tabbar-link:not(.is-active):hover {
+    color: var(--text);
+  }
+}
+
+@media print {
+  .tabbar {
+    display: none;
+  }
+}

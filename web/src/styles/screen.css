@@ -295,9 +295,6 @@
 .scr-decision-who {
   color: var(--muted);
 }
-.scr-open-notice {
-  color: var(--sea);
-}
 .scr-decision-why {
   margin: 4px 0 0;
   padding-left: 10px;
