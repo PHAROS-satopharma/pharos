@@ -1,7 +1,9 @@
 # PHAROS — clinical trials of the watched ingredients, from ClinicalTrials.gov API v2 (collectors/trials.py,
 # migration 0067). Once a week: every active ingredient is searched by its English names, and only the studies
 # that are new or were updated since the last run are fetched again. Run it by hand after the first deploy of 0067,
-# or after adding an ingredient, to fill section 07 of the Ingredients screen at once. The log prints counts only.
+# or after adding an ingredient, to fill section 07 of the Ingredients screen at once. The first pass fetches every study and can take an hour or
+# more; each study is saved as it arrives, so a run that stops early is simply continued by the next one. The log
+# prints counts only.
 name: PHAROS clinical trials
 
 on:
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   trials:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 180     # the first pass over every ingredient; a weekly run takes minutes
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
