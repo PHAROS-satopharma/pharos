@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#02224C" />
@@ -11,6 +11,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- The phone app: "Add to Home screen" opens PHAROS on its own, at Ingredients. No service worker, so a
+         screen is never kept out of date. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="PHAROS" />
     <link rel="preload" as="image" href="/brand/pharos-logo.webp" />
     <script>
       // Light by default (navy masthead over a light page); apply a saved choice before the first paint.
