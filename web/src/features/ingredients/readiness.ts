@@ -2,6 +2,7 @@
 // (Readiness.tsx) reads the database; collectors/report_weekly.py (readiness_items, readiness_text) says the
 // same, and tests/test_report_weekly.py holds both to these phrases.
 import { formatDate } from '../../lib/format';
+import { languageName } from '../../lib/labels';
 
 export interface ReadinessSource {
   country: string;
@@ -41,6 +42,24 @@ export function countryList(countries: string[]): string {
   return countries.length <= 3 ? countries.join(', ') : `${countries.length} countries`;
 }
 
+/** "Danish", "Danish and Swedish", "Danish, Icelandic and Swedish"; more than five are counted ("9 of 15 languages"). */
+export function languageList(codes: string[], of: number): string {
+  if (codes.length > 5) return `${codes.length} of ${of} languages`;
+  const names = codes.map((c) => languageName(c)).sort((a, b) => a.localeCompare(b));
+  return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** The languages the authorities write in where it has no name of its own. Never "still preparing": nothing adds
+ *  a name by itself, and a language may need none (Danish writes "carvedilol"). Its other names are still looked
+ *  for in every language, so the note says what is matched there. Nothing when it has no name at all: the line
+ *  already says "no name to look for yet". */
+export function missingNamesNote(r: Readiness): string | null {
+  const missing = r.names.missing ?? [];
+  if (r.names.languages_with_a_name === 0 || missing.length === 0) return null;
+  const where = missing.length === 1 ? `notices in ${languageName(missing[0])}` : 'notices in those languages';
+  return `No name in ${languageList(missing, r.names.of)}; ${where} are matched by its other names only`;
+}
+
 /** What is still running or still to come, in the order the days bring it. Empty when nothing is. */
 export function readinessItems(r: Readiness): string[] {
   const items: string[] = [];
@@ -61,9 +80,12 @@ export function readinessLine(r: Readiness): string {
   return items.length === 0 && r.ready ? 'Ready' : `Still preparing: ${items.join(' · ')}`;
 }
 
-/** The facts under the line: labels, Japan, the EURD list, EMA's literature monitoring, Telegram. */
+/** The facts under the line: languages without a name, labels, Japan, the EURD list, EMA's literature monitoring,
+ *  Telegram. */
 export function readinessNotes(r: Readiness): string[] {
   const notes: string[] = [];
+  const names = missingNamesNote(r);
+  if (names) notes.push(names);
   const lw = r.label_watch;
   if (lw.products > 0) {
     const where = Object.values(lw.by_source)
