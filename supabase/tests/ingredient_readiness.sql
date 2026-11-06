@@ -148,6 +148,8 @@ insert into mlm_entry (ingredient_id, group_id, group_name, named_group, list_na
   values ('00000000-0000-0000-0000-00000045a001', 45, 'CI readyamine', true, 'CI list', 'cd', 'raw/cd');
 -- who hears of it: the reviewer subscribed to every ingredient (Telegram linked); not the administrator
 -- subscribed to every ingredient without Telegram; not the one subscribed to another ingredient only
+-- (ci.yml links the administrator's Telegram earlier; here, as the case needs, she has none)
+update person set telegram_chat_id = null where email = 'admin@example.test';
 insert into subscription (person_id, kind, ingredient_id)
 select p.id, 'ingredient', null from person p where p.email = 'reviewer@example.test';
 insert into subscription (person_id, kind, ingredient_id)
