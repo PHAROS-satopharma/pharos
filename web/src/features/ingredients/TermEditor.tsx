@@ -43,12 +43,15 @@ export function TermEditor({
   onChange,
   languages,
   countries,
+  withJapanCode = true,
 }: {
   terms: TermDraft[];
   onChange: (next: TermDraft[]) => void;
   /** Languages that can be added (the regulators' languages). */
   languages: string[];
   countries: Option[];
+  /** False when the ingredient exists: its Japan code has its own field on the row (JapanCodeEdit). */
+  withJapanCode?: boolean;
 }) {
   const [hits, setHits] = useState<Record<string, HitState>>({});
   const [addLang, setAddLang] = useState('');
@@ -205,7 +208,7 @@ export function TermEditor({
         </Button>
       </div>
 
-      <JapanCodeField value={japan?.term ?? ''} onChange={setJapanCode} />
+      {withJapanCode ? <JapanCodeField value={japan?.term ?? ''} onChange={setJapanCode} /> : null}
     </div>
   );
 }

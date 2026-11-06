@@ -337,6 +337,16 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   night (0034); the readiness line does not wait for that, since a code is not a name. Without a code the row says *No Japan code
   yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
 
+### Editing an ingredient on the watchlist
+
+Open its row (the triangle beside the name), then **Edit names** beside *Names looked for* (administrators). Change
+the English name or any name: its wording, kind, matching, exclusions or country; add a name or a language; or
+press **Remove** (an emptied name is removed too). Nothing is written until **Save**; **Cancel** leaves it as it
+was. The rows are written directly (the ingredient_term admin policy, 0001; every change is in the audit log), so
+the edit is not one step: if a write fails part-way, the screen says so and the list shows what the database holds.
+A new or changed name is due for the check of the past that night (0034). The Japan code is not in this editor; it
+keeps its own field on the row. The ATC code is not edited here (classes are made from it).
+
 ## The Ingredients screen: one ingredient across every source
 
 Click an ingredient's name on *Ingredients* (the triangle beside it still shows every name looked for). The
