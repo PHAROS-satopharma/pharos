@@ -452,6 +452,33 @@ class MemoryStore:
                 and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)]
         return [i for _, i in sorted(rows, reverse=True)]
 
+    def case_report_papers_since(self, since: datetime) -> list[dict]:
+        from collectors.parsers.pubmed import case_report
+
+        def paper(r: dict) -> bool:
+            d = self.document.get(r["anchor_document_id"]) or {}
+            return r.get("doc_type") == "literature" or (self.source.get(d.get("source_id")) or {}).get(
+                "kind") == "literature"
+
+        def flagged(d: dict) -> bool:
+            st = d.get("structured") or {}
+            if "case_report" in st:
+                return bool(st["case_report"])
+            return case_report(st.get("pubtype"), d.get("title_orig")) is not None
+
+        rows = []
+        for i, r in self.issue.items():
+            d = self.document.get(r["anchor_document_id"]) or {}
+            if (paper(r) and not r["class_only"] and not r["is_backfill"] and flagged(d)
+                    and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)):
+                ing_ids = [g for x, g in self.issue_ingredient if x == i]
+                names = sorted(self.ingredient.get(g, {}).get("inn_en") or g for g in ing_ids)
+                rows.append((r.get("current_since") or r["created_at"], i, {
+                    "id": i, "title_orig": d.get("title_orig"), "journal": (d.get("structured") or {}).get("journal"),
+                    "day_zero": d["first_seen_at"].astimezone(ZoneInfo("Africa/Cairo")).date(),
+                    "ingredient_ids": ing_ids, "ingredients": names}))
+        return [row for _, _, row in sorted(rows, key=lambda t: (t[0], t[1]), reverse=True)]
+
     # ───────────────────────────── drug classes ─────────────────────────────
     def ingredients_for_classes(self) -> list[dict]:
         out = []

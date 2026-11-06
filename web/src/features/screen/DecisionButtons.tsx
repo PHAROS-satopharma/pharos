@@ -12,7 +12,7 @@ import { cx } from '../../ui/cx';
 import { canSend, clockLine, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
 import { useScreenData } from './queries';
-import type { AuthoritySent, FindingState, IngredientScreenData, Mention } from './types';
+import type { AuthoritySent, Decided, Decision, FindingState, IngredientScreenData } from './types';
 import '../../styles/clock.css';
 
 class StaleDecisionError extends Error {
@@ -44,10 +44,19 @@ interface SentRow {
 
 /**
  * The notice a mention is filed under: its status and latest decision, and for a reviewer or administrator the
- * decisions that can follow. A decision shows at once on every mention of the same notice on the screen. Under
+ * decisions that can follow. A decision shows at once on every mention of the same notice on the screen; a
+ * paper's buttons pass it on through onDecision, so the papers under the same notice show it too. Under
  * the decision, the five-day clock to the Egyptian Drug Authority (0041) and "Sent to the authority".
  */
-export function DecisionButtons({ mention, queryKey }: { mention: Mention; queryKey: readonly unknown[] }) {
+export function DecisionButtons({
+  mention,
+  queryKey,
+  onDecision,
+}: {
+  mention: Decided;
+  queryKey: readonly unknown[];
+  onDecision?: (issueId: string, d: Decision) => void;
+}) {
   const { canReview, person } = useAuth();
   const qc = useQueryClient();
   const [changing, setChanging] = useState(false);
@@ -80,21 +89,16 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
       if (!issueId) return;
       // Other ranges and screens read again when next opened; this one shows the decision now.
       void qc.invalidateQueries({ queryKey: ['ingredient-screen'], refetchType: 'none' });
+      const decision: Decision = {
+        to_status: row.to_status,
+        person: person?.full_name ?? 'You',
+        at: row.created_at,
+        comment: row.comment,
+      };
       qc.setQueryData<IngredientScreenData>(queryKey, (old) =>
-        old
-          ? withClockDecision(
-              withDecision(old, issueId, {
-                to_status: row.to_status,
-                person: person?.full_name ?? 'You',
-                at: row.created_at,
-                comment: row.comment,
-              }),
-              issueId,
-              row.to_status,
-              cairoToday(),
-            )
-          : old,
+        old ? withClockDecision(withDecision(old, issueId, decision), issueId, row.to_status, cairoToday()) : old,
       );
+      onDecision?.(issueId, decision);
       void qc.invalidateQueries({ queryKey: ['issues'] });
       void qc.invalidateQueries({ queryKey: ['issue', issueId] });
       void qc.invalidateQueries({ queryKey: ['issue-reviews', issueId] });

@@ -127,6 +127,28 @@ export interface Paper {
   first_seen_at: string;
 }
 
+/** Why a paper looks like a case report: PubMed lists it as one, or its title says so. */
+export interface CaseReport {
+  reason: 'pubtype' | 'title';
+}
+
+/** What a mention or a paper carries of its notice: enough for the decision buttons. */
+export type Decided = Pick<Mention, 'issue_id' | 'issue_status' | 'decision'>;
+
+/**
+ * What paper_state() (migration 0044) says of one paper: its notice and decision, whether it looks like a
+ * case report, and the clock: day zero is the Cairo day PHAROS found it, the dates are +15 and +90 days.
+ */
+export interface PaperState extends Decided {
+  case_report: CaseReport | null;
+  day_zero: string;
+  due_serious: string;
+  due_nonserious: string;
+}
+
+/** The states of the papers on screen, by document id. A paper not yet answered has no entry. */
+export type PaperStates = Record<string, PaperState>;
+
 /** One search the daily literature watch runs for this ingredient, and how many of the papers it found. */
 export interface PaperQuery {
   query: string;

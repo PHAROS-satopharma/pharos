@@ -388,6 +388,26 @@ late or due within 2 days; `run.py` calls it after the new-items digest). Store:
 `eda_reminders(today, within_days)`. Web: `web/src/features/screen/clock.ts`, `DecisionButtons.tsx`,
 `styles/clock.css`. SQL test: `supabase/tests/eda_clock.sql`; Python: `tests/test_reminders.py`.
 
+## Case reports in the literature (0044)
+
+```sql
+paper_state(p_documents uuid[]) returns jsonb   -- security definer, screen_reader() (42501 otherwise); at most
+  -- 1,000 ids (22023); {} for none. Keyed by document id (an unknown id has no entry):
+  -- {issue_id, issue_status, decision:{to_status, person, at, comment},   -- as a mention's in ingredient_screen()
+  --  case_report: {reason: 'pubtype' | 'title'} | null,   -- structured.case_report, else judged on the fly
+  --  day_zero, due_serious, due_nonserious}                -- Cairo day of first_seen_at, +15, +90
+mlm_monitored(p_ingredient uuid) returns boolean   -- a row in mlm_entry; same reader check
+-- 0044 also sets structured.case_report on every literature document stored before it. ingredient_screen()
+-- reads ingredient_papers() by column position: never widen that function; add a function instead.
+```
+
+Collector: `structured.case_report` is set by `collectors/parsers/pubmed.py` (`case_report(pubtype, title)`);
+`Store.case_report_papers_since(since)` feeds the daily message's block (`collectors/alerts.py`,
+`Notifier.digest_if_due`); `collectors/mlm.py` fills `mlm_entry` weekly. Web: `web/src/features/screen/papers.ts`
+(pure), `paperState.ts` (hooks), `styles/papers.css`. SQL test: `supabase/tests/case_reports_screen.sql`; Python:
+`tests/test_pubmed_ncbi.py`, `tests/test_alerts.py`, `tests/test_store_pg.py`, `tests/test_report_weekly.py`,
+`tests/test_mlm.py`.
+
 ## Environment / secrets
 
 | Secret | Used by |
