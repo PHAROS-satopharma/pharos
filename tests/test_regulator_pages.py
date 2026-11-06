@@ -1,5 +1,6 @@
-"""Dr Sama's pages (the regulator_page seed in 0032_sources_horizontal.sql) against the catalogue
-(collectors/sources.yaml), and every source's human page (`page:`). Nothing here touches a database."""
+"""Dr Sama's pages (the regulator_page seed in 0032_sources_horizontal.sql, with the changes of
+0038_her_pages_read.sql) against the catalogue (collectors/sources.yaml), and every source's human page
+(`page:`). Nothing here touches a database."""
 
 from __future__ import annotations
 
@@ -13,6 +14,9 @@ from collectors.core.registry import CatalogueError, load_catalogue, sync_catalo
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase" / "migrations" / "0032_sources_horizontal.sql"
+READ_0038 = ROOT / "supabase" / "migrations" / "0038_her_pages_read.sql"
+CHANGE = re.compile(r"^\s*\('([A-Z_]+)', '([^']+)', '([^']+)', '\{([^}]*)\}', (true|false), "
+                    r"(null|'(?:[^']|'')*')\),?$")
 ROW = re.compile(r"^\s*\('([A-Z_]+)', '(database|dhpc|safety)', (\d+), '((?:[^']|'')*)', '([^']+)', "
                  r"'\{([^}]*)\}', (true|false), (null|'(?:[^']|'')*')\),?$")
 # The same rule as new_items() in the migration and isFeedUrl() in web/src/features/sources/horizontal.ts.
@@ -27,7 +31,7 @@ def _text(quoted: str) -> str | None:
     return None if quoted == "null" else quoted[1:-1].replace("''", "'")
 
 
-def pages() -> list[dict]:
+def seed() -> list[dict]:
     sql = MIGRATION.read_text(encoding="utf-8")
     seed = sql.split("insert into regulator_page", 1)[1].split("on conflict", 1)[0]
     rows = []
@@ -43,6 +47,34 @@ def pages() -> list[dict]:
     return rows
 
 
+def changes() -> list[dict]:
+    """The rows of 0038's ``values`` list: (regulator, her address) → new address, read_by, partial, note."""
+    sql = READ_0038.read_text(encoding="utf-8")
+    body = sql.split("from (values", 1)[1].split(") as v(", 1)[0]
+    rows = []
+    for line in body.splitlines():
+        if not line.strip():
+            continue
+        m = CHANGE.match(line)
+        assert m, f"not one page per line: {line[:90]}"
+        reg, old, url, read_by, partial, note = m.groups()
+        rows.append({"regulator": reg, "old": old, "url": url, "read_by": [x for x in read_by.split(",") if x],
+                     "partial": partial == "true", "note": _text(note)})
+    return rows
+
+
+def pages() -> list[dict]:
+    """Her pages as the database holds them after 0038."""
+    rows = seed()
+    for c in changes():
+        hit = [p for p in rows if p["regulator"] == c["regulator"] and p["url"] == c["old"]]
+        assert len(hit) == 1, f"0038 changes a page 0032 does not list: {c['old']}"
+        hit[0].update(url=c["url"], read_by=c["read_by"], partial=c["partial"], note=c["note"])
+    return rows
+
+
+SEED = seed()
+CHANGES = changes()
 PAGES = pages()
 
 
@@ -104,15 +136,45 @@ def test_her_pages_are_web_pages_not_feeds():
 
 
 def test_her_exact_addresses_are_kept():
-    urls = {p["url"] for p in PAGES}
+    urls = {p["url"] for p in SEED}
     # moved or broken since her list was written: kept as she wrote them, with a note
     for url in ("https://www.cbg-meb.nl/onderwerpen/medicijninformatie-nieuws-over-veiligheid-van-medicijnen",
                 "https://www.hpra.ie/homepage/about-us/publications-forms/newsletters",
                 "https://cns.public.lu/en/legislations/textes-coordonnes/liste-med-comm.html"):
         assert url in urls
-        assert next(p for p in PAGES if p["url"] == url)["note"]
+        assert next(p for p in SEED if p["url"] == url)["note"]
     fda = next(p for p in PAGES if p["regulator"] == "FDA" and p["kind"] == "safety")
     assert fda["label"] == "Press announcements (bottom of the FDA home page)" and not fda["read_by"]
+
+
+def test_a_moved_page_keeps_her_address_in_its_note():
+    for c in CHANGES:
+        if c["url"] != c["old"]:
+            assert c["old"] in (c["note"] or ""), c["old"]
+    hpra = next(p for p in PAGES if p["regulator"] == "HPRA" and p["kind"] == "safety")
+    assert hpra["url"] == "https://www.hpra.ie/safety-information/safety-notices"
+    assert hpra["read_by"] == ["hpra-notices"]
+
+
+def test_every_page_of_hers_is_read_or_says_why_not():
+    for p in PAGES:
+        if p["kind"] == "database":
+            continue
+        assert p["read_by"] or (p["note"] or "").startswith("Not read:"), p["url"]
+
+
+def test_her_unread_pages_are_now_read_by():
+    read_by = {(p["regulator"], p["label"]): p["read_by"] for p in PAGES}
+    assert read_by[("EMA", "Home page news")] == ["ema-news"]
+    assert read_by[("SWISSMEDIC", "Updates")] == ["swissmedic-updates"]
+    assert read_by[("MEDSAFE", "Prescriber Update")] == ["medsafe-prescriber-update"]
+    assert read_by[("PMDA", "Safety information announced by MHLW")] == ["pmda-mhlw"]
+    assert read_by[("INFARMED", "Circulars")] == ["infarmed-circulares"]
+    assert read_by[("HPRA", "Newsletters")] == ["hpra-notices"]
+    assert read_by[("MFDS", "Safety letters (health.kr)")] == ["mfds-letters"]
+    # both sites refuse the servers PHAROS runs on (checked from them, 6 Nov 2026)
+    assert read_by[("HC", "Health Product InfoWatch")] == []
+    assert read_by[("FDA", "Press announcements (bottom of the FDA home page)")] == []
 
 
 def test_new_items_uses_the_same_feed_rule():

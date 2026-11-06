@@ -17,22 +17,39 @@ Two sources share this module; ``options.page`` says which page ``source.url`` i
 
 (checked 4 Nov 2026)
 
-Options: ``page`` (``dhcp`` | ``comms``; default guessed from the URL), ``include_product_types``
-(``["Medicine"]``), ``include_keywords`` / ``exclude_keywords``, ``lang`` (``en``).
+``page: prescriber`` — ``medsafe-prescriber-update``, ``https://www.medsafe.govt.nz/profs/PUArticles.asp``,
+  the latest issue of Prescriber Update (quarterly: March, June, September, December; checked 6 Nov
+  2026). Medsafe has no feed for it. In ``#content-area``: ``p.updated`` "Revised: 3 September 2026",
+  the issue PDF ``a[href*="PUArticles/PDF/"]`` "Download the latest issue of Prescriber Update –
+  September 2026", and ``ul li a[href="PUArticles/September2026/<slug>.html"]``, one per article. One
+  item per article and one for the issue PDF, all ``newsletter``. Published = the "Revised" day when it
+  falls in the issue's month, else the 1st of that month; an article page's own "Published: 3 September
+  2026" (``p.updated``) replaces it when the article is opened. Detail body ``#content-area``.
+
+Options: ``page`` (``dhcp`` | ``comms`` | ``prescriber``; default guessed from the URL),
+``include_product_types`` (``["Medicine"]``), ``include_keywords`` / ``exclude_keywords``, ``lang`` (``en``).
 """
 
 from __future__ import annotations
 
+import re
+
 from collectors.parsers._html_util import (absolute, column, fill_detail, keep, local_date,
                                            node_text, require, table_records)
 from collectors.parsers.base import Item, SourceConfig, soup
+
+_PUBLISHED = re.compile(r"(?:Published|Revised)\s*:?\s*(.+)", re.I)
+_DOWNLOAD = re.compile(r"^Download the latest issue of\s+", re.I)
 
 
 def page_kind(source: SourceConfig) -> str:
     kind = (source.options or {}).get("page")
     if kind:
         return str(kind).lower()
-    return "dhcp" if "dhcp" in source.url.lower() else "comms"
+    url = source.url.lower()
+    if "puarticles" in url:
+        return "prescriber"
+    return "dhcp" if "dhcp" in url else "comms"
 
 
 def parse_dhcp(html, base_url: str, source: SourceConfig) -> list[Item]:
@@ -102,11 +119,59 @@ def parse_comms(html, base_url: str, source: SourceConfig) -> list[Item]:
     return items
 
 
+def _stamp(area, lang: str):
+    """The date of a "Published: 3 September 2026" / "Revised: …" line, or None."""
+    m = _PUBLISHED.search(node_text(area.select_one("p.updated")) if area is not None else "")
+    return local_date(m.group(1), lang) if m else None
+
+
+def parse_prescriber(html, base_url: str, source: SourceConfig) -> list[Item]:
+    """The latest Prescriber Update: its articles and the issue PDF."""
+    doc = soup(html)
+    lang = source.lang or "en"
+    area = doc.select_one("#content-area")
+    pdf = next((a for a in area.select("a[href]")
+                if "/pdf/" in a["href"].lower() and a["href"].lower().endswith(".pdf")
+                and node_text(a)), None) if area is not None else None
+    if pdf is None:
+        return []          # not the latest-issue page any more: list_items raises ParseError
+    # "Download the latest issue of Prescriber Update – September 2026" → "Prescriber Update – September 2026"
+    issue_title = _DOWNLOAD.sub("", node_text(pdf))
+    issue = local_date(issue_title, lang)
+    revised = _stamp(area, lang)
+    published = revised if revised and issue and (revised.year, revised.month) == (
+        issue.year, issue.month) else (issue or revised)
+    items: list[Item] = []
+    seen: set[str] = set()
+    for a in area.select("ul li a[href]"):
+        title = node_text(a)
+        url = absolute(a["href"], base_url)
+        if not title or url in seen or not keep(source, title):
+            continue
+        seen.add(url)
+        items.append(Item(
+            external_id=url, url=url, title=title, published=published, doc_type="newsletter",
+            lang=lang, structured={"issue": issue_title or None}))
+    url = absolute(pdf["href"], base_url)
+    if keep(source, issue_title, *(i.title for i in items)):
+        items.append(Item(
+            external_id=url, url=url, title=issue_title, published=published, doc_type="newsletter",
+            lang=lang, body_text="\n".join(i.title for i in items), attachment_urls=[url],
+            structured={"issue": issue_title, "articles": [i.url for i in items]}))
+    return items
+
+
 def list_items(ctx, source: SourceConfig) -> list[Item]:
     f = ctx.get(source.url)
     if f.status == 304:
         return []
-    if page_kind(source) == "dhcp":
+    kind = page_kind(source)
+    if kind == "prescriber":
+        items = parse_prescriber(f, f.final_url, source)
+        require(items or soup(f).select("#content-area a[href*='PUArticles/PDF/']"), f,
+                marker="content-area")
+        return items
+    if kind == "dhcp":
         items = parse_dhcp(f, f.final_url, source)
     else:
         items = parse_comms(f, f.final_url, source)
@@ -117,4 +182,10 @@ def list_items(ctx, source: SourceConfig) -> list[Item]:
 def fetch_detail(ctx, source: SourceConfig, item: Item) -> Item:
     if item.url.lower().split("?")[0].endswith(".pdf"):
         return item
-    return fill_detail(item, ctx.get(item.url), "#content-area", patterns=(".pdf",))
+    f = ctx.get(item.url)
+    item = fill_detail(item, f, "#content-area", patterns=(".pdf",))
+    if page_kind(source) == "prescriber" and f.status == 200 and f.content:
+        published = _stamp(soup(f).select_one("#content-area"), item.lang or source.lang or "en")
+        if published:
+            item.published = published
+    return item

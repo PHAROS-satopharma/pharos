@@ -36,6 +36,14 @@ published date: the update reaches review as a new item. doc_type ``dhpc``.
 ``pmda-proper-use`` (PMDAからの医薬品適正使用のお願い, ``…/properly-use-alert/0002.html``) has the
 same No. | 発行年月 | タイトル table as ``msi`` and is read with ``page: msi``.
 
+``page: mhlw`` — ``pmda-mhlw``, 厚生労働省発表資料（医薬品関連）,
+``https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/mhlw-released/0001.html`` (checked
+6 Nov 2026; the English page, ``/english/safety/info-services/drugs/mhlw-released/0001.html``, has not
+changed since June 2013). One unpaged ``table.normal-table``, newest first: 年月日 ("2026年<br>3月27日")
+| 表題, whose first link is the announcement (size marker removed) and any further links its annexes.
+Rows are rare (2020-12-04, then 2026-03-27). external id ``pmda-mhlw:<file number>``. Titles with
+自主回収 (voluntary recall) → ``recall``; otherwise ``safety_alert``.
+
 (checked 4 Nov 2026)
 
 Options: ``page``, ``doc_type``, ``backfill_years`` (2), ``include_keywords`` /
@@ -64,7 +72,7 @@ def page_kind(source: SourceConfig) -> str:
     kind = (source.options or {}).get("page")
     if kind:
         return str(kind).lower()
-    for k in ("revisions", "urgent", "msi", "letters"):
+    for k in ("revisions", "urgent", "msi", "letters", "mhlw"):
         if source.id.endswith(k):
             return k
     return "revisions"
@@ -236,11 +244,46 @@ def parse_letters(html, base_url: str, source: SourceConfig) -> list[Item]:
     return items
 
 
+def parse_mhlw(html, base_url: str, source: SourceConfig) -> list[Item]:
+    """厚生労働省発表資料（医薬品関連）: one item per row; the first link is the announcement."""
+    doc = soup(html)
+    lang = source.lang or "ja"
+    items: list[Item] = []
+    seen: set[str] = set()
+    for table in doc.select("table.normal-table"):
+        for tr in table.find_all("tr"):
+            tds = tr.find_all("td", recursive=False)
+            if len(tds) < 2 or not _JA_DATE.search(node_text(tds[0])):
+                continue
+            links = tds[1].select("a[href]")
+            if not links:
+                continue
+            url = absolute(links[0]["href"], base_url)
+            title = strip_size(node_text(links[0]))
+            key = f"pmda-mhlw:{_file_id(url)}"
+            if not title or key in seen or not keep(source, title):
+                continue
+            seen.add(key)
+            annexes = [strip_size(node_text(a)) for a in links[1:]]
+            items.append(Item(
+                external_id=key, url=url, title=title, published=local_date(node_text(tds[0]), lang),
+                doc_type=(source.options or {}).get("doc_type")
+                or ("recall" if "自主回収" in title else "safety_alert"),
+                lang=lang, body_text="\n".join([title] + [a for a in annexes if a]),
+                attachment_urls=links_in(tds[1:2], base_url),
+                structured={"annexes": [absolute(a["href"], base_url) for a in links[1:]]}))
+    return items
+
+
 def list_items(ctx, source: SourceConfig) -> list[Item]:
     kind = page_kind(source)
     f = ctx.get(source.url)
     if f.status == 304:
         return []
+    if kind == "mhlw":
+        items = parse_mhlw(f, f.final_url, source)
+        require(items, f, marker="normal-table")
+        return items
     if kind == "urgent":
         items = parse_urgent(f, f.final_url, source)
         require(items or soup(f).select("table.normal-table td a[href]"), f, marker="normal-table")

@@ -246,6 +246,30 @@ sources:
     expected_max_gap_days: 45
     options: {backfill_all: true, detail: matched_only, categories: [Human]}
 
+  - id: ema-news
+    regulator: EMA
+    kind: safety
+    channel: html
+    # Dr Sama checks the EMA home page; its news, and every other EMA news item, is this list, ten a
+    # page, newest first (checked 6 Nov 2026). EMA's news.xml carries only seven items and had missed
+    # "New oral GLP-1 medicine for weight management and type 2 diabetes" (16 Oct 2026).
+    url: https://www.ema.europa.eu/en/news
+    page: https://www.ema.europa.eu/en/news
+    parser: generic_html
+    languages: [en]
+    schedule: 12h
+    expected_max_gap_days: 30
+    options:
+      item_selector: article.ema-news
+      link_selector: ".teaser-title a[href]"
+      date_selector: .metadata-item
+      summary_selector: .card-text
+      tag_selector: ".card-badge-wrapper .label"
+      detail_selector: .ema-news--full
+      doc_type: other
+      doc_type_rules:
+        - {match: 'Pharmacovigilance Risk Assessment Committee|\bPRAC\b', doc_type: safety_update}
+
   # ───────────── United States ─────────────
   - id: fda-medwatch
     regulator: FDA
@@ -563,6 +587,9 @@ sources:
     languages: [pt]
     schedule: 4h
     expected_max_gap_days: 30
+    # Every circular on the medicines circulars page, as on Dr Sama's circulars page (6 Nov 2026), not only
+    # the alert series: Nolotil, Tavneos and the iron compounds were outside it.
+    options: {circulares_all: true}
 
   - id: lu-dhpc
     regulator: LU_DPM
@@ -592,6 +619,20 @@ sources:
         fr: https://www.swissmedic.ch/swissmedic/fr/home/medicaments-a-usage-humain/surveillance-du-marche/health-professional-communication--hpc-.html
         it: https://www.swissmedic.ch/swissmedic/it/home/medicamenti-per-uso-umano/sorveglianza-del-mercato/health-professional-communication--hpc-.html
 
+  - id: swissmedic-updates
+    regulator: SWISSMEDIC
+    kind: safety
+    channel: html
+    # "New on this website": everything Swissmedic posts (DHPCs, batch recalls, Vigilance News, the
+    # Journal, guidance), 40 at a time, about two months (checked 6 Nov 2026). No feed of its own.
+    url: https://www.swissmedic.ch/swissmedic/en/home/news/updates.html
+    page: https://www.swissmedic.ch/swissmedic/en/home/news/updates.html
+    parser: swissmedic
+    languages: [en]
+    schedule: 12h
+    expected_max_gap_days: 21
+    options: {page: updates}
+
   - id: medsafe-dhcp
     regulator: MEDSAFE
     kind: safety
@@ -613,6 +654,20 @@ sources:
     languages: [en]
     schedule: 4h
     expected_max_gap_days: 60
+
+  - id: medsafe-prescriber-update
+    regulator: MEDSAFE
+    kind: safety
+    channel: html
+    # Prescriber Update, Medsafe's safety newsletter (March, June, September, December): the articles of
+    # the latest issue and the issue PDF. No feed (checked 6 Nov 2026).
+    url: https://www.medsafe.govt.nz/profs/PUArticles.asp
+    page: https://www.medsafe.govt.nz/publications/prescriber-update.asp
+    parser: medsafe
+    languages: [en]
+    schedule: daily
+    expected_max_gap_days: 120
+    options: {page: prescriber}
 
   # ───────────── Japan (Japanese pages; parser and final URLs by A2) ─────────────
   - id: pmda-revisions
@@ -678,6 +733,21 @@ sources:
     schedule: 12h
     expected_max_gap_days: 365
     options: {page: msi, doc_type: safety_alert}
+
+  - id: pmda-mhlw
+    regulator: PMDA
+    kind: safety
+    channel: html
+    # 厚生労働省発表資料（医薬品関連）: the ministry's announcements on medicines, posted by PMDA. They are rare
+    # (2020-12-04, then 2026-03-27), so a quiet year is normal. The English page Dr Sama lists has not
+    # changed since June 2013.
+    url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/mhlw-released/0001.html
+    page: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/mhlw-released/0001.html
+    parser: pmda
+    languages: [ja]
+    schedule: 12h
+    expected_max_gap_days: null
+    options: {page: mhlw}
 
   # ───────────── South Korea ─────────────
   - id: mfds-letters
