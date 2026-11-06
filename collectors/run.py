@@ -34,6 +34,7 @@ from urllib.parse import unquote, urlsplit
 import httpx
 
 from collectors import backfill as bf
+from collectors import reminders
 from collectors.alerts import Notifier
 from collectors.core.archive import Archive
 from collectors.core.context import (FetchContext, FetchError, NotSetUp, ParseError, SourceBlocked,
@@ -548,6 +549,11 @@ def main(argv: list[str] | None = None) -> int:
                     notifier.new_items_digest_if_due()
                 except Exception:  # noqa: BLE001 - the daily message never fails the run
                     log.warning("new-items message failed: %s", traceback.format_exc())
+                try:
+                    # once a day: the findings late or due within two days to the Egyptian Drug Authority
+                    reminders.remind_if_due(store, notifier, now=notifier.now)
+                except Exception:  # noqa: BLE001 - the reminder never fails the run
+                    log.warning("authority reminder failed: %s", traceback.format_exc())
             completed = True
         finally:
             store.finish_run(run_id, ok and completed)

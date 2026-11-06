@@ -223,6 +223,12 @@ class FakeDb:
 
     def fetchone(self, sql, params=None):
         self.sql.append(sql)
+        if "finding_state(" in sql:
+            # The clock of the notices decided this week, as the screen reads it (0041).
+            assert params == {"ids": ["i-1"]}
+            return {"f": {"i-1": {"day_zero": "2026-11-05", "due": "2026-11-10", "days_left": -4, "clock": "sent",
+                                  "sent": {"id": "ar-1", "on": "2026-11-06", "reference": "EDA/2026/0042",
+                                           "person": "Sama Hassan", "note": None}}}}
         assert "ingredient_screen(" in sql
         assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7), "i": SCREEN["ingredient"]["id"]}
         return {"screen": SCREEN}
@@ -299,7 +305,15 @@ class FakeDb:
         if "review_event" in sql:
             return [{"created_at": datetime(2026, 11, 5, 10, 12, tzinfo=UTC), "from_status": "new",
                      "to_status": "relevant", "comment": "Our product is named", "person": "Sama Hassan",
-                     "title": "Rote-Hand-Brief zu Fluorchinolonen"}]
+                     "title": "Rote-Hand-Brief zu Fluorchinolonen", "issue_id": "i-1"}]
+        if "from authority_report" in sql:
+            assert "withdrawn_at is null" in sql
+            assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7)}
+            return [{"sent_on": date(2026, 11, 6), "reference": "EDA/2026/0042", "note": None,
+                     "person": "Sama Hassan", "title": "Rote-Hand-Brief zu Fluorchinolonen", "issue_id": "i-1"}]
+        if "from v_eda_clock" in sql:
+            return [{"issue_id": "i-9", "clock": "late"}, {"issue_id": "i-8", "clock": "running"},
+                    {"issue_id": "i-7", "clock": "running"}]
         raise AssertionError(f"unexpected query: {sql}")
 
     def execute(self, sql, params=None):
@@ -310,6 +324,15 @@ class FakeDb:
 def _data():
     db = FakeDb()
     return db, rw.assemble(rw.gather_week(db, NOV1), NOV1, made_at=datetime(2026, 11, 8, 3, 2, tzinfo=UTC))
+
+
+def test_clock_cells_say_due_late_and_sent_in_her_words():
+    assert rw.clock_cells(None) == {"due": "", "sent": ""}
+    assert rw.clock_cells({"clock": "off", "due": "2026-11-10", "sent": None}) == {"due": "", "sent": ""}
+    assert rw.clock_cells({"clock": "running", "due": "2026-11-10", "sent": None}) == {"due": "10 Nov 2026", "sent": ""}
+    assert rw.clock_cells({"clock": "late", "due": "2026-11-03", "sent": None}) == {"due": "3 Nov 2026 (late)", "sent": ""}
+    assert rw.clock_cells({"clock": "sent", "due": "2026-11-10",
+                           "sent": {"on": "2026-11-06", "reference": None}}) == {"due": "10 Nov 2026", "sent": "6 Nov 2026"}
 
 
 def test_gather_never_filters_by_run_trigger():
@@ -326,6 +349,12 @@ def test_assemble_answers_every_section():
     assert summary["Notices naming our ingredients or their class"] == 2
     assert summary["Of them, no decision yet"] == 1
     assert summary["Decisions taken this week"] == 1
+    # The five-day clock (0041): what was sent this week, what is due now, and the clock on each decision
+    assert summary["Reported to the authority this week"] == 1
+    assert summary["Due to the authority"] == "3 (1 late)"
+    assert data["decisions"][0]["due"] == "10 Nov 2026"
+    assert data["decisions"][0]["sent"] == "6 Nov 2026 · EDA/2026/0042"
+    assert data["sent"][0]["reference"] == "EDA/2026/0042"
     # 2. Authorities read: hers first, then the others; label watch and literature apart
     a = data["authorities"]
     assert [r["country"] for r in a["hers"]] == ["Austria", "Germany", "Italy", "Japan"]
@@ -418,7 +447,9 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
     title = next(c for c in wb["Everything new"]["E"] if c.value == '=HYPERLINK("x")')
     assert title.data_type == "s"
     decisions = list(wb["Decisions"].iter_rows(values_only=True))
+    assert decisions[0][6:8] == ("Due", "Sent")
     assert decisions[1][2:5] == ("Concerns us", "No decision yet", "Sama Hassan")
+    assert decisions[1][6:8] == ("10 Nov 2026", "6 Nov 2026 · EDA/2026/0042")
 
 
 def test_make_weekly_report_archives_records_and_never_overwrites(tmp_path, monkeypatch):
