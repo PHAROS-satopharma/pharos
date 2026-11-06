@@ -246,7 +246,8 @@ def test_new_zealand_a_list_that_does_not_answer_fails_the_discovery():
 
 def test_a_sentence_that_starts_with_a_section_number_is_not_a_heading():
     # a Dutch SmPC of 2024 (CBG h117827): "5.1 en 5.2, maar …" in 4.2 shut out 4.3–4.9 before 7 Nov 2026
-    text = ("4. KLINISCHE GEGEVENS\n4.1 Therapeutische indicaties\nAngina.\n4.2 Dosering en wijze van toediening\n"
+    text = ("1. NAAM VAN HET GENEESMIDDEL\nX 5 mg\n4. KLINISCHE GEGEVENS\n4.1 Therapeutische indicaties\nAngina.\n"
+            "4.2 Dosering en wijze van toediening\n"
             "Zie rubriek\n5.1 en 5.2, maar er kan geen doseringsadvies worden gegeven.\n4.3 Contra-indicaties\n"
             "Shock.\n4.4 Bijzondere waarschuwingen\nLet op.\n4.8 Bijwerkingen\nFosfenen.\n")
     got = split_numbered(text)
