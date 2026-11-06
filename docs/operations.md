@@ -356,7 +356,9 @@ vertical pass; the Sources screen is the horizontal one.
 - **Literature**: the papers the daily NCBI watch stored for those days, by database and by search, the
   ingredient's own papers first, 50 at a time (**Show more**), each with its PubMed and PubMed Central links.
   A paper that looks like a case report is listed first, tagged **Possible case report**, with *day zero · 15
-  days · 90 days* and the decision buttons of its notice (see *Case reports in the literature*). **Count on
+  days · 90 days* and the decision buttons of its notice (see *Case reports in the literature*). Every paper filed
+  under a notice shows that notice's five-day clock and signal steps as a mention does (`finding_state()`, asked
+  with each page of 50 papers). **Count on
   PubMed and PubMed Central now** asks NCBI live
   (`literature-search`); those counts are by publication date.
 

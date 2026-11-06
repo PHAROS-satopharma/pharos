@@ -32,8 +32,8 @@ import type {
   IngredientScreenData,
   Mention,
   Paper,
+  PaperPage,
   PaperState,
-  PaperStates,
   ScreenIngredient,
   ScreenLiterature,
 } from './types';
@@ -366,7 +366,7 @@ function Literature({
   lit: ScreenLiterature;
   from: string;
   to: string;
-  /** The clocks of the notices on the screen (finding_state): a paper's notice has one too. */
+  /** The clocks of the notices of the screen's mentions (finding_state); the papers' own come with their pages. */
   findings: Findings;
   queryKey: readonly unknown[];
 }) {
@@ -377,7 +377,10 @@ function Literature({
   const live = useLiteratureSearch(ask ? ing.id : null, from, to);
   const loaded: Paper[] = [...lit.first, ...(extra.data?.pages.flat() ?? [])];
   // what each paper's notice says, and whether it looks like a case report (0044); case reports first
-  const { states, error: stateError } = usePaperStates(ing.id, from, to, loaded);
+  // ... and the five-day clock and signal of that notice (finding_state), asked with each page
+  const { states, findings: paperFindings, error: stateError } = usePaperStates(ing.id, from, to, loaded);
+  const papersKey = paperStateKey(ing.id, from, to);
+  const allFindings: Findings = { ...findings, ...paperFindings };
   const papers = orderPapers(loaded, states);
   const cases = papers.filter((p) => states[p.document_id]?.case_report).length;
   const mlm = mlmLabel(useMlmMonitored(ing.id).data);
@@ -385,8 +388,8 @@ function Literature({
   const canMore = left > 0 && (!more || Boolean(extra.hasNextPage));
   // a decision on a paper's notice shows at once on every paper filed under it, on every page loaded
   const onDecision = (issueId: string, d: Decision) =>
-    qc.setQueriesData<PaperStates>({ queryKey: paperStateKey(ing.id, from, to) }, (old) =>
-      old ? withPaperDecision(old, issueId, d) : old,
+    qc.setQueriesData<PaperPage>({ queryKey: papersKey }, (old) =>
+      old ? { ...old, states: withPaperDecision(old.states, issueId, d) } : old,
     );
 
   return (
@@ -461,8 +464,9 @@ function Literature({
               key={p.document_id}
               p={p}
               state={states[p.document_id]}
-              findings={findings}
+              findings={allFindings}
               queryKey={queryKey}
+              papersKey={papersKey}
               onDecision={onDecision}
             />
           ))}
@@ -504,12 +508,14 @@ function PaperItem({
   state,
   findings,
   queryKey,
+  papersKey,
   onDecision,
 }: {
   p: Paper;
   state: PaperState | undefined;
   findings: Findings;
   queryKey: readonly unknown[];
+  papersKey: readonly unknown[];
   onDecision: (issueId: string, d: Decision) => void;
 }) {
   const pubmed = safeHref(p.pubmed_url);
@@ -562,6 +568,7 @@ function PaperItem({
           mention={state}
           queryKey={queryKey}
           finding={state.issue_id ? (findings[state.issue_id] ?? null) : null}
+          papersKey={papersKey}
           onDecision={onDecision}
         />
       ) : null}
