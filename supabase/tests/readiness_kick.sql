@@ -17,8 +17,8 @@ $$;
 -- ───────────── which slot is due ─────────────
 select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 11:29+00') = 'literature 2031-03-04 10:41',
   'at 11:29 UTC the 10:41 literature slot is due');
-select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 11:20+00') = 'literature 2031-03-04 10:41'
-                     and pg_temp.rk_slot('2031-03-04 11:19+00') = 'daily 2031-03-04 02:31',
+select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 11:21+00') = 'literature 2031-03-04 10:41'
+                     and pg_temp.rk_slot('2031-03-04 11:20+00') = 'daily 2031-03-04 02:31',
   'a slot is due 40 minutes after its time, not before: GitHub''s own cron goes first');
 select pg_temp.rk_assert(pg_temp.rk_slot('2031-03-04 19:29+00') = 'literature 2031-03-04 18:41',
   'at 19:29 UTC the 18:41 literature slot is due');
