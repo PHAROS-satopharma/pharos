@@ -49,8 +49,13 @@ select pg_temp.sh_assert(not exists (select 1 from regulator_page
                                         and coalesce(note, '') not like 'Not read:%'),
   'every safety and DHPC page of hers is read, or its note says why not');
 select pg_temp.sh_assert((select string_agg(regulator_id, ',' order by regulator_id) from regulator_page
-                           where kind <> 'database' and read_by = '{}') = 'FDA,HC',
-  'only FDA''s press announcements and Health Canada''s InfoWatch are not read');
+                           where kind <> 'database' and read_by = '{}') = 'HC',
+  'only Health Canada''s InfoWatch is not read');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'FDA' and kind = 'safety' and url = 'https://www.fda.gov/'
+                                    and read_by = '{fda-press-gd,fda-druginfo-gd,fda-medwatch-gd}'
+                                    and not partial and note like '%GovDelivery%'),
+  'FDA''s press page is read from FDA''s own e-mail lists on GovDelivery (0065)');
 
 -- ───────────── two authorities of one country, one of another ─────────────
 insert into regulator (id, country_code, country_name, name, languages, homepage) values
