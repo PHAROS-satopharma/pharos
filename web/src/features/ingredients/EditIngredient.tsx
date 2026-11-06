@@ -114,7 +114,7 @@ export function EditIngredient({
       </Field>
       <p className="small muted">
         Change a name, add one, or remove one. A new or changed name is looked for from now on, and within hours every
-        notice PHAROS already holds is checked for it, whatever its date. The Japan code has its own field above.
+        notice PHAROS already holds is checked for it, whatever its date. The Japan codes have their own field above.
       </p>
       <TermEditor
         terms={terms}
