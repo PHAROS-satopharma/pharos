@@ -4,7 +4,7 @@
 --
 -- The code is PMDA's 一般名 code: levofloxacin hydrate's is 6241013, whose page
 -- https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/6241013 lists Cravit and its generics. The test never
--- reads PMDA; the ingredients below are CI rows, not the watchlist's.
+-- reads PMDA; the ingredients below are CI rows without an ATC code, so no seed or other test collides with them.
 
 begin;
 
@@ -24,8 +24,8 @@ end $$;
 
 -- An ingredient already on the watchlist with its names and no Japan code, and another one with its own code.
 insert into ingredient (id, inn_en, atc_code) values
-  ('00000000-0000-0000-0000-00000051a001', 'ci-levofloxacin', 'J01MA12'),
-  ('00000000-0000-0000-0000-00000051a002', 'ci-lornoxicam', 'M01AC05');
+  ('00000000-0000-0000-0000-00000051a001', 'ci-jc-levofloxacin', null),
+  ('00000000-0000-0000-0000-00000051a002', 'ci-jc-lornoxicam', null);
 insert into ingredient_term (id, ingredient_id, lang, country_code, term, kind, mode, source) values
   ('00000000-0000-0000-0000-00000051b001', '00000000-0000-0000-0000-00000051a001', 'en', null, 'levofloxacin', 'inn', 'stem', 'wikidata'),
   ('00000000-0000-0000-0000-00000051b002', '00000000-0000-0000-0000-00000051a001', 'ja', null, 'レボフロキサシン', 'inn', 'substring', 'wikidata'),
