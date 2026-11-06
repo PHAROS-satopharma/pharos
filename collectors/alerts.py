@@ -185,7 +185,7 @@ class Notifier:
                 log.warning("telegram send failed for %s: %s", person.get("person_id"), error)
         self.store.insert_notification(person_id=person.get("person_id"), issue_id=issue_id,
                                        kind=kind, dry_run=self.dry_run, tg_message_id=message_id,
-                                       error=error, summary=text)
+                                       error=error, summary=text, sent_at=self.now())
         return message_id
 
     def _pdf_for(self, issue: dict) -> dict | None:

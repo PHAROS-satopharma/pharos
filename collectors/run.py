@@ -473,7 +473,12 @@ def select_sources(sources: list[SourceConfig], schedule: str, source_id: str | 
             raise SystemExit(f"unknown source {source_id}")
         return chosen
     chosen = [s for s in sources if s.enabled and s.kind != "spc"]
-    if backfill or schedule == "all":
+    if backfill:
+        # The mailbox holds only new mail (its unread messages and the rows of the last 14 days): a backfill would
+        # file it as history and it would never alert. Mail stays with the regular run, which also keeps one
+        # reader on the mailbox now that a backfill runs beside a collection (backfill.yml).
+        return [s for s in chosen if s.channel != "email"]
+    if schedule == "all":
         return chosen
     if schedule == "literature":
         # the daily run's literature sources (NCBI) twice more a day, so a new ingredient's look-back is not
