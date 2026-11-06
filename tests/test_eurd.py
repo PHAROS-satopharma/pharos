@@ -83,3 +83,62 @@ def test_store_replaces_in_one_transaction():
                                               "ingredient_id": "L", "combination": False}
     n = eurd.store(db, {"version": "v", "list_date": None}, [row], sha="ab", r2_key="raw/ab")
     assert n == 1 and db.sql == ["delete", "insert"]
+
+
+class WatchDb:
+    """Enough of Db for refresh(): the active ingredients, eurd_entry, and the writes."""
+
+    def __init__(self, ingredients, entries=()):
+        self.ingredients = list(ingredients)
+        self.entries = list(entries)
+        self.writes: list[str] = []
+
+    @contextmanager
+    def transaction(self):
+        yield self
+
+    def fetchall(self, sql, params=None):
+        return self.ingredients if "from ingredient" in sql else self.entries
+
+    def execute(self, sql, params=None):
+        self.writes.append(sql.split()[0])
+        if sql.split()[0] == "delete":
+            self.entries = []
+        else:
+            self.entries.append({"eurd_id": params["eurd_id"], "ingredient_id": params["ingredient_id"],
+                                 "sha256": params["sha256"]})
+
+
+LORNOXICAM = {"id": "L", "inn_en": "lornoxicam"}
+MELOXICAM = {"id": "M", "inn_en": "meloxicam"}
+PUT = lambda content, mime: (None, "raw/x")  # noqa: E731
+
+
+def test_the_same_list_and_the_same_ingredients_store_nothing():
+    content = FIXTURE.read_bytes()
+    db = WatchDb([LORNOXICAM])
+    assert eurd.refresh(db, content, "s1", PUT) >= 1
+    db.writes.clear()
+    assert eurd.refresh(db, content, "s1", PUT) is None
+    assert db.writes == []
+
+
+def test_an_ingredient_added_after_the_list_was_read_gets_its_rows_from_the_same_list():
+    # EMA republishes about monthly: an ingredient added in between waited for the next list, and its
+    # readiness said "not on the EURD list" although the list held its row.
+    content = FIXTURE.read_bytes()
+    db = WatchDb([MELOXICAM])
+    eurd.refresh(db, content, "s1", PUT)
+    assert {e["eurd_id"] for e in db.entries} == {10474}
+    db.ingredients = [MELOXICAM, LORNOXICAM]
+    assert eurd.refresh(db, content, "s1", PUT) == 2
+    assert {(e["eurd_id"], e["ingredient_id"]) for e in db.entries} == {(10474, "M"), (1911, "L")}
+
+
+def test_a_retired_ingredient_loses_its_rows_without_waiting_for_a_new_list():
+    content = FIXTURE.read_bytes()
+    db = WatchDb([MELOXICAM, LORNOXICAM])
+    eurd.refresh(db, content, "s1", PUT)
+    db.ingredients = [MELOXICAM]
+    assert eurd.refresh(db, content, "s1", PUT) == 1
+    assert {e["ingredient_id"] for e in db.entries} == {"M"}
