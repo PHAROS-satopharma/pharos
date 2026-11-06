@@ -43,6 +43,10 @@ on:
         description: Force dry run (no Telegram, whatever the app setting says)
         type: boolean
         default: false
+      spc_ingredient:
+        description: Label watch for this one ingredient only (its id; runs nothing else, schedule is ignored)
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -71,6 +75,7 @@ jobs:
         env:
           CRON: ${{ github.event.schedule }}
           INPUT_SCHEDULE: ${{ inputs.schedule || github.event.client_payload.schedule }}
+          SPC_INGREDIENT: ${{ inputs.spc_ingredient }}
         run: |
           case "$CRON" in
             "17 */4 * * *")  s=4h ;;
@@ -81,6 +86,8 @@ jobs:
             "41 1 1 * *")    s=monthly ;;
             *)               s="${INPUT_SCHEDULE:-4h}" ;;
           esac
+          # One ingredient's label watch runs as "weekly": Playwright for the JS-only label sites, no daily steps, no packs.
+          [ -n "$SPC_INGREDIENT" ] && s=weekly
           case "$s" in 4h|12h|daily|literature|weekly|monthly|all|classes) ;; *) echo "unknown schedule $s"; exit 1 ;; esac
           echo "schedule=$s" >> "$GITHUB_OUTPUT"
           # Only browser-engine runs need Playwright (12h, all, and the weekly SPC watch for JS-only sites).
@@ -148,11 +155,16 @@ jobs:
           SCHEDULE: ${{ steps.which.outputs.schedule }}
           SOURCE: ${{ inputs.source }}
           DRY: ${{ inputs.dry_run && '1' || '' }}
+          SPC_INGREDIENT: ${{ inputs.spc_ingredient }}
         run: |
           args=(--schedule "$SCHEDULE")
           if [ -n "$SOURCE" ]; then
             [[ "$SOURCE" =~ ^[a-z0-9-]+$ ]] || { echo "bad source id"; exit 1; }
             args+=(--source "$SOURCE")
+          fi
+          if [ -n "$SPC_INGREDIENT" ]; then
+            [[ "$SPC_INGREDIENT" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || { echo "bad ingredient id"; exit 1; }
+            args+=(--spc-ingredient "$SPC_INGREDIENT")
           fi
           [ -n "$DRY" ] && args+=(--dry-run)
           python -m collectors.run "${args[@]}"
