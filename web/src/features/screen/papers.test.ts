@@ -67,9 +67,9 @@ describe('the papers on screen', () => {
 
 describe("EMA's literature monitoring", () => {
   it('says in plain words whether EMA reads the literature for this ingredient', () => {
-    expect(mlmLabel(true).label).toBe('Monitored by EMA (MLM)');
-    expect(mlmLabel(false).label).toBe('Not monitored by EMA');
-    expect(mlmLabel(false).explain).toMatch(/ours to report/);
+    expect(mlmLabel(true)?.label).toBe('Monitored by EMA (MLM)');
+    expect(mlmLabel(false)?.label).toBe('Not monitored by EMA');
+    expect(mlmLabel(false)?.explain).toMatch(/ours to report/);
     expect(mlmLabel(undefined)).toBeNull();
   });
 });
