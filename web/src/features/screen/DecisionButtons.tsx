@@ -9,11 +9,11 @@ import { Button } from '../../ui/Button';
 import { Field, Input, Textarea } from '../../ui/Input';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
-import { canSend, clockLine, earliestSentDay, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
+import { canSend, clockLine, earliestSentDay, isClockRefusal, withDecidedClock, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
 import { patchFindings, reloadFindings, staleElsewhere } from './findingsCache';
 import { SignalSteps } from './SignalSteps';
-import type { AuthoritySent, Decided, Decision, FindingState, IngredientScreenData } from './types';
+import type { AuthoritySent, Decided, Decision, Findings, FindingState, IngredientScreenData } from './types';
 import '../../styles/clock.css';
 
 class StaleDecisionError extends Error {
@@ -93,7 +93,12 @@ export function DecisionButtons({
         .select('to_status,comment,created_at')
         .single();
       if (isStaleDecision(res.error)) throw new StaleDecisionError();
-      return unwrap<RecordedRow>(res);
+      const row = unwrap<RecordedRow>(res);
+      // The clock (and the signal a Concerns us opens) as the database now holds them: day zero can move with a
+      // decision (app_setting.eda_day_zero = 'decision'). A failed read leaves the screen to word the decision itself.
+      const states = await supabase.rpc('finding_state', { p_issues: [issueId] });
+      const finding = states.error ? null : ((states.data as Findings | null)?.[issueId] ?? null);
+      return { ...row, finding };
     },
     onSuccess: (row) => {
       if (!issueId) return;
@@ -107,7 +112,7 @@ export function DecisionButtons({
       };
       qc.setQueryData<IngredientScreenData>(queryKey, (old) => (old ? withDecision(old, issueId, decision) : old));
       const today = cairoToday();
-      patchFindings(qc, queryKey, papersKey, (data) => withClockDecision(data, issueId, row.to_status, today));
+      patchFindings(qc, queryKey, papersKey, (data) => withDecidedClock(data, issueId, row.finding, row.to_status, today));
       onDecision?.(issueId, decision);
       void qc.invalidateQueries({ queryKey: ['issues'] });
       void qc.invalidateQueries({ queryKey: ['issue', issueId] });

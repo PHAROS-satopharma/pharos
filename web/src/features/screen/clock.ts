@@ -89,14 +89,28 @@ export function withSent<T extends WithFindings>(data: T, issueId: string, sent:
   return patch(data, issueId, (f) => ({ ...f, clock: 'sent', sent }));
 }
 
-/** The screen after a decision: Concerns us starts (or keeps) the clock — or finds the notice already sent, since a
- *  report to the authority is never forgotten; anything else switches the clock off and keeps the report. The due
- *  day is the database's and does not move with a decision (day zero is the day PHAROS first showed the notice). */
+/** The screen after a decision, worded from what it holds: Concerns us starts (or keeps) the clock — or finds the
+ *  notice already sent, since a report to the authority is never forgotten; anything else switches the clock off and
+ *  keeps the report. It keeps the due day it holds, which is right only while day zero is the day PHAROS first
+ *  showed the notice; withDecidedClock() prefers the database's answer. */
 export function withClockDecision<T extends WithFindings>(data: T, issueId: string, to: IssueStatus, today: string): T {
   return patch(data, issueId, (f) => {
     if (to !== 'relevant') return { ...f, clock: 'off' };
     return f.sent ? { ...f, clock: 'sent' } : runningClock(f, today);
   });
+}
+
+/** The screen after a decision: the clock as finding_state() answers it once the decision is recorded, or, when that
+ *  read gave nothing, withClockDecision(). The database decides day zero: with app_setting.eda_day_zero =
+ *  'decision' a new Concerns us moves it to the decision's day (eda_clock, 0050), which the screen cannot know. */
+export function withDecidedClock<T extends WithFindings>(
+  data: T,
+  issueId: string,
+  fromDb: FindingState | null | undefined,
+  to: IssueStatus,
+  today: string,
+): T {
+  return fromDb ? patch(data, issueId, () => fromDb) : withClockDecision(data, issueId, to, today);
 }
 
 /** The screen after a wrong report was withdrawn: the clock runs again from the same due day. */
