@@ -77,7 +77,7 @@ export function lastTwelveMonths(today: string): { from: string; to: string } {
  * not started yet, the last 12 months.
  */
 export function psurDays(
-  entries: ReadonlyArray<Pick<EurdEntry, 'dlp' | 'frequency'>>,
+  entries: ReadonlyArray<Pick<EurdEntry, 'dlp' | 'frequency'> & Partial<Pick<EurdEntry, 'next_dlp'>>>,
   today: string,
 ): { from: string; to: string; fromEurd: boolean } {
   const iv = entries.map(intervalFor).find((x) => x !== null) ?? null;

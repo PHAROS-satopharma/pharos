@@ -38,12 +38,33 @@ export function addDays(day: string, n: number): string {
   return new Date(Date.UTC(y, m - 1, d) + n * 86_400_000).toISOString().slice(0, 10);
 }
 
+function lastOfMonth(day: string): boolean {
+  return addDays(day, 1).slice(8, 10) === '01';
+}
+
+/** The DLP one frequency before `dlp`. A DLP on a month's last day may be a later day a short month cut (28 Feb for
+ *  a 31st): the next DLP, when the row has one, gives the day the cycle is on. Without it the day is kept, so a
+ *  cut interval may repeat a few days the previous PSUR covered, never leave any out. */
+export function previousDlp(dlp: string, months: number, nextDlp?: string | null): string {
+  const day = Number(dlp.slice(8, 10));
+  const cycleDay = nextDlp && lastOfMonth(dlp) ? Math.max(day, Number(nextDlp.slice(8, 10))) : day;
+  const first = addMonths(`${dlp.slice(0, 8)}01`, -months);
+  return `${first.slice(0, 8)}${String(Math.min(cycleDay, lastDay(first))).padStart(2, '0')}`;
+}
+
+function lastDay(firstOfMonth: string): number {
+  const [y, m] = firstOfMonth.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
 /**
  * The reporting interval that ends at the EURD data lock point: the day after the previous DLP (one frequency
  * earlier) to the DLP itself. Null when the row has no DLP or no frequency in months or years.
  */
-export function intervalFor(entry: Pick<EurdEntry, 'dlp' | 'frequency'>): { from: string; to: string } | null {
+export function intervalFor(
+  entry: Pick<EurdEntry, 'dlp' | 'frequency'> & Partial<Pick<EurdEntry, 'next_dlp'>>,
+): { from: string; to: string } | null {
   const months = frequencyMonths(entry.frequency);
   if (!entry.dlp || !months) return null;
-  return { from: addDays(addMonths(entry.dlp, -months), 1), to: entry.dlp };
+  return { from: addDays(previousDlp(entry.dlp, months, entry.next_dlp), 1), to: entry.dlp };
 }

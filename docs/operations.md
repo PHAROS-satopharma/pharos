@@ -641,7 +641,9 @@ QPPV plan's phase 15). A reviewer or an administrator chooses the pack, the ingr
 days: at most five years, the first day not in the future. An inspection pack is for administrators only: only
 an administrator asks for one, sees it on Reports, reads its files and signs it, and only administrators are
 told when it is made. A PSUR pack starts at the ingredient's EURD interval
-(the day after the previous data lock point to the next one, as EMA's list sets it), cut at today; an ingredient
+(the day after the previous data lock point to the next one, as EMA's list sets it; when a short month cut the
+data lock point, 28 February for a cycle on the 31st, the list's next data lock point gives the day), cut at
+today; an ingredient
 with no interval that has started, and an inspection pack, start at the last 12 months. A reader sees the PSUR
 packs and their files and cannot ask for one.
 
