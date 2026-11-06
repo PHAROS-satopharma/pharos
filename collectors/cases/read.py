@@ -196,7 +196,8 @@ def read_case(db: Any, archive: Archive, case: dict, *, reader: Callable[..., tu
     return "to_confirm"
 
 
-def read_waiting(db: Any, archive: Archive, *, case_id: str | None = None, limit: int = 10) -> dict[str, int]:
+def read_waiting(db: Any, archive: Archive, *, case_id: str | None = None, limit: int = 10,
+                 reader: Callable[..., tuple[dict, str]] = call_reader) -> dict[str, int]:
     """Read the waiting cases (or the one asked for), oldest first; counts per final status."""
     counts: dict[str, int] = {}
     done: list[str] = []   # a case put back in the queue waits for the next run, not the next turn of this loop
@@ -206,7 +207,7 @@ def read_waiting(db: Any, archive: Archive, *, case_id: str | None = None, limit
             break
         done.append(str(case["id"]))
         try:
-            status = read_case(db, archive, case)
+            status = read_case(db, archive, case, reader=reader)
         except Exception as exc:  # noqa: BLE001 - one case never stops the others
             log.exception("case %s: unexpected error", case.get("ref"))
             status = _fail(db, case, ReadFailed(f"Unexpected error: {type(exc).__name__}", passing=True))

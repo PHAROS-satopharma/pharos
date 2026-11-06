@@ -144,6 +144,11 @@ def test_an_unknown_kind_is_refused():
 
 # ───────────────────────────── the reading ─────────────────────────────
 
+def _json(v):
+    """A jsonb parameter back as Python: psycopg's Jsonb, or its JSON text where psycopg is absent."""
+    return v.obj if hasattr(v, "obj") else json.loads(v)
+
+
 class CaseDb:
     """One case, its events and the ingredients, in memory; answers the SQL read.py sends."""
 
@@ -173,7 +178,7 @@ class CaseDb:
     def execute(self, sql, params=None):
         s = " ".join(sql.split())
         if s.startswith("update safety_case set status = 'to_confirm'"):
-            self.case.update(status="to_confirm", extracted=params["x"].obj, data=params["d"].obj,
+            self.case.update(status="to_confirm", extracted=_json(params["x"]), data=_json(params["d"]),
                              ingredient_id=params["ing"], reader_model=params["m"])
         elif s.startswith("update safety_case set status = %(s)s"):
             self.case.update(status=params["s"], read_error=params["e"])
@@ -288,9 +293,9 @@ PASS = b"Authentication-Results: atlas1.mail.yahoo.com; dmarc=pass header.from=s
 
 
 def _forward(subject: str, sender: str = "sama.mosaad@satopharma.com", auth: bytes = PASS) -> bytes:
-    return (auth + f"From: Sama <{sender}>\r\nTo: pharos@satopharma.com\r\nSubject: {subject}\r\n"
-            "Date: Thu, 05 Nov 2026 23:30:00 +0000\r\nContent-Type: text/plain\r\n\r\n"
-            "A patient had jaundice after Casoxicam.\r\n").encode()
+    return auth + (f"From: Sama <{sender}>\r\nTo: pharos@satopharma.com\r\nSubject: {subject}\r\n"
+                   "Date: Thu, 05 Nov 2026 23:30:00 +0000\r\nContent-Type: text/plain\r\n\r\n"
+                   "A patient had jaundice after Casoxicam.\r\n").encode()
 
 
 class MailDb:
