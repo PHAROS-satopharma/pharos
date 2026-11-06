@@ -188,7 +188,8 @@ the report:
   authority's own page for it. Decisions on a notice are recorded on the Ingredients screen.
 - **Collection steps.** The daily EURD list (`collectors/eurd.py`), the morning escalation of late items
   (`collectors/escalate.py`) and the weekly EMA literature monitoring list (`collectors/mlm.py`) no longer
-  run. Their data stays as it was last written: `eurd_entry` and `mlm_entry` keep the last list read.
+  run. Their data stays as it was last written: `eurd_entry` and `mlm_entry` keep the last list read. The
+  morning message about the five-day clock (`collectors/reminders.py`, below) took the escalation's place.
 - **Kept running.** Every source, the label (SPC) watch (its changes show on the Ingredients screen), NCBI
   literature, the check of the past, the PRAC agendas and minutes (`ema-prac`), the Telegram messages (new
   notices, the daily digests, source health) and the watchdog.
@@ -389,7 +390,35 @@ Removed in November 2026 (see *What was removed* above). For the record of what 
   screening annex, with the interval from EMA's EURD list (`eurd_entry`, last list kept).
 - **Oversight** (`/oversight`) listed what was late (`overdue_items(day)`, still in the database; the review time
   is `app_setting` `review_due_days`). **The morning escalation** sent the late items to administrators on
-  Telegram once a Cairo day (notification kind "Late items"). Neither runs now.
+  Telegram once a Cairo day (notification kind "Late items"). Neither runs now; the five-day clock's morning
+  reminder (next section) is what reaches the team.
+
+## The five-day clock
+
+When Dr Sama marks a notice *Concerns us*, the Egyptian Drug Authority must have it within five days. PHAROS
+keeps that clock (migration 0041) per notice:
+
+- **Day zero** is the Cairo day PHAROS first showed the notice (the earliest `first_seen_at` of its documents),
+  not the day of the decision: the authority counts from when we knew. `app_setting` `eda_days` (5) and
+  `eda_day_zero` (`first_seen`, or `decision` to count from the decision) change that.
+- **The clock on the screen.** Under the status of a notice on the Ingredients screen the clock reads
+  "Authority: due Tue 11 Nov, 1 day left", "Authority: late by 3 days (was due Tue 3 Nov)" or "Sent to the
+  authority 6 Nov 2026 · ref EDA/2026/0042". It shows nothing while the latest decision is not *Concerns us*.
+  Today is the database's Cairo day, never the phone's.
+- **Sent to the authority.** A reviewer or administrator presses *Sent to the authority*, gives the day it was
+  sent (today or earlier), the reference and a note, and the clock stops for that decision. The row is in
+  `authority_report` and nobody can change or delete it. The database refuses a report when the latest decision
+  is not *Concerns us* or the decision was reported already; the screen then reloads and shows the notice as it
+  is. A wrong report is **withdrawn** with a reason (*Withdraw the report*): it stays on record as withdrawn and
+  the clock runs again. A later *Doesn't concern us* switches the clock off; *Concerns us* again starts a new
+  clock from the same day zero.
+- **The morning reminder.** Once a Cairo day, from 07:00, every active administrator and reviewer with a
+  Telegram chat gets one message listing the findings that are late or due within two days: the title, the
+  ingredient, the country, "due Tue 11 Nov, 1 day left" or "3 days late (was due Tue 3 Nov)", and the link to
+  the ingredient's screen. Nothing is sent when nothing is due (notification kind `escalation`; the collector
+  sends it right after the new-items digest, never on a backfill, and a failure never fails the run).
+- **The weekly report** adds "Reported to the authority this week" and "Due to the authority: N (M late)" to the
+  summary and the columns *Due* and *Sent* (date · reference) to the decisions table.
 
 ## Electronic sign-off
 

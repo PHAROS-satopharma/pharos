@@ -1,7 +1,8 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { skipToken, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { unwrap } from '../../lib/api';
-import type { IngredientScreenData, Paper } from './types';
+import { issueIdsOf } from './clock';
+import type { Findings, IngredientScreenData, Paper } from './types';
 
 /** Papers come 50 at a time: the screen's first 50, then ingredient_papers() for each "Show more". */
 export const PAPER_PAGE = 50;
@@ -10,17 +11,30 @@ export function screenKey(ingredientId: string, from: string, to: string): reado
   return ['ingredient-screen', ingredientId, from, to] as const;
 }
 
-/** Everything the screen shows for one ingredient and a range of Cairo days, in one call (0039). */
+/** Everything the screen shows for one ingredient and a range of Cairo days (0039), with the five-day clock of
+ *  every notice on it (finding_state, 0041). */
 export function useIngredientScreen(ingredientId: string | undefined, from: string, to: string, enabled: boolean) {
   return useQuery({
     queryKey: screenKey(ingredientId ?? '', from, to),
     enabled: Boolean(ingredientId) && enabled,
     staleTime: 5 * 60_000,
-    queryFn: async () =>
-      unwrap<IngredientScreenData>(
+    queryFn: async (): Promise<IngredientScreenData> => {
+      const screen = unwrap<Omit<IngredientScreenData, 'findings'>>(
         await supabase.rpc('ingredient_screen', { p_ingredient: ingredientId, p_from: from, p_to: to }),
-      ),
+      );
+      const ids = issueIdsOf(screen);
+      const findings = ids.length
+        ? (unwrap<Findings | null>(await supabase.rpc('finding_state', { p_issues: ids })) ?? {})
+        : {};
+      return { ...screen, findings };
+    },
   });
+}
+
+/** The screen's data as the cache holds it now, for a part of the screen that is given only the key. Never
+ *  fetches: the screen itself does. */
+export function useScreenData(queryKey: readonly unknown[]): IngredientScreenData | undefined {
+  return useQuery<IngredientScreenData>({ queryKey, queryFn: skipToken }).data;
 }
 
 /** The papers after the first 50, in the screen's order, once she asks for more. */

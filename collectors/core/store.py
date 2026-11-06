@@ -407,6 +407,26 @@ class Store:
                 order by p.created_at""")
         return [{**r, "person_id": str(r["person_id"])} for r in rows]
 
+    def reminder_people(self) -> list[dict]:
+        """Every active reviewer and administrator with Telegram linked: who hears of the five-day clock."""
+        rows = self.db.fetchall(
+            """select p.id as person_id, p.full_name, p.telegram_chat_id, p.role::text as role
+                 from person p
+                where p.role in ('admin', 'reviewer') and p.active and p.telegram_chat_id is not null
+                order by p.created_at""")
+        return [{**r, "person_id": str(r["person_id"])} for r in rows]
+
+    def eda_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """The findings whose clock to the Egyptian Drug Authority is late or due within ``within_days`` of
+        ``today`` (v_eda_clock, 0041: the same computation as finding_state()), most late first."""
+        rows = self.db.fetchall(
+            """select issue_id::text as issue_id, ingredient_id::text as ingredient_id, ingredient, title, country,
+                      day_zero, due, days_left, clock
+                 from v_eda_clock
+                where due <= %(d)s + %(w)s
+                order by due, lower(title), issue_id""", {"d": today, "w": within_days})
+        return [{**r, "days_left": int(r["days_left"])} for r in rows]
+
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         """Delivered, or at least its text was: a PDF refused after the text went out still has a
         message id, and sending the text again would repeat it."""

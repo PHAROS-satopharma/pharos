@@ -5,9 +5,10 @@ from __future__ import annotations
 import re
 import uuid
 from contextlib import contextmanager
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
 from collectors.core.models import SourceConfig
 from collectors.core.store import DEFAULT_SETTINGS
@@ -53,6 +54,8 @@ class MemoryStore:
         self.issue_document: list[dict] = []
         self.issue_ingredient: list[tuple[str, str]] = []
         self.person: dict[str, dict] = {}
+        self.review_event: list[dict] = []      # {id, issue_id, to_status, person_id, created_at}
+        self.authority_report: list[dict] = []  # {id, issue_id, decision_id, sent_on, …, withdrawn_at, created_at}
         self.subscription: list[dict] = []
         self.notification: list[dict] = []
         self.probe_result: dict[str, dict] = {}
@@ -348,6 +351,42 @@ class MemoryStore:
                  "role": p.get("role")}
                 for p in self.person.values()
                 if p.get("role") == "admin" and p.get("active", True) and p.get("telegram_chat_id")]
+
+    def reminder_people(self) -> list[dict]:
+        return [{"person_id": p["id"], "full_name": p["full_name"], "telegram_chat_id": p["telegram_chat_id"],
+                 "role": p.get("role")}
+                for p in self.person.values()
+                if p.get("role") in ("admin", "reviewer") and p.get("active", True) and p.get("telegram_chat_id")]
+
+    def eda_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """v_eda_clock in memory: a notice whose latest decision (self.review_event) is Concerns us and that no
+        authority_report not withdrawn answers; day zero is the Cairo day its anchor was first seen."""
+        days = int(self.app_setting.get("eda_days") or 5)
+        out = []
+        for iid, iss in self.issue.items():
+            decisions = sorted((e for e in self.review_event if e["issue_id"] == iid), key=lambda e: e["created_at"])
+            if not decisions or decisions[-1]["to_status"] != "relevant":
+                continue
+            if any(a["issue_id"] == iid and a.get("withdrawn_at") is None
+                   and a.get("decision_id", decisions[-1].get("id")) == decisions[-1].get("id")
+                   for a in self.authority_report):
+                continue
+            anchor = self.document.get(iss.get("anchor_document_id")) or {}
+            seen_at = anchor.get("first_seen_at") or iss["created_at"]
+            day_zero = seen_at.astimezone(ZoneInfo("Africa/Cairo")).date()
+            due = day_zero + timedelta(days=days)
+            if due > today + timedelta(days=within_days):
+                continue
+            ing_ids = [g for i, g in self.issue_ingredient if i == iid]
+            ing = self.ingredient.get(ing_ids[0]) if ing_ids else None
+            src = self.source.get(anchor.get("source_id")) or {}
+            reg = self.regulator.get(src.get("regulator_id")) or {}
+            out.append({"issue_id": iid, "ingredient_id": ing_ids[0] if ing_ids else None,
+                        "ingredient": (ing or {}).get("inn_en"), "title": iss["title"],
+                        "country": reg.get("country_name"), "day_zero": day_zero, "due": due,
+                        "days_left": (due - today).days, "clock": "late" if today > due else "running"})
+        out.sort(key=lambda r: (r["due"], (r["title"] or "").lower(), r["issue_id"]))
+        return out
 
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind

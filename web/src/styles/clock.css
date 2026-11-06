@@ -1,0 +1,81 @@
+/* The five-day clock to the Egyptian Drug Authority, under the decision on the Ingredients screen. Flat, square,
+   tokens only; phone first: one column and full-width 44px targets below 760px. */
+
+.clock {
+  flex-basis: 100%;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.clock-running {
+  color: var(--text);
+}
+.clock-late {
+  color: var(--danger);
+  font-weight: 600;
+}
+.clock-sent {
+  color: var(--muted);
+}
+.clock-sent-by {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 2px 0 0;
+}
+.clock-sent-note {
+  margin: 4px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.clock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.clock-actions .btn {
+  min-height: 44px;
+}
+
+.clock-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 14px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.clock-form .field {
+  min-height: 44px;
+}
+.clock-form .clock-wide,
+.clock-form .clock-form-actions {
+  grid-column: 1 / -1;
+}
+.clock-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.clock-form-actions .btn {
+  min-height: 44px;
+}
+.clock-form-what {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .clock-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .clock-actions .btn,
+  .clock-form-actions .btn {
+    width: 100%;
+  }
+}
