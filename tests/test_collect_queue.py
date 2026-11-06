@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import dataclasses
 import re
+from datetime import date
 from pathlib import Path
 
 import yaml
 
 from collectors.core.registry import load_catalogue
+from collectors.merge import merge_document
 from collectors.run import select_sources
+from tests.test_merge import add_doc, store_with_regulators
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
@@ -85,3 +88,19 @@ def test_a_backfill_leaves_the_mailbox_to_the_regular_run():
         {s.id for s in select_sources(on, "4h", None, False)}
     # a backfill of one named source is the admin's choice and still runs it
     assert [s.id for s in select_sources(on, "all", "fimea-email", True)] == ["fimea-email"]
+
+
+def test_two_runs_never_place_documents_among_the_issues_at_once():
+    # A backfill and a collection each reading the other's uncommitted anchor or copy would give one event two
+    # issues: merge_document takes the database's merge lock (Store.lock_issue_merge, held to the end of the
+    # document's transaction) before it reads the candidate issues.
+    s = store_with_regulators()
+    anchor = add_doc(s, "ema-dhpc", "Xefo DHPC", date(2026, 10, 1), "lornoxicam: serious skin reactions")
+    copy = add_doc(s, "bfarm-rhb", "Rote-Hand-Brief zu Xefo (Lornoxicam)", date(2026, 10, 6), "Lornoxicam.")
+    merge_document(s, anchor, mahs=[])
+    merge_document(s, copy, mahs=[])
+    assert s.merge_locks == 2
+    # a paper merges with nothing and reads no other issue: no lock, thousands of papers a year
+    paper = add_doc(s, "ema-dhpc", "A lornoxicam case report", date(2026, 10, 2), "Lornoxicam.", doc_type="literature")
+    merge_document(s, paper, mahs=[])
+    assert s.merge_locks == 2
