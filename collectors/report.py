@@ -63,6 +63,11 @@ class Month:
         return f"{self.first:%B %Y}"
 
     @property
+    def footer(self) -> str:
+        """The report and its period in the running foot of every PDF page (one line, never cut)."""
+        return f"{self.name} · {self.label}"
+
+    @property
     def slug(self) -> str:
         return f"{self.first:%Y-%m}"
 

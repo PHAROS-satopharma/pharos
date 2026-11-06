@@ -66,6 +66,18 @@ def test_the_command_refuses_a_wrong_week_before_it_connects(capsys):
     assert e.value.code == 2
 
 
+def test_the_footer_label_is_never_longer_than_the_monthly_one():
+    """The running foot is one line beside the credit and the page number; a longer label is cut with an
+    ellipsis (the full week label was: CI printed "Sun 1 Nov – Sat 7 …")."""
+    longest_month = len(report.Month(date(2026, 9, 1)).footer)
+    assert NOV1.footer == "Weekly report · 1 Nov – 7 Nov 2026"
+    across = Week(date(2026, 12, 27))
+    assert across.footer == "Weekly report · 27 Dec 2026 – 2 Jan 2027"
+    assert len(across.footer) <= longest_month
+    assert "PHAROS · Weekly report · 1 Nov – 7 Nov 2026" in render_footer(NOV1)
+    assert "PHAROS · Monthly screening report · October 2026" in render_footer(report.Month(date(2026, 10, 1)))
+
+
 def test_week_labels():
     assert NOV1.label == "Sun 1 Nov – Sat 7 Nov 2026"
     assert Week(date(2026, 10, 25)).label == "Sun 25 Oct – Sat 31 Oct 2026"
@@ -392,7 +404,7 @@ def test_make_weekly_report_archives_records_and_never_overwrites(tmp_path, monk
     assert "insert into weekly_report" in db.sql[-1] and "on conflict (week_start)" in db.sql[-1]
     assert (tmp_path / "out" / "PHAROS-weekly-2026-11-01.pdf").read_bytes() == b"%PDF-1.7 weekly"
     assert (tmp_path / "out" / "PHAROS-weekly-2026-11-01.xlsx").exists()
-    assert "PHAROS · Weekly screening report · Sun 1 Nov – Sat 7 Nov 2026" in printed[0]
+    assert "PHAROS · Weekly report · 1 Nov – 7 Nov 2026" in printed[0]
     # made again: stored beside the first, never over it
     rw.make_weekly_report(db, MemoryStore(), NOV1, dry_run=True)
     assert db.written[-1]["pk"] == "reports/weekly/2026-11-01/PHAROS-weekly-2026-11-01-r2.pdf"
@@ -440,7 +452,8 @@ def test_every_weekly_pdf_page_prints_the_footer(tmp_path):
     assert total >= 10
     for n, page_text in enumerate(pages, start=1):
         foot = " ".join(page_text.strip().splitlines()[-1].split())
-        assert foot.startswith("PHAROS · Weekly screening report · Sun 1 Nov – Sat 7 Nov 2026"), f"page {n}: {foot}"
+        assert foot.startswith("PHAROS · Weekly report · 1 Nov – 7 Nov 2026 "), f"page {n}: {foot}"
+        assert "…" not in foot, f"page {n}: the footer is cut: {foot}"
         assert foot.endswith(f"Page {n} of {total}"), f"page {n}: {foot}"
     # sections 02 to 06 each start a page
     starts = [n for n, p in enumerate(pages, start=1) for head in ("02 Authorities read", "03 Our ingredients",

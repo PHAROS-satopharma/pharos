@@ -98,6 +98,15 @@ class Week:
     def slug(self) -> str:
         return self.start.isoformat()
 
+    @property
+    def footer(self) -> str:
+        """The running foot of every PDF page: "Weekly report · 1 Nov – 7 Nov 2026". It must fit on one line
+        beside the credit and the page number, so it is never longer than the monthly one (the full label would
+        be cut off with an ellipsis)."""
+        end = self.end
+        first = f"{self.start.day} {self.start:%b}" + (f" {self.start.year}" if self.start.year != end.year else "")
+        return f"Weekly report · {first} – {end.day} {end:%b %Y}"
+
     def bounds_utc(self) -> tuple[datetime, datetime]:
         """Sunday 00:00 to the next Sunday 00:00, Cairo time, as UTC instants: [a, b)."""
         a = datetime.combine(self.start, time(0), CAIRO).astimezone(timezone.utc)
