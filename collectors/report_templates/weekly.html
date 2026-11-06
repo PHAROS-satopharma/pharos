@@ -200,7 +200,8 @@ not read {{ week.this }} is to be checked by hand.</p>
 {% for group, rows in ((hers, a.hers), (others, a.others)) %}
 <h3>{{ group }}</h3>
 {% if rows %}
-<table>
+<table class="fixed">
+  <colgroup><col style="width: 34mm"><col><col style="width: 16mm"><col style="width: 16mm"><col style="width: 18mm"></colgroup>
   <thead><tr><th class="country">Country</th><th>Authorities</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">New items</th></tr></thead>
   <tbody>
   {% for r in rows %}
@@ -222,7 +223,8 @@ not read {{ week.this }} is to be checked by hand.</p>
 {% endif %}
 {% endfor %}
 <h3>Label watch and literature</h3>
-<table>
+<table class="fixed">
+  <colgroup><col><col style="width: 16mm"><col style="width: 16mm"><col style="width: 16mm"><col style="width: 18mm"></colgroup>
   <thead><tr><th>What</th><th class="num">Sources</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">Items read</th></tr></thead>
   <tbody>
   <tr><td>Product information of our ingredients</td><td class="num">{{ a.label_watch.sources }}</td>
