@@ -849,7 +849,7 @@ def test_the_polished_files():
     assert wb["Decisions"]["A2"].value == "5 Nov 2026, 12:12"              # the fixture's decision
     quiet_day = load_workbook(io.BytesIO(rw.build_weekly_xlsx({**data, "decisions": []})))
     assert quiet_day["Decisions"]["A2"].value == "No decision was taken on the day."
-    assert wb["Decisions"].print_title_rows == "1:1"
+    assert wb["Decisions"].print_title_rows == "$1:$1"           # the header row on every printed page
     summary = [r[0] for r in wb["Summary"].iter_rows(values_only=True)]
     assert "Screening" in summary and "To check by hand" in summary
 
