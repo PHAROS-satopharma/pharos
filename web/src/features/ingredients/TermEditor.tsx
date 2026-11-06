@@ -6,10 +6,7 @@ import { MATCH_MODES, TERM_KINDS, type MatchMode, type TermKind } from '../../li
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { Select, type Option } from '../../ui/Select';
-import { isJapanCode } from './readiness';
-
-/** PMDA's search form (it answers a POST only; see docs/operations.md, "Adding an ingredient"). */
-const PMDA_SEARCH = 'https://www.pmda.go.jp/PmdaSearch/iyakuSearch/';
+import { JapanCodeField } from './JapanCodeField';
 
 export interface TermDraft {
   uid: string;
@@ -208,36 +205,7 @@ export function TermEditor({
         </Button>
       </div>
 
-      <fieldset className="japan-code">
-        <legend className="term-group-head">
-          <span className="term-group-name">Japan code</span>
-          <span className="soft small">PMDA product code, for Japan’s label watch</span>
-        </legend>
-        <div className="japan-code-row">
-          <Input
-            aria-label="Japan code"
-            value={japan?.term ?? ''}
-            inputMode="text"
-            autoCapitalize="characters"
-            placeholder="e.g. 1149036"
-            onChange={(e) => setJapanCode(e.target.value.toUpperCase())}
-          />
-          <a className="btn btn-sm" href={PMDA_SEARCH} target="_blank" rel="noreferrer">
-            Open the PMDA search
-          </a>
-        </div>
-        {japan && japan.term.trim() && !isJapanCode(japan.term) ? (
-          <p className="small danger" role="status">
-            A Japan code has 7 characters (for example 1149036), or 12 for the YJ code that starts with them.
-          </p>
-        ) : null}
-        <p className="japan-code-why">
-          PMDA’s search answers a form, not an address, so PHAROS cannot look the package insert up by name. Search
-          the name there, open the product, and copy the code from the end of its address (…/GeneralList/
-          <span className="mono">code</span>). Without it the row says so; the ingredient is still watched everywhere
-          else.
-        </p>
-      </fieldset>
+      <JapanCodeField value={japan?.term ?? ''} onChange={setJapanCode} />
     </div>
   );
 }
