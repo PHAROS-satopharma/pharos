@@ -1,4 +1,4 @@
--- PHAROS CI — the free full text of a paper on the Ingredients screen (0068): paper_state() returns open_access.
+-- PHAROS CI — the free full text of a paper on the Ingredients screen (0070): paper_state() returns open_access.
 -- Runs on the database ci.yml prepared: CI Admin (…a1) and CI Reader (…b2) exist. Everything is rolled back.
 
 begin;
@@ -57,7 +57,7 @@ select pg_temp.oa_assert(pg_temp.oa_paper('b003') -> 'open_access' = 'null'::jso
 select pg_temp.oa_assert(
   pg_temp.oa_paper('b001') ->> 'day_zero' = '2026-11-05' and pg_temp.oa_paper('b001') ? 'case_report'
     and pg_temp.oa_paper('b001') ? 'issue_id' and pg_temp.oa_paper('b001') ? 'decision',
-  'everything else paper_state() returned before 0068 is still there');
+  'everything else paper_state() returned before 0070 is still there');
 select pg_temp.oa_assert(
   not has_function_privilege('anon', 'public.paper_state(uuid[])', 'execute')
     and has_function_privilege('authenticated', 'public.paper_state(uuid[])', 'execute'),

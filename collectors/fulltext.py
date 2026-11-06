@@ -1,4 +1,4 @@
-"""Legal open-access full text of the literature papers, found by Unpaywall (migration 0068, validation row 22).
+"""Legal open-access full text of the literature papers, found by Unpaywall (migration 0070, validation row 22).
 
     python -m collectors.fulltext [--limit N]     the daily step after Coding (collect.yml)
 
