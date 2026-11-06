@@ -74,12 +74,32 @@ set role authenticated;
 select record_fingerprint('monthly_report', '00000000-0000-0000-0000-00000005e001') as so_fp2 \gset
 reset role;
 select pg_temp.so_refused($q$delete from sign_off$q$) as so_del \gset
+select pg_temp.so_refused($q$truncate sign_off$q$) as so_trunc \gset
+-- As the service key: no right to add, change, remove or empty a signature (sign_record() alone writes one).
+set role service_role;
+select pg_temp.so_refused(format($q$insert into sign_off (record_kind, record_id, record_sha256, meaning, person_id, signed_name, signed_role)
+  select 'monthly_report', %L, 'ff', 'approved', id, 'Forged', 'admin' from person limit 1$q$, '00000000-0000-0000-0000-00000005e001')) as so_service_ins \gset
+select pg_temp.so_refused($q$delete from sign_off$q$) as so_service_del \gset
+select pg_temp.so_refused($q$truncate sign_off$q$) as so_service_trunc \gset
+reset role;
+select count(*) as so_left from sign_off where record_id in ('00000000-0000-0000-0000-00000005e001', '00000000-0000-0000-0000-00000005e002') \gset
 
 select pg_temp.so_assert(:'so_name' = 'CI Admin' and :'so_role' = 'admin' and :'so_comment' = 'Checked against the log'
   and :'so_sha' = :'so_fp', 'the signature carries the name, role, comment and the record''s fingerprint');
 select pg_temp.so_assert(:'so_twice' like '23505%', 'the same person cannot sign the same record twice with one meaning');
 select pg_temp.so_assert(:'so_upd' like '42501%' and :'so_del' like '%never changed or removed%',
   'a signature is never changed or removed, not even by the database owner');
+select pg_temp.so_assert(:'so_trunc' like '%never changed or removed%' and :so_left = 2,
+  'the signatures cannot be emptied with a truncate, not even by the database owner');
+select pg_temp.so_assert(:'so_service_ins' like '42501%' and :'so_service_del' like '42501%'
+    and :'so_service_trunc' like '42501%',
+  'the service key cannot add, remove or empty a signature');
+select pg_temp.so_assert(
+  not has_table_privilege('service_role', 'public.sign_off', 'insert')
+    and not has_table_privilege('service_role', 'public.sign_off', 'update')
+    and not has_table_privilege('service_role', 'public.sign_off', 'delete')
+    and not has_table_privilege('service_role', 'public.sign_off', 'truncate'),
+  'the service key holds no right to write to sign_off');
 select pg_temp.so_assert(:'so_old' like '28P01%' and :'so_otp' like '28P01%',
   'a password older than five minutes, or no password at all, cannot sign');
 select pg_temp.so_assert(:'so_rev_report' like '42501%', 'only an administrator signs the monthly report');
