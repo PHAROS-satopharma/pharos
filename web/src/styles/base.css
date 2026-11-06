@@ -1602,6 +1602,13 @@ button.stat[aria-pressed='true'] {
   background: var(--danger-tint);
   color: var(--text);
 }
+.terms-warning p,
+.terms-warning ul {
+  margin: 0 0 8px;
+}
+.terms-warning ul {
+  padding-left: 18px;
+}
 
 /* ───────── panels ───────── */
 /* A panel is a printed card: hairline sides, an ink rule along the top, its title on a tinted strip. */

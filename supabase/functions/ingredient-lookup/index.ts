@@ -14,6 +14,9 @@
 // - Salt forms are not proposed. PubChem synonyms are English-only and unverified.
 // - EU-wide (centrally authorised) brands from the EMA medicines list are proposed once per EU/EEA language
 //   so that language-filtered matching sees them; nationally authorised brands are not in that list.
+// - Wikidata is the only source of the non-English names. When it fails, times out or sends nothing for the
+//   item, the proposal still comes back with the English sources and `warnings` says the other languages are
+//   missing; the form shows it with a button to load the names again (terms.ts).
 import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
 import {

@@ -33,6 +33,19 @@ export function settled<T>(r: PromiseSettledResult<T>, label: string, warnings: 
 
 // ───────────────────────────── terms ─────────────────────────────
 
+// Wikidata is the only source of the names in languages other than English, so when it fails the proposal
+// still comes back (English INN, PubChem, EMA brands) and the form must say what is missing.
+const OTHERS_MISSING =
+  "so the names in other languages are missing: only the English sources are shown. Load the names again, or type them by hand.";
+
+function wikidataFailed(reason: unknown): string {
+  const timedOut = reason instanceof DOMException && (reason.name === "TimeoutError" || reason.name === "AbortError");
+  console.warn("Wikidata", reason);
+  if (timedOut) return `Wikidata did not answer in time, ${OTHERS_MISSING}`;
+  const why = reason instanceof Error && reason.message ? ` (${reason.message})` : "";
+  return `Wikidata did not answer${why}, ${OTHERS_MISSING}`;
+}
+
 export async function terms(body: { wikidata_qid?: string; atc_code?: string; inn_en?: string }) {
   const warnings: string[] = [];
   const inn = (body.inn_en ?? "").trim();
@@ -45,8 +58,9 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
   if (!qid && atc) {
     try {
       qid = (await wikidataByAtc(atc))[0] ?? "";
-    } catch {
-      warnings.push("Wikidata did not answer.");
+      if (!qid) warnings.push(`Wikidata has no item with the ATC code ${atc}, ${OTHERS_MISSING}`);
+    } catch (e) {
+      warnings.push(wikidataFailed(e));
     }
   }
 
@@ -55,8 +69,17 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
     emaIndex(),
     inn ? pubchemSynonyms(inn) : Promise.resolve([] as string[]),
   ]);
-  const item = settled(det, "Wikidata", warnings, new Map<string, WikidataItem>()).get(qid);
+  // A fulfilled answer can still hold nothing for the item (an empty or partial reply): that is reported too.
+  let item: WikidataItem | undefined;
+  if (det.status === "rejected") warnings.push(wikidataFailed(det.reason));
+  else if (qid) {
+    item = det.value.get(qid);
+    if (!item || !Object.keys(item.labels).length) {
+      warnings.push(`Wikidata sent no names for ${qid}, ${OTHERS_MISSING}`);
+    }
+  }
   const emaRes = settled(ema, "EMA lists", warnings, { index: new Map<string, EmaSubstance>(), failed: [] });
+  if (emaRes.failed.length) warnings.push(`EMA list(s) not loaded: ${emaRes.failed.join(", ")}; EU-wide brand names may be missing.`);
   const synonyms = settled(syn, "PubChem", warnings, []);
   const innEn = inn || item?.labels.en || "";
 
