@@ -100,6 +100,8 @@ export interface Person {
   full_name: string;
   email: string | null;
   role: PersonRole;
+  /** False for an administrator who does not manage the people (migration 0053). */
+  manages_people?: boolean;
   telegram_chat_id: number | null;
   telegram_linked_at: string | null;
   active: boolean;

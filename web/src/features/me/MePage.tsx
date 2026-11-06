@@ -178,7 +178,7 @@ export function PasswordForm({ onDone }: { onDone?: () => void }) {
 }
 
 export function MePage() {
-  const { person, isAdmin, signOut } = useAuth();
+  const { person, isAdmin, managesPeople, signOut } = useAuth();
   const personId = person?.id ?? '';
   const subs = useQuery({
     queryKey: ['my-subs', personId],
@@ -218,7 +218,9 @@ export function MePage() {
           <SubscriptionEditor
             personId={person.id}
             subs={subs.data}
-            allowHealth={isAdmin}
+            // Source health alerts: the administrator who manages the people only (subscription_self refuses
+            // them, and 0053 gives subscription_admin to i_manage_people(); the QPPV never receives them).
+            allowHealth={managesPeople}
             invalidate={[['my-subs'], ['people']]}
           />
         )}

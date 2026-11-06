@@ -14,9 +14,10 @@ export const SCREENING_TABS: readonly Tab[] = [
   { to: '/reports', label: 'Reports' },
 ];
 
-/** The tabs a person sees: the three screening tabs, and People (a setting) for administrators only. */
-export function tabsFor(isAdmin: boolean): Tab[] {
-  return isAdmin ? [...SCREENING_TABS, { to: '/people', label: 'People' }] : [...SCREENING_TABS];
+/** The tabs a person sees: the three screening tabs, and People (a setting) for the administrator who manages the
+ *  people only (person.manages_people, migration 0053: Dr Sama is an administrator without it). */
+export function tabsFor(managesPeople: boolean): Tab[] {
+  return managesPeople ? [...SCREENING_TABS, { to: '/people', label: 'People' }] : [...SCREENING_TABS];
 }
 
 /** The page `/` opens. */

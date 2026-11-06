@@ -12,8 +12,8 @@ import { tabsFor } from './nav';
 import '../styles/tabbar.css';
 
 export function Layout() {
-  const { person, isAdmin, signOut } = useAuth();
-  const tabs = tabsFor(isAdmin);
+  const { person, managesPeople, signOut } = useAuth();
+  const tabs = tabsFor(managesPeople);
   const { pathname } = useLocation();
 
   return (

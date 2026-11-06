@@ -10,7 +10,7 @@ describe('tabsFor', () => {
     expect(tabsFor(false).map((t) => t.to)).toEqual(['/ingredients', '/sources', '/reports']);
   });
 
-  it('adds People, last, for an administrator only', () => {
+  it('adds People, last, for the administrator who manages the people only', () => {
     expect(tabsFor(true).map((t) => t.label)).toEqual(['Ingredients', 'Sources', 'Reports', 'People']);
     expect(tabsFor(true)[3].to).toBe('/people');
     expect(tabsFor(false).some((t) => t.to === '/people')).toBe(false);

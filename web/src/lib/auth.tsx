@@ -20,6 +20,8 @@ interface AuthState {
   retryPerson: () => void;
   role: PersonRole | null;
   isAdmin: boolean;
+  /** An administrator who manages the people: the People tab (person.manages_people, migration 0053). */
+  managesPeople: boolean;
   /** Admins and reviewers record decisions (Concerns us, Doesn't concern us). */
   canReview: boolean;
   signOut: () => Promise<void>;
@@ -90,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       retryPerson,
       role,
       isAdmin: role === 'admin',
+      managesPeople: role === 'admin' && person?.manages_people !== false,
       canReview: role === 'admin' || role === 'reviewer',
       signOut,
       refreshPerson,
