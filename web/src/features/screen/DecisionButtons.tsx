@@ -11,7 +11,6 @@ import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { canSend, clockLine, earliestSentDay, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
-import { useScreenData } from './queries';
 import type { AuthoritySent, FindingState, IngredientScreenData, Mention } from './types';
 import '../../styles/clock.css';
 
@@ -45,9 +44,21 @@ interface SentRow {
 /**
  * The notice a mention is filed under: its status and latest decision, and for a reviewer or administrator the
  * decisions that can follow. A decision shows at once on every mention of the same notice on the screen. Under
- * the decision, the five-day clock to the Egyptian Drug Authority (0041) and "Sent to the authority".
+ * the decision, the five-day clock to the Egyptian Drug Authority (0041, 0050) and "Sent to the authority".
+ *
+ * `finding` is the notice's clock as the screen's data holds it (finding_state); the screen passes it down. The
+ * cache is written here under `queryKey`, never read through a second observer: a second useQuery on the same
+ * key with no queryFn would take over the query's options and break the reload after a refusal.
  */
-export function DecisionButtons({ mention, queryKey }: { mention: Mention; queryKey: readonly unknown[] }) {
+export function DecisionButtons({
+  mention,
+  queryKey,
+  finding,
+}: {
+  mention: Mention;
+  queryKey: readonly unknown[];
+  finding: FindingState | null;
+}) {
   const { canReview, person } = useAuth();
   const qc = useQueryClient();
   const [changing, setChanging] = useState(false);
@@ -56,7 +67,6 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
   const [done, setDone] = useState<string | null>(null);
   const issueId = mention.issue_id;
   const status = mention.issue_status;
-  const finding = useScreenData(queryKey)?.findings[issueId ?? ''];
 
   const save = useMutation({
     mutationFn: async (to: IssueStatus) => {
