@@ -467,6 +467,9 @@ ingredient_readiness(p_ingredient uuid) returns jsonb
   --                                                                 -- searched (ingredient_class.enabled, 0049)
   --  past_check:  {done, words_due, job_running},                   -- due: rematched_at null or < changed_at
   --  ncbi:        {searches, expected, look_back_done, last_run},   -- expected = 2 × (name ∪ English class words)
+  --  europepmc:   {watched, searches, expected, look_back_done, last_run},  -- 0082: db 'europepmc', expected =
+  --                                                                 -- 1 × the same words; watched = source
+  --                                                                 -- 'europepmc' enabled
   --  label_watch: {products, by_source: {<source_id>: {country, regulator, products, read}},
   --                waiting: [country], empty: [country], first_snapshot, japan_code},
   --                -- enabled spc sources only; read = a source_run since ingredient.created_at that
@@ -477,6 +480,7 @@ ingredient_readiness(p_ingredient uuid) returns jsonb
   --  telegram:    {people: [full_name]},   -- active, telegram linked, subscription 'ingredient' for all or this one
   --  ready}
   -- ready = a name in ≥1 language ∧ (no ATC ∨ classes > 0) ∧ past_check.done ∧ ncbi.look_back_done
+  --         ∧ (¬europepmc.watched ∨ europepmc.look_back_done)
   --         ∧ (products > 0 ∨ waiting = []) ∧ telegram.people ≥ 1.  japan_code, eurd and ema_mlm never hold it back.
 subscription (Dr Sama, kind 'ingredient', ingredient_id null)  -- inserted by 0045 by her address, once (as 0033)
 ```
@@ -485,7 +489,8 @@ Her words, shared by `web/src/features/ingredients/readiness.ts` and `collectors
 (`readiness_items`, `readiness_text`; `tests/test_report_weekly.py` holds both to the same phrases): `Ready`, or
 `Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words waiting`
 (an ATC code and no class yet),
-`check of the past running` | `waiting`, `NCBI look-back running` | `waiting`, `label watch on Monday (A, B)`
+`check of the past running` | `waiting`, `NCBI look-back running` | `waiting`, `Europe PMC look-back running` |
+`waiting` (only while it is watched), `label watch on Monday (A, B)`
 (up to three country names, else `n countries`), `nobody receives its Telegram messages yet`.
 
 Collector: `collectors/eurd.py` (daily, `collect.yml` step "EURD list"; `eurd_entry` as 0028). Web:

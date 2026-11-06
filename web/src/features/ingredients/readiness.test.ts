@@ -84,6 +84,16 @@ describe('readiness on the ingredient row', () => {
     ]);
   });
 
+  it('waits for the Europe PMC look-back only while its watch is switched on', () => {
+    const epmc = { watched: true, searches: 0, expected: 2, look_back_done: false, last_run: null };
+    expect(readinessItems({ ...ready, europepmc: epmc })).toEqual(['Europe PMC look-back waiting']);
+    expect(readinessItems({ ...ready, europepmc: { ...epmc, searches: 1 } })).toEqual([
+      'Europe PMC look-back running',
+    ]);
+    expect(readinessItems({ ...ready, europepmc: { ...epmc, watched: false } })).toEqual([]);
+    expect(readinessItems({ ...ready, europepmc: { ...epmc, searches: 2, look_back_done: true } })).toEqual([]);
+  });
+
   it('is Ready when everything that follows by itself has run', () => {
     expect(readinessItems(ready)).toEqual([]);
     expect(readinessLine(ready)).toBe('Ready');

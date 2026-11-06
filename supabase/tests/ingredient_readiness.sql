@@ -59,6 +59,8 @@ insert into source (id, regulator_id, kind, channel, url, parser, languages, pag
   ('ci-ir-spc-b', 'CI-IR-B', 'spc', 'api', 'https://wait.example.test/spc.json', 'ci', '{sv}',
    'https://wait.example.test/products', true),
   ('ci-ir-spc-off', 'CI-IR-B', 'spc', 'api', 'https://wait.example.test/old.json', 'ci', '{sv}', null, false);
+-- the Europe PMC watch switched off until its own case below (0082): nothing is waited for on it
+update source set enabled = false where id = 'europepmc';
 
 select pg_temp.ir_read('new');
 
@@ -220,6 +222,36 @@ select pg_temp.ir_assert(
     and (pg_temp.ir('parent') -> 'past_check' ->> 'words_due')::int = 0
     and (pg_temp.ir('parent') -> 'ncbi' ->> 'expected')::int = 4,
   'a class switched off is linked but not searched: its words wait for no check of the past and no NCBI search');
+
+-- ───────────── the Europe PMC watch switched on (0082): Ready waits for its look-back of every word ─────────────
+insert into source (id, regulator_id, kind, channel, url, parser, languages, enabled) values
+  ('europepmc', 'CI-IR-A', 'literature', 'api', 'https://europepmc.example.test/search', 'europepmc', '{en}', true)
+  on conflict (id) do update set enabled = true;
+select pg_temp.ir_read('epmc_waiting');
+select pg_temp.ir_assert(
+  not (pg_temp.ir('epmc_waiting') ->> 'ready')::boolean
+    and (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'watched')::boolean
+    and (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'searches')::int = 0
+    and (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'expected')::int = 2
+    and not (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'look_back_done')::boolean
+    and (pg_temp.ir('epmc_waiting') -> 'ncbi' ->> 'look_back_done')::boolean,
+  'Europe PMC switched on: two searches expected (the name and the class word, once each), none run, so not Ready');
+insert into literature_search (db, query, kind, look_back_from, history_until, look_back_done_at) values
+  ('europepmc', 'ci readyamine', 'name', current_date - 365, current_date, now()),
+  ('europepmc', 'ci readyoids', 'class', current_date - 365, current_date, null);
+select pg_temp.ir_read('epmc_running');
+select pg_temp.ir_assert(
+  not (pg_temp.ir('epmc_running') ->> 'ready')::boolean
+    and (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'searches')::int = 2
+    and not (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'look_back_done')::boolean,
+  'a Europe PMC look-back not finished for one word keeps it from Ready');
+update literature_search set look_back_done_at = now() where db = 'europepmc' and query = 'ci readyoids';
+select pg_temp.ir_read('epmc_done');
+select pg_temp.ir_assert(
+  (pg_temp.ir('epmc_done') ->> 'ready')::boolean
+    and (pg_temp.ir('epmc_done') -> 'europepmc' ->> 'look_back_done')::boolean
+    and (pg_temp.ir('epmc_done') -> 'europepmc' ->> 'last_run') is not null,
+  'Europe PMC: both searches finished their look-back, and it is Ready again');
 
 -- ───────────── the label watch answered, and found nothing: still ready; a country not yet read: not ─────────────
 delete from spc_product where id = '00000000-0000-0000-0000-00000045b001';
