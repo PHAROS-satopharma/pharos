@@ -1,0 +1,15 @@
+{
+ "version": "6.9",
+ "hitCount": 56,
+ "request": {
+  "queryString": "\"carvedilol\" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]",
+  "resultType": "idlist",
+  "cursorMark": "AoIIP2czSSg1Njc5NTIzNg==",
+  "pageSize": 25,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": []
+ }
+}

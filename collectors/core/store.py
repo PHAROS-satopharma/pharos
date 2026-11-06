@@ -142,8 +142,40 @@ class Store:
             {"s": source_id})
         return {r["external_id"] for r in rows} | {r["pmcid"] for r in rows if r["pmcid"]}
 
+    def literature_papers(self, source_id: str) -> list[dict]:
+        """The papers every OTHER literature source stored, with their ids: one paper is one document, whichever
+        source found it first (collectors/parsers/_literature.py)."""
+        return self.db.fetchall(
+            """select d.id::text as id, d.external_id, d.structured ->> 'pmid' as pmid,
+                      d.structured ->> 'pmcid' as pmcid, d.structured ->> 'doi' as doi
+                 from document d join source s on s.id = d.source_id
+                where s.kind = 'literature' and d.source_id <> %(s)s""",
+            {"s": source_id})
+
+    def literature_found_also(self, found: dict[str, dict[str, str]], db: str) -> None:
+        """Record that ``db`` found these stored papers too (document id → search words → kind): ``found_in`` and
+        ``queries`` of each, nothing else. A paper already saying so is left as it is."""
+        from collectors.parsers._literature import found_also
+
+        if not found:
+            return
+        rows = self.db.fetchall("select id::text as id, structured from document where id = any(%(ids)s::uuid[])",
+                                {"ids": list(found)})
+        changed = []
+        for r in rows:
+            old = _decode(r["structured"]) or {}
+            new = found_also(old, db, found[r["id"]])
+            if new != old:
+                changed.append({"id": r["id"], "structured": new})
+        if changed:
+            self.db.execute(
+                """update document d set structured = x.structured
+                     from jsonb_to_recordset(%(rows)s) as x(id uuid, structured jsonb)
+                    where d.id = x.id""",
+                {"rows": jsonb(changed)})
+
     def literature_searches(self) -> dict[tuple[str, str], dict]:
-        """Every NCBI search run so far (migration 0035), by (database, words)."""
+        """Every literature search run so far (migration 0035; Europe PMC's since 0066), by (database, words)."""
         rows = self.db.fetchall(
             """select db, query, kind, look_back_from, history_until, look_back_done_at, last_searched_at
                  from literature_search""")

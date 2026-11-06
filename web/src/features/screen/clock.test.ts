@@ -54,7 +54,17 @@ const DATA: IngredientScreenData = {
     { id: 'B', name: 'B', country_name: 'B', country_code: 'XX', homepage: null, hers: true, runs: 1, ok: 1, failed: 0, unread_page: false, pages: [], sources: [], mentions: [mention('b1', 'n1')] },
   ],
   label_changes: [mention('l1', 'n3')],
-  literature: { papers: 0, by_name: 0, by_class: 0, pubmed: 0, pmc: 0, by_query: [], first: [] },
+  literature: {
+    papers: 0,
+    by_name: 0,
+    by_class: 0,
+    pubmed: 0,
+    pmc: 0,
+    europepmc: 0,
+    preprints: 0,
+    by_query: [],
+    first: [],
+  },
   findings: {
     n1: running,
     n2: { day_zero: '2026-10-29', due: '2026-11-03', days_left: -3, clock: 'late', sent: null, signal: null },

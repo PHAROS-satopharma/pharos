@@ -219,6 +219,12 @@ regulators:
     name: National Library of Medicine — PubMed
     languages: [en]
     homepage: https://pubmed.ncbi.nlm.nih.gov/
+  - id: EBI
+    country_code: INT
+    country_name: International (literature)
+    name: EMBL-EBI — Europe PMC
+    languages: [en]
+    homepage: https://europepmc.org/
 
 sources:
   # ───────────── EMA (anchors) ─────────────
@@ -1006,6 +1012,21 @@ sources:
     # 12 months first (collectors/parsers/pubmed.py). 800 papers in at most 15 minutes a run.
     options: {lookback_days: 10, look_back_months: 12, page_size: 5000, max_new_items: 800,
               time_budget_min: 15, backfill_all: true}
+  - id: europepmc
+    regulator: EBI
+    kind: literature
+    channel: api
+    url: https://www.ebi.ac.uk/europepmc/webservices/rest/search
+    page: https://europepmc.org/
+    parser: europepmc
+    languages: [en]
+    schedule: daily
+    expected_max_gap_days: 120
+    # The words PubMed is searched for, on Europe PMC: preprints and open full texts PubMed misses. A paper
+    # already stored from PubMed is only marked as found here too (collectors/parsers/europepmc.py).
+    # 6 minutes of searching, then 800 papers in at most 10 minutes a run.
+    options: {lookback_days: 10, look_back_months: 12, page_size: 1000, max_new_items: 800,
+              search_budget_min: 6, time_budget_min: 10, backfill_all: true}
 
   # ───────────── Phase 2 (disabled until a live probe confirms them) ─────────────
   - id: ema-prac

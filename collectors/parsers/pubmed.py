@@ -14,7 +14,9 @@ so ``items`` (and the screening log's "seen") are the papers new to PHAROS.
 One paper, one item. A paper found in both databases is stored once, under its PMID (the PMC record's
 ``articleids`` give it), with both links in ``structured`` (``pubmed_url``, ``pmc_url``). The item links to
 PubMed when the PubMed search found it, otherwise to its PMC full text (where the words are). A PMC record with no
-PMID yet is stored as ``PMC<n>``; ``aliases`` lets the runner recognise it when its PMID appears later.
+PMID yet is stored as ``PMC<n>``; ``aliases`` lets the runner recognise it when its PMID appears later. A paper
+the Europe PMC watch stored first (``collectors/parsers/europepmc.py``; the same PMID, PMC id or DOI) is never
+stored again: that document records that NCBI found it too (``collectors/parsers/_literature.py``).
 
 ``structured.query_term`` lists every search word that found the paper and is matched as a structured field, so
 the paper is linked to its ingredient (a name search) or to its drug class (a class search).
@@ -69,6 +71,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterable
 from urllib.parse import quote
 
+from collectors.parsers._literature import Elsewhere
 from collectors.parsers.base import FetchContext, FetchError, Item, ParseError, SourceConfig, parse_date
 
 log = logging.getLogger(__name__)
@@ -487,6 +490,7 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
     names, classes = _names_and_classes(ctx, source)
     state = store.literature_searches() if remembered else {}
     known = store.literature_known_ids(source.id) if store is not None else set()
+    other = Elsewhere.load(store, source.id)       # the papers Europe PMC stored first
     page = int(opts.get("page_size", PAGE_SIZE))
 
     runs: list[dict[str, Any]] = []
@@ -500,13 +504,25 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
                 hits.setdefault((s.db, uid), []).append((s, not w.history))
         runs.append({"search": s, "row": row, "uids": uids})
 
+    def elsewhere(key: tuple[str, str]) -> str | None:
+        """The document of the paper another literature source stored under this PMID or PMC id."""
+        if _known(key[0], key[1], known):
+            return None
+        return other.find(pmid=key[1]) if key[0] == "pubmed" else other.find(pmcid=f"PMC{key[1]}")
+
+    # A paper another source stored first is never read: it records that NCBI found it too.
+    for key, found in hits.items():
+        doc = elsewhere(key)
+        for s, _ in found if doc else []:
+            other.found(doc, s.db, s.query, s.kind)
+
     # Read the papers new to PHAROS: new ones first, then a look-back's name papers, then its class papers.
     def rank(key: tuple[str, str]) -> tuple:
         normal = any(n for _, n in hits[key])
         named = any(s.kind == "name" for s, _ in hits[key])
         return (not normal, not named, DBS.index(key[0]), -int(key[1]) if key[1].isdigit() else 0)
 
-    wanted = sorted((k for k in hits if not _known(k[0], k[1], known)), key=rank)
+    wanted = sorted((k for k in hits if not _known(k[0], k[1], known) and not elsewhere(k)), key=rank)
     if not ctx.backfill:
         cap = int(opts.get("max_new_items", MAX_NEW_ITEMS))
         # New papers over the cap wait for the next run, which must read their days again: the runner then
@@ -528,18 +544,31 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
             for s, normal in found:
                 paper_of[key].found(s, normal)
     items: dict[int, Item] = {}
+    dropped: set[int] = set()       # stored first by another source under an id only the record gave (or a DOI)
     for p in paper_of.values():
-        if id(p) not in items and p.external_id:
-            items[id(p)] = p.item()
+        if id(p) in items or id(p) in dropped or not p.external_id:
+            continue
+        it = p.item()
+        doc = other.find(p.pmid, p.pmcid, it.structured.get("doi"))
+        if doc:
+            dropped.add(id(p))
+            for q, dbs in p.dbs.items():
+                for db in dbs:
+                    other.found(doc, db, q, p.kinds[q])
+            continue
+        items[id(p)] = it
+    again = other.save(store)
+    if again:
+        log.info("NCBI found %d paper(s) already stored from another literature source", again)
 
-    # What each search found, for after_store: a uid is settled when it was stored before, or NCBI gave no
-    # record of it; otherwise it waits for its paper to be stored.
+    # What each search found, for after_store: a uid is settled when it was stored before (by this source or
+    # another), or NCBI gave no record of it; otherwise it waits for its paper to be stored.
     for run in runs:
         s = run["search"]
         wait: list[tuple[str, list[str]]] = []
         for uid in run.pop("uids"):
             key = (s.db, uid)
-            if _known(s.db, uid, known):
+            if _known(s.db, uid, known) or elsewhere(key) or (key in paper_of and id(paper_of[key]) in dropped):
                 continue
             if key in paper_of:
                 it = items[id(paper_of[key])]

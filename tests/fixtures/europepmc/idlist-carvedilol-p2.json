@@ -1,0 +1,83 @@
+{
+ "version": "6.9",
+ "hitCount": 56,
+ "nextCursorMark": "AoIIP2czSSg1Njc5NTIzNg==",
+ "request": {
+  "queryString": "\"carvedilol\" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]",
+  "resultType": "idlist",
+  "cursorMark": "AoIIP5h0aSg1NjczMDgxNQ==",
+  "pageSize": 25,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": [
+   {
+    "id": "42942524",
+    "source": "MED",
+    "pmid": "42942524",
+    "pmcid": "PMC13706709",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13706709"
+     ]
+    }
+   },
+   {
+    "id": "42910274",
+    "source": "MED",
+    "pmid": "42910274",
+    "pmcid": "PMC13685790",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13685790"
+     ]
+    }
+   },
+   {
+    "id": "42903581",
+    "source": "MED",
+    "pmid": "42903581",
+    "pmcid": "PMC13681172",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13681172"
+     ]
+    }
+   },
+   {
+    "id": "42974159",
+    "source": "MED",
+    "pmid": "42974159",
+    "pmcid": "PMC13726623",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13726623"
+     ]
+    }
+   },
+   {
+    "id": "42923076",
+    "source": "MED",
+    "pmid": "42923076",
+    "pmcid": "PMC13687593",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13687593"
+     ]
+    }
+   },
+   {
+    "id": "42942747",
+    "source": "MED",
+    "pmid": "42942747",
+    "pmcid": "PMC13708214",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13708214"
+     ]
+    }
+   }
+  ]
+ }
+}
