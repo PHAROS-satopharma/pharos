@@ -370,7 +370,7 @@ select lower(regexp_replace(btrim(i.inn_en), '\s+', ' ', 'g')) as query, 'name' 
   from ingredient i where i.id = %(i)s::uuid
 union
 select lower(regexp_replace(btrim(ct.term), '\s+', ' ', 'g')), 'class'
-  from class_term ct join ingredient_class ic on ic.class_id = ct.class_id
+  from class_term ct join ingredient_class ic on ic.class_id = ct.class_id and ic.enabled
  where ic.ingredient_id = %(i)s::uuid and ct.lang = 'en'
 """
 

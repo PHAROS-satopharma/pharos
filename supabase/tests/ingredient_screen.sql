@@ -26,13 +26,17 @@ insert into ingredient_term (id, ingredient_id, lang, term) values
   ('00000000-0000-0000-0000-00000037c001', '00000000-0000-0000-0000-00000037a001', 'en', 'CI screenamine'),
   ('00000000-0000-0000-0000-00000037c002', '00000000-0000-0000-0000-00000037a001', 'de', 'CI Screenamin'),
   ('00000000-0000-0000-0000-00000037c003', '00000000-0000-0000-0000-00000037a002', 'en', 'CI otheramine');
+-- d001 is the ingredient's group (searched); d002 its parent class, shown but not searched (0049).
 insert into drug_class (id, code, name_en, origin) values
-  ('00000000-0000-0000-0000-00000037d001', 'Z99ZZ', 'CI screenoids', 'atc');
+  ('00000000-0000-0000-0000-00000037d001', 'Z99ZZ', 'CI screenoids', 'atc'),
+  ('00000000-0000-0000-0000-00000037d002', 'Z99Z', 'CI zparentoids', 'atc');
 insert into class_term (id, class_id, lang, term) values
   ('00000000-0000-0000-0000-00000037d101', '00000000-0000-0000-0000-00000037d001', 'en', 'ci screenoids'),
-  ('00000000-0000-0000-0000-00000037d102', '00000000-0000-0000-0000-00000037d001', 'de', 'CI-Screenoide');
-insert into ingredient_class (ingredient_id, class_id) values
-  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d001');
+  ('00000000-0000-0000-0000-00000037d102', '00000000-0000-0000-0000-00000037d001', 'de', 'CI-Screenoide'),
+  ('00000000-0000-0000-0000-00000037d201', '00000000-0000-0000-0000-00000037d002', 'en', 'ci zparentoids');
+insert into ingredient_class (ingredient_id, class_id, relation, enabled) values
+  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d001', 'group', true),
+  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d002', 'parent', false);
 
 -- ───────────── authorities: four of hers, one country with two authorities, one other, one library ─────────────
 insert into regulator (id, country_code, country_name, name, languages, homepage) values
@@ -112,6 +116,8 @@ insert into document (id, source_id, external_id, url, title_orig, lang, doc_typ
   ('00000000-0000-0000-0000-00000037b012', 'ci-is-a-spc', 'spc:2', '',
    'CI Screenamine 20 mg: SmPC 4.8 changed', 'en', 'label_change', '2026-11-06', '2026-11-06 08:00+00', false,
    '{"sections":["4.8"]}'),
+  ('00000000-0000-0000-0000-00000037b013', 'ci-is-b-html', 'i3', 'https://institute.example.test/letters/3',
+   'The zparentoids: a class letter', 'en', 'dhpc', '2026-11-04', '2026-11-04 08:00+00', false, null),
   ('00000000-0000-0000-0000-00000037b020', 'ci-is-lit', '1', 'https://pubmed.ncbi.nlm.nih.gov/1/',
    'CI screenamine and the QT interval', 'en', 'literature', '2026-11-02', '2026-11-03 08:00+00', false,
    '{"pmid":"1","pmcid":"PMC9","pubmed_url":"https://pubmed.ncbi.nlm.nih.gov/1/",'
@@ -152,6 +158,8 @@ insert into match (document_id, ingredient_id, class_id, term_id, class_term_id,
    '00000000-0000-0000-0000-00000037c001', null, 'title', 'CI screenamine'),
   ('00000000-0000-0000-0000-00000037b012', '00000000-0000-0000-0000-00000037a001', null,
    null, null, 'structured', 'CI Screenamine 20 mg'),
+  ('00000000-0000-0000-0000-00000037b013', null, '00000000-0000-0000-0000-00000037d002',
+   null, '00000000-0000-0000-0000-00000037d201', 'title', 'zparentoids'),
   ('00000000-0000-0000-0000-00000037b020', '00000000-0000-0000-0000-00000037a001', null,
    '00000000-0000-0000-0000-00000037c001', null, 'structured', 'CI screenamine'),
   ('00000000-0000-0000-0000-00000037b021', null, '00000000-0000-0000-0000-00000037d001',
@@ -222,6 +230,15 @@ select pg_temp.is_refused($q$select ingredient_screen_check('00000000-0000-0000-
   as is_check_direct \gset
 reset role;
 
+-- the parent class switched on: its words count, and are due for the check of the past again
+update class_term set changed_at = '2026-01-01 00:00+00', rematched_at = '2026-01-01 00:00+00' where id = '00000000-0000-0000-0000-00000037d201';
+update ingredient_class set enabled = true
+ where ingredient_id = '00000000-0000-0000-0000-00000037a001' and class_id = '00000000-0000-0000-0000-00000037d002';
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+set role authenticated;
+select ingredient_screen('00000000-0000-0000-0000-00000037a001', '2026-11-01', '2026-11-07')::text as is_week_on \gset
+reset role;
+
 create temp table is_res (name text primary key, j jsonb);
 insert into is_res values ('week', :'is_week'::jsonb), ('eight', :'is_eight'::jsonb);
 create function pg_temp.is_reg(which text, reg text) returns jsonb language sql as $$
@@ -263,7 +280,7 @@ select pg_temp.is_assert(pg_temp.is_docs(pg_temp.is_reg('week', 'CI-IS-A') -> 'm
   || 'left out');
 select pg_temp.is_assert(pg_temp.is_docs(pg_temp.is_reg('eight', 'CI-IS-A') -> 'mentions') = 'b009,b002,b003,b001,b005',
   'a notice first seen at 00:30 on Sunday in Cairo belongs to Sunday');
-select pg_temp.is_assert(pg_temp.is_docs(pg_temp.is_reg('week', 'CI-IS-B') -> 'mentions') = 'b011'
+select pg_temp.is_assert(pg_temp.is_docs(pg_temp.is_reg('week', 'CI-IS-B') -> 'mentions') = 'b011,b013'
     and pg_temp.is_docs(pg_temp.is_reg('week', 'CI-IS-C') -> 'mentions') = ''
     and pg_temp.is_docs(pg_temp.is_reg('week', 'CI-IS-F') -> 'mentions') = 'b008',
   'each authority has its own mentions');
@@ -299,6 +316,21 @@ select pg_temp.is_assert(
     and pg_temp.is_mention('CI-IS-A', 'b002') ->> 'issue_status' = 'new'
     and pg_temp.is_mention('CI-IS-A', 'b002') -> 'decision' = 'null'::jsonb,
   'a class word alone is by class; a notice opened by the check of the past is history; no decision yet');
+select pg_temp.is_assert(
+  pg_temp.is_mention('CI-IS-A', 'b001') ->> 'relation' = 'name'
+    and pg_temp.is_mention('CI-IS-A', 'b001') -> 'class_name' = 'null'::jsonb
+    and pg_temp.is_mention('CI-IS-A', 'b002') ->> 'relation' = 'group'
+    and pg_temp.is_mention('CI-IS-A', 'b002') ->> 'class_name' = 'CI screenoids'
+    and pg_temp.is_mention('CI-IS-B', 'b013') ->> 'relation' = 'parent'
+    and pg_temp.is_mention('CI-IS-B', 'b013') ->> 'class_name' = 'CI zparentoids'
+    and (pg_temp.is_mention('CI-IS-B', 'b013') ->> 'by_class')::boolean,
+  'each mention says how it was found: by name, by the group, or by the parent class (named)');
+select pg_temp.is_assert(
+  ingredient_match_relation('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037b001') = 'name'
+    and ingredient_match_relation('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037b002') = 'group'
+    and ingredient_match_relation('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037b013') = 'parent'
+    and ingredient_match_relation('00000000-0000-0000-0000-00000037a002', '00000000-0000-0000-0000-00000037b001') is null,
+  'ingredient_match_relation: the name first, then the nearest class; nothing for another ingredient');
 select pg_temp.is_assert(
   pg_temp.is_mention('CI-IS-A', 'b003') -> 'link' = 'null'::jsonb
     and pg_temp.is_mention('CI-IS-A', 'b003') ->> 'email_id' = '00000000-0000-0000-0000-00000037e0e1'
@@ -336,6 +368,19 @@ select pg_temp.is_assert(
           and j ->> 'from' = '2026-11-01' and j ->> 'to' = '2026-11-07'
      from is_res where name = 'week'),
   'the head of the screen: the name, the ATC code, the classes and what is searched');
+select pg_temp.is_assert(
+  (select j -> 'ingredient' -> 'classes' -> 0 ->> 'relation' = 'group'
+          and (j -> 'ingredient' -> 'classes' -> 0 ->> 'enabled')::boolean
+          and j -> 'ingredient' -> 'classes' -> 1 ->> 'name_en' = 'CI zparentoids'
+          and j -> 'ingredient' -> 'classes' -> 1 ->> 'relation' = 'parent'
+          and not (j -> 'ingredient' -> 'classes' -> 1 ->> 'enabled')::boolean
+     from is_res where name = 'week'),
+  'each class says what it is to the ingredient and whether its words are searched');
+select pg_temp.is_assert(
+  (:'is_week_on'::jsonb -> 'ingredient' ->> 'class_words')::int = 3
+    and (:'is_week_on'::jsonb -> 'ingredient' -> 'classes' -> 1 ->> 'enabled')::boolean
+    and (select rematched_at < changed_at from class_term where id = '00000000-0000-0000-0000-00000037d201'),
+  'the parent class switched on: its words are counted and due for the check of the past again');
 
 -- literature
 select pg_temp.is_assert(

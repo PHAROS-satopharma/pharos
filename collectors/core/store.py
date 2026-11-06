@@ -225,7 +225,7 @@ class Store:
                  from class_term ct
                 where exists (select 1 from ingredient_class ic join ingredient i
                                 on i.id = ic.ingredient_id
-                               where ic.class_id = ct.class_id and i.active)""")
+                               where ic.class_id = ct.class_id and ic.enabled and i.active)""")
         terms += [Term(id=str(r["id"]), term=r["term"], lang=r["lang"], mode=r["mode"],
                        exclusions=tuple(r["exclusions"] or ()), class_id=str(r["class_id"]),
                        kind="class") for r in rows]
@@ -234,7 +234,7 @@ class Store:
     def class_ingredients(self) -> dict[str, list[str]]:
         rows = self.db.fetchall(
             """select ic.class_id, ic.ingredient_id from ingredient_class ic
-                 join ingredient i on i.id = ic.ingredient_id where i.active""")
+                 join ingredient i on i.id = ic.ingredient_id where ic.enabled and i.active""")
         out: dict[str, list[str]] = {}
         for r in rows:
             out.setdefault(str(r["class_id"]), []).append(str(r["ingredient_id"]))
@@ -245,11 +245,12 @@ class Store:
             "select id, inn_en, atc_code from ingredient where active order by inn_en")
 
     def class_words(self, lang: str = "en") -> dict[str, list[str]]:
-        """Each active ingredient's drug-class words in ``lang``, by its English INN."""
+        """Each active ingredient's words of the drug classes it searches (enabled links) in ``lang``, by its
+        English INN."""
         rows = self.db.fetchall(
             """select i.inn_en, ct.term
                  from ingredient i
-                 join ingredient_class ic on ic.ingredient_id = i.id
+                 join ingredient_class ic on ic.ingredient_id = i.id and ic.enabled
                  join class_term ct on ct.class_id = ic.class_id and ct.lang = %(l)s
                 where i.active
                 order by i.inn_en, ct.term""", {"l": lang})
@@ -560,10 +561,14 @@ class Store:
                     {"c": class_id, "l": t["lang"], "t": t["term"], "m": t["mode"], "s": t["source"]})
             return class_id
 
-    def link_ingredient_class(self, ingredient_id: str, class_id: str) -> None:
+    def link_ingredient_class(self, ingredient_id: str, class_id: str, *, relation: str = "group",
+                              enabled: bool = True) -> None:
+        """Links the ingredient to the class as its 'group' (searched), its 'parent' (shown, not searched until
+        an administrator switches it on) or a 'manual' group. A link that exists is never changed."""
         self.db.execute(
-            """insert into ingredient_class (ingredient_id, class_id) values (%(i)s, %(c)s)
-               on conflict do nothing""", {"i": ingredient_id, "c": class_id})
+            """insert into ingredient_class (ingredient_id, class_id, relation, enabled)
+               values (%(i)s, %(c)s, %(r)s, %(e)s)
+               on conflict do nothing""", {"i": ingredient_id, "c": class_id, "r": relation, "e": enabled})
 
     # ───────────────────────────── the check of the past (collectors/rematch.py) ─────────────────────────────
     def rematch_open_job(self) -> dict | None:
@@ -572,7 +577,7 @@ class Store:
 
     def rematch_due_terms(self) -> tuple[list[str], list[str]]:
         """Words added or changed since they were last checked against the past (rematched_at older than
-        changed_at, or never), of watched ingredients and of the classes those belong to."""
+        changed_at, or never), of watched ingredients and of the classes those search (enabled links)."""
         ing = self.db.fetchall(
             """select t.id from ingredient_term t join ingredient i on i.id = t.ingredient_id
                 where i.active and (t.rematched_at is null or t.rematched_at < t.changed_at)
@@ -581,7 +586,7 @@ class Store:
             """select ct.id from class_term ct
                 where (ct.rematched_at is null or ct.rematched_at < ct.changed_at)
                   and exists (select 1 from ingredient_class ic join ingredient i on i.id = ic.ingredient_id
-                               where ic.class_id = ct.class_id and i.active)
+                               where ic.class_id = ct.class_id and ic.enabled and i.active)
                 order by ct.id""")
         return [str(r["id"]) for r in ing], [str(r["id"]) for r in cls]
 

@@ -122,6 +122,70 @@
 .dc-add .field:not(.field-select) {
   flex: 1 1 200px;
 }
+.dc-add-group {
+  margin: 12px 0 4px;
+}
+
+/* The search profile (0049): three radios, the switch of each class, the words looked for. */
+.dc-profile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 0;
+}
+.dc-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.dc-radio input {
+  margin: 0;
+  accent-color: var(--beacon);
+}
+.dc-radio.is-off,
+.dc-profile:disabled .dc-radio {
+  color: var(--muted);
+  cursor: default;
+}
+.dc-profile-hint {
+  margin: 0 0 8px;
+}
+.dc.is-off .dc-name {
+  color: var(--muted);
+}
+.dc-switch {
+  display: inline-flex;
+  align-items: center;
+}
+.dc-remove {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dc-preview {
+  margin-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.dc-preview summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  cursor: pointer;
+  list-style: none;
+}
+.dc-preview summary::-webkit-details-marker {
+  display: none;
+}
+.dc-preview[open] summary {
+  border-bottom: 1px solid var(--text);
+}
 
 /* Phone: one column, everything full width, tap targets of 44px. */
 @media (max-width: 760px) {

@@ -87,7 +87,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push --linked --yes
+        # --include-all: a migration numbered below one already applied (two branches merged out of order) is
+        # still applied instead of stopping the deploy.
+        run: supabase db push --linked --yes --include-all
 
       - name: Function secrets
         if: steps.changes.outputs.deploy == 'true'
