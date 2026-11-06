@@ -116,7 +116,7 @@
 <h3>Decisions taken this week</h3>
 {% if data.decisions %}
 <table>
-  <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th></tr></thead>
+  <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th><th>Due</th><th>Sent</th></tr></thead>
   <tbody>
   {% for d in data.decisions %}
   <tr>
@@ -125,6 +125,8 @@
     <td>{{ d.decision }}</td>
     <td>{{ d.person }}</td>
     <td class="comment">{{ d.reason }}</td>
+    <td class="code">{{ d.due }}</td>
+    <td class="code">{{ d.sent }}</td>
   </tr>
   {% endfor %}
   </tbody>
