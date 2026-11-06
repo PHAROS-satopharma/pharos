@@ -87,3 +87,61 @@ def test_refuses_an_empty_or_too_long_message(monkeypatch, text, why, capsys):
     assert m.main(["--email", "sama.mosaad@satopharma.com", "--send"], db=FakeDb(SAMA), telegram=tg) == 2
     assert tg.messages == []
     assert why in capsys.readouterr().err
+
+
+# The repository and its run logs are public: the workflow reads what was typed from the event file, and the
+# log never names the person, their address or the text.
+
+def _event(tmp_path, **inputs):
+    import json
+
+    path = tmp_path / "event.json"
+    path.write_text(json.dumps({"inputs": inputs}), encoding="utf-8")
+    return str(path)
+
+
+@pytest.mark.parametrize("send", [True, "true"])
+def test_from_the_event_file_it_sends_and_the_log_names_nobody(tmp_path, monkeypatch, capsys, send):
+    monkeypatch.delenv("MESSAGE")
+    db, tg = FakeDb(SAMA), RecordingTelegram()
+    ev = _event(tmp_path, email="Sama.Mosaad@satopharma.com", message="Your weekly report is ready", send=send)
+    assert m.main(["--from-event", ev], db=db, telegram=tg) == 0
+    assert tg.messages == [(555, "Your weekly report is ready")] and len(db.inserts) == 1
+    out = capsys.readouterr()
+    log = (out.out + out.err).lower()
+    assert "sent on telegram" in log
+    for private in ("sama", "mosaad", "satopharma", "weekly report"):
+        assert private not in log
+
+
+def test_from_the_event_file_a_preview_never_sends_and_names_nobody(tmp_path, capsys):
+    db, tg = FakeDb(SAMA), RecordingTelegram()
+    ev = _event(tmp_path, email="sama.mosaad@satopharma.com", message="Your weekly report is ready", send=False)
+    assert m.main(["--from-event", ev], db=db, telegram=tg) == 0
+    assert tg.messages == [] and db.inserts == []
+    out = capsys.readouterr().out.lower()
+    assert "preview only" in out
+    for private in ("sama", "mosaad", "satopharma", "weekly report"):
+        assert private not in out
+
+
+@pytest.mark.parametrize("row", [None, {**SAMA, "active": False}, {**SAMA, "telegram_chat_id": None}])
+def test_from_the_event_file_a_refusal_names_nobody(tmp_path, capsys, row):
+    ev = _event(tmp_path, email="sama.mosaad@satopharma.com", message="hello", send=True)
+    assert m.main(["--from-event", ev], db=FakeDb(row), telegram=RecordingTelegram()) == 2
+    err = capsys.readouterr().err.lower()
+    assert "not sent" in err and "sama" not in err and "satopharma" not in err
+
+
+def test_workflow_passes_no_input_through_the_log():
+    # A step's env is printed at the head of its log; an input there would be public.
+    import pathlib
+
+    import yaml
+
+    wf = pathlib.Path(__file__).resolve().parents[1] / ".github/workflows/telegram-note.yml"
+    job = yaml.safe_load(wf.read_text(encoding="utf-8"))["jobs"]["note"]
+    assert job.get("if") == "github.ref == 'refs/heads/main'"
+    for step in job["steps"]:
+        assert "inputs." not in str(step.get("env", {})) and "inputs." not in str(step.get("run", ""))
+    assert any("--from-event" in str(step.get("run", "")) for step in job["steps"])

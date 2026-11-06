@@ -13,7 +13,11 @@ password ``PHAROS_IMAP_PASSWORD``, the same login the collectors read the mailbo
 server is ``PHAROS_SMTP_HOST`` (default: the IMAP host with ``imap.`` → ``smtp.``, so
 imap.mail.yahoo.com → smtp.mail.yahoo.com), port ``PHAROS_SMTP_PORT`` (465).
 
-    python -m collectors.telegram_steps_mail --email sama.mosaad@satopharma.com --greeting "Dr Sama" [--send]
+The workflow runs it with ``--from-event``: the address, the greeting and "send" are read from the event
+file, and the log says only whether it was previewed, sent or refused, never who to (the run logs are
+public; see ``collectors/dispatch_inputs.py``).
+
+    python -m collectors.telegram_steps_mail --email someone@example.com --greeting "Dr Someone" [--send]
 """
 
 from __future__ import annotations
@@ -27,6 +31,8 @@ import sys
 from email.message import EmailMessage
 from email.utils import formataddr, make_msgid
 
+from collectors import dispatch_inputs
+
 SITE_URL = "https://pharos-satopharma.pages.dev"
 SUBJECT = "PHAROS: connect Telegram to receive safety notices"
 _EMAIL = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
@@ -39,16 +45,16 @@ class Refused(Exception):
 
 def find_person(db, email: str) -> dict:
     if not _EMAIL.match(email or ""):
-        raise Refused(f"not an email address: {email!r}")
+        raise Refused("the address is not an email address")
     row = db.fetchone(
         "select id, full_name, email, active, telegram_chat_id from person where lower(email) = lower(%(e)s)",
         {"e": email})
     if row is None:
-        raise Refused(f"{email} is not a PHAROS person; invite them on the People page first")
+        raise Refused("that address is not a PHAROS person; invite them on the People page first")
     if not row["active"]:
-        raise Refused(f"{row['full_name']} is not active in PHAROS")
+        raise Refused("that person is not active in PHAROS")
     if row["telegram_chat_id"] is not None:
-        raise Refused(f"{row['full_name']} has already connected Telegram; nothing to send")
+        raise Refused("that person has already connected Telegram; nothing to send")
     return row
 
 
@@ -77,7 +83,7 @@ Sato Pharma, Pharmacovigilance
 def build(person: dict, greeting: str | None, sender: str) -> EmailMessage:
     greet = (greeting or person["full_name"]).strip()
     if not _GREETING.match(greet):
-        raise Refused(f"greeting {greet!r} has characters a greeting does not need")
+        raise Refused("the greeting has characters a greeting does not need")
     msg = EmailMessage()
     msg["From"] = formataddr(("PHAROS", sender))
     msg["To"] = formataddr((person["full_name"], person["email"]))
@@ -106,27 +112,42 @@ def send(msg: EmailMessage, smtp_factory=smtplib.SMTP_SSL) -> None:
 
 def main(argv: list[str] | None = None, *, db=None, smtp_factory=smtplib.SMTP_SSL) -> int:
     ap = argparse.ArgumentParser(prog="python -m collectors.telegram_steps_mail")
-    ap.add_argument("--email", required=True, help="the PHAROS person's email address")
+    ap.add_argument("--email", help="the PHAROS person's email address")
     ap.add_argument("--greeting", default="", help='how the email addresses them, e.g. "Dr Sama"')
     ap.add_argument("--send", action="store_true", help="send it (without this it is only printed)")
+    ap.add_argument("--from-event", metavar="PATH",
+                    help="read email, greeting and send from the workflow's event file; the log names nobody")
     args = ap.parse_args(argv)
+    public = bool(args.from_event)
+    if public:
+        inputs = dispatch_inputs.read(args.from_event)
+        email, greeting = inputs.get("email") or "", inputs.get("greeting") or ""
+        do_send = dispatch_inputs.ticked(inputs.get("send"))
+    else:
+        if not args.email:
+            ap.error("--email or --from-event is required")
+        email, greeting, do_send = args.email, args.greeting, args.send
     sender = os.environ.get("PHAROS_IMAP_USER") or "pharos@satopharma.com"
     try:
         if db is None:
             from collectors.core.db import Db
 
             db = Db()
-        person = find_person(db, args.email.strip())
-        msg = build(person, args.greeting or None, sender)
-        print(f"To: {msg['To']}\nFrom: {msg['From']}\nSubject: {msg['Subject']}\n\n{msg.get_content()}")
-        if not args.send:
+        person = find_person(db, email.strip())
+        msg = build(person, greeting or None, sender)
+        if public:
+            print(f"Email ready: {msg['Subject']}, to an active PHAROS person who has not connected Telegram.")
+        else:
+            print(f"To: {msg['To']}\nFrom: {msg['From']}\nSubject: {msg['Subject']}\n\n{msg.get_content()}")
+        if not do_send:
             print("Not sent: preview only (run with send ticked to send it).")
             return 0
         send(msg, smtp_factory)
     except Refused as exc:
         print(f"Not sent: {exc}", file=sys.stderr)
         return 2
-    print(f"Sent to {person['full_name']} <{person['email']}>, Message-ID {msg['Message-ID']}.")
+    print(f"Sent, Message-ID {msg['Message-ID']}." if public
+          else f"Sent to {person['full_name']} <{person['email']}>, Message-ID {msg['Message-ID']}.")
     return 0
 
 
