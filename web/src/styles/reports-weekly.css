@@ -1,0 +1,47 @@
+/* Reports page: the weekly reports, and the monthly reports made before them, folded below. */
+
+.reports-monthly {
+  margin-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+.reports-monthly > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 40px;
+  cursor: pointer;
+  list-style: none;
+}
+.reports-monthly > summary::-webkit-details-marker {
+  display: none;
+}
+.reports-monthly > summary::before {
+  content: '+';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.reports-monthly[open] > summary::before {
+  content: '−';
+}
+.reports-monthly-title {
+  font-weight: 500;
+}
+.reports-monthly-sum {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.reports-weekly .report-month {
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .reports-weekly .report-month {
+    white-space: normal;
+  }
+}
