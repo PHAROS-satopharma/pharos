@@ -12,7 +12,7 @@ from collectors.core.context import FetchError
 from collectors.spc import hc_dpd, medsafe, nedrug, replay
 from collectors.spc.diff import diff_sections
 from collectors.spc.run import MODULES
-from collectors.spc.sections import kr_key, split_ca_monograph, watched_changes
+from collectors.spc.sections import kr_key, missing_core, split_ca_monograph, split_numbered, watched_changes
 from tests.fakes_a2 import FakeCtx, fixture
 
 IVABRADINE = {"id": "ing-iva", "inn_en": "ivabradine", "atc_code": "C01EB17", "terms": {"en": ["ivabradine"]}}
@@ -240,3 +240,20 @@ def test_new_zealand_a_list_that_does_not_answer_fails_the_discovery():
     del routes[medsafe.UPDATES]
     with pytest.raises(FetchError):
         medsafe.discover(FakeCtx(routes), PARACETAMOL)
+
+
+# ───────────────────────────── every EU-numbered label ─────────────────────────────
+
+def test_a_sentence_that_starts_with_a_section_number_is_not_a_heading():
+    # a Dutch SmPC of 2024 (CBG h117827): "5.1 en 5.2, maar …" in 4.2 shut out 4.3–4.9 before 7 Nov 2026
+    text = ("4. KLINISCHE GEGEVENS\n4.1 Therapeutische indicaties\nAngina.\n4.2 Dosering en wijze van toediening\n"
+            "Zie rubriek\n5.1 en 5.2, maar er kan geen doseringsadvies worden gegeven.\n4.3 Contra-indicaties\n"
+            "Shock.\n4.4 Bijzondere waarschuwingen\nLet op.\n4.8 Bijwerkingen\nFosfenen.\n")
+    got = split_numbered(text)
+    assert got["4.3"] == "Shock." and got["4.8"] == "Fosfenen." and "5.1" not in got
+    assert "5.1 en 5.2" in got["4.2"]
+
+
+def test_a_split_without_a_core_section_is_never_a_label():
+    assert missing_core({"4.3": "a", "4.4": "b", "4.8": "c"}) == []
+    assert missing_core({"4.1": "a", "4.2": "b"}) == ["4.3", "4.4", "4.8"]

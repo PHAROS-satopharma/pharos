@@ -271,7 +271,9 @@ def split_numbered(text: str) -> dict[str, str]:
     Rules that keep body text from starting a section: numbers must rise (4.3 after 4.2 …); a
     top-level heading ("5. PHARMACOLOGICAL PROPERTIES") must be mostly upper-case, as the QRD
     template writes it in every language; a sub-heading must belong to the current top-level
-    section; a dose ("4.5 mg") is never a heading. Text before the first heading is dropped, a
+    section; a dose ("4.5 mg") is never a heading; a sub-heading starts with a capital, as the template
+    writes it in every language, so a sentence that begins with a cross-reference ("5.1 en 5.2, maar er kan
+    …", a Dutch SmPC of 2024) is body text. Text before the first heading is dropped, a
     section's text excludes its heading line, and third-level headings (4.2.1) stay inside their
     parent. Upper-case-free scripts (none in the EU template) fall back to the numbering alone.
     """
@@ -287,7 +289,7 @@ def split_numbered(text: str) -> dict[str, str]:
                 _mostly_upper(heading) or not any(c.isalpha() and c.isupper() != c.islower()
                                                   for c in heading))
             sub_ok = (len(key) == 2 and num in _VALID_SUB and bool(last)
-                      and key[0] in (last[0], last[0] + 1))
+                      and key[0] in (last[0], last[0] + 1) and not _starts_lower(heading))
             if (top_ok or sub_ok) and key > last and not _DOSE.match(heading) and (
                     current is not None or key[0] <= 2):
                 current, last = num, key
@@ -296,6 +298,20 @@ def split_numbered(text: str) -> dict[str, str]:
         if current is not None:
             out[current].append(line)
     return {k: "\n".join(v).strip() for k, v in out.items()}
+
+
+def _starts_lower(heading: str) -> bool:
+    first = next((c for c in heading if c.isalpha()), "")
+    return first.islower()
+
+
+CORE_EU = ("4.3", "4.4", "4.8")
+
+
+def missing_core(sections: dict[str, str], prefix: str = "") -> list[str]:
+    """The core SmPC sections (contraindications, warnings, undesirable effects) a split did not find. Every
+    SmPC has all three headings; a split without one went wrong, and is never stored as a label without it."""
+    return [k for k in CORE_EU if prefix + k not in sections]
 
 
 def split_japanese(text: str) -> dict[str, str]:

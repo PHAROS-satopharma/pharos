@@ -30,7 +30,7 @@ from datetime import date
 from collectors.core.context import FetchError, ParseError
 from collectors.parsers.base import parse_date
 from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, run_cache, terms_for
-from collectors.spc.sections import WATCHED_EU, split_numbered
+from collectors.spc.sections import WATCHED_EU, missing_core, split_numbered
 
 SOURCE_ID = "spc-medsafe"
 COUNTRY = "NZ"
@@ -155,7 +155,8 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
 
     text, _method, _words = extract_text(f.content, LANG)
     sections = {k: v for k, v in split_numbered(text).items() if wanted(k)}
-    if not any(k != "10" for k in sections):
-        raise SnapshotError(f"Medsafe {product['national_id']}: no numbered section 4 found")
+    missing = missing_core(sections)
+    if missing:
+        raise SnapshotError(f"Medsafe {product['national_id']}: section {', '.join(missing)} not found")
     return Snapshot(sections=sections, doc_date=revision_date(sections.get("10")), lang=LANG, source_url=url,
                     original_sha256=f.sha256)
