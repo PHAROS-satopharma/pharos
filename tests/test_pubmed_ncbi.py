@@ -448,6 +448,18 @@ def test_plan_windows():
     assert pubmed.plan(ctx, name, pending, opts, TODAY, True)[0] == [
         pubmed.Window(YEAR_AGO, TODAY - timedelta(days=5), True),
         pubmed.Window(TODAY - timedelta(days=4), TODAY, False)]
+    # paused for a month (the ingredient or its class word switched off, then on): the month is read again, as
+    # new, from the search's own last day less 3 days; the source's last run alone would skip it
+    paused = {**done, "last_searched_at": datetime.now(timezone.utc) - timedelta(days=30)}
+    assert pubmed.plan(ctx, name, paused, opts, TODAY, True)[0] == [
+        pubmed.Window(TODAY - timedelta(days=33), TODAY, False)]
+    # searched after the source's last complete run (a run cut by the time budget): the source's window
+    assert pubmed.plan(ctx, name, {**done, "last_searched_at": datetime.now(timezone.utc)}, opts, TODAY,
+                       True)[0] == [normal]
+    # paused for nearly the 90 days: never more than 90 days back
+    long_pause = {**done, "last_searched_at": datetime.now(timezone.utc) - timedelta(days=89)}
+    assert pubmed.plan(ctx, name, long_pause, opts, TODAY, True)[0] == [
+        pubmed.Window(TODAY - timedelta(days=pubmed.MAX_CATCH_UP_DAYS), TODAY, False)]
     # not searched for months (the ingredient was switched off): a new look-back
     stale = {**done, "last_searched_at": datetime.now(timezone.utc) - timedelta(days=120)}
     assert pubmed.plan(ctx, name, stale, opts, TODAY, True)[0] == [pubmed.Window(YEAR_AGO, TODAY, True)]
