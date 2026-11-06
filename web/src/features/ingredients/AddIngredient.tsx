@@ -189,8 +189,9 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
           each against the archive. Nothing is saved until you press Save.
         </p>
         <p className="small muted">
-          After saving, the next daily run adds the drug class from the ATC code and starts checking the notices
-          PHAROS already holds from the last 12 months for these names, as history (no messages).
+          After saving, the next daily run adds its group from the ATC code (searched) and the class above it (shown,
+          switched off until you have read its words), and starts checking the notices PHAROS already holds from the
+          last 12 months for these names, as history (no messages). The search profile is set on the ingredient’s line.
         </p>
         {classCodesFor(confirmed).includes('NSAID') ? (
           <p className="small">

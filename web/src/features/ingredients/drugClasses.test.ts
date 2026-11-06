@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classesOf, className, isDue, wordsByLanguage, wordsSummary, type DrugClass } from './drugClasses';
+import { classesOf, className, isDue, linkOf, wordsByLanguage, wordsSummary, type DrugClass } from './drugClasses';
 
 const fq: DrugClass = {
   id: 'c1',
@@ -9,7 +9,7 @@ const fq: DrugClass = {
   confirmed_by: null,
   confirmed_at: null,
   class_term: [],
-  ingredient_class: [{ ingredient_id: 'levo' }],
+  ingredient_class: [{ ingredient_id: 'levo', relation: 'group', enabled: true }],
 };
 
 describe('the drug class line', () => {
@@ -43,8 +43,10 @@ describe('the drug class line', () => {
     expect(groups[0][1].map((t) => t.term)).toEqual(['fluoroquinolone', 'fluroquinolone']);
   });
 
-  it('finds the classes an ingredient belongs to', () => {
+  it('finds the classes an ingredient belongs to, and what each is to it', () => {
     expect(classesOf('levo', [fq])).toEqual([fq]);
     expect(classesOf('lorno', [fq])).toEqual([]);
+    expect(linkOf('levo', fq)).toEqual({ ingredient_id: 'levo', relation: 'group', enabled: true });
+    expect(linkOf('lorno', fq)).toBeUndefined();
   });
 });

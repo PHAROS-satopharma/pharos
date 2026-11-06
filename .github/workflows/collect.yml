@@ -3,7 +3,8 @@
 #
 #   4h       every 4 hours at :17        feeds, JSON, APIs, HTML lists, the PV mailbox (IMAP)
 #   12h      05:47 and 17:47             browser-engine sources (Playwright)
-#   daily    02:31                       drug classes from the ATC code; large JSON files (EMA medicines, Health
+#   daily    02:31                       drug classes from the ATC code (a manual run can choose "classes" to run
+#                                        only that step); large JSON files (EMA medicines, Health
 #                                        Canada recalls …) and NCBI literature (PubMed and PubMed Central); the
 #                                        check of the past (15 minutes)
 #   weekly   Monday 03:23                SPC / label watch
@@ -28,7 +29,7 @@ on:
       schedule:
         description: Which schedule to run
         type: choice
-        options: ["4h", "12h", "daily", "weekly", "monthly", "all"]
+        options: ["4h", "12h", "daily", "weekly", "monthly", "all", "classes"]
         default: "4h"
       source:
         description: Only this source id (optional)
@@ -117,12 +118,13 @@ jobs:
       # collection so that a new ingredient's class words are looked for from this run on. A failure warns and
       # never fails the collection; that ingredient is tried again the next day.
       - name: Drug classes
-        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all' || steps.which.outputs.schedule == 'classes'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python -m collectors.classes || echo "::warning::Some drug classes could not be made; they are tried again tomorrow."
 
       - name: Collect
+        if: steps.which.outputs.schedule != 'classes'
         env:
           # Secrets go to this step only, never to the job: the setup actions above never see them.
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

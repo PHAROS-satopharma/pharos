@@ -46,6 +46,8 @@ const mention = (document_id: string, regulator_id: string, date: string, first_
   doc_type: 'dhpc',
   terms: [{ text: 'lornoxicam', lang: 'en' }],
   by_class: false,
+  relation: 'name',
+  class_name: null,
   is_backfill: false,
   sections: null,
   issue_id: null,

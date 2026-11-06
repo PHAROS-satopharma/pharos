@@ -177,3 +177,41 @@ def test_a_paused_ingredient_has_no_due_words(store, tag):
     store.db.execute("update ingredient set active = true where id = %(i)s", {"i": ing})
     # watching it again makes its words due again, though they were checked before
     assert t in store.rematch_due_terms()[0]
+
+
+def test_a_parent_class_is_shown_but_not_searched_until_switched_on(store, tag):
+    """Migration 0041: the link says what the class is and whether its words are searched; a link that exists is
+    never changed; switching a class on makes its words due for the check of the past again."""
+    code = _code()
+    ing = _ingredient(store, tag, code + "01")
+    group = store.create_drug_class(code=code, name_en=f"Group {tag}", wikidata_qid=None, terms=[
+        {"lang": "en", "term": f"groupword{tag}", "mode": "stem", "source": "wikidata"}])
+    parent = store.create_drug_class(code=code[:4], name_en=f"Parent {tag}", wikidata_qid=None, terms=[
+        {"lang": "en", "term": f"parentword{tag}", "mode": "stem", "source": "wikidata"}])
+    store.link_ingredient_class(ing, group)
+    store.link_ingredient_class(ing, parent, relation="parent", enabled=False)
+    links = store.db.fetchall(
+        "select class_id, relation, enabled from ingredient_class where ingredient_id = %(i)s order by relation",
+        {"i": ing})
+    assert [(str(r["class_id"]), r["relation"], r["enabled"]) for r in links] == [
+        (group, "group", True), (parent, "parent", False)]
+    assert sorted(r["class_codes"] for r in store.ingredients_for_classes() if r["id"] == ing) == [[code, code[:4]]]
+    # only the group's words are searched, in notices, in the literature and by the check of the past
+    assert {t.term for t in store.load_terms() if t.class_id in (group, parent)} == {f"groupword{tag}"}
+    assert store.class_words("en")[f"testoxacin-{tag}"] == [f"groupword{tag}"]
+    assert ing in store.class_ingredients()[group] and parent not in store.class_ingredients()
+    pword = str(store.db.fetchone("select id from class_term where class_id = %(c)s", {"c": parent})["id"])
+    assert pword not in store.rematch_due_terms()[1]
+    # the parent's word was checked long ago; switching the class on makes it due again, and searched
+    store.db.execute("update class_term set changed_at = '2026-01-01', rematched_at = '2026-01-01' where id = %(t)s",
+                     {"t": pword})
+    store.db.execute("update ingredient_class set enabled = true where ingredient_id = %(i)s and class_id = %(c)s",
+                     {"i": ing, "c": parent})
+    assert pword in store.rematch_due_terms()[1]
+    assert store.class_words("en")[f"testoxacin-{tag}"] == [f"groupword{tag}", f"parentword{tag}"]
+    assert ing in store.class_ingredients()[parent]
+    # linking again, even differently, changes nothing
+    store.link_ingredient_class(ing, parent, relation="group", enabled=False)
+    row = store.db.fetchone("select relation, enabled from ingredient_class where ingredient_id = %(i)s and class_id = %(c)s",
+                            {"i": ing, "c": parent})
+    assert row == {"relation": "parent", "enabled": True}

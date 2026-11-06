@@ -126,7 +126,101 @@ select pg_temp.dc_assert(:'dc_jobs'::int >= 1 and :'dc_r_job' like '42501%',
   'a signed-in person sees the progress of the check and cannot change it');
 update rematch_job set finished_at = now() where finished_at is null;
 
+-- ───────────── the search profile (0041): the group searched, the parent class off, a group by hand ─────────────
+select pg_temp.dc_assert((select ic.relation = 'manual' and ic.enabled from ingredient_class ic
+                            join drug_class c on c.id = ic.class_id where c.code = 'NSAID' limit 1),
+  'the NSAID seed is a manual group whose words are searched');
+insert into ingredient_class (ingredient_id, class_id)
+  values ('00000000-0000-0000-0000-0000000dc001', '00000000-0000-0000-0000-0000000dc002');
+select pg_temp.dc_assert((select relation = 'group' and enabled from ingredient_class
+                           where ingredient_id = '00000000-0000-0000-0000-0000000dc001'
+                             and class_id = '00000000-0000-0000-0000-0000000dc002'),
+  'a link saved without more is the searched group');
+insert into drug_class (id, code, name_en, origin, wikidata_qid)
+  values ('00000000-0000-0000-0000-0000000dc003', 'J01M', 'Quinolone antibacterials', 'atc', 'Q13669486');
+insert into class_term (id, class_id, lang, term, mode, source)
+  values ('00000000-0000-0000-0000-0000000dc031', '00000000-0000-0000-0000-0000000dc003', 'en', 'quinolone antibiotic',
+          'stem', 'wikidata');
+update class_term set changed_at = '2026-01-01 00:00+00', rematched_at = '2026-01-01 00:00+00'
+ where id = '00000000-0000-0000-0000-0000000dc031';
+insert into ingredient_class (ingredient_id, class_id, relation, enabled)
+  values ('00000000-0000-0000-0000-0000000dc001', '00000000-0000-0000-0000-0000000dc003', 'parent', false);
+select pg_temp.dc_assert(pg_temp.dc_refused($q$update ingredient_class set relation = 'cousin'
+    where class_id = '00000000-0000-0000-0000-0000000dc003'$q$) like '23514%',
+  'a class is the group, the parent class or a manual group, nothing else');
+insert into drug_class (id, code, name_en, origin)
+  values ('00000000-0000-0000-0000-0000000dc004', 'CI_HAND', 'CI hand class', 'hand');
+insert into ingredient_class (ingredient_id, class_id)
+  values ('00000000-0000-0000-0000-0000000dc001', '00000000-0000-0000-0000-0000000dc004');
+select pg_temp.dc_assert((select relation = 'manual' from ingredient_class
+                           where class_id = '00000000-0000-0000-0000-0000000dc004'),
+  'a hand-made class linked without more is a manual group');
+
+-- The administrator adds a group by hand, switches the parent class on, and may not remove an ATC class.
+select pg_temp.dc_as('00000000-0000-0000-0000-0000000000a1');
+set role authenticated;
+select add_search_group('00000000-0000-0000-0000-0000000dc001', '  Respiratory   fluoroquinolones ') as dc_grp \gset
+select add_search_group('00000000-0000-0000-0000-0000000dc001', 'respiratory FLUOROQUINOLONES') as dc_grp2 \gset
+select pg_temp.dc_refused($q$select add_search_group('00000000-0000-0000-0000-0000000dc001', 'J01MA')$q$) as dc_atc \gset
+select pg_temp.dc_refused($q$select add_search_group('00000000-0000-0000-0000-0000000dc001', 'x')$q$) as dc_shortname \gset
+select pg_temp.dc_refused($q$select add_search_group('00000000-0000-0000-0000-0000000dc0ff', 'Quinolones')$q$) as dc_noing \gset
+select add_class_term(:'dc_grp', 'en', 'respiratory fluoroquinolone') as dc_grp_word \gset
+select set_class_search('00000000-0000-0000-0000-0000000dc001', '00000000-0000-0000-0000-0000000dc003', true);
+select pg_temp.dc_refused($q$select set_class_search('00000000-0000-0000-0000-0000000dc001',
+    '00000000-0000-0000-0000-0000000dc0ff', true)$q$) as dc_nolink \gset
+select pg_temp.dc_refused($q$select unlink_search_group('00000000-0000-0000-0000-0000000dc001',
+    '00000000-0000-0000-0000-0000000dc002')$q$) as dc_unlink_atc \gset
+reset role;
+
+select pg_temp.dc_assert(:'dc_grp' = :'dc_grp2'
+  and (select origin = 'hand' and name_en = 'Respiratory fluoroquinolones' and code = 'RESPIRATORY_FLUOROQUINOLONES'
+         from drug_class where id = :'dc_grp'),
+  'a group by hand is a hand-made class named as typed, found again by its name in any case');
+select pg_temp.dc_assert((select relation = 'manual' and enabled from ingredient_class
+                           where ingredient_id = '00000000-0000-0000-0000-0000000dc001' and class_id = :'dc_grp'),
+  'the group by hand is linked as a manual group, searched');
+select pg_temp.dc_assert((select source = 'manual' and lang = 'en' from class_term where id = :'dc_grp_word'),
+  'its words are added as the words of any class');
+select pg_temp.dc_assert(:'dc_atc' like '22023%' and :'dc_shortname' like '22023%' and :'dc_noing' like 'P0002%',
+  'an ATC code, a one-letter name and an unknown ingredient are refused');
+select pg_temp.dc_assert((select enabled and changed_at > now() - interval '1 hour' from ingredient_class
+                           where ingredient_id = '00000000-0000-0000-0000-0000000dc001'
+                             and class_id = '00000000-0000-0000-0000-0000000dc003'),
+  'the parent class is switched on, and the switch is dated');
+select pg_temp.dc_assert((select changed_at > rematched_at from class_term
+                           where id = '00000000-0000-0000-0000-0000000dc031'),
+  'switching a class on makes its words due for the check of the past again');
+select pg_temp.dc_assert(:'dc_nolink' like 'P0002%' and :'dc_unlink_atc' like '22023%',
+  'a class that is not linked cannot be switched; a class from the ATC code cannot be removed');
+select pg_temp.dc_assert((select count(*) >= 4 from audit_log where table_name = 'ingredient_class'
+                           and new_row ->> 'ingredient_id' = '00000000-0000-0000-0000-0000000dc001'),
+  'every link and switch is in the audit log');
+
+-- The administrator removes the group by hand; a reader changes nothing.
+select pg_temp.dc_as('00000000-0000-0000-0000-0000000000a1');
+set role authenticated;
+select unlink_search_group('00000000-0000-0000-0000-0000000dc001', :'dc_grp');
+select pg_temp.dc_refused(format('select unlink_search_group(%L, %L)', '00000000-0000-0000-0000-0000000dc001', :'dc_grp'))
+  as dc_unlinked_twice \gset
+reset role;
+select pg_temp.dc_assert(not exists (select 1 from ingredient_class where class_id = :'dc_grp')
+    and exists (select 1 from drug_class where id = :'dc_grp') and :'dc_unlinked_twice' like 'P0002%',
+  'a removed group leaves the ingredient and keeps its class and words; removing it twice says so');
+select pg_temp.dc_as('00000000-0000-0000-0000-0000000000b2');
+set role authenticated;
+select pg_temp.dc_refused($q$select set_class_search('00000000-0000-0000-0000-0000000dc001',
+    '00000000-0000-0000-0000-0000000dc003', false)$q$) as dc_r_switch \gset
+select pg_temp.dc_refused($q$select add_search_group('00000000-0000-0000-0000-0000000dc001', 'Quinolones')$q$) as dc_r_group \gset
+select pg_temp.dc_refused($q$select unlink_search_group('00000000-0000-0000-0000-0000000dc001',
+    '00000000-0000-0000-0000-0000000dc004')$q$) as dc_r_unlink \gset
+select count(*) as dc_r_links from ingredient_class where ingredient_id = '00000000-0000-0000-0000-0000000dc001' \gset
+reset role;
+select pg_temp.dc_assert(:'dc_r_switch' like '42501%' and :'dc_r_group' like '42501%' and :'dc_r_unlink' like '42501%',
+  'a reader cannot switch, add or remove a group');
+select pg_temp.dc_assert(:'dc_r_links'::int = 3, 'a reader sees the ingredient''s classes and their switches');
+
 -- Leave the shared test database as it was.
 delete from rematch_job;
-delete from drug_class where id = '00000000-0000-0000-0000-0000000dc002';
+delete from drug_class where id in ('00000000-0000-0000-0000-0000000dc002', '00000000-0000-0000-0000-0000000dc003',
+                                    '00000000-0000-0000-0000-0000000dc004', :'dc_grp');
 delete from ingredient where id = '00000000-0000-0000-0000-0000000dc001';

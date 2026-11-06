@@ -4,11 +4,17 @@
 import type { DocType, IssueStatus, SourceChannel, SourceHealth, SourceKind } from '../../lib/types';
 import type { RegulatorPage } from '../sources/horizontal';
 
+/** What a class is to the ingredient (migration 0041): its group, the class above it, or a group added by hand. */
+export type ScreenRelation = 'group' | 'parent' | 'manual';
+
 export interface ScreenClass {
   id: string;
   code: string;
   name_en: string;
   origin: 'atc' | 'hand';
+  relation: ScreenRelation;
+  /** Whether its words are looked for. */
+  enabled: boolean;
 }
 
 export interface ScreenIngredient {
@@ -75,6 +81,10 @@ export interface Mention {
   terms: MatchedWord[];
   /** Only words of a drug class matched, not the ingredient's own names. */
   by_class: boolean;
+  /** How it was found: 'name' (its own names), else the nearest class whose word matched. */
+  relation: 'name' | ScreenRelation;
+  /** The class that found it; null when its own name did. */
+  class_name: string | null;
   /** History: found by a backfill or by the check of the past, never alerted. */
   is_backfill: boolean;
   /** Label changes only: the sections that changed. */

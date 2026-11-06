@@ -42,7 +42,13 @@ serve(async (req) => {
   if (error) throw new Error(`ingredient lookup failed: ${error.message}`);
   if (!ing) throw new HttpError(404, "That ingredient is not on the watch list.");
 
-  const { data: links, error: lErr } = await svc.from("ingredient_class").select("class_id").eq("ingredient_id", id);
+  // The classes whose words this ingredient searches (ingredient_class.enabled, migration 0041), as the
+  // daily watch reads them (Store.class_words).
+  const { data: links, error: lErr } = await svc
+    .from("ingredient_class")
+    .select("class_id")
+    .eq("ingredient_id", id)
+    .eq("enabled", true);
   if (lErr) throw new Error(`class lookup failed: ${lErr.message}`);
   let classWords: string[] = [];
   const classIds = (links ?? []).map((r) => r.class_id as string).filter(Boolean);
