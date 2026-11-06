@@ -292,8 +292,13 @@ ingredient_papers(p_ingredient uuid, p_from date, p_to date) returns table (docu
   -- newest first. The screen pages it 50 at a time.
 ```
 
-Web: `web/src/features/screen/` (route `/ingredients/:id?from=&to=`); decisions are `review_event` inserts as on
-the notice page. SQL test: `supabase/tests/ingredient_screen.sql`.
+Web: `web/src/features/screen/` (route `/ingredients/:id?from=&to=`); decisions are `review_event` inserts, the
+only place the web app records one since the notice page was removed (November 2026). SQL test:
+`supabase/tests/ingredient_screen.sql`.
+
+Web routes (`web/src/app/routes.tsx`, tabs in `web/src/app/nav.ts`): `/ingredients`, `/ingredients/:id`,
+`/sources`, `/reports`, `/people` (administrators), `/me`; `/` opens `/ingredients`. The addresses of the removed
+screens (`REMOVED_PATHS`: notifications, issues, issue, signals, oversight, psur, labels) open `/`.
 
 ## Environment / secrets
 

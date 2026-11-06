@@ -9,7 +9,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
-| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), the EURD list, then up to 15 minutes of the check of the past |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
@@ -130,6 +130,45 @@ select id, 'Omar Gawish', email, 'admin' from auth.users where email = '<the inv
 ```
 
 After that, admins invite everyone else from the People screen (the `invite-person` function).
+
+## The app: three tabs, and the phone
+
+"We only do screening here" (Dr Sama, November 2026). PHAROS has three tabs, in the order of her two passes and
+the report:
+
+- **Ingredients**: the vertical pass. One ingredient across every source for the days she chooses (below).
+- **Sources**: the horizontal pass. Each country's pages and everything its authorities newly published (below).
+- **Reports**: the screening reports.
+- **People** is a fourth tab for administrators only: who may sign in, their roles and messages.
+- **Me** (her initials, top right): Telegram, the messages she receives, password, theme and sign-out.
+
+`/` opens Ingredients.
+
+- **On a phone** (a screen under 760 px wide) the tabs sit in a bar at the foot of the screen, each labelled,
+  the current one in amber with a rule above it. The bar keeps clear of the phone's gesture bar and notch.
+- **The phone app.** On Android, open `https://pharos-satopharma.pages.dev` in Chrome, sign in, then
+  Chrome's menu (⋮) → **Add to Home screen** (on some phones **Install app**) → **Install**. On an iPhone, Safari → Share → **Add to Home
+  Screen**. PHAROS then opens from its own icon, full screen, at Ingredients. It is the same website
+  (`web/public/manifest.webmanifest`). There is no offline copy (no service worker), so every screen is
+  always the latest one and needs a connection.
+
+### What was removed in November 2026, and what is kept
+
+- **Screens.** These are gone: Notifications (the notice list and its Excel export), the notice page (`/issue/…`),
+  Signals, Oversight, the PSUR builder and Our labels. An old link or bookmark to any of them
+  (`/notifications`, `/issues`, `/issue/<id>`, `/signals`, `/signals/<id>`, `/oversight`, `/psur`, `/labels`)
+  opens Ingredients, never an empty page. A notice's title on the Ingredients and Sources screens opens the
+  authority's own page for it. Decisions on a notice are recorded on the Ingredients screen.
+- **Collection steps.** The daily EURD list (`collectors/eurd.py`), the morning escalation of late items
+  (`collectors/escalate.py`) and the weekly EMA literature monitoring list (`collectors/mlm.py`) no longer
+  run. Their data stays as it was last written: `eurd_entry` and `mlm_entry` keep the last list read.
+- **Kept running.** Every source, the label (SPC) watch (its changes show on the Ingredients screen), NCBI
+  literature, the check of the past, the PRAC agendas and minutes (`ema-prac`), the Telegram messages (new
+  notices, the daily digests, source health) and the watchdog.
+- **Data.** No table, view or function was dropped and no migration was changed. The notices (`issue`) and
+  their decisions (`review_event`), signals (`signal`, `signal_event`), our labels, the EURD and literature
+  monitoring lists, the case-report flag (`v_case_report`), `overdue_items()` and every signature
+  (`sign_off`) stay in the database, and their database tests still run in CI.
 
 ## The Sources screen and the daily new-items message
 
@@ -279,7 +318,7 @@ The screen reads everything with one call, `ingredient_screen()` (migration 0039
 - **The check of the past** (`python -m collectors.rematch`). Notices are matched as they arrive, so a word
   saved later (a new ingredient, a new or changed name, an ingredient watched again after a pause, a new
   class word) is "due" until the stored notices of the last 12 months have been checked with it. The daily
-  run gives it 15 minutes after the EURD list; `rematch.yml` runs it by hand for up to 45 minutes. It reads
+  run gives it 15 minutes after the collection; `rematch.yml` runs it by hand for up to 45 minutes. It reads
   each notice's kept text, or its original again from R2 (page, PDF with OCR, attachments), skips words that
   already matched that notice, and files what it finds as history: no Telegram message, no digest. Its
   progress is the `rematch_job` row (one open at a time): the next run continues from
@@ -289,71 +328,25 @@ The screen reads everything with one call, `ingredient_screen()` (migration 0039
 - **After the 0034 deployment** the words the 12-month backfill already covered are marked checked;
   everything added after it (levofloxacin, added 5 November 2026) is due, so the first daily run starts on it.
 
-## Signals
+## Removed: Signals, Our labels, the PSUR builder, Oversight and the escalation
 
-A notice marked **Relevant** can open a signal (Signals screen, or the Signal panel on the notice). A signal
-goes through validation, assessment, action and closed. Every step is a row in `signal_event`, which nobody can
-change or delete, and each step needs a comment except assigning an owner. The step functions stamp the person and
-the time themselves. A step taken on a stage that someone else already changed is refused, and the page reloads.
+Removed in November 2026 (see *What was removed* above). For the record of what they did:
 
-Due dates are Cairo calendar days, set from `app_setting` `signal_due_days`. The defaults are 30 days to
-validate, and 30, 60 or 90 days to assess a high, medium or low priority signal. An action's due date is chosen
-when the assessment is recorded. To match the SOP, an administrator changes the setting in the SQL editor, for
-example:
-
-```sql
-update app_setting set value = '{"validation": 14, "assessment": {"high": 30, "medium": 60, "low": 90}}'
- where key = 'signal_due_days';
-```
-
-The new days apply to the next step taken. Due dates already set are not moved.
-
-## Our labels
-
-*Ingredients → Our labels* keeps the text of our own approved product information (leaflet or SmPC),
-section by section, one row per version. A reviewer or administrator adds a version as a PDF with a text layer, a
-text file or pasted text. It is read on their computer, and only the numbered sections found are saved. A new
-version of the same product keeps the older ones and marks them superseded.
-
-When the label watch records an originator's change, the notice shows, under each changed section, every sentence
-the originator added and whether the same section of our current label says it: *Our label says this* (three
-quarters or more of its content words are in one sentence of ours), *Partly in our label*, or *Not in our label*.
-US and Japanese sections are matched to the SmPC section they correspond to (adverse reactions → 4.8). The check
-compares words in one language only. When our label and the originator's text are in different languages, the
-notice shows our section to read side by side.
-
-## PSUR builder and the EURD list
-
-- **The EURD list.** The daily collection (02:31 UTC) ends with `python -m collectors.eurd`: it downloads EMA's
-  List of Union reference dates, keeps the original in the archive, and stores in `eurd_entry` every row that
-  names a watched ingredient, alone or in a combination (whole words only; a row's "except for …" is not a
-  match). A list already stored (same SHA-256) is not read again. A failure only warns; the page keeps the last
-  list. To read a saved copy by hand: `python -m collectors.eurd --file eurd.xlsx`.
-- **The page** (`/psur`, linked from Reports): choose an ingredient; the interval is set from its EURD row (the
-  day after the previous data lock point to the DLP) and can be changed. It shows §3 regulator actions, §4
-  label-change notices and originator label changes, §11 literature, §15–16 signals open in the interval, and
-  the screening annex (`screening_summary(from, to)`: each source, the Cairo days it was read, failed reads).
-  Notices judged not relevant are counted and listed in the Excel file only.
-- **Print or save as PDF** prints the page without the form; **Download Excel** saves the same sections as one
-  workbook. PHAROS began screening on 5 November 2026; the annex says so when the interval starts earlier.
-
-## Oversight and the morning escalation
-
-- **The page** (`/oversight`, in the top bar): notices waiting for review, reviews late, open signals, signal
-  steps late, sources needing a look, the PSUR data lock points and submissions in the next 90 days (from the
-  EURD list), and the latest monthly report. Everything late links to the notice or signal.
-- **What is late** comes from `overdue_items(day)`: a signal past the due date of its stage, and a notice still
-  "New" more than `review_due_days` days (app setting, 7 by default) after PHAROS found it. Backfilled notices
-  are never late. To change the review time: `update app_setting set value = '5' where key = 'review_due_days';`
-- **The escalation** (`python -m collectors.escalate`, after the 12-hour collection): once a Cairo day, from
-  07:00, the late signals and notices go to every active administrator with Telegram linked, as notification
-  kind "Late items". Nothing goes when nothing is late. While `telegram_dry_run` is on, the message is only
-  written to the notification log.
+- **Signals** took a notice marked Relevant through validation, assessment, action and closed. Every step is a
+  row in `signal_event`, which nobody can change or delete; the rows stay. The due days are still in
+  `app_setting` `signal_due_days`.
+- **Our labels** kept the text of our own approved product information, section by section, and compared it
+  with an originator's label change. The versions stay in the database.
+- **The PSUR builder** (`/psur`) gathered a PSUR interval's notices, label changes, literature, signals and
+  screening annex, with the interval from EMA's EURD list (`eurd_entry`, last list kept).
+- **Oversight** (`/oversight`) listed what was late (`overdue_items(day)`, still in the database; the review time
+  is `app_setting` `review_due_days`). **The morning escalation** sent the late items to administrators on
+  Telegram once a Cairo day (notification kind "Late items"). Neither runs now.
 
 ## Electronic sign-off
 
-- **Who signs what.** An administrator approves each monthly report (Reports, the "Sign-off" column). A
-  reviewer or administrator reviews or approves a signal once it is closed (the signal's page, "Sign-off").
+- **Who signs what.** An administrator approves each monthly report (Reports, the "Sign-off" column). Signals
+  were signed on their own page until the Signals screen was removed; those signatures stay in `sign_off`.
 - **How.** The signer chooses what the signature means, types their password and may add a comment. The page
   signs in again with that password; `sign_record()` accepts the signature only when the token shows a password
   sign-in in the last five minutes, and stores the name and role at that moment, the meaning, the database
@@ -402,15 +395,12 @@ notice shows our section to read side by side.
 
 ## Literature case reports and PRAC agendas
 
-- **Case reports.** A literature notice is flagged "Possible case report" when PubMed lists it as Case Reports or
-  its title says "case report", "case series" or "a case of" (`v_case_report`). The notice page shows day zero
-  (the Cairo day PHAROS found the paper) and the dates to report a valid case: 15 days if serious, 90 if not.
-  Oversight lists every flagged paper until its 90 days pass, unless it was judged not relevant.
-- **EMA's literature monitoring.** `python -m collectors.mlm` (weekly, after the label watch) reads EMA's medical
-  literature monitoring list and keeps in `mlm_entry` the group of each watched ingredient EMA monitors (a group
-  named after it, or one where it stands alone; a combination does not count). The notice page and Oversight
-  say "Not monitored by EMA" for an ingredient with no row: its literature cases are ours to report. On the
-  list valid from 1 June 2020, ibuprofen, diclofenac and meloxicam are monitored; lornoxicam is not.
+- **Case reports.** The database still flags a literature notice "Possible case report" when PubMed lists it as
+  Case Reports or its title says "case report", "case series" or "a case of" (`v_case_report`), with day zero
+  (the Cairo day PHAROS found the paper). The notice page and Oversight that showed the flag were removed in
+  November 2026.
+- **EMA's literature monitoring.** The weekly reading of EMA's medical literature monitoring list
+  (`collectors/mlm.py`) was removed in November 2026; `mlm_entry` keeps the last list read.
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings
   (`/en/committees/prac/prac-agendas-minutes-highlights`). An agenda names each substance PRAC will discuss,
   weeks before a recommendation, so a watched ingredient on it becomes a notice (Safety update, "Agenda of the
