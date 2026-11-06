@@ -17,9 +17,12 @@ received the report):
   frequent is searched on its own.
 
 ``disproportion`` turns the whole period's counts into PRR and ROR with their 95% confidence intervals and the
-chi-squared test, and flags a reaction reported disproportionately by Evans' criteria (at least 3 reports, PRR at
-least 2, chi-squared at least 4). A flag is a reason to look, not a finding: the Ingredients screen shows it beside
-the label.
+chi-squared test. ``outliers`` flags a reaction that stands out in the ingredient's own profile: at least 3 reports,
+the lower end of its PRR's interval at least 2 and its PRR at least twice the median PRR of the ingredient's kept
+reactions. Evans' criteria (3 reports, PRR 2, chi-squared 4) flagged 88 of paracetamol's 100 on 6 Nov 2026: reports
+of a drug often taken with others name more reactions than FDA's average report, so fatigue or nausea pass. The rule
+is PHAROS's own, not a published standard. A flag is a reason to look, not a finding: the Ingredients screen shows it
+beside the label.
 
 How an ingredient is found (checked on the live API, 6 Nov 2026). The INN in upper case is searched, exactly, in
 three fields at once (and its US name with it, RxNorm's name for the ingredient's rxcui, when that differs: FDA files
@@ -48,6 +51,7 @@ import logging
 import math
 import os
 import re
+import statistics
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -87,7 +91,6 @@ class Disproportion:
     ror_low: float | None
     ror_high: float | None
     chi2: float | None
-    flagged: bool
 
 
 def disproportion(a: int, b: int, c: int, d: int) -> Disproportion:
@@ -96,8 +99,7 @@ def disproportion(a: int, b: int, c: int, d: int) -> Disproportion:
 
     PRR = [a/(a+b)] / [c/(c+d)], ROR = ad/bc, each with the 95% interval of its logarithm; chi-squared with Yates'
     correction. No continuity correction is added: a value that would divide by zero is None (PRR and ROR when c is
-    0, ROR when b is 0), and so is an interval whose logarithm is not defined (a is 0, or d for the ROR). Flagged by
-    Evans' criteria: a >= 3, PRR >= 2 and chi-squared >= 4; a reaction no other drug has (c = 0) counts as PRR >= 2.
+    0, ROR when b is 0), and so is an interval whose logarithm is not defined (a is 0, or d for the ROR).
     """
     if min(a, b, c, d) < 0:
         raise ValueError("a count cannot be negative")
@@ -116,9 +118,19 @@ def disproportion(a: int, b: int, c: int, d: int) -> Disproportion:
     den = (a + b) * (c + d) * (a + c) * (b + d)
     if den:
         chi2 = n * max(0.0, abs(a * d - b * c) - n / 2) ** 2 / den
-    high = prr >= 2 if prr is not None else (c == 0 and a + b > 0)
-    return Disproportion(prr, prr_low, prr_high, ror, ror_low, ror_high, chi2,
-                         a >= 3 and high and chi2 is not None and chi2 >= 4)
+    return Disproportion(prr, prr_low, prr_high, ror, ror_low, ror_high, chi2)
+
+
+def outliers(reactions: list[dict]) -> list[bool]:
+    """Which of an ingredient's reactions stand out in its own profile: at least 3 reports, and either no other drug
+    has the reaction (no PRR) or the lower end of its PRR's 95% interval is at least 2 and its PRR at least twice the
+    median PRR of these reactions. A reaction without a PRR counts as the highest in the median."""
+    if not reactions:
+        return []
+    bar = 2 * statistics.median(math.inf if x["prr"] is None else x["prr"] for x in reactions)
+    return [x["reports"] >= 3 and (x["prr"] is None or (x["prr_low"] is not None and x["prr_low"] >= 2
+                                                        and x["prr"] >= bar))
+            for x in reactions]
 
 
 # ───────────────────────────── quarters ─────────────────────────────
@@ -390,10 +402,12 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
         all_r = max(bg.whole_count(reaction), a)     # never fewer than the ingredient's own (the lists can drift)
         b, c = n_drug - a, all_r - a
         stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
-        drug, with_it = (co_drug(api, names, searched_names(inn, us_name), reaction, bg.whole) if stats.flagged
-                         else (None, None))
         reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats),
-                          "co_drug": drug, "co_reports": with_it})
+                          "co_drug": None, "co_reports": None})
+    for x, flag in zip(reactions, outliers(reactions), strict=True):
+        x["flagged"] = flag
+        if flag:
+            x["co_drug"], x["co_reports"] = co_drug(api, names, searched_names(inn, us_name), x["reaction"], bg.whole)
     return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
             "quarters": quarters, "reactions": reactions, "counts": counts}
