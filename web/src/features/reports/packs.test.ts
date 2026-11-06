@@ -137,7 +137,7 @@ describe('the ingredient chosen in the form narrows the list', () => {
     { id: 'b', kind: 'psur' as const, ingredient_id: 'levo' },
     { id: 'c', kind: 'inspection' as const, ingredient_id: null },
   ];
-  it('shows only that ingredient's packs', () => {
+  it('shows only the packs of that ingredient', () => {
     expect(packsOf(rows, 'para').map((r) => r.id)).toEqual(['a']);
   });
   it('shows nothing for an ingredient with no pack', () => {
