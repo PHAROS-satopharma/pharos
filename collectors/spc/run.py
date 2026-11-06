@@ -284,11 +284,14 @@ def record_change(db, ctx, source_id: str, product: dict, ingredient: dict, snap
          "i": issue_id})
     change_id = str(row["id"]) if row and row.get("id") else None
     if change_id:
-        # Our label against this change (label_gap, 0043): the check never loses the change it describes.
+        # Our label against this change (label_gap, 0043): the check never loses the change it describes. It
+        # runs in its own savepoint: a database error inside it aborts only the check, not the transaction
+        # that holds the snapshot, the change and its issue (finding 10 of the 6 Nov 2026 review of #119).
         try:
             from collectors.labels import recompute
 
-            recompute.gap_for_change(db, change_id, ingredient["id"], changes, snap.lang)
+            with db.transaction():
+                recompute.gap_for_change(db, change_id, ingredient["id"], changes, snap.lang)
         except Exception:  # noqa: BLE001 - the comparison is caught up on the next run
             log.warning("gap check for change %s failed: %s", change_id, traceback.format_exc())
     return issue_id
