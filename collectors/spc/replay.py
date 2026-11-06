@@ -10,6 +10,12 @@ message is sent; ``replay.yml`` runs it from GitHub and puts the result in the r
   (6 Nov 2026: version 31 of Corlanor, the first time) is asked for again, up to ``TRIES`` times.
 
     python -m collectors.spc.replay dailymed <set id> <from version> <to version>
+
+* Korea nedrug: the change history of a label's precautions (``getItemChangeHistList?itemSeq=…&docType=NB``)
+  holds every version's XML in its rows; the two newest are compared, read the way ``nedrug.doc_sections``
+  reads the label (Procoralan 5 mg, item 200906066: 23 Sep 2017 against 10 Nov 2017).
+
+    python -m collectors.spc.replay nedrug <item code>
 """
 
 from __future__ import annotations
@@ -21,6 +27,7 @@ import zipfile
 
 from collectors.core.archive import Archive
 from collectors.core.context import FetchContext
+from collectors.spc import nedrug
 from collectors.spc.dailymed import parse_spl
 from collectors.spc.diff import diff_sections
 from collectors.spc.sections import watched_changes
@@ -76,6 +83,30 @@ def replay_dailymed(ctx, setid: str, v_from, v_to) -> dict:
     return out
 
 
+def nedrug_versions(text: str) -> list[tuple[str, str]]:
+    """``(date, XML)`` of every version in a nedrug change-history page, newest first."""
+    import html
+
+    rows = [(day, html.unescape(xml)) for xml, day in nedrug._HIST_ROW.findall(text)]
+    return sorted(rows, key=lambda r: r[0], reverse=True)
+
+
+def replay_nedrug(ctx, seq: str) -> dict:
+    url = nedrug.HISTORY.format(seq=seq, doc="NB")
+    if hasattr(ctx, "forget"):
+        ctx.forget(url)
+    f = ctx.get(url)
+    if f.status != 200:
+        raise ReplayError(f"nedrug {seq} change history: HTTP {f.status}")
+    versions = nedrug_versions(f.text)
+    if len(versions) < 2:
+        raise ReplayError(f"nedrug {seq} change history: {len(versions)} version(s), two are needed")
+    (date_b, b), (date_a, a) = versions[0], versions[1]
+    out = compare(nedrug.doc_sections(a, "NB"), nedrug.doc_sections(b, "NB"))
+    out.update(source="Korea nedrug", label=seq, versions=(date_a, date_b), dates=(date_a, date_b))
+    return out
+
+
 def summary(result: dict) -> str:
     lines = [f"## Label change replay: {result['source']} {result['label']}",
              f"Version {result['versions'][0]} ({result['dates'][0]}) against version {result['versions'][1]} "
@@ -90,12 +121,12 @@ def summary(result: dict) -> str:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 4 or argv[0] != "dailymed":
+    if not ((len(argv) == 4 and argv[0] == "dailymed") or (len(argv) == 2 and argv[0] == "nedrug")):
         print(__doc__)
         return 2
     ctx = FetchContext(None, "spc-replay", archive=Archive(enabled=False), public_only=True)
     try:
-        result = replay_dailymed(ctx, argv[1], argv[2], argv[3])
+        result = replay_dailymed(ctx, *argv[1:]) if argv[0] == "dailymed" else replay_nedrug(ctx, argv[1])
     finally:
         ctx.close()
     text = summary(result)

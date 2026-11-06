@@ -1,6 +1,7 @@
 """PHAROS — shared types for the SPC / label watch country modules.
 
-Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi) defines:
+Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi, nedrug, hc_dpd, medsafe)
+defines:
 
 * ``SOURCE_ID`` — its ``source`` row (``spc-cima`` …, ``kind: spc``), ``COUNTRY`` and ``LANG``;
 * ``discover(ctx, ingredient) -> list[Product]`` — the products authorised for one active

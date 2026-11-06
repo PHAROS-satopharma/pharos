@@ -42,7 +42,8 @@ alert on the change. (SPC sources have no ``expected_max_gap_days``: labels may 
 same for years, so quiet is not a symptom; failures are.)
 
 Module per source: spc-cima → cima, spc-bdpm → bdpm, spc-ema-epar → ema_epar,
-spc-dailymed → dailymed, spc-mhra → mhra, spc-pmda → pmda_pi.
+spc-dailymed → dailymed, spc-mhra → mhra, spc-pmda → pmda_pi, spc-nedrug → nedrug (Korea),
+spc-hc-dpd → hc_dpd (Canada), spc-medsafe → medsafe (New Zealand).
 """
 
 from __future__ import annotations
@@ -70,6 +71,9 @@ MODULES = {
     "spc-dailymed": "dailymed",
     "spc-mhra": "mhra",
     "spc-pmda": "pmda_pi",
+    "spc-nedrug": "nedrug",
+    "spc-hc-dpd": "hc_dpd",
+    "spc-medsafe": "medsafe",
 }
 DEGRADED_AFTER = 2          # failed SPC runs in a row (weekly) before the source is 'degraded'
 RECENT_SNAPSHOTS = 10       # how far back a snapshot read the same way is looked for
