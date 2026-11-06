@@ -680,6 +680,39 @@ def test_prac_agendas_and_minutes():
     assert first.doc_type == "safety_update" and first.lang == "en"
     # the rules of procedure, the work plan and the meeting dates on the same page are not notices
     assert all("/agenda/" in i.url or "/minutes/" in i.url for i in items)
+    # the 31 August - 3 September agenda was replaced on 9 September: a new item, dated that day
+    revised = [i for i in items if i.structured["updated"]]
+    assert [(i.external_id, i.published, i.structured["first_published"]) for i in revised] == [
+        ("https://www.ema.europa.eu/en/documents/agenda/agenda-prac-meeting-31-august-3-september-2026_en.pdf"
+         "#updated-2026-09-09T13:34:00Z", date(2026, 9, 9), "2026-08-31")]
+    assert all(i.external_id == i.url for i in items if i not in revised)
+
+
+def test_prac_revised_agenda_is_a_new_item():
+    # 6 Nov 2026 (finding 11 of the review of #100): the URL was the only identity, so a draft agenda replaced
+    # under the same address (a substance added) was never read again.
+    src = source("ema-prac", PRAC)
+    url = "https://www.ema.europa.eu/en/committees/prac/prac-agendas-minutes-highlights"
+    html = fixture("ema-prac/meetings.html")
+    html = html.decode("utf-8") if isinstance(html, bytes) else html
+    first_row = '<time datetime="2026-10-26T15:51:57Z">'
+    assert html.count(first_row) == 1
+    i = html.index(first_row)
+    end = html.index("</small>", i) + len("</small>")
+    revised = html[:end] + (
+        '<small class="metadata-row last-updatedfw-normal text-muted" translate="no">'
+        '<strong class="label" translate="yes">Last updated:</strong>'
+        '<span class="value"><time datetime="2026-10-28T09:12:44Z">28/10/2026</time></span></small>') + html[end:]
+    pdf = "https://www.ema.europa.eu/en/documents/agenda/agenda-prac-meeting-26-29-october-2026_en.pdf"
+    before = {i.external_id: i for i in prac.parse_meetings(html, url, src)}
+    after = {i.external_id: i for i in prac.parse_meetings(revised, url, src)}
+    assert pdf in before and pdf not in after
+    new = after[f"{pdf}#updated-2026-10-28T09:12:44Z"]
+    assert new.url == pdf and new.attachment_urls == [pdf]
+    assert new.title == "Agenda of the PRAC meeting 26 - 29 October 2026 (updated 28 October 2026)"
+    assert new.published == date(2026, 10, 28)
+    assert new.structured["first_published"] == "2026-10-26" and new.structured["updated"] == "2026-10-28"
+    assert set(after) - {new.external_id} == set(before) - {pdf}   # the other agendas and minutes are unchanged
 
 
 WHO = ("https://www.who.int/teams/regulation-prequalification/incidents-and-SF/"

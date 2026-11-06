@@ -21,7 +21,10 @@ Source: ``ema-prac`` (English; EMA translates the signal recommendations into ev
    and ``time[datetime]``. An agenda names every substance PRAC will discuss, weeks before a recommendation:
    the early warning. One item per PDF, doc_type ``safety_update``, ``structured.kind`` ``prac_agenda`` or
    ``prac_minutes``; the PDF is screened as the attachment. An agenda is published as a draft and may be
-   replaced under the same address: the URL is the identity.
+   replaced under the same address, which EMA marks with a "Last updated" date: the URL is the identity of
+   the first version, and a revised one is a new item ``<url>#updated-<that date>``, dated that day and
+   screened again, so a substance added to the agenda is not missed (finding 11 of the 6 Nov 2026 review
+   of #100).
 
 (checked 4 Nov 2026; agendas 5 Nov 2026)
 
@@ -112,6 +115,17 @@ def parse_highlights(html, base_url: str, source: SourceConfig) -> list[Item]:
     return items
 
 
+def _dated(block, label: str) -> str:
+    """The ``time[datetime]`` of the block's date row whose label starts with ``label`` ("First published",
+    "Last updated"), or ""."""
+    for row in block.select(".dates-metadata .metadata-row, .metadata-row"):
+        name = node_text(row.select_one(".label")) if row.select_one(".label") else node_text(row)
+        t = row.select_one("time[datetime]")
+        if t is not None and name.casefold().startswith(label.casefold()):
+            return t["datetime"]
+    return ""
+
+
 def parse_meetings(html, base_url: str, source: SourceConfig) -> list[Item]:
     doc = soup(html)
     items: list[Item] = []
@@ -127,12 +141,18 @@ def parse_meetings(html, base_url: str, source: SourceConfig) -> list[Item]:
             continue
         seen.add(pdf)
         t = block.select_one("time[datetime]")
+        first = _dated(block, "First published") or (t["datetime"] if t else "")
+        updated = _dated(block, "Last updated")
         ref = _REF.search(node_text(block))
+        published = local_date(first[:10], "en")
+        revised = local_date(updated[:10], "en") if updated else None
         items.append(Item(
-            external_id=pdf, url=pdf, title=title,
-            published=local_date((t["datetime"] if t else "")[:10], "en"), doc_type="safety_update",
-            lang="en", attachment_urls=[pdf],
-            structured={"reference": ref.group(0) if ref else None, "kind": kind}))
+            external_id=f"{pdf}#updated-{updated}" if revised else pdf, url=pdf,
+            title=f"{title} (updated {revised.day} {revised:%B %Y})" if revised else title,
+            published=revised or published, doc_type="safety_update", lang="en", attachment_urls=[pdf],
+            structured={"reference": ref.group(0) if ref else None, "kind": kind,
+                        "first_published": published.isoformat() if published else None,
+                        "updated": revised.isoformat() if revised else None}))
     return items
 
 
