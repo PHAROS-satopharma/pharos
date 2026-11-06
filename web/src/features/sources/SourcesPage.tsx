@@ -16,7 +16,15 @@ import { cx } from '../../ui/cx';
 import { HealthMark, Tag } from '../../ui/Tag';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
-import { fetchRuns, totalsBySource, useSources, type RunTotals, type SourceWithRegulator } from './queries';
+import {
+  fetchRuns,
+  totalsBySource,
+  useFiltered,
+  useSources,
+  type FilteredSummary,
+  type RunTotals,
+  type SourceWithRegulator,
+} from './queries';
 import { AddSource } from './AddSource';
 import {
   MAX_LOOKBACK_DAYS,
@@ -58,6 +66,8 @@ type Card = CountryCard<SourceWithRegulator>;
 
 interface CardShared {
   hz: HorizontalData;
+  /** What each source's filters left out (filtered_item); read only with the technical details on. */
+  filtered: Map<string, FilteredSummary>;
   totals: Map<string, RunTotals>;
   runsPending: boolean;
   isAdmin: boolean;
@@ -80,6 +90,7 @@ export function SourcesPage() {
     queryFn: () => fetchRuns(weekIso),
   });
   const totals = useMemo(() => totalsBySource(runs.data ?? []), [runs.data]);
+  const filtered = useFiltered(isAdmin && technical);
 
   const toggle = useMutation({
     mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
@@ -102,6 +113,7 @@ export function SourcesPage() {
   const loading = sources.isPending || pages.isPending || hz.isPending;
   const shared: CardShared = {
     hz,
+    filtered: filtered.data ?? new Map(),
     totals,
     runsPending: runs.isPending,
     isAdmin,
@@ -401,6 +413,7 @@ function WeekFigures({
   card,
   week,
   totals,
+  filtered,
   runsPending,
   isAdmin,
   technical,
@@ -473,6 +486,7 @@ function WeekFigures({
           const why = offReason(s);
           const waitingSince = waitingForMail(s);
           const lastChecked = t?.lastRun ?? s.last_ok_at;
+          const left = filtered.get(s.id);
           return (
             <li key={s.id} className={cx('hz-run', !s.enabled && 'is-off')}>
               <div className="hz-run-name">
@@ -530,6 +544,9 @@ function WeekFigures({
                   {CHANNEL_LABEL[s.channel]} · {s.parser} · {SCHEDULE_LABEL[s.schedule]} · {HEALTH_LABEL[s.health].label}
                   {s.consecutive_failures > 0 ? ` · ${s.consecutive_failures} failed in a row` : ''} · reads {s.url}
                   {t?.lastError ? ` · last note: ${t.lastError}` : ''}
+                  {left
+                    ? ` · left out by its filters: ${formatNumber(left.count)}, latest “${left.latest.title}” (${left.latest.reason})`
+                    : ''}
                 </p>
               ) : null}
             </li>

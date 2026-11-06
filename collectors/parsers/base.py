@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from email.utils import parsedate_to_datetime
-from typing import Iterable
+from typing import Callable, Iterable
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from collectors.core.context import FetchContext, FetchError, NotSetUp, ParseError, SourceBlocked
@@ -175,12 +175,30 @@ def attachment_links(html_or_soup, base_url: str, *, selector: str | None = None
     return out
 
 
+# What the keyword and category filters drop (6 Nov 2026: a dropped notice was recorded nowhere). The runner
+# sets WATCHED to the watchlist's matcher and empties DROPPED before each source: a notice that names a watched
+# ingredient is never dropped by a keyword filter, and every drop is kept (collectors/run.py, filtered_item).
+WATCHED: Callable[[str], bool] | None = None
+DROPPED: list[tuple[str, str]] = []          # (the first line of the dropped text, why)
+
+
+def dropped(text: str, why: str, *, unless_watched: bool = True) -> bool:
+    """True when a filter may drop ``text``; False when it names a watched ingredient (kept instead)."""
+    if unless_watched and WATCHED is not None and text and WATCHED(text):
+        return False
+    first = next((ln.strip() for ln in (text or "").splitlines() if ln.strip()), "")
+    DROPPED.append((first[:300], why))
+    return True
+
+
 def keyword_ok(text: str, include: Iterable[str] | None = None,
                exclude: Iterable[str] | None = None) -> bool:
-    """Case-insensitive filter: any include keyword present (if given), no exclude keyword present."""
+    """Case-insensitive filter: any include keyword present (if given), no exclude keyword present. A text
+    that names a watched ingredient always passes (``WATCHED``); every other drop is noted (``DROPPED``)."""
     low = (text or "").casefold()
     inc = [k.casefold() for k in (include or []) if k]
     exc = [k.casefold() for k in (exclude or []) if k]
     if inc and not any(k in low for k in inc):
-        return False
-    return not any(k in low for k in exc)
+        return not dropped(text, "keywords: none of " + ", ".join(inc)[:120])
+    hit = next((k for k in exc if k in low), None)
+    return hit is None or not dropped(text, f"keyword: {hit}")

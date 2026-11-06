@@ -44,6 +44,7 @@ from collectors.core.models import Item, SourceConfig
 from collectors.core.registry import load_parser, source_configs, sync_catalogue
 from collectors.matching import DocumentMatch, Hit, Matcher
 from collectors.merge import DocFacts, merge_document
+from collectors.parsers import base as parser_base
 from collectors.parsers.base import html_text
 
 log = logging.getLogger("collectors.run")
@@ -71,6 +72,24 @@ def _utc_midnight(d: date | None) -> datetime | None:
     return datetime(d.year, d.month, d.day, tzinfo=timezone.utc) if d else None
 
 
+def possible_gap(src: SourceConfig, items: list, known: set[str], prev: dict) -> str | None:
+    """A list that has moved past everything PHAROS holds: every listed item is new, and the oldest of them
+    is newer than the newest stored one. Whatever was published in between dropped off before a run read
+    it (the UK alerts' 20-entry feed lost eight Safety Roundups this way, found 6 Nov 2026). Not for a
+    mailbox (it lists only unread mail), literature or labels, or a source with ``gap_check: false``."""
+    if (src.kind in ("literature", "spc") or src.channel == "email" or src.options.get("gap_check") is False
+            or not known or len(items) < 3 or any(it.external_id in known for it in items)):
+        return None
+    oldest = min((it.published for it in items if it.published), default=None)
+    last = prev.get("last_item_at")
+    last = last.date() if isinstance(last, datetime) else last
+    if oldest is None or last is None or oldest <= last + timedelta(days=1):
+        return None
+    return (f"Possible gap: all {len(items)} listed notices are new, the oldest from {oldest:%d %b %Y}, and "
+            f"the newest one PHAROS held was from {last:%d %b %Y}. Notices published in between may have "
+            f"dropped off the list before a run read them; check the regulator's page.")
+
+
 def latest_published(items: list) -> date | None:
     """The newest publication date among the items, ignoring any dated after tomorrow (UTC): a date in
     the future is a misread, and the source's last-item date only ever moves forward, so one would
@@ -96,6 +115,8 @@ class Runner:
         self.settings = settings
         self.backfill = backfill
         self.matcher = matcher if matcher is not None else Matcher(store.load_terms())
+        # A keyword filter never drops a notice that names a watched ingredient (parsers/base.py).
+        parser_base.WATCHED = lambda text: any(h.term.ingredient_id for h in self.matcher.match_text(text, "title"))
         self.class_ingredients = store.class_ingredients()
         self.load_parser = parser_loader
         self.backfill_start = bf.cutoff(settings)
@@ -265,9 +286,16 @@ class Runner:
             module = self.load_parser(src.parser)
             self.ctx.held_back = 0      # new items a parser found but did not read, over max_new_items
             self.ctx.list_errors = []   # parts of the list a parser could not read (an MHRA roundup)
+            parser_base.DROPPED.clear()
             items = module.list_items(self.ctx, src)
             stats.seen = len(items)
+            if parser_base.DROPPED:     # what the source's filters left out, kept to be checked (0074)
+                self.store.record_filtered(src.id, list(parser_base.DROPPED))
             known = self.store.known_external_ids(src.id)
+            gap = None if self.backfill else possible_gap(src, items, known, prev)
+            if gap:
+                log.warning("%s: %s", src.id, gap)
+                self.notifier.health_alert(src.id, "gap", gap)
             # The first normal run of a source is its seed (never alerts) until one run has completed:
             # a first run cut short by the time budget keeps seeding on the next run.
             seed = not self.backfill and (not known or prev.get("last_ok_at") is None)

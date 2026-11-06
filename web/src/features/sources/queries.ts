@@ -94,3 +94,45 @@ export function totalsBySource(runs: RunSlice[]): Map<string, RunTotals> {
   }
   return out;
 }
+
+export interface FilteredRow {
+  source_id: string;
+  title: string;
+  reason: string;
+  last_seen_at: string;
+}
+
+export interface FilteredSummary {
+  count: number;
+  latest: FilteredRow;
+}
+
+/** Per source, how many titles its filters left out (filtered_item, 0074) and the newest one. Rows newest first. */
+export function filteredBySource(rows: FilteredRow[]): Map<string, FilteredSummary> {
+  const out = new Map<string, FilteredSummary>();
+  for (const r of rows) {
+    const s = out.get(r.source_id);
+    if (s) s.count += 1;
+    else out.set(r.source_id, { count: 1, latest: r });
+  }
+  return out;
+}
+
+/** What each source's keyword or category filters left out; read only while the technical details are shown. */
+export function useFiltered(enabled: boolean) {
+  return useQuery({
+    queryKey: ['filtered-items'],
+    enabled,
+    queryFn: async () =>
+      filteredBySource(
+        await fetchAllPages<FilteredRow>(
+          async (from, to) =>
+            await supabase
+              .from('filtered_item')
+              .select('source_id,title,reason,last_seen_at')
+              .order('last_seen_at', { ascending: false })
+              .range(from, to),
+        ),
+      ),
+  });
+}

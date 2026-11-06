@@ -66,6 +66,7 @@ class MemoryStore:
         # term id -> {"changed_at", "rematched_at"}; a term without an entry was already checked against the past
         self.term_state: dict[str, dict] = {}
         self.rematch_job: dict[str, dict] = {}
+        self.filtered_item: dict[tuple[str, str], dict] = {}   # (source, title) -> reason, times_seen
         self.report_request: dict[str, dict] = {}         # id -> the row of 0048
 
     @contextmanager
@@ -156,6 +157,12 @@ class MemoryStore:
             row["last_item_at"] = last_item_at
 
     # ───────────────────────────── documents ─────────────────────────────
+    def record_filtered(self, source_id: str, dropped: list[tuple[str, str]]) -> None:
+        for title, why in dict(dropped).items():
+            if title:
+                row = self.filtered_item.setdefault((source_id, title), {"times_seen": 0})
+                row.update(reason=why, times_seen=row["times_seen"] + 1)
+
     def known_external_ids(self, source_id: str) -> set[str]:
         return {d["external_id"] for d in self.document.values() if d["source_id"] == source_id}
 

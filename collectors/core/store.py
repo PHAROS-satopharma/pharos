@@ -130,6 +130,17 @@ class Store:
             {"h": health, "f": consecutive_failures, "ok": ok, "li": last_item_at, "id": source_id})
 
     # ───────────────────────────── documents ─────────────────────────────
+    def record_filtered(self, source_id: str, dropped: list[tuple[str, str]]) -> None:
+        """What a source's keyword or category filters left out this run (filtered_item, 0074)."""
+        for title, why in dict(dropped).items():
+            if title:
+                self.db.execute(
+                    """insert into filtered_item (source_id, title, reason) values (%(s)s, %(t)s, %(r)s)
+                       on conflict (source_id, title) do update
+                          set reason = excluded.reason, last_seen_at = now(),
+                              times_seen = filtered_item.times_seen + 1""",
+                    {"s": source_id, "t": title, "r": why})
+
     def known_external_ids(self, source_id: str) -> set[str]:
         rows = self.db.fetchall("select external_id from document where source_id = %(s)s",
                                 {"s": source_id})
