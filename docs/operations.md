@@ -958,8 +958,11 @@ count them; no report is downloaded, only numbers come back, and the log names n
   `activesubstance.activesubstancename` (the substance as FAERS coded it, also for products sold outside the US).
   Checked on the live API on 6 Nov 2026: carvedilol 136,140 reports in each US field and 142,304 in the three
   together; lornoxicam, not sold in the US, none in the US fields and 396 as the active substance. An exact search
-  takes the whole value only: a salt written with the name ("CARVEDILOL PHOSPHATE") or a US name that differs from
-  the INN (acetaminophen for paracetamol) is not counted.
+  takes the whole value only: a salt written with the name ("CARVEDILOL PHOSPHATE") is not counted. A US name that
+  differs from the INN is searched with it: RxNorm's name for the ingredient's RxNorm code (FDA files paracetamol as
+  ACETAMINOPHEN, 100,540 reports, and has none under PARACETAMOL). When RxNorm does not answer, the ingredient keeps
+  its last counts until the next run. A reaction openFDA cannot search by its exact name (FDA writes an apostrophe as
+  ^, as in "WERNICKE^S ENCEPHALOPATHY") is counted by its words instead.
 - **What is kept**: the reports per quarter, and the 100 most reported reactions of the whole period with their
   reports in each quarter. A reaction is kept by its name exactly as FDA publishes it (a MedDRA preferred term in
   capitals); PHAROS holds no MedDRA licence and stores no MedDRA code.
