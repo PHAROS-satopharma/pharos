@@ -113,7 +113,7 @@ class SpcDb:
         self.changes: list[dict] = []
         self.links: list[tuple] = []
         self.matches: list[dict] = []
-        self.products: dict[tuple[str, str], dict] = {}
+        self.products: dict[tuple[str, str, str], dict] = {}     # (source, ingredient, national id), as 0079
         self.our_labels: list[dict] = []        # current versions of our label: id, ingredient_id, lang, sections
         self.gaps: list[dict] = []              # label_gap rows the change writer stored
 
@@ -129,7 +129,8 @@ class SpcDb:
         q = self._sql(sql)
         p = dict(params or {})
         if q.startswith("insert into spc_product"):
-            row = self.products.setdefault((p["src"], p["nid"]), {"id": str(uuid.uuid4())})
+            assert "on conflict (source_id, ingredient_id, national_id)" in q
+            row = self.products.setdefault((p["src"], p["ing"], p["nid"]), {"id": str(uuid.uuid4())})
             row.update(ingredient_id=p["ing"], source_id=p["src"], country_code=p["cc"],
                        national_id=p["nid"], product_name=p["name"], mah=p["mah"], url=p["url"],
                        extra=_load(p["extra"]), active=True)
@@ -148,6 +149,11 @@ class SpcDb:
             row = {"id": str(uuid.uuid4()), **p, "external_id": p["ext"], "structured": _load(p["st"])}
             self.documents.append(row)
             return {"id": row["id"]}
+        if q.startswith("select i.id, d.id as document_id from document d"):
+            doc = next((d for d in self.documents
+                        if d["external_id"] == p["ext"] and d["src"] == p["src"]), None)
+            issue = next((i for i in self.issues if doc and i["anchor"] == doc["id"]), None)
+            return {"id": issue["id"], "document_id": doc["id"]} if issue else None
         if q.startswith("insert into issue ("):
             row = {"id": str(uuid.uuid4()), "title": p["t"], "anchor": p["d"], "first_date": p["f"]}
             self.issues.append(row)
@@ -187,7 +193,7 @@ class SpcDb:
                 if row["id"] == p["p"]:
                     row["checked_at"] = self.clock_n
         elif q.startswith("update spc_product set active = false"):
-            for (src, nid), row in self.products.items():
+            for (src, _ing, nid), row in self.products.items():
                 if src == p["s"] and row["ingredient_id"] == p["i"] and nid not in p["k"]:
                     row["active"] = False
         else:

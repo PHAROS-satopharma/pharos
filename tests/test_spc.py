@@ -358,6 +358,34 @@ def test_watch_product_baseline_then_change_opens_one_issue():
     assert not db.gaps, "no label of ours: nothing to compare with"
 
 
+def test_a_label_of_two_ingredients_is_watched_for_both_and_alerted_once():
+    # Until 0079 a label belonged to the first ingredient that listed it: Japan's acetaminophen inserts sat
+    # under ivabradine and paracetamol saw none (6 Nov 2026). A cold remedy is watched for each ingredient.
+    from collectors.spc.run import upsert_product
+
+    db, ctx = SpcDb(), FakeCtx()
+    cold = Product(national_id="setid-cold", product_name="TYLENOL SINUS SEVERE", country_code="US")
+    para = {"id": "44444444-4444-4444-4444-444444444444", "inn_en": "paracetamol"}
+    guai = {"id": "55555555-5555-5555-5555-555555555555", "inn_en": "guaifenesin"}
+    p1 = upsert_product(db, "spc-dailymed", para["id"], cold)
+    p2 = upsert_product(db, "spc-dailymed", guai["id"], cold)
+    assert p1["id"] != p2["id"] and p1["ingredient_id"] == para["id"] and p2["ingredient_id"] == guai["id"]
+    assert upsert_product(db, "spc-dailymed", para["id"], cold)["id"] == p1["id"]    # read again: same row
+
+    base = "Do not use with other medicines containing acetaminophen."
+    module = _Module(_snap(base), _snap(base), _snap(base + " Stop use if skin reddening occurs."),
+                     _snap(base + " Stop use if skin reddening occurs."))
+    assert watch_product(db, ctx, module, "spc-dailymed", p1, para) is None           # baselines
+    assert watch_product(db, ctx, module, "spc-dailymed", p2, guai) is None
+    issue = watch_product(db, ctx, module, "spc-dailymed", p1, para)                  # 4.4 changed
+    assert issue is not None
+    assert watch_product(db, ctx, module, "spc-dailymed", p2, guai) is None           # same change: alerted once
+    assert len(db.issues) == 1 and len(db.documents) == 1
+    assert [c["i"] for c in db.changes] == [issue, issue]                              # both changes show it
+    assert {p["g"] for kind, p in db.links if kind == "issue_ingredient"} == {para["id"], guai["id"]}
+    assert {m["g"] for m in db.matches} == {para["id"], guai["id"]}
+
+
 OUR_LABEL = {"id": "33333333-3333-3333-3333-333333333333", "ingredient_id": INGREDIENT["id"], "lang": "es",
              "sections": {"4.4": "Lornoxicam reduce la agregación plaquetaria. "
                                  "Riesgo de lesión hepática grave en tratamientos prolongados.",
@@ -650,6 +678,22 @@ def test_dailymed_watches_the_otc_labels_fda_approves_and_not_the_monograph_ones
     assert by_id["76513fb2-7323-4f1f-8a10-92f8f603cf97"].extra["otc_category"] == "C73584"   # Sudafed PE, ANDA
     asked = [r[1] for r in ctx.requests]
     assert all("34390-5" not in u or "marketing_category_code=" in u for u in asked)   # no monograph list
+
+
+def test_dailymed_finds_paracetamol_by_its_rxnorm_code():
+    # Paracetamol's English names are not the US name: by name it found none of acetaminophen's 765
+    # prescription labels (6 Nov 2026). rxcui=161 finds them.
+    rows = json.dumps({"data": [{"setid": "apap-1", "title": "ACETAMINOPHEN TABLET [X]", "spl_version": 1},
+                                {"setid": "apap-2", "title": "TYLENOL (ACETAMINOPHEN) [Y]", "spl_version": 2}],
+                       "metadata": {"total_pages": 1}}).encode()
+    by_code = f"{dailymed.API}/spls.json?rxcui=161&doctype=34391-3&pagesize=100&page=1"
+    ctx = FakeCtx({by_code: rows, f"{dailymed.API}/spls.json?*": DM_EMPTY})
+    ing = {"inn_en": "paracetamol", "rxcui": "161",
+           "terms": {"en": ["paracetamol", "4'-hydroxyacetanilide", "4-acetamidophenol", "acetaminophen"]}}
+    got = dailymed.discover(ctx, ing)
+    assert {p.national_id for p in got} == {"apap-1", "apap-2"}
+    asked = [r[1] for r in ctx.requests]
+    assert asked[0] == by_code and len(asked) == 4 * 4      # code + three names, each Rx and three OTC lists
 
 
 def test_dailymed_a_failed_otc_list_fails_the_discovery():
