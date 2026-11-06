@@ -393,23 +393,25 @@ sources:
       doc_type: label_change
 
   # ───────────── United Kingdom ─────────────
+  # MHRA is read from GOV.UK's search API, which lists every item and pages; the Atom feeds it replaced
+  # (6 Nov 2026) held 20 entries and lost what dropped off between two reads (collectors/parsers/govuk.py).
   - id: mhra-dsu
     regulator: MHRA
     kind: safety
-    channel: atom
-    url: https://www.gov.uk/drug-safety-update.atom
+    channel: api
+    url: https://www.gov.uk/api/search.json?filter_organisations=medicines-and-healthcare-products-regulatory-agency&filter_format=drug_safety_update
     page: https://www.gov.uk/drug-safety-update
     parser: govuk
     languages: [en]
     schedule: 4h
     expected_max_gap_days: 60
-    options: {doc_type: safety_update}
+    options: {doc_type: safety_update, backfill_all: true}
 
   - id: mhra-alerts
     regulator: MHRA
     kind: safety
-    channel: atom
-    url: https://www.gov.uk/drug-device-alerts.atom
+    channel: api
+    url: https://www.gov.uk/api/search.json?filter_organisations=medicines-and-healthcare-products-regulatory-agency&filter_format=medical_safety_alert
     page: https://www.gov.uk/drug-device-alerts
     parser: govuk
     languages: [en]
@@ -417,6 +419,7 @@ sources:
     expected_max_gap_days: 30
     options:
       doc_type: safety_alert
+      backfill_all: true
       doc_type_rules:
         - {keyword: "medicines recall", doc_type: recall}
         - {keyword: "field safety notices", doc_type: other}
