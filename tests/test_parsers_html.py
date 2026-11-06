@@ -1019,6 +1019,44 @@ def test_email_split_links():
     assert items[0].structured["subject"] == "TGA safety updates"
 
 
+def test_email_replies_auto_replies_and_welcome_mails_are_not_notices():
+    # The only three mails the mailbox had received (5 Nov 2026), subjects exactly as sent; all three had
+    # become "safety documents". A real notice from the same senders is still kept.
+    famhp = source("famhp-email", "mailto:x", channel="email", web_domain="afmps.be")
+    fda = source("fda-email", "mailto:x", channel="email", web_domain="fda.gov",
+                 exclude_subjects=r"update your preferences")
+    def row(n, subject):
+        return {"id": f"dddddddd-0000-0000-0000-00000000000{n}", "received_at": "2026-11-05",
+                "subject": subject, "text_body": "x", "html_body": None, "processed_at": None}
+    junk = [row(1, "RE: Inscription VIG-news / Flash VIG-news"),
+            row(2, "automatisch antwoord - ADR - réponse automatique")]
+    assert email_inbox.items_from_rows(junk, famhp) == []
+    assert email_inbox.items_from_rows([row(3, "Welcome to FDA's Email Updates"),
+                                        row(4, "Please update your preferences")], fda) == []
+    real = [row(5, "Flash VIG-news: Réévaluation du lornoxicam"), row(6, "VIG-news novembre 2026")]
+    assert [i.title for i in email_inbox.items_from_rows(real, famhp)] == [r["subject"] for r in real]
+    medwatch = row(7, "FDA MedWatch - Argatroban in Sodium Chloride: Recall - Re-labeling")
+    assert len(email_inbox.items_from_rows([medwatch], fda)) == 1
+    # left out, yet marked processed so it is not read again and again
+    ctx = _InboxCtx(junk)
+    assert email_inbox.list_items(ctx, famhp) == [] and ctx.db.marked == [r["id"] for r in junk]
+
+
+def test_email_govdelivery_click_links_lead_to_the_real_page():
+    # The FDA welcome mail's only fda.gov link, as stored on 5 Nov 2026 (it became the document's address).
+    wrapped = ("https://links-2.govdelivery.com/CL0/https:%2F%2Fwww.fda.gov/1/010101a1aadb2b43-5ffbda2a-2e52-4125-"
+               "881b-506d8e7fc294-000000/vuQCvPsEodwp9kDqGnk0dezRF_2fovvxzB4pORA9CBQ=452")
+    assert email_inbox.unwrap(wrapped) == "https://www.fda.gov"
+    bulletin = "https://links.govdelivery.com/CL0/https:%2F%2Fwww.fda.gov%2Fdrugs%2Fdrug-safety%2Fkybella/1/a/b"
+    src = source("fda-email", "mailto:x", channel="email", web_domain="fda.gov")
+    rows = [{"id": "eeeeeeee-0000-0000-0000-000000000001", "received_at": "2026-09-16",
+             "subject": "FDA Approves Additional Information in Labeling for Kybella", "text_body": "",
+             "html_body": f"<a href='{bulletin}'>Read the Drug Safety Communication</a>", "processed_at": None}]
+    (it,) = email_inbox.items_from_rows(rows, src)
+    assert it.url == "https://www.fda.gov/drugs/drug-safety/kybella"
+    assert email_inbox.unwrap("https://www.tga.gov.au/news/x") == "https://www.tga.gov.au/news/x"
+
+
 class _InboxDb:
     def __init__(self, rows):
         self.rows, self.marked = rows, []

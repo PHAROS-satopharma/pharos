@@ -30,6 +30,7 @@ import {
   offReason,
   sourceLabels,
   sourcePage,
+  waitingForMail,
   type CountryCard,
   type NewItem,
   type PageKind,
@@ -470,6 +471,7 @@ function WeekFigures({
           const href = safeHref(page);
           const label = labels.get(s.id) ?? s.id;
           const why = offReason(s);
+          const waitingSince = waitingForMail(s);
           const lastChecked = t?.lastRun ?? s.last_ok_at;
           return (
             <li key={s.id} className={cx('hz-run', !s.enabled && 'is-off')}>
@@ -484,6 +486,11 @@ function WeekFigures({
                 {s.origin === 'user' ? <Tag tone="quiet">Added by hand</Tag> : null}
                 {!s.enabled ? <Tag tone="quiet">Switched off</Tag> : null}
                 {s.enabled && NEEDS_A_LOOK.includes(s.health) ? <HealthMark health={s.health} /> : null}
+                {waitingSince ? (
+                  <Tag tone="quiet">
+                    Waiting for the first e-mail{formatDate(waitingSince) ? ` since ${formatDate(waitingSince)}` : ''}
+                  </Tag>
+                ) : null}
               </div>
               <div className="hz-run-side">
                 <dl className="hz-figs">
