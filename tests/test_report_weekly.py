@@ -243,10 +243,24 @@ class FakeDb:
                      "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000001/",
                      "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9900001/", "by_class": False,
                      "is_backfill": False, "first_seen_at": datetime(2026, 11, 4, 6, tzinfo=UTC)},
-                    {"document_id": "p-2", "title": "Fluoroquinolones and aortic aneurysm", "lang": "en",
+                    {"document_id": "p-2", "title": "Fluoroquinolones and aortic aneurysm: a case series", "lang": "en",
                      "journal": "", "day": date(2026, 11, 5), "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000002/",
                      "pmc_url": None, "by_class": True, "is_backfill": False,
                      "first_seen_at": datetime(2026, 11, 5, 6, tzinfo=UTC)}]
+        if "paper_state(" in sql:
+            assert params == {"ids": ["p-1", "p-2"]}
+            return [{"state": {
+                "p-1": {"issue_id": "i-p1", "issue_status": "not_relevant",
+                        "decision": {"to_status": "not_relevant", "person": "Sama Hassan",
+                                     "at": "2026-11-05T11:00:00Z", "comment": "Not our product"},
+                        "case_report": None, "day_zero": "2026-11-04", "due_serious": "2026-11-19",
+                        "due_nonserious": "2027-02-02"},
+                "p-2": {"issue_id": "i-p2", "issue_status": "new", "decision": None,
+                        "case_report": {"reason": "title"}, "day_zero": "2026-11-05", "due_serious": "2026-11-20",
+                        "due_nonserious": "2027-02-03"}}}]
+        if "mlm_monitored(" in sql:
+            assert params == {"i": SCREEN["ingredient"]["id"]}
+            return [{"monitored": False}]
         if "class_term" in sql:
             return [{"query": "fluoroquinolone", "kind": "class"}, {"query": "levofloxacin", "kind": "name"}]
         if "screening_log(" in sql:
@@ -360,8 +374,21 @@ def test_assemble_answers_every_section():
     assert lev["literature"]["searches"] == [
         {"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1},
         {"query": "fluoroquinolone", "kind": "class word", "pubmed": 0, "pmc": 0}]
+    # possible case reports first, with day zero, the two dates and the decision on the paper
     assert [(p["pubmed_id"], p["pmc_id"]) for p in lev["literature"]["list"]] == [
-        ("41000001", "PMC9900001"), ("41000002", "")]
+        ("41000002", ""), ("41000001", "PMC9900001")]
+    case, other = lev["literature"]["list"]
+    assert case["case_report"] and case["case_reason"] == "its title says so"
+    assert (case["day_zero"], case["due_serious"], case["due_nonserious"]) == (
+        "5 Nov 2026", "20 Nov 2026", "3 Feb 2027")
+    assert case["decision"] == "No decision yet" and case["awaiting"]
+    assert not other["case_report"] and other["decision"] == "Doesn't concern us"
+    assert (other["decided_by"], other["decided_at"], other["reason"]) == (
+        "Sama Hassan", "5 Nov 2026, 13:00", "Not our product")
+    assert lev["literature"]["case_reports"] == 1
+    assert lev["literature"]["mlm"] == "Not monitored by EMA: cases in the literature are ours to report"
+    assert summary["Possible case reports in the literature"] == 1
+    assert summary["Case reports with no decision yet"] == 1
     # 5. Everything new, with who looked; a link that is not a web address is never offered
     new = {n["country"]: n for n in data["new"]}
     assert new["Germany"]["looks"] == [{"person": "Sama Hassan", "at": "5 Nov 2026, 12:00", "looks": 3}]
@@ -384,8 +411,12 @@ def test_the_pdf_page_has_six_sections_and_her_words():
     assert html.count('<section class="part">') == 5      # sections 02 to 06 each open a new page
     for words in ("Concerns us", "No decision yet", "Sama Hassan", "Mentioned in 2 notices",
                   "Not read this week — check it by hand", "Looked at by Sama Hassan, 5 Nov 2026, 12:00",
-                  "HTTP 503 from hc.example.test", "Sections changed: 4.4, 4.8", "Sun 1 Nov – Sat 7 Nov 2026"):
+                  "HTTP 503 from hc.example.test", "Sections changed: 4.4, 4.8", "Sun 1 Nov – Sat 7 Nov 2026",
+                  "1 possible case report", "Possible case report", "Day zero 5 Nov 2026 · 15 days 20 Nov 2026 · "
+                  "90 days 3 Feb 2027", "Not monitored by EMA", "Not our product"):
         assert words in html, words
+    # the case report is listed before the other paper
+    assert html.index("Fluoroquinolones and aortic aneurysm") < html.index("Tendon rupture after levofloxacin")
     assert 'href="https://pubmed.ncbi.nlm.nih.gov/41000001/"' in html
     assert "javascript:" not in html
     assert report.CREDIT in html and html.count(copyright_line()) == 1
@@ -402,6 +433,14 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
     assert [r[14] for r in germany] == ["Concerns us", "No decision yet"]
     link = next(c for c in wb["NCBI papers"]["E"] if c.value == "https://pubmed.ncbi.nlm.nih.gov/41000001/")
     assert link.hyperlink.target == link.value
+    papers = list(wb["NCBI papers"].iter_rows(values_only=True))
+    assert papers[0][8:] == ("Possible case report", "Day zero", "15 days", "90 days", "Decision", "Decided by",
+                             "Decided (Cairo)", "Reason")
+    assert papers[1][2].startswith("Fluoroquinolones") and papers[1][8:12] == (
+        "yes, its title says so", "5 Nov 2026", "20 Nov 2026", "3 Feb 2027")
+    # an empty cell reads back as None
+    assert tuple(x or "" for x in papers[2][8:]) == (
+        "", "", "", "", "Doesn't concern us", "Sama Hassan", "5 Nov 2026, 13:00", "Not our product")
     new = list(wb["Everything new"].iter_rows(values_only=True))
     austria = next(r for r in new if r[1] == "Austria")
     assert austria[4] == '=HYPERLINK("x")' and not austria[6]       # a title is text; no javascript: link
