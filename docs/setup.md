@@ -90,8 +90,19 @@ Work through the steps in this order.
 
 1. Sign in at **console.anthropic.com** with the company's account (pharos@satopharma.com). Under *Settings →
    Billing*, add the company's payment method and a monthly spend limit.
-2. Open *API Keys → Create Key*, name it `pharos-cases`, and copy it once into the GitHub secret
-   `ANTHROPIC_API_KEY` (step 6). Without it the Cases screen still opens cases; they wait unread until it is set.
+2. No Claude key is made or stored: the workflows sign in with their own GitHub token (federation). Open
+   *Settings → Workload identity → Connect workload → GitHub Actions* and let the wizard make:
+   - the issuer `https://token.actions.githubusercontent.com` (discovery);
+   - the service account `pharos`, role **Developer**, in the workspace the reader bills to;
+   - the rule `pharos-main`: organisation `PHAROS-satopharma`, repository `pharos`, branch `refs/heads/main`,
+     allowed events **Any event** (the runs come from the schedule and the app, never from a push; the branch
+     still keeps pull requests out), organisation numeric id `352618690`, workspace **Default**, scope
+     `workspace:developer` (the Console offers nothing narrower), token lifetime 10 minutes. Audience stays blank
+     (Anthropic's default, `https://api.anthropic.com`).
+3. In GitHub *Settings → Secrets and variables → Actions → **Variables***, add `ANTHROPIC_FEDERATION_RULE_ID`
+   (`fdrl_…`), `ANTHROPIC_SERVICE_ACCOUNT_ID` (`svac_…`) and `ANTHROPIC_ORGANIZATION_ID` (the UUID on
+   *Settings → Organization*). They are identifiers, not secrets. Without them the Cases screen still opens cases;
+   they wait unread until they are set. A run from any other branch, a fork or a pull request is refused.
 
 ## 6. Paste the secrets (once, all in GitHub)
 
@@ -118,7 +129,6 @@ Telegram webhook, so you never paste a secret anywhere else.
 | `TELEGRAM_WEBHOOK_SECRET` | Step 4.5 | Supabase function secrets, Telegram webhook |
 | `DISPATCH_TOKEN` | GitHub (pharos@ account) *Settings → Developer settings → Fine-grained tokens*: resource owner the organisation, repository `pharos` only, permission **Contents: Read and write** | Supabase function secret `GITHUB_DISPATCH_TOKEN` |
 | `NCBI_API_KEY` | Step 5 | collectors |
-| `ANTHROPIC_API_KEY` | Step 5b | collectors (the case reader) |
 | `PHAROS_IMAP_HOST` | the Turbify IMAP server from step 0 (usually `imap.mail.yahoo.com`) | collectors |
 | `PHAROS_IMAP_PORT` | `993` | collectors |
 | `PHAROS_IMAP_USER` | `pharos@satopharma.com` | collectors |
