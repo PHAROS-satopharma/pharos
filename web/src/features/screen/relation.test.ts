@@ -26,4 +26,14 @@ describe('how a mention was found', () => {
       ]),
     ).toBe('Fluoroquinolones, Quinolone antibacterials (off)');
   });
+
+  it('marks a class kept out of the literature search as notices only', () => {
+    expect(
+      classesLine([
+        { name_en: 'Oxicams', enabled: true, literature: true },
+        { name_en: 'NSAID', enabled: true, literature: false },
+        { name_en: 'M01A', enabled: false, literature: false },
+      ]),
+    ).toBe('Oxicams, NSAID (notices only), M01A (off)');
+  });
 });

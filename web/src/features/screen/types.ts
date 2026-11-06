@@ -15,6 +15,8 @@ export interface ScreenClass {
   relation: ScreenRelation;
   /** Whether its words are looked for. */
   enabled: boolean;
+  /** Whether its English words are also searched on PubMed and PubMed Central (0051). */
+  literature: boolean;
 }
 
 export interface ScreenIngredient {

@@ -410,6 +410,11 @@ took its place.
   says what the class is to the ingredient (*its group*, *the class above its group*, *a group added by hand*)
   and has its switch, **Searched** / **Not searched**. **Words PHAROS looks for** lists every word searched for
   the ingredient, by language, with where it comes from and how it matches.
+- **Notices only.** A searched class has a second switch, **In the literature search** / **Notices only**
+  (administrators). A wide class such as NSAID finds thousands of PubMed and PubMed Central papers a year
+  that are not about the ingredient; *Notices only* keeps its words in regulator notices, in every language, and
+  takes its English words out of the daily NCBI watch, the live count, the weekly report and the readiness
+  check. Papers it already found stay. Switching it back on after a long pause looks back again.
 - **The class above the group starts switched off.** Its words come from Wikidata with noise ("girase
   inhibitor"), a wide class brings notices that are not about the ingredient, and each English word is a
   12-month look-back on PubMed and PubMed Central. Read its words, remove the wrong ones, then switch it on:

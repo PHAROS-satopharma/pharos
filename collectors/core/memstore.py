@@ -220,11 +220,15 @@ class MemoryStore:
     def active_ingredients(self) -> list[dict]:
         return [dict(r, id=i) for i, r in self.ingredient.items() if r.get("active", True)]
 
+    def class_in_literature(self, ingredient_id: str, class_id: str) -> bool:
+        """Whether the class's English words are also searched on PubMed and PMC (ingredient_class.literature)."""
+        return bool(self.ingredient_class_state.get((ingredient_id, class_id), {}).get("literature", True))
+
     def class_words(self, lang: str = "en") -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
         for ing, cls in self._searched_links():
             row = self.ingredient.get(ing)
-            if row is None:
+            if row is None or not self.class_in_literature(ing, cls):
                 continue
             words = sorted(t.term for t in self.terms if t.is_class and t.class_id == cls and t.lang == lang)
             if words:
@@ -534,6 +538,13 @@ class MemoryStore:
                 if t.is_class and t.class_id == class_id:
                     self.term_state.setdefault(t.id, {"rematched_at": None, "source": None})["changed_at"] = _now()
         st["enabled"] = enabled
+
+    def set_class_literature(self, ingredient_id: str, class_id: str, on: bool) -> None:
+        """The app's set_class_literature() (0051): the class's words stay in notices either way."""
+        if (ingredient_id, class_id) not in self.ingredient_class:
+            raise KeyError("That class is not linked to this ingredient.")
+        st = self.ingredient_class_state.setdefault((ingredient_id, class_id), {"relation": "group", "enabled": True})
+        st["literature"] = bool(on)
 
     # ───────────────────────────── the check of the past ─────────────────────────────
     def _due(self, term_id: str) -> bool:
