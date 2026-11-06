@@ -1,0 +1,274 @@
+{
+  "head" : {
+    "vars" : [ "item", "kind", "val" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "fluoroquinolones"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "fluorquinolone"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "fluroquinolone"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "nl",
+        "type" : "literal",
+        "value" : "fluorchinolonen"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "nl",
+        "type" : "literal",
+        "value" : "fluoroquinolone"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "sv",
+        "type" : "literal",
+        "value" : "Flourokinoloner"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "sv",
+        "type" : "literal",
+        "value" : "Fluorokinoloner"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "fluoroquinolone"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "da",
+        "type" : "literal",
+        "value" : "Fluorquinolon"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "fi",
+        "type" : "literal",
+        "value" : "Fluorokinolonit"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "nl",
+        "type" : "literal",
+        "value" : "fluorchinolon"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "ar",
+        "type" : "literal",
+        "value" : "فلوروكوينولون"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Fluorchinolonantibiotikum"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "es",
+        "type" : "literal",
+        "value" : "fluoroquinolona"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "fr",
+        "type" : "literal",
+        "value" : "fluoroquinolone"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "it",
+        "type" : "literal",
+        "value" : "Fluorochinoloni"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "ko",
+        "type" : "literal",
+        "value" : "플루오로퀴놀론"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "nb",
+        "type" : "literal",
+        "value" : "Fluorokinoloner"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q28801726"
+      },
+      "val" : {
+        "xml:lang" : "sv",
+        "type" : "literal",
+        "value" : "Flourokinolon"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    } ]
+  }
+}

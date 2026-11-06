@@ -5,6 +5,8 @@
 # Per source:
 #   kind      safety | recall | spc | literature
 #   channel   rss | atom | json | api | html | browser | email
+#   page      the page a person opens for this source (https, never a feed or an API): the Sources
+#             screen links here, and a feed item's own link falls back to it
 #   schedule  4h | 12h | daily | weekly | monthly
 #   parser    module under collectors/parsers (spc: collectors/spc)
 #   expected_max_gap_days   quiet longer than this → health 'degraded'
@@ -225,6 +227,7 @@ sources:
     kind: safety
     channel: json
     url: https://www.ema.europa.eu/en/documents/report/dhpc-output-json-report_en.json
+    page: https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/pharmacovigilance-post-authorisation/direct-healthcare-professional-communications-dhpc
     parser: ema_dhpc
     languages: [en]
     schedule: 4h
@@ -236,6 +239,7 @@ sources:
     kind: safety
     channel: json
     url: https://www.ema.europa.eu/en/documents/report/medicines-output-periodic_safety_update_report_single_assessments-output-json-report_en.json
+    page: https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/pharmacovigilance-post-authorisation/periodic-safety-update-reports-psurs
     parser: ema_psusa
     languages: [en]
     schedule: daily
@@ -248,6 +252,7 @@ sources:
     kind: safety
     channel: rss
     url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml
+    page: https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program
     parser: feed
     enabled: false
     notes: "Off: FDA refuses GitHub's servers (abuse-detection page); MedWatch is read from its e-mail list (fda-email)."
@@ -267,6 +272,7 @@ sources:
     kind: recall
     channel: api
     url: https://api.fda.gov/drug/enforcement.json
+    page: https://www.accessdata.fda.gov/scripts/ires/index.cfm
     parser: openfda_enforcement
     languages: [en]
     schedule: daily
@@ -279,6 +285,7 @@ sources:
     kind: safety
     channel: atom
     url: https://www.gov.uk/drug-safety-update.atom
+    page: https://www.gov.uk/drug-safety-update
     parser: govuk
     languages: [en]
     schedule: 4h
@@ -290,6 +297,7 @@ sources:
     kind: safety
     channel: atom
     url: https://www.gov.uk/drug-device-alerts.atom
+    page: https://www.gov.uk/drug-device-alerts
     parser: govuk
     languages: [en]
     schedule: 4h
@@ -306,6 +314,7 @@ sources:
     kind: safety
     channel: rss
     url: https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/Pharmakovigilanz/Rote-Hand-Briefe/RSSNewsfeed.xml?nn=591002
+    page: https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Rote-Hand-Briefe/_node.html
     parser: feed
     languages: [de]
     schedule: 4h
@@ -323,6 +332,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Risikobewertungsverfahren/_node.html
+    page: https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Risikobewertungsverfahren/_node.html
     parser: bfarm_risk
     languages: [de]
     schedule: 4h
@@ -341,6 +351,7 @@ sources:
     # The DHPC list itself: BASG's whole-site RSS (basg-whatsnew) carried none of the letters
     # (checked 5 Nov 2026: no Caelyx 3 Nov or Ocrevus 12 Oct among its 56 items).
     url: https://www.basg.gv.at/gesundheitsberufe/sicherheitsinformationen-dhpc
+    page: https://www.basg.gv.at/gesundheitsberufe/sicherheitsinformationen-dhpc
     parser: basg_dhpc
     languages: [de]
     schedule: 4h
@@ -356,6 +367,7 @@ sources:
     # (Respreeza 30 Oct, Ocrevus 8 Oct, Ixchiq 14 Jul 2026 were in no BfArM list). The feed holds
     # only the latest 8, so it is read every 4 h.
     url: https://www.pei.de/SiteGlobals/Functions/RSSFeed/RSSGenerator_Sicherheitsinformationen.xml?nn=168758
+    page: https://www.pei.de/DE/newsroom/veroffentlichungen-arzneimittel/sicherheitsinformationen-human/sicherheitsinformationen-human-node.html
     parser: feed
     languages: [de]
     schedule: 4h
@@ -373,6 +385,7 @@ sources:
     kind: safety
     channel: rss
     url: https://www.basg.gv.at/whatsnew/rss
+    page: https://www.basg.gv.at/whatsnew
     parser: feed
     languages: [de]
     schedule: 4h
@@ -394,6 +407,7 @@ sources:
     kind: safety
     channel: rss
     url: https://www.aemps.gob.es/feed/
+    page: https://www.aemps.gob.es/medicamentos-de-uso-humano/farmacovigilancia-de-medicamentos-de-uso-humano/
     parser: feed
     languages: [es]
     schedule: 4h
@@ -416,6 +430,7 @@ sources:
     # « Cartas de seguridad a los profesionales sanitarios »: AEMPS posts its DHPCs only here, never
     # to the site feed (aemps-feed missed the Ocrevus letter of 8 Oct 2026).
     url: https://docswebaemps.aemps.es/php/mostrar.php
+    page: https://www.aemps.gob.es/medicamentos-de-uso-humano/farmacovigilancia-de-medicamentos-de-uso-humano/cartas-de-seguridad-a-los-profesionales-sanitarios/
     parser: aemps_dhpc
     languages: [es]
     schedule: 12h
@@ -427,6 +442,7 @@ sources:
     kind: safety
     channel: rss
     url: https://www.hsa.gov.sg/announcements/rss.xml
+    page: https://www.hsa.gov.sg/announcements
     parser: feed
     languages: [en]
     schedule: 4h
@@ -445,6 +461,7 @@ sources:
     kind: recall
     channel: json
     url: https://recalls-rappels.canada.ca/sites/default/files/opendata-donneesouvertes/HCRSAMOpenData.json
+    page: https://recalls-rappels.canada.ca/en
     parser: hc_recalls
     languages: [en, fr]
     schedule: daily
@@ -468,6 +485,7 @@ sources:
     # Vaccines (22), biological products (21) and narcotics & psychotropics (25) are medicines too:
     # the Ixchiq vaccine DHPC of 15 Jul 2026 is tagged 22 only, so filter 20 alone missed it.
     url: https://ansm.sante.fr/informations-de-securite/?safety_news_filter[healthProducts][]=20&safety_news_filter[healthProducts][]=21&safety_news_filter[healthProducts][]=22&safety_news_filter[healthProducts][]=25
+    page: https://ansm.sante.fr/informations-de-securite/?safety_news_filter[healthProducts][]=20&safety_news_filter[healthProducts][]=21&safety_news_filter[healthProducts][]=22&safety_news_filter[healthProducts][]=25
     parser: ansm
     languages: [fr]
     schedule: 4h
@@ -480,6 +498,7 @@ sources:
     # The site search filtered to « Note Informative Importanti » (the Italian DHPC); the landing page
     # /sicurezza-dei-farmaci has no list the parser can read. 1960205 = AIFA/EMA communications.
     url: https://www.aifa.gov.it/ricerca-aifa?searchKeywords=&structures=93604&adtCategories=1960204
+    page: https://www.aifa.gov.it/ricerca-aifa?searchKeywords=&structures=93604&adtCategories=1960204
     parser: aifa
     languages: [it]
     schedule: 4h
@@ -493,6 +512,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.hpra.ie/safety-information/safety-notices
+    page: https://www.hpra.ie/safety-information/safety-notices
     parser: hpra
     languages: [en]
     schedule: 4h
@@ -503,6 +523,7 @@ sources:
     kind: safety
     channel: html
     url: https://laegemiddelstyrelsen.dk/da/bivirkninger/direkte-sikkerhedsinformation/udsendte-meddelelser/
+    page: https://laegemiddelstyrelsen.dk/da/bivirkninger/direkte-sikkerhedsinformation/udsendte-meddelelser/
     parser: dkma
     languages: [da]
     schedule: 4h
@@ -513,6 +534,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.dmp.no/bivirkninger-og-sikkerhet/tiltak-for-a-forebygge-bivirkninger/sikkerhetsinformasjon-til-helsepersonell-og-pasient/kjere-helsepersonell-brev
+    page: https://www.dmp.no/bivirkninger-og-sikkerhet/tiltak-for-a-forebygge-bivirkninger/sikkerhetsinformasjon-til-helsepersonell-og-pasient/kjere-helsepersonell-brev
     parser: noma
     languages: [nb]
     schedule: 4h
@@ -523,6 +545,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.lyfjastofnun.is/lyf/lyfjagat/bref-til-heilbrigdisstarfsmanna-dhpc/
+    page: https://www.lyfjastofnun.is/lyf/lyfjagat/bref-til-heilbrigdisstarfsmanna-dhpc/
     parser: ima_is
     languages: [is]
     schedule: 4h
@@ -534,6 +557,7 @@ sources:
     channel: html
     # « Alertas »: the list the parser reads (#tituloADTAlertas). /circulares has no such list.
     url: https://www.infarmed.pt/web/infarmed/alertas
+    page: https://www.infarmed.pt/web/infarmed/alertas
     parser: infarmed
     languages: [pt]
     schedule: 4h
@@ -544,6 +568,7 @@ sources:
     kind: safety
     channel: html
     url: https://santesecu.public.lu/fr/espace-professionnel/departement-sante/pharmacies-et-medicaments/pharmacovigilance/gestion-riques/dhcp.html
+    page: https://santesecu.public.lu/fr/espace-professionnel/departement-sante/pharmacies-et-medicaments/pharmacovigilance/gestion-riques/dhcp.html
     parser: lu_sante
     languages: [fr]
     schedule: 4h
@@ -554,6 +579,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.swissmedic.ch/swissmedic/de/home/humanarzneimittel/marktueberwachung/health-professional-communication--hpc-.html
+    page: https://www.swissmedic.ch/swissmedic/en/home/humanarzneimittel/market-surveillance/health-professional-communication--hpc-.html
     parser: swissmedic
     languages: [de, fr, it]
     schedule: 4h
@@ -570,6 +596,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.medsafe.govt.nz/safety/DHCPLetters.asp
+    page: https://www.medsafe.govt.nz/safety/DHCPLetters.asp
     parser: medsafe
     languages: [en]
     schedule: 4h
@@ -580,6 +607,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.medsafe.govt.nz/safety/SafetyCommunications.asp
+    page: https://www.medsafe.govt.nz/safety/SafetyCommunications.asp
     parser: medsafe
     languages: [en]
     schedule: 4h
@@ -591,6 +619,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/revision-of-precautions/0001.html
+    page: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/revision-of-precautions/0001.html
     parser: pmda
     languages: [ja]
     schedule: 4h
@@ -602,6 +631,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/esc-rsc/0001.html
+    page: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/esc-rsc/0001.html
     parser: pmda
     languages: [ja]
     schedule: 4h
@@ -613,6 +643,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.pmda.go.jp/safety/info-services/medical-safety-info/0001.html
+    page: https://www.pmda.go.jp/safety/info-services/medical-safety-info/0001.html
     parser: pmda
     languages: [ja]
     schedule: 4h
@@ -627,6 +658,7 @@ sources:
     # Japan's DHPCs (96 rows on 5 Nov 2026, newest 2026年10月 フィブラストスプレー). No other PMDA
     # page PHAROS read listed them.
     url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0004.html
+    page: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0004.html
     parser: pmda
     languages: [ja]
     schedule: 12h
@@ -639,6 +671,7 @@ sources:
     channel: html
     # PMDAからの医薬品適正使用のお願い (18 issues; 2026年10月 GLP-1受容体作動薬…). Same table as PMDA医療安全情報.
     url: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0002.html
+    page: https://www.pmda.go.jp/safety/info-services/drugs/calling-attention/properly-use-alert/0002.html
     parser: pmda
     languages: [ja]
     schedule: 12h
@@ -651,6 +684,7 @@ sources:
     kind: safety
     channel: html
     url: https://nedrug.mfds.go.kr/pbp/CCBAC01
+    page: https://nedrug.mfds.go.kr/pbp/CCBAC01
     parser: mfds
     languages: [ko]
     schedule: 4h
@@ -663,6 +697,7 @@ sources:
     kind: safety
     channel: browser
     url: https://www.afmps.be/fr/news
+    page: https://www.famhp.be/en/news
     parser: famhp
     enabled: false
     languages: [fr, nl]
@@ -681,6 +716,7 @@ sources:
     # The DHPC letter pages, found in CBG's plain XML sitemap (newest changes first). The news list
     # had no item for "DHPC Caelyx" (30 Oct 2026) or "DHPC Tavneos" (16 Jul 2026).
     url: https://www.cbg-meb.nl/sitemap/1.xml
+    page: https://www.cbg-meb.nl/actueel/nieuws
     parser: cbg_dhpc
     languages: [nl]
     schedule: 12h
@@ -692,6 +728,7 @@ sources:
     kind: safety
     channel: browser
     url: https://www.cbg-meb.nl/actueel/nieuws
+    page: https://www.cbg-meb.nl/actueel/nieuws
     parser: cbg
     languages: [nl]
     schedule: 12h
@@ -702,6 +739,7 @@ sources:
     kind: safety
     channel: api
     url: https://www.lakemedelsverket.se/sv/nyheter
+    page: https://www.lakemedelsverket.se/sv/nyheter
     parser: lakemedelsverket
     languages: [sv]
     schedule: 12h
@@ -715,6 +753,7 @@ sources:
     kind: safety
     channel: browser
     url: https://www.tga.gov.au/news/safety-alerts
+    page: https://www.tga.gov.au/news/safety-alerts
     parser: tga
     enabled: false
     notes: "Off: TGA cuts connections from datacenter addresses; its alerts are read from the mailbox (tga-email)."
@@ -727,6 +766,7 @@ sources:
     kind: safety
     channel: browser
     url: https://www.tga.gov.au/news/safety-updates
+    page: https://www.tga.gov.au/news/safety-updates
     parser: tga
     enabled: false
     notes: "Off: TGA cuts connections from datacenter addresses; its alerts are read from the mailbox (tga-email)."
@@ -740,6 +780,7 @@ sources:
     kind: safety
     channel: email
     url: https://fimea.fi/ajankohtaista/laaketurvallisuustiedotteet
+    page: https://fimea.fi/ajankohtaista/laaketurvallisuustiedotteet
     parser: email_inbox
     languages: [fi, sv]
     schedule: 4h
@@ -752,6 +793,7 @@ sources:
     kind: safety
     channel: email
     url: https://www.tga.gov.au/news/safety-alerts
+    page: https://www.tga.gov.au/news/safety-alerts
     parser: email_inbox
     languages: [en]
     schedule: 4h
@@ -767,6 +809,7 @@ sources:
     kind: safety
     channel: email
     url: https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program
+    page: https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program
     parser: email_inbox
     languages: [en]
     schedule: 4h
@@ -781,6 +824,7 @@ sources:
     kind: safety
     channel: email
     url: https://www.famhp.be/en/news
+    page: https://www.famhp.be/en/news
     parser: email_inbox
     languages: [fr, nl]
     schedule: 4h
@@ -796,6 +840,7 @@ sources:
     kind: literature
     channel: api
     url: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi
+    page: https://pubmed.ncbi.nlm.nih.gov/
     parser: pubmed
     languages: [en]
     schedule: daily
@@ -811,6 +856,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/pharmacovigilance-post-authorisation/signal-management/prac-recommendations-safety-signals
+    page: https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/pharmacovigilance-post-authorisation/signal-management/prac-recommendations-safety-signals
     parser: prac
     languages: [en, bg, cs, da, de, el, es, et, fi, fr, ga, hr, hu, it, lt, lv, mt, nl, pl, pt, ro, sk, sl, sv]
     schedule: 4h
@@ -822,6 +868,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.who.int/teams/regulation-prequalification/incidents-and-SF/full-list-of-who-medical-product-alerts
+    page: https://www.who.int/teams/regulation-prequalification/incidents-and-SF/full-list-of-who-medical-product-alerts
     parser: who_alerts
     languages: [en]
     schedule: 12h
@@ -835,6 +882,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.edaegypt.gov.eg/ar/
+    page: https://www.edaegypt.gov.eg/ar/
     parser: generic_html
     languages: [ar, en]
     schedule: 12h
@@ -847,6 +895,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.sfda.gov.sa/ar/news
+    page: https://www.sfda.gov.sa/ar/news
     parser: generic_html
     languages: [ar, en]
     schedule: 12h
@@ -859,6 +908,7 @@ sources:
     kind: safety
     channel: html
     url: https://www.jfda.jo/
+    page: https://www.jfda.jo/
     parser: generic_html
     languages: [ar, en]
     schedule: 12h
@@ -871,6 +921,7 @@ sources:
     kind: safety
     channel: html
     url: https://mohap.gov.ae/en/media-center/news
+    page: https://mohap.gov.ae/en/media-center/news
     parser: generic_html
     languages: [ar, en]
     schedule: 12h
@@ -884,6 +935,7 @@ sources:
     channel: html
     # Emirates Drug Establishment, the UAE medicines regulator since MOHAP; Arabic and English news.
     url: https://www.ede.gov.ae/ar/news
+    page: https://www.ede.gov.ae/ar/news
     parser: ede
     languages: [ar, en]
     schedule: 12h
@@ -895,6 +947,7 @@ sources:
     kind: spc
     channel: api
     url: https://cima.aemps.es/cima/rest/medicamentos
+    page: https://cima.aemps.es/cima/publico/home.html
     parser: spc_cima
     languages: [es]
     schedule: weekly
@@ -905,6 +958,7 @@ sources:
     kind: spc
     channel: html
     url: https://base-donnees-publique.medicaments.gouv.fr/telechargement.php
+    page: https://base-donnees-publique.medicaments.gouv.fr/
     parser: spc_bdpm
     languages: [fr]
     schedule: weekly
@@ -915,6 +969,7 @@ sources:
     kind: spc
     channel: json
     url: https://www.ema.europa.eu/en/documents/report/medicines-output-medicines_json-report_en.json
+    page: https://www.ema.europa.eu/en/medicines
     parser: spc_ema_epar
     languages: [en]
     schedule: weekly
@@ -925,6 +980,7 @@ sources:
     kind: spc
     channel: api
     url: https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json
+    page: https://dailymed.nlm.nih.gov/dailymed/
     parser: spc_dailymed
     languages: [en]
     schedule: weekly
@@ -935,6 +991,7 @@ sources:
     kind: spc
     channel: html
     url: https://products.mhra.gov.uk/
+    page: https://products.mhra.gov.uk/
     parser: spc_mhra
     languages: [en]
     schedule: weekly
@@ -945,6 +1002,7 @@ sources:
     kind: spc
     channel: html
     url: https://www.pmda.go.jp/PmdaSearch/iyakuSearch/
+    page: https://www.pmda.go.jp/PmdaSearch/iyakuSearch/
     parser: spc_pmda_pi
     languages: [ja]
     schedule: weekly

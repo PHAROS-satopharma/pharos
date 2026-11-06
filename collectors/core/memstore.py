@@ -54,6 +54,10 @@ class MemoryStore:
         self.notification: list[dict] = []
         self.probe_result: dict[str, dict] = {}
         self.literature_search: dict[tuple[str, str], dict] = {}
+        self.drug_class: dict[str, dict] = {}              # id -> {code, name_en, origin, wikidata_qid}
+        # term id -> {"changed_at", "rematched_at"}; a term without an entry was already checked against the past
+        self.term_state: dict[str, dict] = {}
+        self.rematch_job: dict[str, dict] = {}
 
     @contextmanager
     def transaction(self):
@@ -66,6 +70,8 @@ class MemoryStore:
         sql = Path(path).read_text(encoding="utf-8")
         ing_id, cls_id = "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002"
         self.ingredient[ing_id] = {"inn_en": "lornoxicam", "atc_code": "M01AC05", "active": True}
+        self.drug_class[cls_id] = {"code": "NSAID", "name_en": "Non-steroidal anti-inflammatory drugs",
+                                   "origin": "hand", "wikidata_qid": None}
         self.ingredient_class.append((ing_id, cls_id))
         class_part, _, ing_part = sql.partition("insert into ingredient (")
         n = 0
@@ -96,7 +102,7 @@ class MemoryStore:
         base.update(id=src.id, regulator_id=src.regulator_id, kind=src.kind, channel=src.channel,
                     url=src.url, parser=src.parser, languages=list(src.languages),
                     schedule=src.schedule, expected_max_gap_days=src.expected_max_gap_days,
-                    notes=notes)
+                    notes=notes, page_url=src.page_url)
         self.source[src.id] = base
 
     def list_sources(self) -> list[dict]:
@@ -335,6 +341,22 @@ class MemoryStore:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind
                    and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
 
+    def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
+        return any(n["person_id"] == person_id and n["kind"] == kind and n["sent_at"] >= since
+                   and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+
+    def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
+        """new_items() in memory: no history, no label watch, no literature."""
+        counts: dict[str, int] = {}
+        for d in self.document.values():
+            src = self.source.get(d["source_id"]) or {}
+            if (d.get("is_backfill") or src.get("kind") in ("spc", "literature")
+                    or not (since <= d["first_seen_at"] < until)):
+                continue
+            country = (self.regulator.get(src.get("regulator_id")) or {}).get("country_name")
+            counts[country] = counts.get(country, 0) + 1
+        return [{"country_name": c, "n": n} for c, n in sorted(counts.items(), key=lambda x: x[0] or "")]
+
     def insert_notification(self, **fields: Any) -> None:
         self.notification.append({**fields, "sent_at": _now()})
 
@@ -378,6 +400,129 @@ class MemoryStore:
                 if r["class_only"] and not r["is_backfill"] and not paper(r)
                 and (r["created_at"] > since or (r.get("current_since") or r["created_at"]) > since)]
         return [i for _, i in sorted(rows, reverse=True)]
+
+    # ───────────────────────────── drug classes ─────────────────────────────
+    def ingredients_for_classes(self) -> list[dict]:
+        out = []
+        for i, r in sorted(self.ingredient.items(), key=lambda kv: kv[1].get("inn_en", "")):
+            if not r.get("active", True) or not r.get("atc_code"):
+                continue
+            codes = [self.drug_class[c]["code"] for g, c in self.ingredient_class if g == i and c in self.drug_class]
+            out.append({"id": i, "inn_en": r.get("inn_en"), "atc_code": r["atc_code"], "class_codes": codes})
+        return out
+
+    def drug_class_id(self, code: str) -> str | None:
+        return next((i for i, c in self.drug_class.items() if c["code"] == code), None)
+
+    def create_drug_class(self, *, code: str, name_en: str, wikidata_qid: str | None,
+                          terms: Iterable[dict]) -> str:
+        existing = self.drug_class_id(code)
+        if existing:
+            return existing
+        cid = _id()
+        self.drug_class[cid] = {"code": code, "name_en": name_en, "origin": "atc", "wikidata_qid": wikidata_qid}
+        seen = set()
+        for t in terms:
+            if (t["lang"], t["term"]) in seen:
+                continue
+            seen.add((t["lang"], t["term"]))
+            tid = _id()
+            self.terms.append(Term(id=tid, term=t["term"], lang=t["lang"], mode=t["mode"], class_id=cid,
+                                   kind="class"))
+            self.term_state[tid] = {"changed_at": _now(), "rematched_at": None, "source": t["source"]}
+        return cid
+
+    def link_ingredient_class(self, ingredient_id: str, class_id: str) -> None:
+        if (ingredient_id, class_id) not in self.ingredient_class:
+            self.ingredient_class.append((ingredient_id, class_id))
+
+    # ───────────────────────────── the check of the past ─────────────────────────────
+    def _due(self, term_id: str) -> bool:
+        st = self.term_state.get(term_id)
+        return st is not None and (st.get("rematched_at") is None or st["rematched_at"] < st["changed_at"])
+
+    def rematch_open_job(self) -> dict | None:
+        return next((dict(j) for j in self.rematch_job.values() if j["finished_at"] is None), None)
+
+    def rematch_due_terms(self) -> tuple[list[str], list[str]]:
+        active = {t.id for t in self.load_terms()}
+        ing = sorted(t.id for t in self.terms if t.ingredient_id and t.id in active and self._due(t.id))
+        cls = sorted(t.id for t in self.terms if t.is_class and t.id in active and self._due(t.id))
+        return ing, cls
+
+    def rematch_create_job(self, *, since: date, ingredient_term_ids: list[str], class_term_ids: list[str],
+                           trigger: str) -> dict:
+        if self.rematch_open_job():
+            raise RuntimeError("a check of the past is already open")
+        jid = _id()
+        self.rematch_job[jid] = {"id": jid, "trigger": trigger, "started_at": _now(), "since": since,
+                                 "ingredient_term_ids": list(ingredient_term_ids),
+                                 "class_term_ids": list(class_term_ids), "cursor_document_id": None,
+                                 "documents_checked": 0, "documents_reread": 0, "documents_matched": 0,
+                                 "issues_created": 0, "finished_at": None}
+        return dict(self.rematch_job[jid])
+
+    def rematch_terms(self, ingredient_term_ids: list[str], class_term_ids: list[str]) -> list[Term]:
+        active_ing = {i for i, r in self.ingredient.items() if r.get("active", True)}
+        wanted_i, wanted_c = set(ingredient_term_ids), set(class_term_ids)
+        return [t for t in self.terms
+                if (t.ingredient_id and t.id in wanted_i and t.ingredient_id in active_ing)
+                or (t.is_class and t.id in wanted_c)]
+
+    def rematch_documents(self, *, since: date, before: datetime, after_id: str | None,
+                          limit: int) -> list[dict]:
+        rows = []
+        for d in sorted(self.document.values(), key=lambda x: x["id"]):
+            src = self.source.get(d["source_id"]) or {}
+            if src.get("kind", "safety") in ("spc", "literature") or d["first_seen_at"] >= before:
+                continue
+            when = d.get("published_date") or d["first_seen_at"].date()
+            if when < since or (after_id is not None and d["id"] <= after_id):
+                continue
+            rows.append(d)
+            if len(rows) >= limit:
+                break
+        out = []
+        for d in rows:
+            links = [x for x in self.issue_document if x["document_id"] == d["id"] and x["method"] != "suggested"]
+            links.sort(key=lambda x: self.issue[x["issue_id"]]["anchor_document_id"] != d["id"])
+            iss = self.issue[links[0]["issue_id"]] if links else None
+            src = self.source.get(d["source_id"]) or {}
+            out.append({
+                "id": d["id"], "source_id": d["source_id"], "url": d["url"], "title_orig": d["title_orig"],
+                "lang": d.get("lang"), "doc_type": d["doc_type"], "published_date": d.get("published_date"),
+                "structured": d.get("structured"), "r2_key": d.get("r2_key"), "mime": d.get("mime"),
+                "parser": src.get("parser"), "country_code": self._country(d["source_id"]),
+                "texts": [{"attachment_id": t["attachment_id"], "text": t["text"]}
+                          for t in self.document_text if t["document_id"] == d["id"]],
+                "attachments": [dict(a) for a in self.attachment.values() if a["document_id"] == d["id"]],
+                "matched_terms": {m.get("term_id") or m.get("class_term_id") for m in self.match
+                                  if m["document_id"] == d["id"] and (m.get("term_id") or m.get("class_term_id"))},
+                "issue": {"id": iss["id"], "class_only": iss["class_only"]} if iss else None,
+                "shared_original": bool(d.get("r2_key")) and sum(
+                    1 for x in self.document.values() if x.get("r2_key") == d["r2_key"]) > 1,
+            })
+        return out
+
+    def rematch_advance(self, job_id: str, *, cursor: str, checked: int = 0, reread: int = 0,
+                        matched: int = 0, issues_created: int = 0) -> None:
+        j = self.rematch_job[job_id]
+        j["cursor_document_id"] = cursor
+        j["documents_checked"] += checked
+        j["documents_reread"] += reread
+        j["documents_matched"] += matched
+        j["issues_created"] += issues_created
+
+    def rematch_finish(self, job_id: str) -> None:
+        j = self.rematch_job[job_id]
+        j["finished_at"] = _now()
+        for tid in j["ingredient_term_ids"] + j["class_term_ids"]:
+            st = self.term_state.get(tid)
+            if st is not None and st["changed_at"] <= j["started_at"]:
+                st["rematched_at"] = j["started_at"]
+
+    def set_issue_names_ingredient(self, issue_id: str) -> None:
+        self.issue[issue_id]["class_only"] = False
 
     # ───────────────────────────── probe ─────────────────────────────
     def get_probe(self, probe_id: str) -> dict | None:

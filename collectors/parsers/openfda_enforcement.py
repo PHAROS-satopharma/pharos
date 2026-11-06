@@ -14,8 +14,10 @@ Options:
   lookback_days  int  default 45
   page_size      int  default 100
 
-The API has no page per recall; the item URL is the API query for that recall number, which returns
-exactly the record stored in ``document.structured``.
+The API has no page per recall, and its query opens raw JSON. The item URL is FDA's Enforcement Report
+page for the recall's event, ``ires/index.cfm?Event=<event id>``: the share link FDA's own page builds,
+which opens that event's products (checked 6 Nov 2026, event 99849). A record without an event id links
+to the Enforcement Report itself. The record stays whole in ``document.structured``.
 """
 
 from __future__ import annotations
@@ -31,6 +33,13 @@ STRUCTURED_FIELDS = ["openfda.generic_name", "openfda.substance_name", "openfda.
                      "product_description"]
 
 MAX_SKIP = 25000
+IRES = "https://www.accessdata.fda.gov/scripts/ires/index.cfm"   # FDA's Enforcement Report
+
+
+def report_page(event_id: str | None) -> str:
+    """The human page for a recall: FDA's Enforcement Report opened on its event."""
+    event = (event_id or "").strip()
+    return f"{IRES}?Event={quote(event)}" if event else IRES
 
 
 def _window(ctx: FetchContext, source: SourceConfig, today: date | None = None) -> tuple[date, date]:
@@ -44,16 +53,17 @@ def _window(ctx: FetchContext, source: SourceConfig, today: date | None = None) 
 def record_to_item(rec: dict, base_url: str) -> Item:
     number = (rec.get("recall_number") or "").strip()
     product = " ".join((rec.get("product_description") or "").split())
+    event = (rec.get("event_id") or "").strip()
     if number:
-        external_id, link = number, f"{base_url}?search=recall_number:%22{quote(number)}%22"
+        external_id = number
     else:
         # openFDA publishes some records with a blank recall_number (e.g. event 100061, Oct 2026).
         # The event id plus the product text identifies the record and stays the same between runs.
-        event = (rec.get("event_id") or "").strip()
         if not event or not product:
             raise ParseError("openFDA enforcement record without recall_number or event_id")
         digest = hashlib.sha256(product.encode("utf-8")).hexdigest()[:12]
-        external_id, link = f"event-{event}-{digest}", f"{base_url}?search=event_id:%22{quote(event)}%22"
+        external_id = f"event-{event}-{digest}"
+    link = report_page(event)
 
     body = "\n".join(x for x in (
         rec.get("product_description"), f"Reason for recall: {rec.get('reason_for_recall', '')}",

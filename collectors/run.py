@@ -542,6 +542,11 @@ def main(argv: list[str] | None = None) -> int:
                 except Exception:  # noqa: BLE001 - an alert failure never fails the run
                     log.warning("alert retry failed: %s", traceback.format_exc())
                 notifier.digest_if_due()
+                try:
+                    # once a day: how many items each country's authorities published
+                    notifier.new_items_digest_if_due()
+                except Exception:  # noqa: BLE001 - the daily message never fails the run
+                    log.warning("new-items message failed: %s", traceback.format_exc())
             completed = True
         finally:
             store.finish_run(run_id, ok and completed)

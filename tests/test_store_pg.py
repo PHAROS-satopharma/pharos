@@ -106,6 +106,14 @@ def test_catalogue_sync_refreshes_catalogue_rows_only(store, tag):
     assert any(r["id"] == src.id for r in store.list_sources())
 
 
+def test_catalogue_sync_writes_the_page_a_person_opens(store, tag):
+    src = _source(store, tag)
+    assert store.get_source(src.id)["page_url"] is None
+    src.page_url = f"https://example.test/{tag}/news"
+    store.upsert_catalogue_source(src, "notes")
+    assert store.get_source(src.id)["page_url"] == f"https://example.test/{tag}/news"
+
+
 # ───────────────────────────── runs ─────────────────────────────
 
 
@@ -290,6 +298,41 @@ def test_notifications(store, tag):
         {"s": f"report % {tag}"})}
     assert store.last_notification_at("report") == at[f"report fail {tag}"]
     assert store.last_notification_at("report", delivered_only=True) == at[f"report ok {tag}"]
+
+
+def test_notified_since_counts_what_reached_the_person(store, tag):
+    p = _person(store, tag, "Daily")
+    since = datetime.now(timezone.utc) - timedelta(minutes=5)
+    assert not store.notified_since(p, "new_items_digest", since)
+    store.insert_notification(person_id=p, issue_id=None, kind="new_items_digest", dry_run=False,
+                              tg_message_id=None, error="Forbidden", summary=f"refused {tag}")
+    assert not store.notified_since(p, "new_items_digest", since)    # refused: tried again
+    store.insert_notification(person_id=p, issue_id=None, kind="new_items_digest", dry_run=True,
+                              tg_message_id=None, error=None, summary=f"dry {tag}")
+    assert store.notified_since(p, "new_items_digest", since)
+    assert not store.notified_since(p, "digest", since)
+    assert not store.notified_since(p, "new_items_digest", datetime.now(timezone.utc) + timedelta(hours=1))
+
+
+def test_new_item_counts_are_new_items_per_country(store, tag):
+    country = f"Testland {tag}"
+    store.upsert_regulator({"id": f"NI-{tag}", "country_code": "XN", "country_name": country,
+                            "name": f"New items regulator {tag}", "languages": ["en"], "homepage": None})
+    for kind in ("safety", "spc"):
+        store.upsert_catalogue_source(SourceConfig(
+            id=f"ni-{kind}-{tag}", regulator_id=f"NI-{tag}", kind=kind, channel="html",
+            url=f"https://example.test/ni/{kind}/{tag}", parser="generic_html", languages=["en"],
+            schedule="4h", enabled=True, options={}, expected_max_gap_days=None), None)
+    t0 = datetime(2026, 11, 2, 8, 0, tzinfo=timezone.utc)
+    for sid, ext, at, backfill in ((f"ni-safety-{tag}", "a", t0, False),
+                                   (f"ni-safety-{tag}", "b", t0 + timedelta(hours=1), False),
+                                   (f"ni-safety-{tag}", "h", t0, True),          # history
+                                   (f"ni-spc-{tag}", "s", t0, False),             # the label watch
+                                   (f"ni-safety-{tag}", "late", t0 + timedelta(days=2), False)):
+        did = store.insert_document(_doc(sid, f"{ext}-{tag}", is_backfill=backfill))
+        store.db.execute("update document set first_seen_at = %(t)s where id = %(i)s", {"t": at, "i": did})
+    counts = [c for c in store.new_item_counts(t0, t0 + timedelta(days=1)) if c["country_name"] == country]
+    assert counts == [{"country_name": country, "n": 2}]
 
 
 def test_subscribers(store, tag):

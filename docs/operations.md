@@ -9,7 +9,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) |
-| `collect.yml`, schedule **daily** | 02:31 | Large JSON files (EMA medicines, Health Canada recalls); NCBI literature (PubMed and PubMed Central) |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls) and NCBI literature (PubMed and PubMed Central), the EURD list, then up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
@@ -18,8 +18,9 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source, flagged as backfill, no alerts |
+| `rematch.yml` | by hand | The check of the past for up to 45 minutes at once (after adding an ingredient) |
 
-`collect.yml` and `backfill.yml` share one concurrency group, so two of them never run at once.
+`collect.yml`, `backfill.yml` and `rematch.yml` share one concurrency group, so two of them never run at once.
 A run that starts while another is running waits. If a third run arrives while one is already waiting,
 GitHub drops the waiting one; the next schedule picks up its sources. `report.yml` has its own group, so a
 collection can never drop the monthly report. GitHub can start scheduled runs late at busy times (hours, on
@@ -40,7 +41,7 @@ GitHub rounds each job up to a whole minute.
 |---|---|---|---|
 | collect 4h | 6 a day × 30 = 180 | 2 | 360 |
 | collect 12h (Playwright) | 2 a day × 30 = 60 | 4 | 240 |
-| collect daily (with NCBI literature) | 30 | 6 | 180 |
+| collect daily (with NCBI literature) | 30 | 7 | 210 |
 | collect weekly (SPC) | 4.35 | 10 | 44 |
 | collect monthly | 1 | 4 | 4 |
 | report (one real run, one run that skips) | 2 | 6 + 1 | 7 |
@@ -50,12 +51,14 @@ GitHub rounds each job up to a whole minute.
 | CI (only the changed parts are checked) | about 40 | 3 | 120 |
 | deploy Supabase | about 10 | 3 | 30 |
 | deploy web | about 10 | 2 | 20 |
-| **Total** | | | **about 1,104** |
+| **Total** | | | **about 1,134** |
 
-That is about 254 minutes a week, inside acceptance test 13's limit of 300. While a new ingredient's or class
-word's literature look-back is filling (see NCBI literature), the daily run takes up to about 18 minutes: up to
-about 360 more minutes in that month. A backfill is a one-off, at most
-300 minutes. Run it in a month with headroom.
+That is about 261 minutes a week, inside acceptance test 13's limit of 300, but a little above the aim of 1,100 a
+month (the cut is below). While a new ingredient's or class word's literature look-back is filling (see NCBI
+literature), the daily run takes up to about 18 minutes: up to about 360 more minutes in that month. The check
+of the past adds up to 15 minutes to a daily run only while one is open (a few days after an ingredient or
+words are added); with nothing due it ends in seconds. A backfill is a one-off, at most 300 minutes. Run it in
+a month with headroom.
 
 To check the real figure: *GitHub organisation → Settings → Billing → Usage*. If a month goes over 1,100,
 the first thing to cut is the 4h schedule, to every 6 h.
@@ -128,6 +131,45 @@ select id, 'Omar Gawish', email, 'admin' from auth.users where email = '<the inv
 
 After that, admins invite everyone else from the People screen (the `invite-person` function).
 
+## The Sources screen and the daily new-items message
+
+The Sources screen is a horizontal pass over the authorities: one card per country, Dr Sama's 25 countries
+first (A to Z, the European Union among them), then *Other authorities*. Each card shows:
+
+- **The pages you check**: her list (`regulator_page`, 0032), each marked *Read by the app*, *Partly read by
+  the app*, *Read by the app, by e-mail subscription* or *Not read by the app — open it yourself*. A page
+  counts as read only while one of its sources is switched on.
+- **New since you last looked (N)**: every item the country's authorities published since the person last
+  pressed **Mark as looked at** on that card, or since Sunday 00:00 Cairo when they never did, and never more
+  than 31 days back. Matched items carry *Matches a watched ingredient*. An item that came by e-mail with no
+  web page opens with **Read the e-mail** and **Save the original e-mail**.
+- **This week's reading** (folded): per source, checks, failed checks, new and matched items, and the last
+  check, from Sunday 00:00 Cairo. *New* and *Matched* open the items behind them.
+
+**Mark as looked at** stamps every authority of the country for the person pressing it (`mark_country_looked`),
+so Germany's two authorities clear together. Each person has their own looks. The *Sources* tab shows
+"N new" across every country. Feed and API addresses are never shown as links; an administrator sees them,
+with the parser, schedule, health and last error, under **Technical details**.
+
+Once a day, on the first collector run after the digest hour (`digest_hour_cairo`, 09:00 Cairo by default,
+within 4 h 30 min), every `new_items_digest` subscriber gets one Telegram message:
+
+```
+PHAROS · new items
+New on the authorities' pages since <Cairo time>:
+
+Germany: 3
+United Kingdom: 1
+
+https://pharos-satopharma.pages.dev/sources
+```
+
+The counts run from the last message delivered on an earlier day (a day back for the first one) and use the
+same list as the screen (`new_items()`). Nothing is sent on a day with nothing new. A refused message is
+tried again on the next run inside the window, to the people who did not get it. Anyone switches it on or
+off on the People screen: *New items on the authorities' pages, once a day*. Migration 0033 switches it on for
+Dr Sama only. While `telegram_dry_run` is on, the message is only written down.
+
 ## Turning real Telegram messages on
 
 `app_setting.telegram_dry_run` starts at `true`. Only the owner turns it off, on *My account → Real Telegram
@@ -142,8 +184,11 @@ messages* (admins only):
 ## Adding a source
 
 1. **Catalogue source** (lead, by pull request): add an entry to `collectors/sources.yaml` with its `id`,
-   regulator, `kind`, `channel`, `url`, `parser`, `languages`, `schedule` and `expected_max_gap_days`. Add a
-   real saved fixture under `tests/fixtures/<id>/` and a parser test. CI must pass before merge.
+   regulator, `kind`, `channel`, `url`, `page`, `parser`, `languages`, `schedule` and
+   `expected_max_gap_days`. `page` is the page a person opens (https, never a feed or an API); the
+   Sources screen links there. When the source reads one of Dr Sama's pages, add its id to that page's
+   `read_by` in `regulator_page` (by migration) so the page shows *Read by the app*. Add a real saved
+   fixture under `tests/fixtures/<id>/` and a parser test. CI must pass before merge.
 2. **User source** (admin, in the app): *Sources → Add → Test link*. The probe shows what PHAROS would read.
    Save only if the items look right. User sources use the `feed` or `generic_html` parser.
 3. **Newsletter-only source**: subscribe pharos@satopharma.com to the regulator's newsletter, then add an
@@ -159,9 +204,42 @@ messages* (admins only):
    names.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
-7. The NCBI literature watch searches PubMed and PubMed Central for its English name and its English class
+7. The next daily run adds its drug class from the ATC code (see below) and starts the check of the past for
+   its names. To have the past checked sooner, run *Actions -> PHAROS check of the past -> Run workflow*.
+8. The NCBI literature watch searches PubMed and PubMed Central for its English name and its English class
    words at its next daily run, looking back 12 months first (stored as history; papers never go to
    Telegram). See NCBI literature below.
+
+## Drug classes and the check of the past
+
+- **Drug classes from the ATC code.** The daily run starts with `python -m collectors.classes`. For each
+  watched ingredient with an ATC code, its level-4 group (levofloxacin J01MA12 -> J01MA Fluoroquinolones) is
+  made a drug class once: the name from WHO's ATC index (atcddd.fhi.no), the words from Wikidata (the item
+  with that ATC code, or else the drug class Wikidata names exactly as WHO does), in the 15 regulator
+  languages. Junk is dropped, plurals are cut to a stem that finds singular and plural, and a word another
+  word already finds is dropped. A class that exists is never changed; the ingredient is only linked to it.
+  If WHO or Wikidata does not answer, nothing is made and the ingredient is tried again the next day (a
+  warning in the run). `python -m collectors.classes --dry-run` prints what it would make.
+- **On the Ingredients page** (open an ingredient): "Fluoroquinolones (J01MA) · 17 words in 12 languages ·
+  from the ATC code", then **Confirm**, which records the administrator's name and the date. Opening the
+  class lists its words by language; each can be tested against the archive, and an administrator adds or
+  removes words. Check the words before confirming: Wikidata has gaps (no Japanese or Portuguese word for
+  fluoroquinolones, and German only as "Fluorchinolonantibiotikum", from which "Fluorchinolon" is made).
+- **How class words match.** A class word is looked for only in notices in its own language. A notice that
+  names the class but none of the watched ingredients is a class-only issue: the daily digest, never an
+  immediate message.
+- **The check of the past** (`python -m collectors.rematch`). Notices are matched as they arrive, so a word
+  saved later (a new ingredient, a new or changed name, an ingredient watched again after a pause, a new
+  class word) is "due" until the stored notices of the last 12 months have been checked with it. The daily
+  run gives it 15 minutes after the EURD list; `rematch.yml` runs it by hand for up to 45 minutes. It reads
+  each notice's kept text, or its original again from R2 (page, PDF with OCR, attachments), skips words that
+  already matched that notice, and files what it finds as history: no Telegram message, no digest. Its
+  progress is the `rematch_job` row (one open at a time): the next run continues from
+  `cursor_document_id`; when it reaches the end its words are marked checked, and a word changed meanwhile
+  waits for the next check. A list page shared by several notices is not read as any one notice's text.
+  Literature has its own search and is not checked here.
+- **After the 0034 deployment** the words the 12-month backfill already covered are marked checked;
+  everything added after it (levofloxacin, added 5 November 2026) is due, so the first daily run starts on it.
 
 ## Signals
 

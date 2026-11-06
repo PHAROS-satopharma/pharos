@@ -1,0 +1,156 @@
+/* Drug classes on the Ingredients page (features/ingredients/ClassLine.tsx). Tokens only: flat colour, square
+   corners, 1px rules. */
+
+.dc-section {
+  margin-bottom: 22px;
+}
+.dc-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--text);
+  font-size: inherit;
+  font-weight: inherit;
+}
+.dc {
+  border-bottom: 1px solid var(--rule);
+}
+.dc-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 10px 0;
+}
+.dc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+/* A small ink triangle that turns down, in the beacon colour, while the words are open. */
+.dc-mark {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--muted);
+}
+.dc-toggle[aria-expanded='true'] .dc-mark {
+  border-top: 7px solid var(--beacon);
+  border-right: 5px solid transparent;
+  border-bottom: 0;
+  border-left: 5px solid transparent;
+}
+.dc-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+}
+.dc-toggle:hover .dc-name {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.dc-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+.dc-confirm {
+  margin-left: auto;
+}
+.dc-note {
+  margin: -4px 0 10px 17px;
+}
+.dc-words {
+  padding: 4px 0 16px 17px;
+}
+.dc-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px 28px;
+  margin-top: 10px;
+}
+.dc-group-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--text);
+  font-size: inherit;
+  font-weight: inherit;
+}
+.dc-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dc-word {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.dc-word-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.dc-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 560px;
+  margin-top: 16px;
+}
+.dc-add .field-select {
+  flex: 0 1 180px;
+}
+.dc-add .field:not(.field-select) {
+  flex: 1 1 200px;
+}
+
+/* Phone: one column, everything full width, tap targets of 44px. */
+@media (max-width: 760px) {
+  .dc-line {
+    align-items: flex-start;
+  }
+  .dc-toggle {
+    min-height: 44px;
+  }
+  .dc-meta {
+    flex-basis: 100%;
+    margin-left: 17px;
+  }
+  .dc-confirm {
+    flex-basis: 100%;
+    margin-left: 17px;
+  }
+  .dc .btn {
+    min-height: 44px;
+  }
+  .dc-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dc-words {
+    padding-left: 0;
+  }
+  .dc-add .field-select,
+  .dc-add .field:not(.field-select),
+  .dc-add .btn {
+    flex: 1 1 100%;
+  }
+}
