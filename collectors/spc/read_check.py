@@ -36,11 +36,12 @@ def check(ctx, name: str) -> tuple[list[str], bool]:
     found = read = 0
     for ingredient in INGREDIENTS:
         try:
-            products = list(mod.discover(ctx, ingredient))
+            listing = mod.discover(ctx, ingredient)
         except Exception as e:  # noqa: BLE001 — the check reports every failure and goes on
             lines.append(f"- {ingredient['inn_en']}: listing failed: {type(e).__name__}: {e}")
             continue
-        gaps = getattr(products, "gaps", None) or []
+        gaps = getattr(listing, "gaps", None) or []         # read before the copy: a plain list has none
+        products = list(listing)
         found += len(products)
         lines.append(f"- {ingredient['inn_en']}: {len(products)} products"
                      + (f"; list not read to its end: {'; '.join(gaps)}" if gaps else ""))

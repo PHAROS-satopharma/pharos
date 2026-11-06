@@ -146,12 +146,13 @@ def test_netherlands_the_2024_revision_replays_as_a_change_in_the_watched_sectio
     assert "cimetidine" in added
 
 
-def test_netherlands_the_archive_stamp_is_taken_out_of_the_old_smpc_only():
+def test_netherlands_the_archive_stamp_is_taken_out_of_the_old_smpc():
     ctx = FakeCtx(_cbg_routes())
     url = "https://www.geneesmiddeleninformatiebank.nl/documents/smpc/archive/h117827_smpc_20221202_v0005.pdf"
-    stamped, _ = cbg.read_smpc(ctx, url, "old")
-    clean, _ = cbg.read_smpc(ctx, url, "old", archived=True)
-    assert "Oude versie" in " ".join(stamped.values()) and "Oude versie" not in " ".join(clean.values())
+    old, _ = cbg.read_smpc(ctx, url, "old", archived=True)
+    assert missing_core(old) == [] and "Oude versie" not in " ".join(old.values())
+    # where the stamp is read into a line of the text (Ivabradine Synthon, 2021), only the stamp goes
+    assert cbg.ARCHIVE_STAMP.sub("", "Oude versieSymptomatische behandeling") == "Symptomatische behandeling"
 
 
 def test_netherlands_replay_of_a_product_without_a_previous_smpc_says_so():
