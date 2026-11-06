@@ -119,6 +119,13 @@ select pg_temp.ci_assert(pg_temp.refused($$insert into safety_topic (id, name, u
                          like '42501%', 'nobody in the app writes the topics');
 reset role;
 
+-- 0064: the counts check the role once and read as their owner (row by row they ran past 8 seconds).
+select pg_temp.ci_assert((select bool_and(prosecdef) from pg_proc
+                           where proname in ('ingredient_mesh_counts','ingredient_topic_counts','mesh_listed',
+                                             'ingredient_coded_terms')), 'the counts run as their owner');
+select pg_temp.ci_assert(not has_function_privilege('authenticated', 'ingredient_coded_terms(uuid)', 'execute'),
+                         'the coded terms are read only through the counts');
+
 set role anon;
 select pg_temp.ci_assert(pg_temp.refused($$select * from ingredient_mesh_counts('00000000-0000-0000-0000-00000062a001',
   '2026-10-08', '2026-11-06')$$) like '42501%', 'nobody signed out counts');
