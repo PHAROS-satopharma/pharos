@@ -34,21 +34,21 @@ insert into source (id, regulator_id, kind, channel, url, parser, languages, pag
   ('ci-lc-spc', 'CI-LC-A', 'spc', 'api', 'https://label.example.test/spc.json', 'ci', '{en}',
    'https://label.example.test/products', true);
 insert into spc_product (id, ingredient_id, source_id, country_code, national_id, product_name, mah, url) values
-  ('00000000-0000-0000-0000-00000043p001', '00000000-0000-0000-0000-00000043a001', 'ci-lc-spc', 'XL', 'LC-1',
+  ('00000000-0000-0000-0000-00000043d001', '00000000-0000-0000-0000-00000043a001', 'ci-lc-spc', 'XL', 'LC-1',
    'CI Labelamine Originator 10 mg', 'CI Originator Ltd', 'https://label.example.test/products/1'),
-  ('00000000-0000-0000-0000-00000043p002', '00000000-0000-0000-0000-00000043a001', 'ci-lc-spc', 'XL', 'LC-2',
+  ('00000000-0000-0000-0000-00000043d002', '00000000-0000-0000-0000-00000043a001', 'ci-lc-spc', 'XL', 'LC-2',
    'CI Labelamine Generic 10 mg', 'CI Generics', null),
-  ('00000000-0000-0000-0000-00000043p003', '00000000-0000-0000-0000-00000043a002', 'ci-lc-spc', 'XL', 'LC-3',
+  ('00000000-0000-0000-0000-00000043d003', '00000000-0000-0000-0000-00000043a002', 'ci-lc-spc', 'XL', 'LC-3',
    'CI Otherlabelamine 5 mg', null, null);
 insert into spc_snapshot (id, spc_product_id, fetched_at, doc_date, sha256, section_hashes) values
-  ('00000000-0000-0000-0000-00000043s001', '00000000-0000-0000-0000-00000043p001', '2026-06-02 08:00+00', '2026-06-01', 'a1', '{}'),
-  ('00000000-0000-0000-0000-00000043s002', '00000000-0000-0000-0000-00000043p001', '2026-11-03 09:00+00', '2026-10-01', 'a2', '{}'),
-  ('00000000-0000-0000-0000-00000043s003', '00000000-0000-0000-0000-00000043p002', '2026-06-02 08:00+00', '2026-05-01', 'b1', '{}'),
-  ('00000000-0000-0000-0000-00000043s004', '00000000-0000-0000-0000-00000043p002', '2026-11-05 08:00+00', '2026-11-01', 'b2', '{}'),
-  ('00000000-0000-0000-0000-00000043s005', '00000000-0000-0000-0000-00000043p003', '2026-06-02 08:00+00', null, 'c1', '{}'),
-  ('00000000-0000-0000-0000-00000043s006', '00000000-0000-0000-0000-00000043p003', '2026-11-04 08:00+00', null, 'c2', '{}'),
-  ('00000000-0000-0000-0000-00000043s007', '00000000-0000-0000-0000-00000043p002', '2026-10-20 08:00+00', '2026-10-15', 'b0', '{}'),
-  ('00000000-0000-0000-0000-00000043s008', '00000000-0000-0000-0000-00000043p001', '2026-11-07 22:30+00', '2026-11-07', 'a3', '{}');
+  ('00000000-0000-0000-0000-00000043f001', '00000000-0000-0000-0000-00000043d001', '2026-06-02 08:00+00', '2026-06-01', 'a1', '{}'),
+  ('00000000-0000-0000-0000-00000043f002', '00000000-0000-0000-0000-00000043d001', '2026-11-03 09:00+00', '2026-10-01', 'a2', '{}'),
+  ('00000000-0000-0000-0000-00000043f003', '00000000-0000-0000-0000-00000043d002', '2026-06-02 08:00+00', '2026-05-01', 'b1', '{}'),
+  ('00000000-0000-0000-0000-00000043f004', '00000000-0000-0000-0000-00000043d002', '2026-11-05 08:00+00', '2026-11-01', 'b2', '{}'),
+  ('00000000-0000-0000-0000-00000043f005', '00000000-0000-0000-0000-00000043d003', '2026-06-02 08:00+00', null, 'c1', '{}'),
+  ('00000000-0000-0000-0000-00000043f006', '00000000-0000-0000-0000-00000043d003', '2026-11-04 08:00+00', null, 'c2', '{}'),
+  ('00000000-0000-0000-0000-00000043f007', '00000000-0000-0000-0000-00000043d002', '2026-10-20 08:00+00', '2026-10-15', 'b0', '{}'),
+  ('00000000-0000-0000-0000-00000043f008', '00000000-0000-0000-0000-00000043d001', '2026-11-07 22:30+00', '2026-11-07', 'a3', '{}');
 
 -- The alerting change of the originator: a document and a notice, as collectors/spc/run.py writes them.
 insert into document (id, source_id, external_id, url, title_orig, lang, doc_type, published_date, first_seen_at,
@@ -70,49 +70,49 @@ insert into issue_ingredient (issue_id, ingredient_id) values
 -- detected 5 Nov, no notice; c003: detected 20 Oct (before the week); c004: another ingredient;
 -- c005: detected Saturday 7 Nov 22:30 UTC = Sunday 8 Nov 00:30 in Cairo (after the week).
 insert into spc_change (id, spc_product_id, from_snapshot, to_snapshot, sections, diff, issue_id, created_at) values
-  ('00000000-0000-0000-0000-00000043c001', '00000000-0000-0000-0000-00000043p001',
-   '00000000-0000-0000-0000-00000043s001', '00000000-0000-0000-0000-00000043s002', '{4.4}',
+  ('00000000-0000-0000-0000-00000043c001', '00000000-0000-0000-0000-00000043d001',
+   '00000000-0000-0000-0000-00000043f001', '00000000-0000-0000-0000-00000043f002', '{4.4}',
    '[{"section":"4.4","before":"Use with caution in renal impairment.",'
    '"after":"Use with caution in renal impairment. Cases of acute kidney injury have been reported.",'
    '"changes":[{"op":"insert","before":"","after":"Cases of acute kidney injury have been reported.",'
    '"context":"Use with caution in renal impairment."}]}]',
    '00000000-0000-0000-0000-00000043e001', '2026-11-03 09:00+00'),
-  ('00000000-0000-0000-0000-00000043c002', '00000000-0000-0000-0000-00000043p002',
-   '00000000-0000-0000-0000-00000043s003', '00000000-0000-0000-0000-00000043s004', '{10}',
+  ('00000000-0000-0000-0000-00000043c002', '00000000-0000-0000-0000-00000043d002',
+   '00000000-0000-0000-0000-00000043f003', '00000000-0000-0000-0000-00000043f004', '{10}',
    '[{"section":"10","before":"May 2026","after":"November 2026","changes":[]}]', null, '2026-11-05 08:00+00'),
-  ('00000000-0000-0000-0000-00000043c003', '00000000-0000-0000-0000-00000043p002',
-   '00000000-0000-0000-0000-00000043s003', '00000000-0000-0000-0000-00000043s007', '{4.8}',
+  ('00000000-0000-0000-0000-00000043c003', '00000000-0000-0000-0000-00000043d002',
+   '00000000-0000-0000-0000-00000043f003', '00000000-0000-0000-0000-00000043f007', '{4.8}',
    '[{"section":"4.8","before":"Nausea.","after":"Nausea. Headache.","changes":[]}]', null, '2026-10-20 08:00+00'),
-  ('00000000-0000-0000-0000-00000043c004', '00000000-0000-0000-0000-00000043p003',
-   '00000000-0000-0000-0000-00000043s005', '00000000-0000-0000-0000-00000043s006', '{4.4}',
+  ('00000000-0000-0000-0000-00000043c004', '00000000-0000-0000-0000-00000043d003',
+   '00000000-0000-0000-0000-00000043f005', '00000000-0000-0000-0000-00000043f006', '{4.4}',
    '[{"section":"4.4","before":"A.","after":"B.","changes":[]}]', null, '2026-11-04 08:00+00'),
-  ('00000000-0000-0000-0000-00000043c005', '00000000-0000-0000-0000-00000043p001',
-   '00000000-0000-0000-0000-00000043s002', '00000000-0000-0000-0000-00000043s008', '{4.8}',
+  ('00000000-0000-0000-0000-00000043c005', '00000000-0000-0000-0000-00000043d001',
+   '00000000-0000-0000-0000-00000043f002', '00000000-0000-0000-0000-00000043f008', '{4.8}',
    '[{"section":"4.8","before":"Nausea.","after":"Nausea. Rash.","changes":[]}]', null, '2026-11-07 22:30+00');
 
 -- ───────────── the reference product: one per ingredient, reviewers and administrators only ─────────────
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
 set role authenticated;
-select pg_temp.lc_refused($q$select set_reference_product('00000000-0000-0000-0000-00000043p001', true)$q$) as lc_reader_marks \gset
+select pg_temp.lc_refused($q$select set_reference_product('00000000-0000-0000-0000-00000043d001', true)$q$) as lc_reader_marks \gset
 reset role;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', false);
 set role authenticated;
 select pg_temp.lc_refused($q$select set_reference_product('00000000-0000-0000-0000-00000043ffff', true)$q$) as lc_unknown_product \gset
-select set_reference_product('00000000-0000-0000-0000-00000043p002', true);
-select set_reference_product('00000000-0000-0000-0000-00000043p001', true);    -- clears p002
+select set_reference_product('00000000-0000-0000-0000-00000043d002', true);
+select set_reference_product('00000000-0000-0000-0000-00000043d001', true);    -- clears p002
 reset role;
 select pg_temp.lc_assert(:'lc_reader_marks' like '42501%', 'a reader cannot mark the reference product');
 select pg_temp.lc_assert(:'lc_unknown_product' like 'P0002%', 'an unknown product cannot be marked');
 select pg_temp.lc_assert(
-  (select is_reference from spc_product where id = '00000000-0000-0000-0000-00000043p001')
-  and not (select is_reference from spc_product where id = '00000000-0000-0000-0000-00000043p002')
+  (select is_reference from spc_product where id = '00000000-0000-0000-0000-00000043d001')
+  and not (select is_reference from spc_product where id = '00000000-0000-0000-0000-00000043d002')
   and (select count(*) from spc_product where ingredient_id = '00000000-0000-0000-0000-00000043a001' and is_reference) = 1,
   'marking one product as the reference clears the other product of the same ingredient');
 select pg_temp.lc_assert(
   (select count(*) from audit_log where table_name = 'spc_product' and action = 'UPDATE'
       and new_row ->> 'is_reference' = 'true') = 2,
   'the reference mark is in the audit log');
-select pg_temp.lc_refused($q$update spc_product set is_reference = true where id = '00000000-0000-0000-0000-00000043p002'$q$)
+select pg_temp.lc_refused($q$update spc_product set is_reference = true where id = '00000000-0000-0000-0000-00000043d002'$q$)
   as lc_two_refs \gset
 select pg_temp.lc_assert(:'lc_two_refs' like '23505%', 'two reference products for one ingredient are refused by the table itself');
 
@@ -236,7 +236,7 @@ reset role;
 set role anon;
 select pg_temp.lc_refused($q$select label_changes('00000000-0000-0000-0000-00000043a001', '2026-11-01', '2026-11-07')$q$) as lc_anon \gset
 select pg_temp.lc_refused($q$select count(*) from label_gap$q$) as lc_anon_gaps \gset
-select pg_temp.lc_refused($q$select set_reference_product('00000000-0000-0000-0000-00000043p001', false)$q$) as lc_anon_marks \gset
+select pg_temp.lc_refused($q$select set_reference_product('00000000-0000-0000-0000-00000043d001', false)$q$) as lc_anon_marks \gset
 reset role;
 select set_config('request.jwt.claims', '', false);
 select pg_temp.lc_assert(pg_temp.lc_ids(:'lc_reader'::jsonb) = 'c001,c002' and :'lc_reader_gaps' = '1',
