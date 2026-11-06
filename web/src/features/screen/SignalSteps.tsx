@@ -17,8 +17,9 @@ import { Field, Input, Textarea } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
+import { patchFindings, reloadFindings, staleElsewhere } from './findingsCache';
 import { chainOf, isStaleSignal, needsDue, nextSteps, stepDue, withSignal, type NextStep } from './signalSteps';
-import type { FindingSignal, Findings, IngredientScreenData, SignalStepRow } from './types';
+import type { FindingSignal, Findings, SignalStepRow } from './types';
 import '../../styles/signal-steps.css';
 
 class StaleSignalError extends Error {
@@ -34,17 +35,20 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  * The signal a notice belongs to (0042), under its decision: the chain Validate → Assess → Action → Closed with
  * the current stage lit, the next due day, one form for the next step, and the history. A reviewer or
  * administrator takes the step through signal_take_step, naming the stage she saw; a stale stage (PH409) reloads
- * the screen like a stale decision does. The screen's copy of the signal is replaced from finding_state().
+ * the screen like a stale decision does. The screen's copy of the signal is replaced from finding_state(), and on a
+ * paper the copy in the papers' pages too (`papersKey`).
  */
 export function SignalSteps({
   issueId,
   signal,
   queryKey,
+  papersKey,
   onDone,
 }: {
   issueId: string;
   signal: FindingSignal;
   queryKey: readonly unknown[];
+  papersKey?: readonly unknown[];
   onDone: (text: string | null) => void;
 }) {
   const { canReview } = useAuth();
@@ -77,8 +81,8 @@ export function SignalSteps({
       return states?.[issueId]?.signal ?? null;
     },
     onSuccess: (next, s) => {
-      qc.setQueryData<IngredientScreenData>(queryKey, (old) => (old ? withSignal(old, issueId, next) : old));
-      void qc.invalidateQueries({ queryKey: ['ingredient-screen'], refetchType: 'none' });
+      patchFindings(qc, queryKey, papersKey, (data) => withSignal(data, issueId, next));
+      staleElsewhere(qc, papersKey);
       setChosen(null);
       setComment('');
       setOutcome('');
@@ -89,7 +93,7 @@ export function SignalSteps({
       if (!(e instanceof StaleSignalError)) return;
       setChosen(null);
       onDone(null);
-      void qc.invalidateQueries({ queryKey });
+      reloadFindings(qc, queryKey, papersKey);
     },
   });
 

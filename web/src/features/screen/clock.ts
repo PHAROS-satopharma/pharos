@@ -5,7 +5,7 @@
 import { formatDate } from '../../lib/format';
 import type { IssueStatus } from '../../lib/types';
 import { addDays, dayCount } from './range';
-import type { AuthoritySent, FindingState, Findings, IngredientScreenData, Mention } from './types';
+import type { AuthoritySent, FindingState, Findings, Mention } from './types';
 
 /** The notices on a screen, each once: what finding_state() is asked for. */
 export function issueIdsOf(data: { regulators: { mentions: Mention[] }[]; label_changes: Mention[] }): string[] {
@@ -71,27 +71,28 @@ export function runningClock(f: FindingState, today: string): FindingState {
   return { ...f, days_left: left, clock: left < 0 ? 'late' : 'running', sent: null };
 }
 
-function patch(data: IngredientScreenData, issueId: string, next: (f: FindingState) => FindingState): IngredientScreenData {
+/** What holds the clocks of notices: the screen's data, or a page of papers (PaperPage). */
+export interface WithFindings {
+  findings: Findings;
+}
+
+function patch<T extends WithFindings>(data: T, issueId: string, next: (f: FindingState) => FindingState): T {
   const f = data.findings[issueId];
   if (!f) return data;
   const findings: Findings = { ...data.findings, [issueId]: next(f) };
   return { ...data, findings };
 }
 
-/** The screen after a report to the authority was recorded: the clock stops on every mention of the notice. */
-export function withSent(data: IngredientScreenData, issueId: string, sent: AuthoritySent): IngredientScreenData {
+/** The screen (or a page of papers) after a report to the authority was recorded: the clock stops on every mention
+ *  and paper of the notice. */
+export function withSent<T extends WithFindings>(data: T, issueId: string, sent: AuthoritySent): T {
   return patch(data, issueId, (f) => ({ ...f, clock: 'sent', sent }));
 }
 
 /** The screen after a decision: Concerns us starts (or keeps) the clock — or finds the notice already sent, since a
  *  report to the authority is never forgotten; anything else switches the clock off and keeps the report. The due
  *  day is the database's and does not move with a decision (day zero is the day PHAROS first showed the notice). */
-export function withClockDecision(
-  data: IngredientScreenData,
-  issueId: string,
-  to: IssueStatus,
-  today: string,
-): IngredientScreenData {
+export function withClockDecision<T extends WithFindings>(data: T, issueId: string, to: IssueStatus, today: string): T {
   return patch(data, issueId, (f) => {
     if (to !== 'relevant') return { ...f, clock: 'off' };
     return f.sent ? { ...f, clock: 'sent' } : runningClock(f, today);
@@ -99,7 +100,7 @@ export function withClockDecision(
 }
 
 /** The screen after a wrong report was withdrawn: the clock runs again from the same due day. */
-export function withWithdrawn(data: IngredientScreenData, issueId: string, today: string): IngredientScreenData {
+export function withWithdrawn<T extends WithFindings>(data: T, issueId: string, today: string): T {
   return patch(data, issueId, (f) => runningClock(f, today));
 }
 

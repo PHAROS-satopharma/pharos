@@ -11,6 +11,7 @@ import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { canSend, clockLine, earliestSentDay, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
+import { patchFindings, reloadFindings, staleElsewhere } from './findingsCache';
 import { SignalSteps } from './SignalSteps';
 import type { AuthoritySent, Decided, Decision, FindingState, IngredientScreenData } from './types';
 import '../../styles/clock.css';
@@ -49,18 +50,22 @@ interface SentRow {
  * the decision, the five-day clock to the Egyptian Drug Authority (0041, 0050) and "Sent to the authority".
  *
  * `finding` is the notice's clock as the screen's data holds it (finding_state); the screen passes it down. The
- * cache is written here under `queryKey`, never read through a second observer: a second useQuery on the same
- * key with no queryFn would take over the query's options and break the reload after a refusal.
+ * cache is written here under `queryKey` — and, for a paper, under `papersKey`, the pages of papers that hold
+ * their notices' clocks — never read through a second observer: a second useQuery on the same key with no
+ * queryFn would take over the query's options and break the reload after a refusal.
  */
 export function DecisionButtons({
   mention,
   queryKey,
   finding,
+  papersKey,
   onDecision,
 }: {
   mention: Decided;
   queryKey: readonly unknown[];
   finding: FindingState | null;
+  /** A paper's buttons: the papers' pages (paper_state with finding_state), patched with the screen. */
+  papersKey?: readonly unknown[];
   onDecision?: (issueId: string, d: Decision) => void;
 }) {
   const { canReview, person } = useAuth();
@@ -93,16 +98,16 @@ export function DecisionButtons({
     onSuccess: (row) => {
       if (!issueId) return;
       // Other ranges and screens read again when next opened; this one shows the decision now.
-      void qc.invalidateQueries({ queryKey: ['ingredient-screen'], refetchType: 'none' });
+      staleElsewhere(qc, papersKey);
       const decision: Decision = {
         to_status: row.to_status,
         person: person?.full_name ?? 'You',
         at: row.created_at,
         comment: row.comment,
       };
-      qc.setQueryData<IngredientScreenData>(queryKey, (old) =>
-        old ? withClockDecision(withDecision(old, issueId, decision), issueId, row.to_status, cairoToday()) : old,
-      );
+      qc.setQueryData<IngredientScreenData>(queryKey, (old) => (old ? withDecision(old, issueId, decision) : old));
+      const today = cairoToday();
+      patchFindings(qc, queryKey, papersKey, (data) => withClockDecision(data, issueId, row.to_status, today));
       onDecision?.(issueId, decision);
       void qc.invalidateQueries({ queryKey: ['issues'] });
       void qc.invalidateQueries({ queryKey: ['issue', issueId] });
@@ -117,7 +122,7 @@ export function DecisionButtons({
       // Show the notice as it is now; the reason stays typed in case it still applies.
       setTarget(null);
       setDone(null);
-      void qc.invalidateQueries({ queryKey });
+      reloadFindings(qc, queryKey, papersKey);
     },
   });
 
@@ -229,11 +234,17 @@ export function DecisionButtons({
       ) : null}
 
       {canReview && finding && !changing ? (
-        <AuthorityActions issueId={issueId} finding={finding} queryKey={queryKey} onDone={setDone} />
+        <AuthorityActions issueId={issueId} finding={finding} queryKey={queryKey} papersKey={papersKey} onDone={setDone} />
       ) : null}
 
       {finding?.signal && !changing ? (
-        <SignalSteps issueId={issueId} signal={finding.signal} queryKey={queryKey} onDone={setDone} />
+        <SignalSteps
+          issueId={issueId}
+          signal={finding.signal}
+          queryKey={queryKey}
+          papersKey={papersKey}
+          onDone={setDone}
+        />
       ) : null}
 
       {save.isError ? (
@@ -254,11 +265,13 @@ function AuthorityActions({
   issueId,
   finding,
   queryKey,
+  papersKey,
   onDone,
 }: {
   issueId: string;
   finding: FindingState;
   queryKey: readonly unknown[];
+  papersKey: readonly unknown[] | undefined;
   onDone: (text: string | null) => void;
 }) {
   const { person } = useAuth();
@@ -271,7 +284,7 @@ function AuthorityActions({
   const today = cairoToday();
 
   const afterChange = () => {
-    void qc.invalidateQueries({ queryKey: ['ingredient-screen'], refetchType: 'none' });
+    staleElsewhere(qc, papersKey);
     setMode('closed');
   };
 
@@ -302,7 +315,7 @@ function AuthorityActions({
         person: person?.full_name ?? 'You',
         note: row.note,
       };
-      qc.setQueryData<IngredientScreenData>(queryKey, (old) => (old ? withSent(old, issueId, sent) : old));
+      patchFindings(qc, queryKey, papersKey, (data) => withSent(data, issueId, sent));
       afterChange();
       setReference('');
       setNote('');
@@ -311,7 +324,7 @@ function AuthorityActions({
     onError: (e) => {
       if (e instanceof ClockRefusedError) {
         setMode('closed');
-        void qc.invalidateQueries({ queryKey });
+        reloadFindings(qc, queryKey, papersKey);
       }
     },
   });
@@ -322,7 +335,7 @@ function AuthorityActions({
       unwrap(await supabase.rpc('withdraw_authority_report', { p_id: finding.sent.id, p_reason: why.trim() }));
     },
     onSuccess: () => {
-      qc.setQueryData<IngredientScreenData>(queryKey, (old) => (old ? withWithdrawn(old, issueId, today) : old));
+      patchFindings(qc, queryKey, papersKey, (data) => withWithdrawn(data, issueId, today));
       afterChange();
       setWhy('');
       onDone('The report was withdrawn; the clock runs again.');

@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import { withClockDecision, withSent, withWithdrawn } from './clock';
 import {
   caseReportLabel,
   chunk,
   dueLine,
+  mergePaperPages,
   mlmLabel,
   orderPapers,
+  paperIssueIds,
   withPaperDecision,
   type PaperState,
   type PaperStates,
 } from './papers';
+import { withSignal } from './signalSteps';
+import type { FindingSignal, FindingState, PaperPage } from './types';
 
 const state = (over: Partial<PaperState> = {}): PaperState => ({
   issue_id: 'n1',
@@ -62,6 +67,60 @@ describe('the papers on screen', () => {
   it('asks the database 50 papers at a time', () => {
     expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
     expect(chunk([], 50)).toEqual([]);
+  });
+});
+
+describe("the five-day clock of the papers' notices", () => {
+  const running: FindingState = { day_zero: '2026-11-03', due: '2026-11-08', days_left: 2, clock: 'running', sent: null, signal: null };
+  const off: FindingState = { ...running, clock: 'off' };
+
+  it("asks finding_state for each paper's notice once, and never for a paper without one", () => {
+    const states: PaperStates = {
+      a: state({ issue_id: 'n1' }),
+      b: state({ issue_id: 'n2' }),
+      c: state({ issue_id: 'n1' }),
+      d: state({ issue_id: null, issue_status: null }),
+    };
+    expect(paperIssueIds(states)).toEqual(['n1', 'n2']);
+    expect(paperIssueIds({})).toEqual([]);
+  });
+
+  it('puts the pages together: every state and every clock, a page not answered yet left out', () => {
+    const one: PaperPage = { states: { a: state({ issue_id: 'n1' }) }, findings: { n1: running } };
+    const two: PaperPage = { states: { b: state({ issue_id: 'n2' }) }, findings: { n2: off } };
+    const all = mergePaperPages([one, undefined, two]);
+    expect(Object.keys(all.states)).toEqual(['a', 'b']);
+    expect(all.findings).toEqual({ n1: running, n2: off });
+    expect(mergePaperPages([])).toEqual({ states: {}, findings: {} });
+  });
+
+  it('follows a decision, a report, a withdrawal and a signal step on the page that holds the notice', () => {
+    const page: PaperPage = { states: { a: state({ issue_id: 'n1' }) }, findings: { n1: off } };
+    const on = withClockDecision(page, 'n1', 'relevant', '2026-11-06');
+    expect(on.findings.n1).toMatchObject({ clock: 'running', days_left: 2 });
+    expect(on.states).toBe(page.states);
+    const sent = { id: 'r1', on: '2026-11-06', reference: null, person: 'Sama Mosaad', note: null };
+    const reported = withSent(on, 'n1', sent);
+    expect(reported.findings.n1).toMatchObject({ clock: 'sent', sent });
+    expect(withWithdrawn(reported, 'n1', '2026-11-06').findings.n1).toMatchObject({ clock: 'running', sent: null });
+    const signal: FindingSignal = {
+      id: 's1',
+      ref: 'SIG-2026-001',
+      title: 'Tendon rupture',
+      stage: 'validation',
+      priority: null,
+      outcome: null,
+      next_step: 'validated',
+      next_due: '2026-11-20',
+      overdue: false,
+      owner: null,
+      opened_at: '2026-11-06T09:00:00Z',
+      opened_by: 'Sama Mosaad',
+      steps: [],
+    };
+    expect(withSignal(on, 'n1', signal).findings.n1.signal).toEqual(signal);
+    // a page without the notice is returned as it was
+    expect(withClockDecision(page, 'n9', 'relevant', '2026-11-06')).toBe(page);
   });
 });
 

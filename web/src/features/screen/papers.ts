@@ -1,7 +1,7 @@
 // The papers on the Ingredients screen: what paper_state() (migration 0044) says of each, in her words.
 // Pure functions; the hooks are in paperState.ts.
 
-import type { CaseReport, Decision, PaperState, PaperStates } from './types';
+import type { CaseReport, Decision, PaperPage, PaperState, PaperStates } from './types';
 
 export type { PaperState, PaperStates } from './types';
 
@@ -41,6 +41,25 @@ export function withPaperDecision(states: PaperStates, issueId: string, d: Decis
   const out: PaperStates = {};
   for (const [id, s] of Object.entries(states)) {
     out[id] = s.issue_id === issueId ? { ...s, issue_status: d.to_status, decision: d } : s;
+  }
+  return out;
+}
+
+/** The notices the papers are filed under, each once: what finding_state() is asked for, page by page. */
+export function paperIssueIds(states: PaperStates): string[] {
+  const ids = new Set<string>();
+  for (const s of Object.values(states)) if (s.issue_id) ids.add(s.issue_id);
+  return [...ids];
+}
+
+/** Every page loaded, as one: the states of all its papers and the clocks of their notices. A page whose answer has
+ *  not arrived yet is left out. */
+export function mergePaperPages(pages: (PaperPage | undefined)[]): PaperPage {
+  const out: PaperPage = { states: {}, findings: {} };
+  for (const p of pages) {
+    if (!p) continue;
+    Object.assign(out.states, p.states);
+    Object.assign(out.findings, p.findings);
   }
   return out;
 }
