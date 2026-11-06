@@ -1,5 +1,5 @@
 """Dr Sama's pages (the regulator_page seed in 0032_sources_horizontal.sql, with the changes of
-0038_her_pages_read.sql) against the catalogue (collectors/sources.yaml), and every source's human page
+0038_her_pages_read.sql and 0065_fda_govdelivery.sql) against the catalogue (collectors/sources.yaml), and every source's human page
 (`page:`). Nothing here touches a database."""
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from collectors.core.registry import CatalogueError, load_catalogue, sync_catalo
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase" / "migrations" / "0032_sources_horizontal.sql"
 READ_0038 = ROOT / "supabase" / "migrations" / "0038_her_pages_read.sql"
+FDA_0065 = ROOT / "supabase" / "migrations" / "0065_fda_govdelivery.sql"
 CHANGE = re.compile(r"^\s*\('([A-Z_]+)', '([^']+)', '([^']+)', '\{([^}]*)\}', (true|false), "
                     r"(null|'(?:[^']|'')*')\),?$")
 ROW = re.compile(r"^\s*\('([A-Z_]+)', '(database|dhpc|safety)', (\d+), '((?:[^']|'')*)', '([^']+)', "
@@ -63,13 +64,28 @@ def changes() -> list[dict]:
     return rows
 
 
+def fda_change() -> dict:
+    """0065's one update: FDA's press page, read from GovDelivery's feeds of FDA's e-mail lists."""
+    sql = FDA_0065.read_text(encoding="utf-8")
+    stmt = sql.split("update regulator_page p", 1)[1]
+    read_by = re.search(r"read_by = '\{([^}]*)\}'::text\[\]", stmt).group(1)
+    note = "".join(_text(q) for q in re.findall(r"'(?:[^']|'')*'", stmt.split("note =", 1)[1].split(" where ", 1)[0]))
+    where = re.search(r"p\.regulator_id = '([A-Z_]+)' and p\.url = '([^']+)'", stmt)
+    return {"regulator": where.group(1), "old": where.group(2), "read_by": read_by.split(","),
+            "partial": "partial = false" not in stmt, "note": note}
+
+
 def pages() -> list[dict]:
-    """Her pages as the database holds them after 0038."""
+    """Her pages as the database holds them after 0038 and 0065."""
     rows = seed()
     for c in changes():
         hit = [p for p in rows if p["regulator"] == c["regulator"] and p["url"] == c["old"]]
         assert len(hit) == 1, f"0038 changes a page 0032 does not list: {c['old']}"
         hit[0].update(url=c["url"], read_by=c["read_by"], partial=c["partial"], note=c["note"])
+    c = fda_change()
+    hit = [p for p in rows if p["regulator"] == c["regulator"] and p["url"] == c["old"]]
+    assert len(hit) == 1, f"0065 changes a page 0038 does not leave: {c['old']}"
+    hit[0].update(read_by=c["read_by"], partial=c["partial"], note=c["note"])
     return rows
 
 
@@ -144,7 +160,7 @@ def test_her_exact_addresses_are_kept():
         assert url in urls
         assert next(p for p in SEED if p["url"] == url)["note"]
     fda = next(p for p in PAGES if p["regulator"] == "FDA" and p["kind"] == "safety")
-    assert fda["label"] == "Press announcements (bottom of the FDA home page)" and not fda["read_by"]
+    assert fda["label"] == "Press announcements (bottom of the FDA home page)" and fda["url"] == "https://www.fda.gov/"
 
 
 def test_a_moved_page_keeps_her_address_in_its_note():
@@ -172,9 +188,11 @@ def test_her_unread_pages_are_now_read_by():
     assert read_by[("INFARMED", "Circulars")] == ["infarmed-circulares"]
     assert read_by[("HPRA", "Newsletters")] == ["hpra-notices"]
     assert read_by[("MFDS", "Safety letters (health.kr)")] == ["mfds-letters"]
-    # both sites refuse the servers PHAROS runs on (checked from them, 6 Nov 2026)
+    # canada.ca refuses the servers PHAROS runs on (checked from them, 6 Nov 2026)
     assert read_by[("HC", "Health Product InfoWatch")] == []
-    assert read_by[("FDA", "Press announcements (bottom of the FDA home page)")] == []
+    # fda.gov does too; FDA's own e-mail lists are read from GovDelivery's feeds instead (0065)
+    assert read_by[("FDA", "Press announcements (bottom of the FDA home page)")] == [
+        "fda-press-gd", "fda-druginfo-gd", "fda-medwatch-gd"]
 
 
 def test_new_items_uses_the_same_feed_rule():
