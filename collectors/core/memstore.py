@@ -46,7 +46,7 @@ class MemoryStore:
         self.terms: list[Term] = []
         self.ingredient_class: list[tuple[str, str]] = []  # (ingredient_id, class_id)
         # (ingredient_id, class_id) -> {"relation": group|parent|manual, "enabled"}; a link without an entry
-        # is a searched group (the default of migration 0041)
+        # is a searched group (the default of migration 0049)
         self.ingredient_class_state: dict[tuple[str, str], dict] = {}
         self.spc_mah: dict[str, list[str]] = {}
         self.issue: dict[str, dict] = {}
@@ -449,7 +449,7 @@ class MemoryStore:
         if (ingredient_id, class_id) in self.ingredient_class:
             return  # a link that exists is never changed
         if relation == "group" and self.drug_class.get(class_id, {}).get("origin") == "hand":
-            relation = "manual"  # the database trigger ingredient_class_relation (0041)
+            relation = "manual"  # the database trigger ingredient_class_relation (0049)
         self.ingredient_class.append((ingredient_id, class_id))
         self.ingredient_class_state[(ingredient_id, class_id)] = {"relation": relation, "enabled": enabled}
 

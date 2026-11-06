@@ -4,7 +4,7 @@
 import type { DocType, IssueStatus, SourceChannel, SourceHealth, SourceKind } from '../../lib/types';
 import type { RegulatorPage } from '../sources/horizontal';
 
-/** What a class is to the ingredient (migration 0041): its group, the class above it, or a group added by hand. */
+/** What a class is to the ingredient (migration 0049): its group, the class above it, or a group added by hand. */
 export type ScreenRelation = 'group' | 'parent' | 'manual';
 
 export interface ScreenClass {

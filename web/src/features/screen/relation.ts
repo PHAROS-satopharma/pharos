@@ -1,4 +1,4 @@
-// How a mention was found (migration 0041): by the ingredient's own name, by its group, by a group added by
+// How a mention was found (migration 0049): by the ingredient's own name, by its group, by a group added by
 // hand, or by the class above its group, which is only a possibly relevant class-level signal to assess.
 
 import type { Mention, ScreenClass } from './types';

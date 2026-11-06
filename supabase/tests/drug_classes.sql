@@ -126,7 +126,7 @@ select pg_temp.dc_assert(:'dc_jobs'::int >= 1 and :'dc_r_job' like '42501%',
   'a signed-in person sees the progress of the check and cannot change it');
 update rematch_job set finished_at = now() where finished_at is null;
 
--- ───────────── the search profile (0041): the group searched, the parent class off, a group by hand ─────────────
+-- ───────────── the search profile (0049): the group searched, the parent class off, a group by hand ─────────────
 select pg_temp.dc_assert((select ic.relation = 'manual' and ic.enabled from ingredient_class ic
                             join drug_class c on c.id = ic.class_id where c.code = 'NSAID' limit 1),
   'the NSAID seed is a manual group whose words are searched');

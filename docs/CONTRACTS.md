@@ -262,12 +262,12 @@ confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the call
   `set_issue_names_ingredient`; for classes `ingredients_for_classes`, `drug_class_id`, `create_drug_class`,
   `link_ingredient_class`.
 
-## The search profile: groups, the class above, groups by hand (0041)
+## The search profile: groups, the class above, groups by hand (0049)
 
 ```sql
 -- ingredient_class: + relation text not null default 'group' ('group' = its ATC level-4 group | 'parent' = the
 --   level-3 class above it | 'manual' = a group given by hand), enabled boolean not null default true,
---   changed_at; audited. On 0041 every link of a class with origin 'hand' became 'manual'; everything else
+--   changed_at; audited. On 0049 every link of a class with origin 'hand' became 'manual'; everything else
 --   'group', enabled. A link inserted by hand to a class with origin 'hand' is 'manual' (trigger).
 -- Switching a link from off to on sets changed_at on every word of the class (trigger
 -- class_search_enabled_again): the check of the past and the literature look-back run for it.
@@ -309,7 +309,7 @@ document_link(d document, s source, r regulator) returns text   -- immutable; th
 -- included; a notice's day is published_date, else first_seen_at in Cairo.
 ingredient_screen(p_ingredient uuid, p_from date, p_to date) returns jsonb
   -- {ingredient:{id, inn_en, atc_code, active, classes:[{id, code, name_en, origin, relation, enabled}], names,
-  --   name_languages, class_words, class_languages (enabled classes only, 0041)}, from, to,
+  --   name_languages, class_words, class_languages (enabled classes only, 0049)}, from, to,
   --  regulators:[{id, name, country_name, country_code, homepage, hers, runs, ok, failed, unread_page,
   --   pages:[regulator_page], sources:[{id, regulator_id, kind, channel, url, page_url, enabled, health, notes}],
   --   mentions:[mention]}],          -- every authority with pages of hers or a source not spc/literature;
@@ -319,7 +319,7 @@ ingredient_screen(p_ingredient uuid, p_from date, p_to date) returns jsonb
   --  literature:{papers, by_name, by_class, pubmed, pmc, by_query:[{query, kind, pubmed, pmc}], first:[paper]}}
   -- mention: {document_id, source_id, regulator_id, regulator_name, country_name, country_code, title, lang,
   --   link (document_link), email_id, email_r2_key, date, published_date, first_seen_at, doc_type,
-  --   terms:[{text, lang}], by_class, relation ('name' | 'group' | 'manual' | 'parent', 0041), class_name (the
+  --   terms:[{text, lang}], by_class, relation ('name' | 'group' | 'manual' | 'parent', 0049), class_name (the
   --   class that found it, null for 'name'), is_backfill (the document's or its notice's), sections (spc only),
   --   issue_id (a link not 'suggested', its anchor first), issue_status, decision:{to_status, person, at, comment}}
 ingredient_papers(p_ingredient uuid, p_from date, p_to date) returns table (document_id, title, lang, journal,

@@ -42,7 +42,7 @@ serve(async (req) => {
   if (error) throw new Error(`ingredient lookup failed: ${error.message}`);
   if (!ing) throw new HttpError(404, "That ingredient is not on the watch list.");
 
-  // The classes whose words this ingredient searches (ingredient_class.enabled, migration 0041), as the
+  // The classes whose words this ingredient searches (ingredient_class.enabled, migration 0049), as the
   // daily watch reads them (Store.class_words).
   const { data: links, error: lErr } = await svc
     .from("ingredient_class")

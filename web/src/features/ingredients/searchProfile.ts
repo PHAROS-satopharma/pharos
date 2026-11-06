@@ -1,4 +1,4 @@
-// The search profile of an ingredient (migration 0041): its own names plus the words of the classes whose
+// The search profile of an ingredient (migration 0049): its own names plus the words of the classes whose
 // switch is on. Pure functions; the switches themselves are ingredient_class.enabled, changed with
 // set_class_search. Reusable by any screen that needs to say what PHAROS looks for.
 

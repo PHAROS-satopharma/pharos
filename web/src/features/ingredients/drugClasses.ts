@@ -6,7 +6,7 @@ import type { MatchMode } from '../../lib/types';
 export type ClassOrigin = 'atc' | 'hand';
 
 /**
- * What a class is to an ingredient (ingredient_class.relation, migration 0041): 'group' is its ATC level-4 group,
+ * What a class is to an ingredient (ingredient_class.relation, migration 0049): 'group' is its ATC level-4 group,
  * searched from the start; 'parent' the class above it, shown but switched off until an administrator has read its
  * words; 'manual' a group given by hand.
  */

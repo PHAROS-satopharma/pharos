@@ -180,7 +180,7 @@ def test_a_paused_ingredient_has_no_due_words(store, tag):
 
 
 def test_a_parent_class_is_shown_but_not_searched_until_switched_on(store, tag):
-    """Migration 0041: the link says what the class is and whether its words are searched; a link that exists is
+    """Migration 0049: the link says what the class is and whether its words are searched; a link that exists is
     never changed; switching a class on makes its words due for the check of the past again."""
     code = _code()
     ing = _ingredient(store, tag, code + "01")

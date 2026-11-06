@@ -8,7 +8,7 @@ the class is history-free news for the daily digest, never an immediate message 
 
 The level-3 class above the group (the first four characters: J01M, Quinolone antibacterials) is made and
 linked too, as the ingredient's *parent* class, but its words are NOT searched until an administrator has read
-them and switched it on (ingredient_class.enabled, migration 0041): a wide class's words from Wikidata carry
+them and switched it on (ingredient_class.enabled, migration 0049): a wide class's words from Wikidata carry
 noise ("girase inhibitors"), and each English word costs a 12-month look-back on PubMed and PubMed Central.
 
 Where the words come from:

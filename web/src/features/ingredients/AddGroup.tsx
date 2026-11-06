@@ -7,7 +7,7 @@ import { Input } from '../../ui/Input';
 import { Notice } from '../../ui/States';
 
 /**
- * A pharmacotherapeutic group added by hand (add_search_group, migration 0041): named in words, never an ATC
+ * A pharmacotherapeutic group added by hand (add_search_group, migration 0049): named in words, never an ATC
  * code. An existing class with that name is reused; a new one starts with no words, which the administrator
  * adds on its line. The groups from the ATC code are the daily run's.
  */

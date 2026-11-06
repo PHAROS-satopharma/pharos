@@ -26,7 +26,7 @@ insert into ingredient_term (id, ingredient_id, lang, term) values
   ('00000000-0000-0000-0000-00000037c001', '00000000-0000-0000-0000-00000037a001', 'en', 'CI screenamine'),
   ('00000000-0000-0000-0000-00000037c002', '00000000-0000-0000-0000-00000037a001', 'de', 'CI Screenamin'),
   ('00000000-0000-0000-0000-00000037c003', '00000000-0000-0000-0000-00000037a002', 'en', 'CI otheramine');
--- d001 is the ingredient's group (searched); d002 its parent class, shown but not searched (0041).
+-- d001 is the ingredient's group (searched); d002 its parent class, shown but not searched (0049).
 insert into drug_class (id, code, name_en, origin) values
   ('00000000-0000-0000-0000-00000037d001', 'Z99ZZ', 'CI screenoids', 'atc'),
   ('00000000-0000-0000-0000-00000037d002', 'Z99Z', 'CI zparentoids', 'atc');

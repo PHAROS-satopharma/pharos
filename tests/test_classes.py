@@ -228,7 +228,7 @@ def test_an_existing_class_is_never_changed_only_linked():
     assert out.created == [] and out.linked == ["levofloxacin → J01MA", "levofloxacin → J01M (off)"]
     assert ("levo", "hand") in s.ingredient_class and ("levo", "hand3") in s.ingredient_class and web.asked == []
     assert [t for t in s.terms if t.class_id == "hand"] == []
-    # a hand-made class is a manual group (the database trigger of 0041); the class above stays a parent, off
+    # a hand-made class is a manual group (the database trigger of 0049); the class above stays a parent, off
     assert s.ingredient_class_state[("levo", "hand")] == {"relation": "manual", "enabled": True}
     assert s.ingredient_class_state[("levo", "hand3")] == {"relation": "parent", "enabled": False}
 
