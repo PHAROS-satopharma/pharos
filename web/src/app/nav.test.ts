@@ -5,14 +5,14 @@ import { HOME, REMOVED_PATHS, tabsFor } from './nav';
 const removed = (pathname: string) => REMOVED_PATHS.some((p) => matchPath({ path: p }, pathname) !== null);
 
 describe('tabsFor', () => {
-  it('gives everyone the three screening tabs, in her order', () => {
-    expect(tabsFor(false).map((t) => t.label)).toEqual(['Ingredients', 'Sources', 'Reports']);
-    expect(tabsFor(false).map((t) => t.to)).toEqual(['/ingredients', '/sources', '/reports']);
+  it('gives everyone the three screening tabs, in her order, then Cases', () => {
+    expect(tabsFor(false).map((t) => t.label)).toEqual(['Ingredients', 'Sources', 'Reports', 'Cases']);
+    expect(tabsFor(false).map((t) => t.to)).toEqual(['/ingredients', '/sources', '/reports', '/cases']);
   });
 
   it('adds People, last, for the administrator who manages the people only', () => {
-    expect(tabsFor(true).map((t) => t.label)).toEqual(['Ingredients', 'Sources', 'Reports', 'People']);
-    expect(tabsFor(true)[3].to).toBe('/people');
+    expect(tabsFor(true).map((t) => t.label)).toEqual(['Ingredients', 'Sources', 'Reports', 'Cases', 'People']);
+    expect(tabsFor(true)[4].to).toBe('/people');
     expect(tabsFor(false).some((t) => t.to === '/people')).toBe(false);
   });
 

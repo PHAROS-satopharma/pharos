@@ -1,4 +1,4 @@
-// AWS Signature Version 4 query-string presigning for a Cloudflare R2 GET, with Web Crypto only.
+// AWS Signature Version 4 query-string presigning for Cloudflare R2 (GET, HEAD, PUT), with Web Crypto only.
 // https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html — R2 uses region "auto".
 
 const enc = new TextEncoder();
@@ -32,6 +32,14 @@ export interface PresignInput {
 }
 
 export async function presignR2Get(p: PresignInput): Promise<string> {
+  return await presignR2("GET", p);
+}
+
+/**
+ * A pre-signed GET, HEAD or PUT. Only the host is signed and the payload is not (UNSIGNED-PAYLOAD), so a PUT
+ * may carry any body and Content-Type; the bucket lock still refuses to overwrite an object under sha256/.
+ */
+export async function presignR2(method: "GET" | "HEAD" | "PUT", p: PresignInput): Promise<string> {
   const host = `${p.accountId}.r2.cloudflarestorage.com`;
   const region = "auto";
   const service = "s3";
@@ -53,7 +61,7 @@ export async function presignR2Get(p: PresignInput): Promise<string> {
     .map(([k, v]) => `${k}=${v}`)
     .join("&");
 
-  const canonicalRequest = ["GET", path, query, `host:${host}\n`, "host", "UNSIGNED-PAYLOAD"].join("\n");
+  const canonicalRequest = [method, path, query, `host:${host}\n`, "host", "UNSIGNED-PAYLOAD"].join("\n");
   const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, await sha256Hex(canonicalRequest)].join("\n");
 
   const kDate = await hmac(enc.encode(`AWS4${p.secretAccessKey}`), day);

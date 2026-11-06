@@ -1,0 +1,174 @@
+/* Cases (0059): the list, the new-case form and the case page. Flat colour, square corners, 1px rules, tokens
+   only. Phone first: every grid stacks in one column and every control is at least 44px tall. */
+
+.case-hint {
+  max-width: 72ch;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+.case-new .field,
+.case-view .field {
+  min-height: 44px;
+}
+.case-new-grid {
+  margin-top: 0;
+}
+.case-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.case-actions .btn {
+  min-height: 44px;
+}
+
+/* the list */
+.case-table td {
+  vertical-align: top;
+}
+.case-ref {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.case-sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.case-clock {
+  font-variant-numeric: tabular-nums;
+}
+.case-table tr.is-overdue .case-clock,
+.case-state .case-clock {
+  font-weight: 600;
+}
+.case-table tr.is-overdue .case-clock {
+  color: var(--danger);
+}
+
+/* the case page */
+.case-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.case-state-row .case-sub {
+  display: inline;
+}
+.case-state .notice {
+  margin-top: 10px;
+}
+.case-criteria {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+}
+.case-criteria li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.case-group {
+  margin: 0 0 20px;
+  padding: 0 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.case-group:last-child {
+  border-bottom: 0;
+}
+.case-group-title {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--ink);
+}
+.case-item {
+  padding: 12px 0;
+  border-top: 1px dashed var(--rule);
+}
+.case-item:first-of-type {
+  border-top: 0;
+}
+.case-criteria-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0;
+}
+.case-criteria-pick .toggle {
+  min-height: 44px;
+}
+.case-quotes {
+  margin: 8px 0 0;
+  padding: 8px 0 0 12px;
+  border-left: 2px solid var(--beacon-tint);
+  list-style: none;
+}
+.case-quotes li + li {
+  margin-top: 6px;
+}
+.case-quotes q {
+  font-style: italic;
+}
+.case-sent,
+.case-reopen {
+  align-items: end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.case-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.case-history {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.case-history li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.case-history-step {
+  font-weight: 600;
+}
+.case-history-comment {
+  display: block;
+  margin-top: 4px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .case-table th:nth-child(4),
+  .case-table td:nth-child(4) {
+    display: none;
+  }
+}
+
+/* on a paper that looks like a case report (IngredientScreen) */
+.scr-open-case {
+  margin-top: 8px;
+}

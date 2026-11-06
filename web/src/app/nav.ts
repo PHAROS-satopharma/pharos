@@ -14,10 +14,15 @@ export const SCREENING_TABS: readonly Tab[] = [
   { to: '/reports', label: 'Reports' },
 ];
 
-/** The tabs a person sees: the three screening tabs, and People (a setting) for the administrator who manages the
- *  people only (person.manages_people, migration 0053: Dr Sama is an administrator without it). */
+/** Individual case reports (migration 0059): after the screening tabs, for everyone (a reader sees the cases; a
+ *  reviewer or an administrator opens and confirms them). */
+export const CASES_TAB: Tab = { to: '/cases', label: 'Cases' };
+
+/** The tabs a person sees: the three screening tabs, Cases, and People (a setting) for the administrator who manages
+ *  the people only (person.manages_people, migration 0053: Dr Sama is an administrator without it). */
 export function tabsFor(managesPeople: boolean): Tab[] {
-  return managesPeople ? [...SCREENING_TABS, { to: '/people', label: 'People' }] : [...SCREENING_TABS];
+  const tabs = [...SCREENING_TABS, CASES_TAB];
+  return managesPeople ? [...tabs, { to: '/people', label: 'People' }] : tabs;
 }
 
 /** The page `/` opens. */

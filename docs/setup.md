@@ -86,6 +86,13 @@ Work through the steps in this order.
 1. Sign in at **ncbi.nlm.nih.gov** with pharos@satopharma.com. Open *Account settings → API Key Management →
    Create an API Key*.
 
+## 5b. The case reader (Cases)
+
+1. Sign in at **console.anthropic.com** with the company's account (pharos@satopharma.com). Under *Settings →
+   Billing*, add the company's payment method and a monthly spend limit.
+2. Open *API Keys → Create Key*, name it `pharos-cases`, and copy it once into the GitHub secret
+   `ANTHROPIC_API_KEY` (step 6). Without it the Cases screen still opens cases; they wait unread until it is set.
+
 ## 6. Paste the secrets (once, all in GitHub)
 
 Open GitHub, then *`pharos` repository → Settings → Secrets and variables → Actions → New repository
@@ -111,6 +118,7 @@ Telegram webhook, so you never paste a secret anywhere else.
 | `TELEGRAM_WEBHOOK_SECRET` | Step 4.5 | Supabase function secrets, Telegram webhook |
 | `DISPATCH_TOKEN` | GitHub (pharos@ account) *Settings → Developer settings → Fine-grained tokens*: resource owner the organisation, repository `pharos` only, permission **Contents: Read and write** | Supabase function secret `GITHUB_DISPATCH_TOKEN` |
 | `NCBI_API_KEY` | Step 5 | collectors |
+| `ANTHROPIC_API_KEY` | Step 5b | collectors (the case reader) |
 | `PHAROS_IMAP_HOST` | the Turbify IMAP server from step 0 (usually `imap.mail.yahoo.com`) | collectors |
 | `PHAROS_IMAP_PORT` | `993` | collectors |
 | `PHAROS_IMAP_USER` | `pharos@satopharma.com` | collectors |
