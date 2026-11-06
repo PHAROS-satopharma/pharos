@@ -163,3 +163,20 @@ def test_the_profile_is_derived_from_the_switches():
     assert store.ingredient_class_state[("levo", "g")] == {"relation": "group", "enabled": True}
     with pytest.raises(KeyError):
         store.set_class_search("levo", "nowhere", True)
+
+
+def test_a_class_kept_out_of_the_literature_still_finds_notices(tmp_path):
+    """Migration 0051: the group's words leave the PubMed and PMC watch, and notices are matched as before."""
+    store, ctx, group, _ = profile(tmp_path)
+    store.set_class_literature("levo", group, False)
+    assert store.class_words("en") == {}                       # nothing of the class goes to PubMed or PMC
+    assert {t.term for t in store.load_terms() if t.class_id == group} == {"fluoroquinolone", "Fluorchinolon"}
+    r = runner(store, ctx)
+    stats = process(r, notice(13, "Fluoroquinolones: restrictions of use"))
+    assert (stats.matched, stats.alerts) == (1, [])
+    assert {m["class_id"] for m in store.match} == {group}
+
+    store.set_class_literature("levo", group, True)
+    assert store.class_words("en") == {"levofloxacin": ["fluoroquinolone"]}
+    with pytest.raises(KeyError):
+        store.set_class_literature("levo", "nowhere", False)

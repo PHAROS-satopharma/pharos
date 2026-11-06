@@ -219,6 +219,49 @@ select pg_temp.dc_assert(:'dc_r_switch' like '42501%' and :'dc_r_group' like '42
   'a reader cannot switch, add or remove a group');
 select pg_temp.dc_assert(:'dc_r_links'::int = 3, 'a reader sees the ingredient''s classes and their switches');
 
+-- ───────────── notices only: a class kept out of the literature search (0051) ─────────────
+select pg_temp.dc_assert((select bool_and(literature) from ingredient_class
+                           where ingredient_id = '00000000-0000-0000-0000-0000000dc001'),
+  'every link starts in the literature search');
+update ingredient_class set changed_at = '2026-01-01 00:00+00'
+ where ingredient_id = '00000000-0000-0000-0000-0000000dc001' and class_id = '00000000-0000-0000-0000-0000000dc002';
+select coalesce(max(changed_at)::text, 'none') as dc_lit_term_before from class_term
+ where class_id = '00000000-0000-0000-0000-0000000dc002' \gset
+select pg_temp.dc_as('00000000-0000-0000-0000-0000000000a1');
+set role authenticated;
+select set_class_literature('00000000-0000-0000-0000-0000000dc001', '00000000-0000-0000-0000-0000000dc002', false);
+select pg_temp.dc_refused($q$select set_class_literature('00000000-0000-0000-0000-0000000dc001',
+    '00000000-0000-0000-0000-0000000dc0ff', false)$q$) as dc_lit_nolink \gset
+select (ingredient_screen('00000000-0000-0000-0000-0000000dc001', current_date - 6, current_date)
+          -> 'ingredient' -> 'classes') as dc_lit_screen \gset
+reset role;
+select pg_temp.dc_assert((select not literature and enabled and changed_at > now() - interval '1 hour'
+                            from ingredient_class
+                           where ingredient_id = '00000000-0000-0000-0000-0000000dc001'
+                             and class_id = '00000000-0000-0000-0000-0000000dc002'),
+  'an administrator keeps a class out of the literature: it stays searched in notices, and the switch is dated');
+select pg_temp.dc_assert((select coalesce(max(changed_at)::text, 'none') = :'dc_lit_term_before' from class_term
+                           where class_id = '00000000-0000-0000-0000-0000000dc002'),
+  'keeping a class out of the literature does not make its words due for the check of the past');
+select pg_temp.dc_assert(:'dc_lit_nolink' like 'P0002%', 'a class that is not linked cannot be kept out');
+select pg_temp.dc_assert((select bool_or(c ->> 'id' = '00000000-0000-0000-0000-0000000dc002'
+                                         and (c ->> 'literature')::boolean = false)
+                            from jsonb_array_elements(:'dc_lit_screen'::jsonb) c),
+  'the Ingredients screen reports the class as notices only');
+select pg_temp.dc_assert((select count(*) >= 1 from audit_log where table_name = 'ingredient_class'
+                           and new_row ->> 'class_id' = '00000000-0000-0000-0000-0000000dc002'
+                           and new_row ->> 'literature' = 'false'),
+  'the literature switch is in the audit log');
+select pg_temp.dc_as('00000000-0000-0000-0000-0000000000b2');
+set role authenticated;
+select pg_temp.dc_refused($q$select set_class_literature('00000000-0000-0000-0000-0000000dc001',
+    '00000000-0000-0000-0000-0000000dc002', true)$q$) as dc_r_lit \gset
+reset role;
+select pg_temp.dc_assert(:'dc_r_lit' like '42501%'
+    and (select not literature from ingredient_class where ingredient_id = '00000000-0000-0000-0000-0000000dc001'
+                                                       and class_id = '00000000-0000-0000-0000-0000000dc002'),
+  'a reader cannot put a class back in the literature');
+
 -- Leave the shared test database as it was.
 delete from rematch_job;
 delete from drug_class where id in ('00000000-0000-0000-0000-0000000dc002', '00000000-0000-0000-0000-0000000dc003',
