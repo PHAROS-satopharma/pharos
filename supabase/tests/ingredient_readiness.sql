@@ -133,7 +133,7 @@ insert into literature_search (db, query, kind, look_back_from, history_until, l
 insert into run (id, trigger) values ('00000000-0000-0000-0000-00000045f001', 'cron');
 insert into source_run (run_id, source_id, started_at, error) values
   ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-a', now(), null),
-  ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-b', now(), 'no label read: CI');
+  ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-b', now(), '1 product(s) without label text');
 insert into spc_product (id, ingredient_id, source_id, country_code, national_id, product_name) values
   ('00000000-0000-0000-0000-00000045b001', '00000000-0000-0000-0000-00000045a001', 'ci-ir-spc-a', 'XR', 'R-1',
    'CI Readyamine 10 mg');
