@@ -18,10 +18,12 @@ import { cx } from '../../ui/cx';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
+import { EditIngredient } from './EditIngredient';
 import { JapanCodeEdit } from './JapanCodeEdit';
 import { Readiness } from './Readiness';
 import { SearchProfile } from './SearchProfile';
 import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
+import { isJapanCodeTerm } from './editTerms';
 
 interface IngredientWithTerms extends Ingredient {
   confirmed_by_person: { full_name: string } | null;
@@ -69,6 +71,8 @@ export function IngredientsPage() {
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [edited, setEdited] = useState<string | null>(null);
 
   const list = useQuery({
     queryKey: ['ingredients'],
@@ -207,7 +211,15 @@ export function IngredientsPage() {
             <tbody>
               {list.data.map((i) => {
                 const langs = [...new Set(i.ingredient_term.map((t) => t.lang))].map(languageName).sort();
-                const ctry = [...new Set(i.ingredient_term.map((t) => t.country_code).filter((c): c is string => Boolean(c)))]
+                // The Japan code is PMDA's product code, not a name: it is not a country-specific name.
+                const ctry = [
+                  ...new Set(
+                    i.ingredient_term
+                      .filter((t) => !isJapanCodeTerm(t))
+                      .map((t) => t.country_code)
+                      .filter((c): c is string => Boolean(c)),
+                  ),
+                ]
                   .map((c) => idx.nameOf(c))
                   .sort();
                 const isOpen = open === i.id;
@@ -311,10 +323,35 @@ export function IngredientsPage() {
                             languages={idx.languages}
                           />
                           {isAdmin ? <JapanCodeEdit ingredientId={i.id} terms={i.ingredient_term} /> : null}
-                          <h3 className="dc-section-head">
-                            <span className="micro">Names looked for</span>
-                          </h3>
-                          <TermsList terms={i.ingredient_term} />
+                          {isAdmin && editing === i.id ? (
+                            <EditIngredient
+                              key={i.id}
+                              ingredient={i}
+                              onDone={(didSave) => {
+                                setEditing(null);
+                                setEdited(didSave ? i.id : null);
+                              }}
+                            />
+                          ) : (
+                            <>
+                              <h3 className="dc-section-head names-head">
+                                <span className="micro">Names looked for</span>
+                                {isAdmin ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditing(i.id);
+                                      setEdited(null);
+                                    }}
+                                  >
+                                    Edit names
+                                  </Button>
+                                ) : null}
+                              </h3>
+                              {edited === i.id ? <Notice tone="ok">Saved. The names below are the ones looked for.</Notice> : null}
+                              <TermsList terms={i.ingredient_term} />
+                            </>
+                          )}
                         </td>
                       </tr>
                     ) : null}

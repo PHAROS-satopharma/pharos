@@ -218,3 +218,8 @@
     flex: 1 1 100%;
   }
 }
+
+/* "Names looked for", with its Edit names button (features/ingredients/EditIngredient.tsx). */
+.names-head {
+  align-items: center;
+}
