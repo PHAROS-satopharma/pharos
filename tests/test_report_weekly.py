@@ -483,7 +483,11 @@ def test_the_pdf_and_excel_say_how_far_each_ingredient_is():
     assert html.index("Each ingredient: ready or still preparing") < html.index('<span class="n">02</span>')
     wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
     rows = list(wb["Summary"].iter_rows(values_only=True))
-    assert ("Readiness: levofloxacin", rw.readiness_text(READINESS)) in [(r[0], r[1]) for r in rows]
+    # under its own heading on the Summary sheet, one row per ingredient
+    labels = [r[0] for r in rows]
+    assert "Each ingredient: ready or still preparing" in labels
+    assert ("levofloxacin", rw.readiness_text(READINESS)) in [(r[0], r[1]) for r in rows]
+    assert labels.index("Each ingredient: ready or still preparing") < labels.index("levofloxacin")
 
 
 def test_clock_cells_say_due_late_and_sent_in_her_words():
@@ -811,7 +815,7 @@ def test_a_weekly_source_is_not_due_every_day():
 def test_the_report_says_which_period_it_covers():
     for period, span in ((NOV1, "Sunday to Saturday, Cairo time"), (NOV5, "Midnight to midnight, Cairo time")):
         html = rw.render_weekly_html(rw.assemble(rw.gather_week(FakeDb(period), period), period))
-        assert f'<p class="micro">{span} · every source' in html
+        assert f'<p class="scope">{span}. Every source read in its own language' in html
     assert "Sunday to Saturday" not in rw.render_weekly_html(rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5))
     assert "Papers in PubMed, PubMed Central and Europe PMC" in _unread(NOV1)[1]
 
@@ -842,7 +846,9 @@ def test_the_polished_files():
         assert ws.sheet_view.showGridLines is False, ws.title
         assert ws.page_setup.orientation == "landscape" and ws.page_setup.fitToWidth == 1, ws.title
         assert "PHAROS — Daily screening report" in (ws.oddHeader.left.text or ""), ws.title
-    assert wb["Decisions"]["A2"].value == "No decision was taken on the day."
+    assert wb["Decisions"]["A2"].value == "5 Nov 2026, 12:12"              # the fixture's decision
+    quiet_day = load_workbook(io.BytesIO(rw.build_weekly_xlsx({**data, "decisions": []})))
+    assert quiet_day["Decisions"]["A2"].value == "No decision was taken on the day."
     assert wb["Decisions"].print_title_rows == "1:1"
     summary = [r[0] for r in wb["Summary"].iter_rows(values_only=True)]
     assert "Screening" in summary and "To check by hand" in summary
