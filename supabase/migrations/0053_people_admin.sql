@@ -20,6 +20,16 @@ comment on column person.manages_people is
 
 update person set manages_people = false where lower(email) = 'sama.mosaad@satopharma.com';
 
+-- As 0033 and 0045, she is found by her address. On a database that has people (the live one) and not her, the
+-- deploy stops here rather than leave her the People screen without a word. A new database (CI) has no people yet.
+do $$
+begin
+  if exists (select 1 from person)
+     and not exists (select 1 from person where lower(email) = 'sama.mosaad@satopharma.com' and not manages_people) then
+    raise exception 'sama.mosaad@satopharma.com is not on this database: nobody was kept from the People screen.';
+  end if;
+end $$;
+
 create function i_manage_people() returns boolean language sql stable security definer
 set search_path = public as $$
   select coalesce((select manages_people from person

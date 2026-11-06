@@ -168,7 +168,8 @@ After that, admins invite everyone else from the People screen (the `invite-pers
 
 Dr Sama is an administrator with every administrator right except the People screen (owner, 6 Nov 2026): she
 does not see the *People* tab, and the database refuses her changes to any person (name, role, access) and to
-anyone else's alerts; she still reads every name and sets her own alerts on *Me*. It is the column
+anyone else's alerts; she still reads every name and sets her own alerts on *Me* (never *Source health
+alerts*, which are not offered to her). It is the column
 `person.manages_people` (false for her, true for everyone else), read by `i_manage_people()` in the person and
 subscription write policies and by `invite-person` (migration 0053). Only an administrator who manages the
 people can change the column; to give another administrator the same limits:
