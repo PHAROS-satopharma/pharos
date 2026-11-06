@@ -125,9 +125,12 @@ insert into authority_report (issue_id, sent_on, reference, note, person_id)
 select pg_temp.ec_refused($q$insert into authority_report (issue_id, sent_on, person_id)
   values ('00000000-0000-0000-0000-00000041e001', signal_cairo_today(), my_person_id())$q$) as ec_twice \gset
 select finding_state(array['00000000-0000-0000-0000-00000041e001']::uuid[])::text as ec_sent \gset
+select pg_temp.ec_refused($q$update authority_report set reference = 'changed'$q$) as ec_update_as_reviewer \gset
+select pg_temp.ec_refused($q$delete from authority_report$q$) as ec_delete_as_reviewer \gset
+reset role;
+-- Even the owner of the table (the collector's direct connection) cannot change or delete a report.
 select pg_temp.ec_refused($q$update authority_report set reference = 'changed'$q$) as ec_update \gset
 select pg_temp.ec_refused($q$delete from authority_report$q$) as ec_delete \gset
-reset role;
 select pg_temp.ec_assert(:'ec_reader_sends' like '42501%' and :'ec_as_other' like '42501%',
   'a reader cannot record a report to the authority; a reviewer records only her own');
 select pg_temp.ec_assert(:'ec_off_sends' like 'PH409 NO_CONCERN%',
@@ -141,8 +144,10 @@ select pg_temp.ec_assert(:'ec_sent'::jsonb -> '00000000-0000-0000-0000-00000041e
     and :'ec_sent'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' ->> 'person' = 'CI Reviewer'
     and :'ec_sent'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' ->> 'note' = 'By e-mail to the EDA',
   'a report stops the clock: sent, when, by whom, under which reference');
+select pg_temp.ec_assert(:'ec_update_as_reviewer' like '42501%' and :'ec_delete_as_reviewer' like '42501%',
+  'a reviewer has no right to change or delete a report to the authority');
 select pg_temp.ec_assert(:'ec_update' like '%append-only%' and :'ec_delete' like '%append-only%',
-  'authority_report is append-only');
+  'authority_report is append-only, even for the owner of the table');
 select pg_temp.ec_assert(
   (select count(*) from audit_log where table_name = 'authority_report' and action = 'INSERT'
       and new_row ->> 'reference' = 'EDA/2026/0042') = 1,
