@@ -781,6 +781,41 @@ def test_make_daily_report_archives_and_records_the_day(tmp_path, monkeypatch):
     assert db.written[-1]["pk"] == "reports/daily/2026-11-05/PHAROS-daily-2026-11-05-r2.pdf"
 
 
+def _unread(period, **changes):
+    """The countries listed as "not read" when the sources named in ``changes`` are changed as given."""
+    raw = rw.gather_week(FakeDb(period), period)
+    raw["sources"] = [{**src, **changes.get(src["id"], {})} for src in raw["sources"]]
+    data = rw.assemble(raw, period, made_at=datetime(2026, 11, 8, 3, 2, tzinfo=UTC))
+    return [r["country"] for r in data["check"]["unread"]], dict(data["summary"])
+
+
+def test_a_source_added_after_the_period_is_never_listed_as_not_read():
+    """The 5 Nov daily report listed EMA's news page, Swissmedic's updates, Europe PMC and the FDA and Health Canada
+    e-mails as "not read on the day": they were added on 6 Nov."""
+    assert _unread(NOV1)[0] == ["Australia", "Japan"]
+    later = {"created_at": datetime(2026, 11, 8, 9, tzinfo=UTC)}            # after Sat 7 Nov, Cairo midnight
+    assert _unread(NOV1, **{"pmda-src": later})[0] == ["Australia"]
+    during = {"created_at": "2026-11-03T09:00:00+00:00"}                     # added during the week: still due
+    assert _unread(NOV1, **{"pmda-src": during})[0] == ["Australia", "Japan"]
+    assert _unread(NOV5, **{"pmda-src": {"created_at": "2026-11-05T22:30:00+00:00"}})[0] == ["Australia"]
+
+
+def test_a_weekly_source_is_not_due_every_day():
+    weekly = {"schedule": "weekly"}
+    assert _unread(NOV5, **{"tga-src": weekly})[0] == ["Japan"]
+    assert _unread(NOV5, **{"tga-src": {"schedule": "daily"}})[0] == ["Australia", "Japan"]
+    # the weekly report still lists it
+    assert _unread(NOV1, **{"tga-src": weekly})[0] == ["Australia", "Japan"]
+
+
+def test_the_report_says_which_period_it_covers():
+    for period, span in ((NOV1, "Sunday to Saturday, Cairo time"), (NOV5, "Midnight to midnight, Cairo time")):
+        html = rw.render_weekly_html(rw.assemble(rw.gather_week(FakeDb(period), period), period))
+        assert f'<p class="micro">{span} · every source' in html
+    assert "Sunday to Saturday" not in rw.render_weekly_html(rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5))
+    assert "Papers in PubMed, PubMed Central and Europe PMC" in _unread(NOV1)[1]
+
+
 # ───────────────────────────── a real PDF ─────────────────────────────
 
 def _poppler() -> bool:

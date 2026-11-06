@@ -90,6 +90,7 @@ class Week:
     kind = "weekly"
     this = "this week"                  # the period in her words: "Not read this week"
     period_head = "Week (Cairo time)"
+    span = "Sunday to Saturday, Cairo time"
 
     def __post_init__(self) -> None:
         if self.start.weekday() != 6:
@@ -135,6 +136,7 @@ class Day:
     kind = "daily"
     this = "on the day"
     period_head = "Day (Cairo time)"
+    span = "Midnight to midnight, Cairo time"
 
     @property
     def end(self) -> date:
@@ -376,6 +378,16 @@ def reads_text(c: dict, this: str = "this week") -> str:
     return f"{read}, {c['failed']} failed" if c["failed"] else read
 
 
+def was_due(source: dict, period: Any) -> bool:
+    """Whether a source with no read in the period should have had one: it already existed before the period
+    ended (a source added on 6 Nov is not "not read" on 5 Nov), and, in a daily report, it is read at least once a
+    day (a weekly or monthly source is not due every day; the weekly report still lists it)."""
+    added = as_dt(source.get("created_at"))
+    if added is not None and added >= period.bounds_utc()[1]:
+        return False
+    return not (period.kind == "daily" and source.get("schedule") in ("weekly", "monthly"))
+
+
 def summary_line(countries: list[dict]) -> str:
     """"Mentioned in 2 of 25 countries · 20 nothing found · 3 to check by hand"."""
     mentioned = sum(1 for c in countries if c["answer"] == "mentioned")
@@ -480,7 +492,7 @@ def gather_week(db: Any, week: Week | Day) -> dict:
                  from regulator_page"""),
         "sources": db.fetchall(
             """select id, regulator_id, kind::text as kind, channel::text as channel, url, page_url, enabled,
-                      health::text as health, notes
+                      health::text as health, notes, schedule::text as schedule, created_at
                  from source"""),
         "decisions": db.fetchall(
             """select re.created_at, re.from_status::text as from_status, re.to_status::text as to_status,
@@ -857,7 +869,7 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                        or safe_link((reg_by_id.get(r["regulator_id"]) or {}).get("homepage"))}
         if int(r["failed_runs"]) > 0:
             failed.append(row)
-        elif r["enabled"] and int(r["runs"]) == 0:
+        elif r["enabled"] and int(r["runs"]) == 0 and was_due(s, week):
             unread.append(row)
 
     decisions = [{"at": cairo_time(d["created_at"]), "title": d["title"] or "",
@@ -895,7 +907,7 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
         ("Of them, history (never alerted)", sum(1 for m in found.values() if m["history"])),
         ("Of them, no decision yet", sum(1 for m in found.values() if m["awaiting"])),
         ("Label changes", len(labels)),
-        ("Papers in PubMed and PubMed Central", len(papers)),
+        ("Papers in PubMed, PubMed Central and Europe PMC", len(papers)),
         ("Possible case reports in the literature", sum(1 for p in papers.values() if p["case_report"])),
         ("Case reports with no decision yet",
          sum(1 for p in papers.values() if p["case_report"] and p["awaiting"])),
