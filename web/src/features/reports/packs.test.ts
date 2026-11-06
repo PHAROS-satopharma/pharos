@@ -8,6 +8,7 @@ import {
   packFileName,
   packLabel,
   packsFor,
+  packsOf,
   psurDays,
   statusText,
   stillWaiting,
@@ -127,5 +128,22 @@ describe('inspection packs are for administrators only', () => {
     ];
     expect(packsFor(rows, true).map((r) => r.id)).toEqual(['a', 'b']);
     expect(packsFor(rows, false).map((r) => r.id)).toEqual(['a']);
+  });
+});
+
+describe('the ingredient chosen in the form narrows the list', () => {
+  const rows = [
+    { id: 'a', kind: 'psur' as const, ingredient_id: 'para' },
+    { id: 'b', kind: 'psur' as const, ingredient_id: 'levo' },
+    { id: 'c', kind: 'inspection' as const, ingredient_id: null },
+  ];
+  it('shows only that ingredient's packs', () => {
+    expect(packsOf(rows, 'para').map((r) => r.id)).toEqual(['a']);
+  });
+  it('shows nothing for an ingredient with no pack', () => {
+    expect(packsOf(rows, 'carv')).toEqual([]);
+  });
+  it('shows every pack when no ingredient is chosen', () => {
+    expect(packsOf(rows, '').map((r) => r.id)).toEqual(['a', 'b', 'c']);
   });
 });

@@ -24,6 +24,7 @@ import {
   packFileName,
   packLabel,
   packsFor,
+  packsOf,
   psurDays,
   statusText,
   stillWaiting,
@@ -55,12 +56,22 @@ function usePacks(isAdmin: boolean) {
 }
 
 /** The form a reviewer or an administrator asks for a pack with: an inspection pack, an administrator only. */
-function AskForm({ isAdmin }: { isAdmin: boolean }) {
+function AskForm({
+  isAdmin,
+  kind,
+  setKind,
+  ingredient,
+  setIngredient,
+}: {
+  isAdmin: boolean;
+  kind: PackKind;
+  setKind: (k: PackKind) => void;
+  ingredient: string;
+  setIngredient: (id: string) => void;
+}) {
   const qc = useQueryClient();
   const today = cairoToday();
   const ingredients = useIngredientList();
-  const [kind, setKind] = useState<PackKind>('psur');
-  const [ingredient, setIngredient] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [fromEurd, setFromEurd] = useState(false);
@@ -214,11 +225,18 @@ function PackCard({ r, save }: { r: Row; save: (key: string, filename: string) =
   );
 }
 
-/** Packs on request: the form (reviewers and administrators) and every pack asked for, newest first. */
+/** Packs on request: the form (reviewers and administrators) and every pack asked for, newest first. The
+ *  ingredient chosen in the form narrows the list to its packs. */
 export function Packs() {
   const { canReview, isAdmin } = useAuth();
   const packs = usePacks(isAdmin);
   const [error, setError] = useState<string | null>(null);
+  const [kind, setKind] = useState<PackKind>('psur');
+  const [ingredient, setIngredient] = useState('');
+  const ingredients = useIngredientList();
+  const only = canReview && kind === 'psur' ? ingredient : '';
+  const onlyName = (ingredients.data ?? []).find((i) => i.id === only)?.inn_en ?? '';
+  const shown = useMemo(() => packsOf(packs.data ?? [], only), [packs.data, only]);
 
   async function save(key: string, filename: string) {
     setError(null);
@@ -231,7 +249,9 @@ export function Packs() {
 
   return (
     <>
-      {canReview ? <AskForm isAdmin={isAdmin} /> : null}
+      {canReview ? (
+        <AskForm isAdmin={isAdmin} kind={kind} setKind={setKind} ingredient={ingredient} setIngredient={setIngredient} />
+      ) : null}
       {error ? <Notice tone="error">The file could not be downloaded: {error}</Notice> : null}
       {packs.isPending ? (
         <Loading label="Reading the packs" />
@@ -244,12 +264,23 @@ export function Packs() {
             {isAdmin ? `; an ${PACK_NAME.inspection.toLowerCase()} gathers the evidence an inspector asks for` : ''}.
           </p>
         </Empty>
+      ) : shown.length === 0 ? (
+        <Empty title={`No pack for ${onlyName || 'this ingredient'} yet.`}>
+          <p>Ask for one above, or choose another ingredient.</p>
+        </Empty>
       ) : (
-        <ul className="weekly-list pack-list">
-          {packs.data.map((r) => (
-            <PackCard key={r.id} r={r} save={save} />
-          ))}
-        </ul>
+        <>
+          {only ? (
+            <p className="small muted pack-shown">
+              The packs for {onlyName || 'this ingredient'}: {shown.length} of {packs.data.length}.
+            </p>
+          ) : null}
+          <ul className="weekly-list pack-list">
+            {shown.map((r) => (
+              <PackCard key={r.id} r={r} save={save} />
+            ))}
+          </ul>
+        </>
       )}
     </>
   );
