@@ -208,6 +208,49 @@ SCREEN = {
 }
 
 
+# What label_changes() (0043) answers for the week: the reference product first, then newest first.
+OUR_LABEL = {"id": "l-1", "product_name": "Levox 500 mg", "version": "Leaflet 2025", "lang": "en",
+             "uploaded_at": "2026-10-20T08:00:00+00:00", "uploaded_by": "Sama Hassan"}
+GAP_SECTION = {"section": "4.4", "our_section": "4.4", "our_text": True, "covered": 2, "partly": 1, "missing": 1,
+               "added": [{"sentence": "Cases of acute kidney injury have been reported.", "status": "covered",
+                          "score": 1.0, "closest": "Cases of acute kidney injury have been reported."}]}
+LABEL_CHANGES = [
+    {"change_id": "c-1", "detected_at": "2026-11-03T07:00:00+00:00", "detected_day": "2026-11-03",
+     "label_date": "2026-10-01", "previous_label_date": "2026-06-01",
+     "product": {"id": "p-1", "name": "Tavanic 500 mg", "mah": "Sanofi", "country_code": "EU",
+                 "country_name": "European Union", "source_id": "ema-spc", "regulator_id": "EMA",
+                 "regulator_name": "European Medicines Agency", "url": "https://example.test/d-spc",
+                 "is_reference": True},
+     "lang": "en", "link": "https://example.test/d-spc", "document_id": "d-spc", "title": "Tavanic 500 mg — 4.4, 4.8",
+     "sections": ["4.4", "4.8"], "diff": [],
+     "gap": {"lang_match": True, "our_lang": "en", "their_lang": "en", "covered": 2, "partly": 1, "missing": 1,
+             "sections": [GAP_SECTION]},
+     "gap_at": "2026-11-03T07:00:05+00:00", "our_label": OUR_LABEL,
+     "issue_id": "i-2", "issue_status": "relevant", "is_backfill": False,
+     "decision": {"to_status": "relevant", "person": "Sama Hassan", "at": "2026-11-05T10:12:00Z",
+                  "comment": "Section 4.4 is not in ours"}},
+    {"change_id": "c-2", "detected_at": "2026-11-05T22:30:00+00:00", "detected_day": "2026-11-06",
+     "label_date": None, "previous_label_date": None,
+     "product": {"id": "p-2", "name": "Lévofloxacine Biogaran 500 mg", "mah": "Biogaran", "country_code": "FR",
+                 "country_name": "France", "source_id": "bdpm-spc", "regulator_id": "ANSM", "regulator_name": "ANSM",
+                 "url": None, "is_reference": False},
+     "lang": "fr", "link": "https://example.test/bdpm", "document_id": None, "title": "Lévofloxacine Biogaran 500 mg — 4.8",
+     "sections": ["4.8"], "diff": [],
+     "gap": {"lang_match": False, "our_lang": "en", "their_lang": "fr", "covered": 0, "partly": 0, "missing": 0,
+             "sections": []},
+     "gap_at": "2026-11-05T22:30:05+00:00", "our_label": OUR_LABEL,
+     "issue_id": None, "issue_status": None, "is_backfill": False, "decision": None},
+    {"change_id": "c-3", "detected_at": "2026-11-04T07:00:00+00:00", "detected_day": "2026-11-04",
+     "label_date": "2026-10-15", "previous_label_date": None,
+     "product": {"id": "p-3", "name": "Levofloxacin Teva 500 mg", "mah": "Teva", "country_code": "EU",
+                 "country_name": "European Union", "source_id": "ema-spc", "regulator_id": "EMA",
+                 "regulator_name": "European Medicines Agency", "url": None, "is_reference": False},
+     "lang": "en", "link": "javascript:alert(1)", "document_id": None, "title": "Levofloxacin Teva 500 mg — 10",
+     "sections": ["10"], "diff": [], "gap": None, "gap_at": None, "our_label": None,
+     "issue_id": None, "issue_status": None, "is_backfill": True, "decision": None},
+]
+
+
 def _log(sid, reg, country, kind, runs, failed=0, enabled=True, why=None):
     return {"source_id": sid, "regulator_id": reg, "regulator": reg, "country": country, "country_code": "",
             "source_kind": kind, "enabled": enabled, "runs": runs, "ok_runs": runs - failed, "failed_runs": failed,
@@ -229,8 +272,11 @@ class FakeDb:
             return {"f": {"i-1": {"day_zero": "2026-11-05", "due": "2026-11-10", "days_left": -4, "clock": "sent",
                                   "sent": {"id": "ar-1", "on": "2026-11-06", "reference": "EDA/2026/0042",
                                            "person": "Sama Hassan", "note": None}}}}
-        assert "ingredient_screen(" in sql
         assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7), "i": SCREEN["ingredient"]["id"]}
+        if "label_changes(" in sql:
+            # Our label under "Label changes" (0043): the changes of the week with the gap against our label.
+            return {"changes": LABEL_CHANGES}
+        assert "ingredient_screen(" in sql
         return {"screen": SCREEN}
 
     def fetchall(self, sql, params=None):
@@ -355,7 +401,26 @@ def test_assemble_answers_every_section():
         "Sama Hassan", "5 Nov 2026, 12:12", "Our product is named")
     assert newest["words"] == "Fluorchinolone (2 languages)" and newest["by_class"]
     assert germany["mentions"][1]["decision"] == "No decision yet"
-    assert lev["label_changes"][0]["sections"] == "4.4, 4.8"
+    # Label changes come from label_changes() (0043): the reference product first, with our label's gap
+    assert summary["Label changes"] == 3
+    lc = lev["label_changes"]
+    assert [m["product"] for m in lc] == ["Tavanic 500 mg", "Lévofloxacine Biogaran 500 mg", "Levofloxacin Teva 500 mg"]
+    assert lc[0]["sections"] == "4.4, 4.8" and lc[0]["reference"] and not lc[1]["reference"]
+    assert lc[0]["day"] == "Detected 3 Nov 2026" and lc[0]["label_day"] == "1 Oct 2026"
+    assert lc[0]["mah"] == "Sanofi" and lc[0]["country"] == "European Union"
+    assert lc[0]["authority"] == "European Medicines Agency" and lc[0]["doc_type"] == "Label change"
+    assert lc[0]["gap_summary"] == "Our label: 2 covered, 1 partly, 1 missing"
+    assert lc[0]["our_label"] == "Levox 500 mg, Leaflet 2025"
+    assert (lc[0]["decision"], lc[0]["decided_by"], lc[0]["decided_at"], lc[0]["reason"]) == (
+        "Concerns us", "Sama Hassan", "5 Nov 2026, 12:12", "Section 4.4 is not in ours")
+    assert lc[1]["day"] == "Detected 6 Nov 2026" and lc[1]["label_day"] == ""      # 22:30 UTC is the next day in Cairo
+    assert lc[1]["gap_summary"] == "Not compared: different language"
+    assert lc[1]["decision"] == "No decision yet" and lc[1]["awaiting"]
+    assert lc[2]["gap_summary"] == "No label of ours uploaded" and lc[2]["history"]
+    assert lc[2]["link"] is None and lc[2]["our_label"] == ""
+    assert rw.gap_summary(None, OUR_LABEL) == "Not compared yet"
+    assert rw.gap_summary({"lang_match": True, "covered": 0, "partly": 0, "missing": 0, "sections": []},
+                          OUR_LABEL) == "Our label: 0 covered, 0 partly, 0 missing"
     # 4. NCBI: the name first, then the class words; a search with no paper counts 0
     assert lev["literature"]["searches"] == [
         {"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1},
@@ -384,7 +449,10 @@ def test_the_pdf_page_has_six_sections_and_her_words():
     assert html.count('<section class="part">') == 5      # sections 02 to 06 each open a new page
     for words in ("Concerns us", "No decision yet", "Sama Hassan", "Mentioned in 2 notices",
                   "Not read this week — check it by hand", "Looked at by Sama Hassan, 5 Nov 2026, 12:00",
-                  "HTTP 503 from hc.example.test", "Sections changed: 4.4, 4.8", "Sun 1 Nov – Sat 7 Nov 2026"):
+                  "HTTP 503 from hc.example.test", "Sections changed: 4.4, 4.8", "Sun 1 Nov – Sat 7 Nov 2026",
+                  "Detected 3 Nov 2026", "Label dated 1 Oct 2026", "Tavanic 500 mg", "Sanofi", "Reference product",
+                  "Our label: 2 covered, 1 partly, 1 missing", "Not compared: different language",
+                  "No label of ours uploaded", "Levox 500 mg, Leaflet 2025"):
         assert words in html, words
     assert 'href="https://pubmed.ncbi.nlm.nih.gov/41000001/"' in html
     assert "javascript:" not in html
@@ -400,6 +468,13 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
     rows = list(wb["Ingredients by country"].iter_rows(values_only=True))
     germany = [r for r in rows if r[2] == "Germany"]
     assert [r[14] for r in germany] == ["Concerns us", "No decision yet"]
+    labels = [r for r in rows if r[1] == "Label changes"]
+    assert [r[2] for r in labels] == ["European Union", "France", "European Union"]
+    assert labels[0][3] == "Our label: 2 covered, 1 partly, 1 missing" and labels[0][4] == "Levox 500 mg, Leaflet 2025"
+    assert labels[0][5] == "Detected 3 Nov 2026" and labels[0][6] == "Tavanic 500 mg — 4.4, 4.8"
+    assert labels[0][11] == "Sections changed: 4.4, 4.8 · Label dated 1 Oct 2026 · Sanofi · Reference product"
+    assert labels[1][3] == "Not compared: different language" and labels[2][3] == "No label of ours uploaded"
+    assert not labels[2][8]                                              # no javascript: link
     link = next(c for c in wb["NCBI papers"]["E"] if c.value == "https://pubmed.ncbi.nlm.nih.gov/41000001/")
     assert link.hyperlink.target == link.value
     new = list(wb["Everything new"].iter_rows(values_only=True))
