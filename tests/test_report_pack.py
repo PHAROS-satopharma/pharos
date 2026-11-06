@@ -41,8 +41,8 @@ class RecordingTelegram:
 def test_the_days_are_read_in_chunks_of_at_most_366_days():
     pieces = rp.chunks(date(2024, 12, 2), date(2026, 11, 6))
     assert pieces[0][0] == date(2024, 12, 2) and pieces[-1][1] == date(2026, 11, 6)
-    for (a, b), (c, _) in zip(pieces, pieces[1:]):
-        assert c == b + timedelta(days=1)                     # no day skipped, none read twice
+    for (_, b), (c, _) in zip(pieces, pieces[1:], strict=False):
+        assert c == b + timedelta(days=1)                   # no day skipped, none read twice
     assert all((b - a).days <= 365 for a, b in pieces)       # what ingredient_screen() answers in one call
     assert len(pieces) == 2
     assert rp.chunks(date(2026, 1, 1), date(2026, 12, 31)) == [(date(2026, 1, 1), date(2026, 12, 31))]
@@ -560,5 +560,6 @@ def test_packs_are_built_last_in_every_collection_run_but_never_stop_it():
     assert "python -m collectors.report_pack" in step
     assert "::warning" in step                                  # a pack never fails the run
     assert "--dry-run" in step
-    # the last step of the collection job
-    assert "- name:" not in step[len("- name: Packs on request"):].split("\n  ", 1)[0]
+    assert step.count("- name:") == 1, "the last step of the collection job"
+    gate = wf[wf.index("- name: Packs waiting?"):wf.index("- name: Fonts for packs")]
+    assert "!= 'weekly'" in gate and "!= 'classes'" in gate     # never in the label watch's 90 minutes
