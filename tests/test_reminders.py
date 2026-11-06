@@ -231,6 +231,22 @@ def test_once_a_cairo_day_and_again_the_next_day():
     assert "2 late, 3 due within 2 days" in s.notification[-1]["summary"]  # a day later: C is late, E is in reach
 
 
+@pytest.mark.parametrize("wall", [datetime(2020, 1, 1, 12, tzinfo=timezone.utc),     # long before the test days
+                                  datetime(2026, 11, 6, 20, tzinfo=timezone.utc),    # the same Cairo day, late
+                                  datetime(2031, 5, 5, 12, tzinfo=timezone.utc)])    # long after: what CI hit on 7 Nov
+def test_the_day_follows_the_injected_clock_never_the_wall_clock(monkeypatch, wall):
+    """The rows the reminder writes carry the clock it was given, so "told today" is cut from the same clock
+    wherever the wall clock stands (it failed in CI from midnight Cairo on 7 Nov 2026)."""
+    monkeypatch.setattr("collectors.core.memstore._now", lambda: wall)
+    s = store_with_findings()
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(20)) == 0
+    assert {n["sent_at"] for n in s.notification} == {at(8)()}
+    tomorrow = lambda: cairo(date(2026, 11, 7), 8).astimezone(timezone.utc)  # noqa: E731
+    assert reminders.remind_if_due(s, notifier_for(s), now=tomorrow) == 2
+    assert len(s.notification) == 4
+
+
 def test_a_dry_run_does_not_cancel_the_day_s_real_reminder(monkeypatch):
     """A dry run after 07:00 (by hand, say) writes its rows; the real reminder of the day still goes once."""
     s = store_with_findings()

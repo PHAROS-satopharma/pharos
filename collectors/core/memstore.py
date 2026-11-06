@@ -529,8 +529,8 @@ class MemoryStore:
     def requeue_report_request(self, request_id: str, note: str) -> None:
         self.report_request[request_id].update(status="queued", error=note[:1000])
 
-    def insert_notification(self, **fields: Any) -> None:
-        self.notification.append({**fields, "sent_at": _now()})
+    def insert_notification(self, *, sent_at: datetime | None = None, **fields: Any) -> None:
+        self.notification.append({**fields, "sent_at": sent_at or _now()})
 
     def last_notification_at(self, kind: str, *, delivered_only: bool = False,
                              before: datetime | None = None, dry_run: bool = False) -> datetime | None:
