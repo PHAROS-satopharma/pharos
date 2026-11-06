@@ -1,12 +1,15 @@
 """PHAROS — the morning reminder of the five-day clock to the Egyptian Drug Authority.
 
 A finding that concerns us must reach the authority within five days of the day PHAROS first showed it
-(migration 0041). Once a Cairo day, from 07:00, every reviewer and administrator with Telegram linked gets the
-findings that are late or due within two days (today, tomorrow, the day after), most late first, each with the
-link to its ingredient's screen. Nothing goes when nothing is due. The collection run calls
-``remind_if_due`` after the daily new-items message (collectors/run.py), never on a backfill. A dry run
-(``app_setting.telegram_dry_run``, ``--dry-run``, no bot token) writes the notification row with the exact text
-and sends nothing, like every other PHAROS message.
+(migrations 0041 and 0050: the day the notice was created). Once a Cairo day, from 07:00, every reviewer and
+administrator with Telegram linked gets the findings that are late or due within two days (today, tomorrow, the
+day after), most late first, each with the link to its ingredient's screen. Nothing goes when nothing is due.
+The collection run calls ``remind_if_due`` after the daily new-items message (collectors/run.py), never on a
+backfill. A dry run (``app_setting.telegram_dry_run``, ``--dry-run``, no bot token) writes the notification row
+with the exact text and sends nothing, like every other PHAROS message.
+
+Once a day means once to each person it really reached: a dry run never stands in for the real reminder, and a
+message Telegram refused is tried again at the next run while the people who got it are not told twice.
 
     python -m collectors.reminders            # send if due
     python -m collectors.reminders --dry-run  # write what would go, send nothing
@@ -83,19 +86,18 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
         log.info("the authority reminder waits for %s Cairo", SEND_FROM.strftime("%H:%M"))
         return 0
     midnight = datetime.combine(moment.date(), time(0), CAIRO)
-    last = store.last_notification_at(KIND)
-    if last is not None and last >= midnight:
-        log.info("today's authority reminder has gone already")
+    notifier = notifier or Notifier(store, store.settings(), dry_run=dry_run)
+    # Once a day, per person: whoever the reminder really reached today is not told again. Only a delivered
+    # message counts (a refused one is tried again now); a dry run stands in only for another dry run.
+    told = store.told_since(KIND, midnight, dry_run=notifier.dry_run)
+    people = [p for p in store.reminder_people() if p["person_id"] not in told]
+    if not people:
+        log.info("today's authority reminder has gone already" if told else "nobody with Telegram to remind")
         return 0
     items = store.eda_reminders(moment.date(), WITHIN_DAYS)
     if not items:
         log.info("nothing is due to the authority on %s", moment.date())
         return 0
-    people = store.reminder_people()
-    if not people:
-        log.info("nobody with Telegram to remind")
-        return 0
-    notifier = notifier or Notifier(store, store.settings(), dry_run=dry_run)
     texts = build_messages(items, moment.date())
     for person in people:
         for text in texts:

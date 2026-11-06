@@ -27,6 +27,7 @@ import { ReadEmail } from './ReadEmail';
 import { classesLine, relationTag } from './relation';
 import type {
   Decision,
+  Findings,
   IngredientScreenData,
   Mention,
   Paper,
@@ -187,7 +188,7 @@ function Body({
           <SectionHead index="01" title="Her countries" aside={`${hers.length}`} />
           <div className="scr-countries">
             {hers.map((c) => (
-              <CountryBlock key={c.country} c={c} queryKey={queryKey} />
+              <CountryBlock key={c.country} c={c} findings={data.findings} queryKey={queryKey} />
             ))}
           </div>
         </section>
@@ -198,7 +199,7 @@ function Body({
           <SectionHead index="02" title="Other authorities" aside={`${others.length}`} />
           <div className="scr-countries">
             {others.map((c) => (
-              <CountryBlock key={c.country} c={c} queryKey={queryKey} />
+              <CountryBlock key={c.country} c={c} findings={data.findings} queryKey={queryKey} />
             ))}
           </div>
         </section>
@@ -215,7 +216,7 @@ function Body({
         {data.label_changes.length ? (
           <ol className="scr-mentions">
             {data.label_changes.map((m) => (
-              <MentionItem key={m.document_id} m={m} showWhere queryKey={queryKey} />
+              <MentionItem key={m.document_id} m={m} showWhere findings={data.findings} queryKey={queryKey} />
             ))}
           </ol>
         ) : (
@@ -228,7 +229,7 @@ function Body({
   );
 }
 
-function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly unknown[] }) {
+function CountryBlock({ c, findings, queryKey }: { c: CountryAnswer; findings: Findings; queryKey: readonly unknown[] }) {
   const sources = new Map(c.sources.map((s) => [s.id, s]));
   const read = c.sources.filter((s) => listsItems(s.kind));
   const labels = sourceLabels(read, c.pages);
@@ -248,7 +249,7 @@ function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly un
       {c.mentions.length ? (
         <ol className="scr-mentions">
           {c.mentions.map((m) => (
-            <MentionItem key={m.document_id} m={m} showWhere={c.regulators.length > 1} queryKey={queryKey} />
+            <MentionItem key={m.document_id} m={m} showWhere={c.regulators.length > 1} findings={findings} queryKey={queryKey} />
           ))}
         </ol>
       ) : null}
@@ -298,7 +299,18 @@ function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly un
   );
 }
 
-function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolean; queryKey: readonly unknown[] }) {
+/** One mention; its notice's clock comes from the screen's data (`findings`), never from a second cache read. */
+function MentionItem({
+  m,
+  showWhere,
+  findings,
+  queryKey,
+}: {
+  m: Mention;
+  showWhere: boolean;
+  findings: Findings;
+  queryKey: readonly unknown[];
+}) {
   const href = safeHref(m.link);
   const sections = Array.isArray(m.sections) ? m.sections.filter((s) => typeof s === 'string') : [];
   const byClass = relationTag(m);
@@ -345,7 +357,7 @@ function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolea
       {!href && (m.email_id || m.email_r2_key) ? (
         <ReadEmail emailId={m.email_id} r2Key={m.email_r2_key} title={m.title} lang={m.lang} />
       ) : null}
-      <DecisionButtons mention={m} queryKey={queryKey} />
+      <DecisionButtons mention={m} queryKey={queryKey} finding={m.issue_id ? (findings[m.issue_id] ?? null) : null} />
     </li>
   );
 }
@@ -543,7 +555,7 @@ function PaperItem({
           ) : null}
         </p>
       ) : null}
-      {state ? <DecisionButtons mention={state} queryKey={queryKey} onDecision={onDecision} /> : null}
+      {state ? <DecisionButtons mention={state} queryKey={queryKey} finding={null} onDecision={onDecision} /> : null}
     </li>
   );
 }
