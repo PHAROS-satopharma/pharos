@@ -98,7 +98,11 @@ Work through the steps in this order.
      allowed events **Any event** (the runs come from the schedule and the app, never from a push; the branch
      still keeps pull requests out), organisation numeric id `352618690`, workspace **Default**, scope
      `workspace:developer` (the Console offers nothing narrower), token lifetime 10 minutes. Audience stays blank
-     (Anthropic's default, `https://api.anthropic.com`).
+     (Anthropic's default, `https://api.anthropic.com`). Then open the rule (*Rules → pharos-main → Edit*) and set
+     *Subject pattern* to `repo:PHAROS-satopharma@352618690/pharos@1446155621:ref:refs/heads/main`: this
+     repository uses GitHub's immutable subject (owner and repository ids in it), and the wizard writes the old
+     form, which every run fails with `match_subject_prefix`.
+4. Prove it: *Actions → Claude sign-in check → Run workflow* on `main` prints "Claude sign-in works (federation)".
 3. In GitHub *Settings → Secrets and variables → Actions → **Variables***, add `ANTHROPIC_FEDERATION_RULE_ID`
    (`fdrl_…`), `ANTHROPIC_SERVICE_ACCOUNT_ID` (`svac_…`) and `ANTHROPIC_ORGANIZATION_ID` (the UUID on
    *Settings → Organization*). They are identifiers, not secrets. Without them the Cases screen still opens cases;
