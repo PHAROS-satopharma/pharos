@@ -7,7 +7,7 @@ another table, it goes in that part's own migration file, listed under "Who owns
 
 | Owner | Paths |
 |---|---|
-| Collectors core (A1) | `collectors/core/`, `collectors/parsers/{__init__,base,feed,ema_dhpc,ema_psusa,govuk,openfda_enforcement,hc_recalls,pubmed}.py`, `collectors/{run,matching,pdf,merge,alerts,report,backfill,probe}.py`, `collectors/report_templates/`, `collectors/sources.yaml`, `collectors/requirements.txt`, `supabase/migrations/0003_seed_watchlist.sql`, `tests/test_{matching,merge,alerts,feed,ema,run}*.py`, `tests/fixtures/{ema-*,fda-*,mhra-*,bfarm-rhb,basg-*,aemps-*,hsa-*,hc-*,pubmed}/` |
+| Collectors core (A1) | `collectors/core/`, `collectors/parsers/{__init__,base,feed,ema_dhpc,ema_psusa,govuk,openfda_enforcement,hc_recalls,pubmed}.py`, `collectors/{run,matching,pdf,merge,alerts,report,backfill,probe,classes,rematch}.py`, `collectors/report_templates/`, `collectors/sources.yaml`, `collectors/requirements.txt`, `supabase/migrations/0003_seed_watchlist.sql`, `tests/test_{matching,merge,alerts,feed,ema,run,classes,rematch}*.py`, `supabase/migrations/0034_drug_classes_and_rematch.sql`, `tests/fixtures/{ema-*,fda-*,mhra-*,bfarm-rhb,basg-*,aemps-*,hsa-*,hc-*,pubmed,atc-classes}/` |
 | Collectors sources and SPC (A2) | `collectors/parsers/<every HTML, browser and email parser>.py`, `collectors/spc/`, `tests/test_{parsers,spc}*.py`, `tests/fixtures/<their sources>/` |
 | Platform (C) | `supabase/migrations/0002_ops.sql`, `supabase/functions/`, `supabase/config.toml`, `workers/`, `.github/workflows/`, `docs/{setup,operations,validation}.md`, `.env.example`, `pyproject.toml` (pytest, ruff config) |
 | Web (B) | `web/` |
@@ -205,6 +205,39 @@ the web test reads it from the migration. Subscription kind `new_items_digest` i
 | `invite-person` | `{email, full_name, role}` | `{person_id}` | admin |
 | `telegram-webhook` | Telegram updates | — | Telegram only. Checks the secret-token header; handles `/start <code>`. |
 
+## Drug classes and the check of the past (0034)
+
+```sql
+-- drug_class: + origin text ('atc' = made by collectors/classes.py from the ATC level-4 code | 'hand'),
+--   wikidata_qid, confirmed_by uuid -> person, confirmed_at, created_at; audited.
+-- class_term: + source ('seed' | 'wikidata' | 'who' | 'manual'), added_by -> person, changed_at, rematched_at.
+-- ingredient_term: + changed_at, rematched_at.
+-- changed_at is set by the database (trigger) on insert and whenever term, lang, mode or exclusions change,
+-- and on every word of an ingredient that is watched again after a pause.
+-- A word is DUE while rematched_at is null or rematched_at < changed_at.
+create table rematch_job (id uuid pk, trigger text ('daily'|'manual'), started_at, since date,
+  ingredient_term_ids uuid[], class_term_ids uuid[], cursor_document_id uuid, documents_checked int,
+  documents_reread int, documents_matched int, issues_created int, finished_at);  -- at most one open
+-- RPCs, administrators only (security definer; errcode 42501 for anyone else):
+add_class_term(p_class uuid, p_lang text, p_term text, p_mode match_mode default null) returns uuid
+  -- trimmed, 2 to 200 characters; ja/ko/zh default to 'substring', others 'stem';
+  -- source 'manual', added_by = the caller
+remove_class_term(p_term uuid) returns void           -- P0002 when it is no longer there
+confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the caller, confirmed_at = now()
+```
+
+- `collectors/classes.py` never changes an existing class (same `code`); it only links ingredients to it.
+  It writes classes with `origin = 'atc'` and words with `source` 'wikidata' or 'who'.
+- `collectors/rematch.py` takes the due words of watched ingredients (and of classes linked to a watched
+  ingredient) and checks the stored notices (not of `spc` or `literature` sources) dated from `since` and
+  first seen before the job started, in id order. On reaching the end it sets `rematched_at = started_at` on
+  the job's words whose `changed_at <= started_at`. Everything it creates is `is_backfill`: it never alerts
+  and never reaches the digest.
+- Store methods (`collectors/core/store.py` and `memstore.py`): `rematch_open_job`, `rematch_due_terms`,
+  `rematch_create_job`, `rematch_terms`, `rematch_documents`, `rematch_advance`, `rematch_finish`,
+  `set_issue_names_ingredient`; for classes `ingredients_for_classes`, `drug_class_id`, `create_drug_class`,
+  `link_ingredient_class`.
+
 ## Environment / secrets
 
 | Secret | Used by |
@@ -220,7 +253,7 @@ the web test reads it from the migration. Subscription kind `new_items_digest` i
 | `PHAROS_IMAP_HOST`, `PHAROS_IMAP_PORT`, `PHAROS_IMAP_USER`, `PHAROS_IMAP_PASSWORD` | collectors (Fimea/TGA newsletters in pharos@satopharma.com). satopharma.com mail is Turbify (Yahoo MX `mx-biz.mail.am0.yahoodns.net`), so it uses Yahoo/Turbify IMAP with a per-mailbox app password. |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | deploy-web |
 | `SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` | deploy-supabase |
-| `SITE_URL`, `CONTACT_EMAIL` | auth redirects; HTTP contact |
+| `SITE_URL`, `CONTACT_EMAIL` | auth redirects; HTTP contact (also the contact in `collectors/classes.py`'s User-Agent; default pharos@satopharma.com) |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_TELEGRAM_BOT_USERNAME` | web build (from the GitHub secrets SUPABASE_URL, SUPABASE_ANON_KEY, TELEGRAM_BOT_USERNAME) |
 | `BACKUP_AGE_RECIPIENT` | db-backup (optional age public key(s); the nightly backup is encrypted to it) |
 | `DISPATCH_TOKEN` | GitHub forbids secret names starting `GITHUB_`; deploy-supabase copies it into the function secret `GITHUB_DISPATCH_TOKEN` |

@@ -1,0 +1,106 @@
+{
+  "head" : {
+    "vars" : [ "item", "kind", "val" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "oxicams"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Oxicame"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "oxicam"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "es",
+        "type" : "literal",
+        "value" : "oxicam"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "it",
+        "type" : "literal",
+        "value" : "oxicam"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "ja",
+        "type" : "literal",
+        "value" : "オキシカム"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1143640"
+      },
+      "val" : {
+        "xml:lang" : "pt",
+        "type" : "literal",
+        "value" : "Oxicam"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    } ]
+  }
+}

@@ -31,6 +31,13 @@ def _decode(value: Any) -> Any:
     return value
 
 
+def _job(row: dict) -> dict:
+    return {**row, "id": str(row["id"]),
+            "ingredient_term_ids": [str(x) for x in row.get("ingredient_term_ids") or []],
+            "class_term_ids": [str(x) for x in row.get("class_term_ids") or []],
+            "cursor_document_id": str(row["cursor_document_id"]) if row.get("cursor_document_id") else None}
+
+
 class Store:
     def __init__(self, db: Db) -> None:
         self.db = db
@@ -425,6 +432,186 @@ class Store:
                 where class_only and not is_backfill and (created_at > %(s)s or current_since > %(s)s)
                 order by coalesce(current_since, created_at) desc""", {"s": since})
         return [str(r["id"]) for r in rows]
+
+    # ───────────────────────────── drug classes (collectors/classes.py) ─────────────────────────────
+    def ingredients_for_classes(self) -> list[dict]:
+        """Active ingredients with an ATC code, and the codes of the classes they belong to."""
+        rows = self.db.fetchall(
+            """select i.id, i.inn_en, i.atc_code,
+                      coalesce(array_agg(c.code) filter (where c.code is not null), '{}') as class_codes
+                 from ingredient i
+                 left join ingredient_class ic on ic.ingredient_id = i.id
+                 left join drug_class c on c.id = ic.class_id
+                where i.active and i.atc_code is not null
+                group by i.id order by i.inn_en""")
+        return [{**r, "id": str(r["id"]), "class_codes": list(r["class_codes"] or [])} for r in rows]
+
+    def drug_class_id(self, code: str) -> str | None:
+        row = self.db.fetchone("select id from drug_class where code = %(c)s", {"c": code})
+        return str(row["id"]) if row else None
+
+    def create_drug_class(self, *, code: str, name_en: str, wikidata_qid: str | None,
+                          terms: Iterable[dict]) -> str:
+        """A class made from the ATC code, with its words. An existing class (same code) is never
+        changed: its id is returned as it is."""
+        with self.db.transaction():
+            row = self.db.fetchone(
+                """insert into drug_class (code, name_en, origin, wikidata_qid)
+                   values (%(c)s, %(n)s, 'atc', %(q)s) on conflict (code) do nothing returning id""",
+                {"c": code, "n": name_en, "q": wikidata_qid})
+            if row is None:
+                return self.drug_class_id(code) or ""
+            class_id = str(row["id"])
+            for t in terms:
+                self.db.execute(
+                    """insert into class_term (class_id, lang, term, mode, source)
+                       values (%(c)s, %(l)s, %(t)s, %(m)s, %(s)s) on conflict (class_id, lang, term) do nothing""",
+                    {"c": class_id, "l": t["lang"], "t": t["term"], "m": t["mode"], "s": t["source"]})
+            return class_id
+
+    def link_ingredient_class(self, ingredient_id: str, class_id: str) -> None:
+        self.db.execute(
+            """insert into ingredient_class (ingredient_id, class_id) values (%(i)s, %(c)s)
+               on conflict do nothing""", {"i": ingredient_id, "c": class_id})
+
+    # ───────────────────────────── the check of the past (collectors/rematch.py) ─────────────────────────────
+    def rematch_open_job(self) -> dict | None:
+        row = self.db.fetchone("select * from rematch_job where finished_at is null")
+        return _job(row) if row else None
+
+    def rematch_due_terms(self) -> tuple[list[str], list[str]]:
+        """Words added or changed since they were last checked against the past (rematched_at older than
+        changed_at, or never), of watched ingredients and of the classes those belong to."""
+        ing = self.db.fetchall(
+            """select t.id from ingredient_term t join ingredient i on i.id = t.ingredient_id
+                where i.active and (t.rematched_at is null or t.rematched_at < t.changed_at)
+                order by t.id""")
+        cls = self.db.fetchall(
+            """select ct.id from class_term ct
+                where (ct.rematched_at is null or ct.rematched_at < ct.changed_at)
+                  and exists (select 1 from ingredient_class ic join ingredient i on i.id = ic.ingredient_id
+                               where ic.class_id = ct.class_id and i.active)
+                order by ct.id""")
+        return [str(r["id"]) for r in ing], [str(r["id"]) for r in cls]
+
+    def rematch_create_job(self, *, since: date, ingredient_term_ids: list[str], class_term_ids: list[str],
+                           trigger: str) -> dict:
+        row = self.db.fetchone(
+            """insert into rematch_job (trigger, since, ingredient_term_ids, class_term_ids)
+               values (%(t)s, %(s)s, %(i)s::uuid[], %(c)s::uuid[]) returning *""",
+            {"t": trigger, "s": since, "i": ingredient_term_ids, "c": class_term_ids})
+        return _job(row)
+
+    def rematch_terms(self, ingredient_term_ids: list[str], class_term_ids: list[str]) -> list[Term]:
+        """The job's words as they are now (a word removed meanwhile is simply not there)."""
+        rows = self.db.fetchall(
+            """select t.id, t.term, t.lang, t.mode::text as mode, t.exclusions, t.ingredient_id,
+                      t.kind::text as kind
+                 from ingredient_term t join ingredient i on i.id = t.ingredient_id
+                where i.active and t.id = any(%(ids)s::uuid[])""", {"ids": ingredient_term_ids})
+        terms = [Term(id=str(r["id"]), term=r["term"], lang=r["lang"], mode=r["mode"],
+                      exclusions=tuple(r["exclusions"] or ()), ingredient_id=str(r["ingredient_id"]),
+                      kind=r["kind"]) for r in rows]
+        rows = self.db.fetchall(
+            """select ct.id, ct.term, ct.lang, ct.mode::text as mode, ct.exclusions, ct.class_id
+                 from class_term ct where ct.id = any(%(ids)s::uuid[])""", {"ids": class_term_ids})
+        terms += [Term(id=str(r["id"]), term=r["term"], lang=r["lang"], mode=r["mode"],
+                       exclusions=tuple(r["exclusions"] or ()), class_id=str(r["class_id"]),
+                       kind="class") for r in rows]
+        return terms
+
+    def rematch_documents(self, *, since: date, before: datetime, after_id: str | None,
+                          limit: int) -> list[dict]:
+        """The next stored notices to check, in id order after ``after_id``: dated ``since`` or later (the
+        publication date, else the Cairo day it was first seen), first seen before the job started, not a
+        label (SPC) or a literature record. Each comes with its kept text, its attachments, the words that
+        already matched it and the issue it belongs to."""
+        docs = self.db.fetchall(
+            """select d.id, d.source_id, d.url, d.title_orig, d.lang, d.doc_type::text as doc_type,
+                      d.published_date, d.structured, d.r2_key, d.mime, s.parser,
+                      r.country_code
+                 from document d
+                 join source s on s.id = d.source_id
+                 join regulator r on r.id = s.regulator_id
+                where s.kind not in ('spc', 'literature')
+                  and d.first_seen_at < %(b)s
+                  and coalesce(d.published_date, (d.first_seen_at at time zone 'Africa/Cairo')::date) >= %(s)s
+                  and (%(a)s::uuid is null or d.id > %(a)s::uuid)
+                order by d.id
+                limit %(n)s""",
+            {"s": since, "b": before, "a": after_id, "n": limit})
+        if not docs:
+            return []
+        ids = [str(d["id"]) for d in docs]
+        texts: dict[str, list[dict]] = {}
+        for r in self.db.fetchall(
+                """select document_id, attachment_id, text from document_text
+                    where document_id = any(%(ids)s::uuid[])""", {"ids": ids}):
+            texts.setdefault(str(r["document_id"]), []).append(
+                {"attachment_id": str(r["attachment_id"]) if r["attachment_id"] else None, "text": r["text"]})
+        atts: dict[str, list[dict]] = {}
+        for r in self.db.fetchall(
+                """select id, document_id, url, r2_key, mime, extraction::text as extraction from attachment
+                    where document_id = any(%(ids)s::uuid[]) order by document_id, id""", {"ids": ids}):
+            atts.setdefault(str(r["document_id"]), []).append(
+                {**r, "id": str(r["id"]), "document_id": str(r["document_id"])})
+        matched: dict[str, set[str]] = {}
+        for r in self.db.fetchall(
+                """select document_id, coalesce(term_id, class_term_id) as term from match
+                    where document_id = any(%(ids)s::uuid[]) and coalesce(term_id, class_term_id) is not null""",
+                {"ids": ids}):
+            matched.setdefault(str(r["document_id"]), set()).add(str(r["term"]))
+        issues: dict[str, dict] = {}
+        for r in self.db.fetchall(
+                """select distinct on (idd.document_id) idd.document_id, i.id, i.class_only
+                     from issue_document idd join issue i on i.id = idd.issue_id
+                    where idd.document_id = any(%(ids)s::uuid[]) and idd.method <> 'suggested'
+                    order by idd.document_id, coalesce(i.anchor_document_id = idd.document_id, false) desc,
+                             i.created_at""",
+                {"ids": ids}):
+            issues[str(r["document_id"])] = {"id": str(r["id"]), "class_only": r["class_only"]}
+        # An original several notices share (one list page for all its rows) is not a notice's own text.
+        keys = sorted({d["r2_key"] for d in docs if d["r2_key"]})
+        shared = {r["r2_key"] for r in self.db.fetchall(
+            """select r2_key from document where r2_key = any(%(k)s) group by r2_key having count(*) > 1""",
+            {"k": keys})} if keys else set()
+        out = []
+        for d in docs:
+            k = str(d["id"])
+            out.append({**d, "id": k, "texts": texts.get(k, []), "attachments": atts.get(k, []),
+                        "matched_terms": matched.get(k, set()), "issue": issues.get(k),
+                        "shared_original": d["r2_key"] in shared})
+        return out
+
+    def rematch_advance(self, job_id: str, *, cursor: str, checked: int = 0, reread: int = 0,
+                        matched: int = 0, issues_created: int = 0) -> None:
+        self.db.execute(
+            """update rematch_job set cursor_document_id = %(c)s,
+                 documents_checked = documents_checked + %(k)s, documents_reread = documents_reread + %(r)s,
+                 documents_matched = documents_matched + %(m)s, issues_created = issues_created + %(i)s
+               where id = %(j)s""",
+            {"c": cursor, "k": checked, "r": reread, "m": matched, "i": issues_created, "j": job_id})
+
+    def rematch_finish(self, job_id: str) -> None:
+        """The job's words are checked as they were when it started; one changed since stays due."""
+        with self.db.transaction():
+            job = self.db.fetchone(
+                "update rematch_job set finished_at = now() where id = %(j)s returning *", {"j": job_id})
+            if not job:
+                return
+            self.db.execute(
+                """update ingredient_term set rematched_at = %(at)s
+                    where id = any(%(ids)s::uuid[]) and changed_at <= %(at)s""",
+                {"at": job["started_at"], "ids": job["ingredient_term_ids"]})
+            self.db.execute(
+                """update class_term set rematched_at = %(at)s
+                    where id = any(%(ids)s::uuid[]) and changed_at <= %(at)s""",
+                {"at": job["started_at"], "ids": job["class_term_ids"]})
+
+    def set_issue_names_ingredient(self, issue_id: str) -> None:
+        """A class-only issue whose notice turns out to name a watched ingredient is no longer class-only."""
+        self.db.execute("update issue set class_only = false, updated_at = now() where id = %(i)s and class_only",
+                        {"i": issue_id})
 
     # ───────────────────────────── probe ─────────────────────────────
     def get_probe(self, probe_id: str) -> dict | None:

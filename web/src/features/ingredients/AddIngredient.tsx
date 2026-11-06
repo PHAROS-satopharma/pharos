@@ -188,6 +188,10 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
           These are the words PHAROS looks for in each regulator’s own language. Check them, add brand names, and test
           each against the archive. Nothing is saved until you press Save.
         </p>
+        <p className="small muted">
+          After saving, the next daily run adds the drug class from the ATC code and starts checking the notices
+          PHAROS already holds from the last 12 months for these names, as history (no messages).
+        </p>
         {classCodesFor(confirmed).includes('NSAID') ? (
           <p className="small">
             Saved as an <strong>NSAID</strong>: notices that name only the class (for example “NSAR-haltige
