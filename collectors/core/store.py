@@ -492,6 +492,34 @@ class Store:
                 order by coalesce(i.current_since, i.created_at) desc""", {"s": since})
         return [str(r["id"]) for r in rows]
 
+    def case_report_papers_since(self, since: datetime) -> list[dict]:
+        """Papers naming one of our ingredients that look like case reports, found since ``since``, newest
+        first: for the daily message (collectors/alerts.py). The flag is ``structured.case_report`` as the
+        parser stores it; a paper stored before the flag existed counts when PubMed types it Case Reports or
+        its title says so (the words of v_case_report). Class-only papers and history never."""
+        rows = self.db.fetchall(
+            """select i.id, d.title_orig, d.structured ->> 'journal' as journal,
+                      (d.first_seen_at at time zone 'Africa/Cairo')::date as day_zero,
+                      coalesce((select array_agg(ii.ingredient_id::text order by g.inn_en) from issue_ingredient ii
+                                  join ingredient g on g.id = ii.ingredient_id where ii.issue_id = i.id),
+                               '{}') as ingredient_ids,
+                      coalesce((select array_agg(g.inn_en order by g.inn_en) from issue_ingredient ii
+                                  join ingredient g on g.id = ii.ingredient_id where ii.issue_id = i.id),
+                               '{}') as ingredients
+                 from issue i
+                 join document d on d.id = i.anchor_document_id
+                 join source s on s.id = d.source_id
+                where (i.doc_type = 'literature' or s.kind = 'literature')
+                  and not i.class_only and not i.is_backfill
+                  and (i.created_at > %(s)s or i.current_since > %(s)s)
+                  and (d.structured -> 'case_report' is not null and d.structured -> 'case_report' <> 'null'::jsonb
+                       or d.structured -> 'case_report' is null
+                          and (coalesce(d.structured -> 'pubtype', '[]'::jsonb) ? 'Case Reports'
+                               or d.title_orig ~* '\\m(case report|case reports|case series|a case of)\\M'))
+                order by coalesce(i.current_since, i.created_at) desc""", {"s": since})
+        return [{**r, "id": str(r["id"]), "ingredient_ids": list(r["ingredient_ids"] or []),
+                 "ingredients": list(r["ingredients"] or [])} for r in rows]
+
     # ───────────────────────────── drug classes (collectors/classes.py) ─────────────────────────────
     def ingredients_for_classes(self) -> list[dict]:
         """Active ingredients with an ATC code, and the codes of the classes they belong to."""
