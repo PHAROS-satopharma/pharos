@@ -267,10 +267,11 @@ def test_a_paper_pmc_alone_found_gets_its_pubmed_type_and_the_case_report_flag(t
     assert by_id["42979212"].structured["case_report"] is None
     assert sum(1 for i in items if i.structured["case_report"]) == 10
     # the PMIDs of the PMC-only papers, in batches, never a PMID already read
-    extra = ncbi.esummaries()[2:]
-    assert all(c["db"] == "pubmed" for c in extra) and len(extra) == 3           # 54 PMIDs in batches of 20
+    # (the 59 PMC records took three batches of 20 before them)
+    extra = ncbi.esummaries()[4:]
+    assert all(c["db"] == "pubmed" for c in extra) and len(extra) == 3           # 55 PMIDs in batches of 20
     asked = [u for c in extra for u in c["id"].split(",")]
-    assert len(asked) == 54 and "42979430" in asked and not {"42980339", "42979212"} & set(asked)
+    assert len(asked) == 55 and "42979430" in asked and not {"42980339", "42979212"} & set(asked)
     ctx.close()
 
 
