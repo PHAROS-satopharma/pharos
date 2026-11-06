@@ -262,7 +262,7 @@ def test_the_reader_chooses_only_among_what_mesh_returned():
 def test_the_reader_looks_up_its_own_terms_in_mesh():
     reader = FakeReader()
     coder.code_form(FakeDb(), FORM, reader=reader, rx=None)
-    candidates = dict(reader.asked)["choose"]
+    candidates = next(a[1] for a in reader.asked if a[0] == "choose")
     assert candidates["r0"] == ["D005076"], "the reader is shown what MeSH returned for the words and its terms"
 
 
