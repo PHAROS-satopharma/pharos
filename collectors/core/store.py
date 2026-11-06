@@ -806,12 +806,13 @@ class Store:
                where id = %(j)s""",
             {"c": cursor, "k": checked, "r": reread, "m": matched, "i": issues_created, "j": job_id})
 
-    def rematch_finish(self, job_id: str) -> None:
-        """The job's words are checked as they were when it started; one changed since stays due."""
+    def rematch_finish(self, job_id: str, *, mark_checked: bool = True) -> None:
+        """The job's words are checked as they were when it started; one changed since stays due. A job that
+        checked only part of the past (``mark_checked`` false) leaves every word due."""
         with self.db.transaction():
             job = self.db.fetchone(
                 "update rematch_job set finished_at = now() where id = %(j)s returning *", {"j": job_id})
-            if not job:
+            if not job or not mark_checked:
                 return
             self.db.execute(
                 """update ingredient_term set rematched_at = %(at)s

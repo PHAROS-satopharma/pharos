@@ -3,17 +3,18 @@
 # Words saved after the notices arrived (a new ingredient, a new or changed name, an ingredient watched again,
 # a new class word) are looked for in the stored notices, as history: no Telegram message, no digest. The daily
 # collection (collect.yml) runs it for 15 minutes a day; this runs it for up to 45 minutes at once, for example
-# right after a new ingredient was added. It continues an open check where it stopped; "months" only sets how
-# far back a NEW check goes. Never at the same time as a collection (shared "collectors" group).
+# right after a new ingredient was added. It continues an open check where it stopped. A new check reads every
+# stored notice; "months" narrows it, and then its words stay due for the next full check. Never at the same
+# time as a collection (shared "collectors" group).
 name: PHAROS check of the past
 
 on:
   workflow_dispatch:
     inputs:
       months:
-        description: How many months back a new check goes (an open check keeps its own)
+        description: Empty = every stored notice. Or how many months back a new check goes (its words stay due)
         type: string
-        default: "12"
+        default: ""
 
 permissions:
   contents: read
@@ -59,5 +60,9 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           MONTHS: ${{ inputs.months }}
         run: |
-          [[ "$MONTHS" =~ ^[0-9]{1,3}$ ]] && [ "$MONTHS" -ge 1 ] || { echo "months must be a whole number from 1"; exit 1; }
-          python -m collectors.rematch --months "$MONTHS" --trigger manual
+          if [ -z "$MONTHS" ]; then
+            python -m collectors.rematch --trigger manual
+          else
+            [[ "$MONTHS" =~ ^[0-9]{1,3}$ ]] && [ "$MONTHS" -ge 1 ] || { echo "months must be empty or a whole number from 1"; exit 1; }
+            python -m collectors.rematch --months "$MONTHS" --trigger manual
+          fi
