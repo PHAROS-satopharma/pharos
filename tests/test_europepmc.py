@@ -201,8 +201,8 @@ def test_one_item_per_paper_with_ncbis_fields_and_the_preprint_flag(tmp_path):
     assert by["PMC13690626"].structured["pmid"] is None
 
     assert by["42923775"].structured["case_report"] == {"reason": "pubtype"}     # "journal article; case reports"
-    assert by["42910044"].structured["case_report"] is None                       # "case-study" is not one
-    assert sum(1 for it in items if it.structured["case_report"]) == 7
+    assert by["42910044"].structured["case_report"] == {"reason": "title"}       # typed "case-study", titled "A Case Report"
+    assert sum(1 for it in items if it.structured["case_report"]) == 8
     assert not any(it.structured["preprint"] for k, it in by.items() if k != "PPR1350007")
 
 
