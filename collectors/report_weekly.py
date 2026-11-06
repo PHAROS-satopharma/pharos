@@ -487,11 +487,11 @@ def readiness_items(r: dict) -> list[str]:
     if int(names.get("languages_with_a_name") or 0) == 0:
         items.append("no name to look for yet")
     if cls.get("atc") and int(cls.get("classes") or 0) == 0:
-        items.append("class words tonight")
+        items.append("class words waiting")
     if not past.get("done"):
-        items.append("check of the past running" if past.get("job_running") else "check of the past tonight")
+        items.append("check of the past running" if past.get("job_running") else "check of the past waiting")
     if not ncbi.get("look_back_done"):
-        items.append("NCBI look-back running" if int(ncbi.get("searches") or 0) > 0 else "NCBI look-back tonight")
+        items.append("NCBI look-back running" if int(ncbi.get("searches") or 0) > 0 else "NCBI look-back waiting")
     waiting = list(labels.get("waiting") or [])
     if int(labels.get("products") or 0) == 0 and waiting:
         items.append(f"label watch on Monday ({country_list(waiting)})")

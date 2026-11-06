@@ -494,9 +494,8 @@ y = table(c, [
     ("Every 4 hours, day and night", "The authorities' news feeds, web pages and lists, and the pharmacovigilance "
                                      "mailbox, where the newsletters that come only by e-mail arrive."),
     ("Twice a day", "Sites that can only be read with a full browser, and the slower lists."),
-    ("Every day, early morning", "NCBI literature (PubMed and PubMed Central). Drug classes from the ATC code. The "
-                                 "large lists, such as EMA's medicines list and the EURD list. Then the check of the "
-                                 "past (page 3)."),
+    ("Three times a day", "NCBI literature (PubMed and PubMed Central), drug classes from the ATC code and the "
+                          "check of the past (page 3). Early morning only: the large lists (EMA's, the EURD list)."),
     ("Every Monday", "The label watch: changes to the product information (SPC) of products with our ingredients. "
                      "Then EMA's literature monitoring list."),
     ("Every day, from 07:00 Cairo", "Telegram. After 07:00, the reminder of findings due to the Egyptian Drug "
@@ -628,7 +627,7 @@ y = sub_head(c, "Drug class words", y, aside="From the ATC code until you confir
 y = para(c, "Many safety notices speak of a whole class (fluoroquinolones, NSAIDs) and never name the ingredient. So "
             "each ingredient also carries its drug class: its ATC group (levofloxacin J01MA12 belongs to "
             "Fluoroquinolones, J01MA), with the words notices use for that class in each regulator's language. "
-            "The daily run makes the class from the ATC code. It reads <b>from the ATC code</b> until an "
+            "The next class run (three a day) makes the class from the ATC code. It reads <b>from the ATC code</b> until an "
             "administrator checks its words and presses <b>Confirm</b>.", ink_tiny, ML, y, CW) - 4 * mm
 colw = (CW - 8 * mm) / 2
 top = y
@@ -738,10 +737,10 @@ y = label(c, "What the line says, and when it clears by itself", y)
 y = table(c, [
     ("Ready", "Its names, its class words, the check of the past, the NCBI look-back and the label watch are all "
               "done, and someone receives its Telegram messages."),
-    ("class words tonight", "It has an ATC code and no drug class yet. The daily run makes it early tomorrow."),
-    ("check of the past running, or tonight", "Its names are checked against the stored notices of the last 12 "
+    ("class words waiting", "It has an ATC code and no drug class yet. The next class run makes it (three a day)."),
+    ("check of the past running, or waiting", "Its names are checked against the stored notices of the last 12 "
                                               "months. It clears when every name is checked."),
-    ("NCBI look-back running, or tonight", "PubMed and PubMed Central are read 12 months back for its name and "
+    ("NCBI look-back running, or waiting", "PubMed and PubMed Central are read 12 months back for its name and "
                                            "class words. A large look-back takes a few days."),
     ("label watch on Monday (Spain)", "The countries whose label watch has not read since it was added. Monday's "
                                       "run reads them; a country with no product of it is an answer too."),

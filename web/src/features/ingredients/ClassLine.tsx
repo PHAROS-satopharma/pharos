@@ -197,7 +197,7 @@ export function ClassLine({
         </p>
       ) : due ? (
         <p className="dc-note small muted">
-          New words: the daily run is checking the stored notices of the last 12 months with them.
+          New words: the stored notices of the last 12 months are being checked with them (three runs a day).
         </p>
       ) : null}
       {link.enabled && !inLiterature ? (

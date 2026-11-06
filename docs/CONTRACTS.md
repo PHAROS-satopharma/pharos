@@ -480,9 +480,9 @@ subscription (Dr Sama, kind 'ingredient', ingredient_id null)  -- inserted by 00
 
 Her words, shared by `web/src/features/ingredients/readiness.ts` and `collectors/report_weekly.py`
 (`readiness_items`, `readiness_text`; `tests/test_report_weekly.py` holds both to the same phrases): `Ready`, or
-`Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words tonight`
+`Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words waiting`
 (an ATC code and no class yet),
-`check of the past running` | `tonight`, `NCBI look-back running` | `tonight`, `label watch on Monday (A, B)`
+`check of the past running` | `waiting`, `NCBI look-back running` | `waiting`, `label watch on Monday (A, B)`
 (up to three country names, else `n countries`), `nobody receives its Telegram messages yet`.
 
 Collector: `collectors/eurd.py` (daily, `collect.yml` step "EURD list"; `eurd_entry` as 0028). Web:
