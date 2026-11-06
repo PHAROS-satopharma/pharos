@@ -6,7 +6,7 @@ import { ErrorNote, Loading } from '../../ui/States';
 import { Tag } from '../../ui/Tag';
 import { SectionHead } from '../../ui/Text';
 
-type Listed = 'our_label' | 'reference' | 'not_listed' | null;
+type Listed = 'our_label' | 'reference' | 'not_listed' | 'not_in_reference' | null;
 
 interface FaersReaction {
   reaction: string;
@@ -124,6 +124,11 @@ const LISTED: Record<Exclude<Listed, null>, { label: string; tone: 'success' | '
     label: 'Not in our label',
     tone: 'danger',
     title: 'Neither our label nor the reference label names it or a broader heading.',
+  },
+  not_in_reference: {
+    label: 'Not in the reference label',
+    tone: 'danger',
+    title: 'The reference product’s adverse reactions do not name it or a broader heading. No label of ours in English is read.',
   },
 };
 

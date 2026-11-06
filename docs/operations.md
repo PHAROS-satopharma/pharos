@@ -1002,7 +1002,9 @@ count them; no report is downloaded, only numbers come back, and the log names n
   rupture, tendonitis), paracetamol 26 and phenylephrine 29. It is a reason to look, not a signal: stimulated
   reporting, an indication's own symptoms and duplicates all raise a PRR.
 - **The label tag**: the reaction's name is matched to MeSH by its exact name (`coding_norm`), and the label tag is the
-  one of section 05. A name MeSH does not have (OFF LABEL USE, for one) has no tag.
+  one of section 05, except that a reaction neither label names is *Not in our label* only when our label is read;
+  when only the reference label is coded it is *Not in the reference label* (migration 0080; ivabradine, 6 Nov 2026,
+  had no label of ours in English). A name MeSH does not have (OFF LABEL USE, for one) has no tag.
 - **The key**: `OPENFDA_API_KEY` (a repository secret, optional) allows 240 requests a minute and lists up to 1,000
   reactions per request; without it openFDA allows 40 a minute and 100 reactions, so the run takes longer and a
   quarter's rarer reactions show "–". A run starts no ingredient after 45 minutes; the rest wait for the next run.

@@ -33,19 +33,23 @@ insert into mesh_term (ui, term, preferred) values
 
 insert into ingredient (id, inn_en, atc_code) values
   ('00000000-0000-0000-0000-00000065a001', 'CI faersamine', 'Z99ZZ65'),
-  ('00000000-0000-0000-0000-00000065a002', 'CI unlabelline', 'Z99ZZ66');
+  ('00000000-0000-0000-0000-00000065a002', 'CI unlabelline', 'Z99ZZ66'),
+  ('00000000-0000-0000-0000-00000065a003', 'CI referencine', 'Z99ZZ67');
 
 insert into label_coded (ingredient_id, source, label_ref, label_name, mesh_version, terms) values
   ('00000000-0000-0000-0000-00000065a001', 'our_label', 'ci-label', 'Faersamine 10 mg, March 2024', 'MeSH 2026', 1),
-  ('00000000-0000-0000-0000-00000065a001', 'reference', 'ci-snap', 'Faersamin 10 mg', 'MeSH 2026', 1);
+  ('00000000-0000-0000-0000-00000065a001', 'reference', 'ci-snap', 'Faersamin 10 mg', 'MeSH 2026', 1),
+  ('00000000-0000-0000-0000-00000065a003', 'reference', 'ci-snap-3', 'Referencin 5 mg', 'MeSH 2026', 1);
 insert into label_mesh (ingredient_id, source, ui, term) values
   ('00000000-0000-0000-0000-00000065a001', 'our_label', 'D008107', 'liver disease'),
-  ('00000000-0000-0000-0000-00000065a001', 'reference', 'D005076', 'rash');
+  ('00000000-0000-0000-0000-00000065a001', 'reference', 'D005076', 'rash'),
+  ('00000000-0000-0000-0000-00000065a003', 'reference', 'D005076', 'rash');
 
 -- What collectors/faers.py leaves: two quarters, the older with every reaction listed, the newer without.
 insert into faers_ingredient (ingredient_id, searched, first_quarter, last_quarter, reports, all_reports) values
   ('00000000-0000-0000-0000-00000065a001', 'CI FAERSAMINE', '2026-04-01', '2026-07-01', 40, 600000),
-  ('00000000-0000-0000-0000-00000065a002', 'CI UNLABELLINE', '2026-04-01', '2026-07-01', 9, 600000);
+  ('00000000-0000-0000-0000-00000065a002', 'CI UNLABELLINE', '2026-04-01', '2026-07-01', 9, 600000),
+  ('00000000-0000-0000-0000-00000065a003', 'CI REFERENCINE', '2026-04-01', '2026-07-01', 3, 600000);
 insert into faers_quarter (ingredient_id, quarter, reports, all_reports, complete) values
   ('00000000-0000-0000-0000-00000065a001', '2026-04-01', 15, 300000, true),
   ('00000000-0000-0000-0000-00000065a001', '2026-07-01', 25, 300000, false),
@@ -57,7 +61,8 @@ insert into faers_reaction (ingredient_id, reaction, reports, all_reports, prr, 
   ('00000000-0000-0000-0000-00000065a001', 'NAUSEA', 9, 40000, 3.4, 1.8, 6.3, 4.6, 2.1, 9.9, 9.1, true),
   ('00000000-0000-0000-0000-00000065a001', 'RASH', 5, 30000, 2.5, 1.1, 5.8, 2.9, 1.1, 7.4, 3.0, false),
   ('00000000-0000-0000-0000-00000065a001', 'OFF LABEL USE', 5, 50000, 1.5, 0.6, 3.5, 1.6, 0.6, 3.9, 0.4, false),
-  ('00000000-0000-0000-0000-00000065a002', 'NAUSEA', 2, 40000, 3.3, 0.9, 12.0, 3.6, 0.9, 14.0, 1.2, false);
+  ('00000000-0000-0000-0000-00000065a002', 'NAUSEA', 2, 40000, 3.3, 0.9, 12.0, 3.6, 0.9, 14.0, 1.2, false),
+  ('00000000-0000-0000-0000-00000065a003', 'NAUSEA', 3, 40000, 3.3, 0.9, 12.0, 3.6, 0.9, 14.0, 1.2, false);
 insert into faers_count (ingredient_id, quarter, reaction, reports, all_reports) values
   ('00000000-0000-0000-0000-00000065a001', '2026-07-01', 'HEPATITIS', 12, 450),
   ('00000000-0000-0000-0000-00000065a001', '2026-04-01', 'NAUSEA', 9, 20000),
@@ -71,11 +76,13 @@ update faers_reaction set co_drug = 'PARTNERINE', co_reports = 8, co_all_reports
 -- Read as CI Reader; the temp table that keeps the answer is made by the owner.
 create temp table f as select * from ingredient_faers(null) with no data;
 create temp table g as select * from ingredient_faers(null) with no data;
-grant select, insert on f, g to authenticated;
+create temp table h as select * from ingredient_faers(null) with no data;
+grant select, insert on f, g, h to authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
 set role authenticated;
 insert into f select * from ingredient_faers('00000000-0000-0000-0000-00000065a001');
 insert into g select * from ingredient_faers('00000000-0000-0000-0000-00000065a002');
+insert into h select * from ingredient_faers('00000000-0000-0000-0000-00000065a003');
 
 select pg_temp.ci_assert((select array_agg(x.reaction) from ingredient_faers('00000000-0000-0000-0000-00000065a001') x)
                          = '{HEPATITIS,NAUSEA,"OFF LABEL USE",RASH}', 'the most reported first, then by name');
@@ -101,15 +108,17 @@ select pg_temp.ci_assert((select mesh_ui is null and listed is null from f where
                          'a name MeSH does not have is unknown, never "not in our label"');
 select pg_temp.ci_assert((select mesh_ui = 'D009325' and listed is null from g),
                          'without a coded label the tag is unknown');
+select pg_temp.ci_assert((select (mesh_ui, listed) = ('D009325', 'not_in_reference') from h),
+                         'with only the reference label coded, a reaction it does not name is "not in the reference label", never "not in our label" (0080)');
 
-select pg_temp.ci_assert((select count(*) from faers_ingredient where searched like 'CI %') = 2,
+select pg_temp.ci_assert((select count(*) from faers_ingredient where searched like 'CI %') = 3,
                          'a member of the team reads what was fetched');
 select pg_temp.ci_assert(pg_temp.refused($$insert into faers_reaction (ingredient_id, reaction, reports, all_reports,
   flagged) values ('00000000-0000-0000-0000-00000065a002', 'HEADACHE', 1, 1, false)$$) like '42501%',
                          'nobody in the app writes the counts');
 select pg_temp.refused($$update faers_ingredient set reports = 0$$);
 select pg_temp.refused($$delete from faers_count$$);
-select pg_temp.ci_assert((select sum(reports) from faers_ingredient where searched like 'CI %') = 49
+select pg_temp.ci_assert((select sum(reports) from faers_ingredient where searched like 'CI %') = 52
                          and (select count(*) from faers_count where reaction = 'RASH') = 2,
                          'an update or a delete from the app changes nothing');
 
