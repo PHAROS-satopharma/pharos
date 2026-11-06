@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, caseDue, caseMissing, clockLine, e2bProblems, numberOrNull, orNull, toBase64, type CaseForm } from './caseForm';
+import { addDays, caseDue, caseMissing, clockLine, codingNorm, e2bProblems, numberOrNull, orNull, suggestionsFor, toBase64, type CaseForm } from './caseForm';
 
 const FULL: CaseForm = {
   patient: { initials: 'A.M.', sex: 'female' },
@@ -75,5 +75,22 @@ describe('field helpers', () => {
     expect(toBase64(new TextEncoder().encode('%PDF-1.7'))).toBe(btoa('%PDF-1.7'));
     const big = new Uint8Array(70000).fill(65);
     expect(atob(toBase64(big)).length).toBe(70000);
+  });
+});
+
+describe('codingNorm', () => {
+  // The same cases as tests/test_coding.py and supabase/tests/medical_coding.sql.
+  it('compares words as the coder and the database do', () => {
+    expect(codingNorm('  Hepatitis, Drug-Induced!! ')).toBe('hepatitis drug induced');
+    expect(codingNorm('Ä Ödem')).toBe('Ä Ödem');
+    expect(codingNorm('طفح جلدي، شديد')).toBe('طفح جلدي، شديد');
+    expect(codingNorm(null)).toBe('');
+  });
+
+  it('finds the suggestions made for the same words, and none once the words changed', () => {
+    const list = [{ text: 'Skin eruption', norm: 'skin eruption', suggestions: ['D005076'] }];
+    expect(suggestionsFor(list, 'skin  eruption!', null)).toEqual(['D005076']);
+    expect(suggestionsFor(list, 'itching')).toBeNull();
+    expect(suggestionsFor(undefined, 'skin eruption')).toBeNull();
   });
 });

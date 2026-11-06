@@ -76,7 +76,7 @@ async function archive(bytes: Uint8Array<ArrayBuffer>, sha: string, mime: string
 }
 
 /** Fires the GitHub event; false when it could not (the next collection run picks the case up). */
-async function dispatch(event: "case-read" | "case-e2b", caseId: string): Promise<boolean> {
+async function dispatch(event: "case-read" | "case-e2b" | "case-code", caseId: string): Promise<boolean> {
   const token = Deno.env.get("GITHUB_DISPATCH_TOKEN");
   const repo = Deno.env.get("GITHUB_REPO");
   if (!token || !repo || !/^[\w.-]+\/[\w.-]+$/.test(repo)) return false;
@@ -150,6 +150,15 @@ serve(async (req) => {
     const { error } = await caller.db.rpc(fn, { p_case: caseId, p_seen: seen });
     if (error) dbError(error);
     return json(req, { case_id: caseId, dispatched: await dispatch(action === "read" ? "case-read" : "case-e2b", caseId) });
+  }
+
+  // Suggest the codes again (MeSH, RxNorm: collectors/coding), after the words of the form changed. The form's
+  // version is not touched: the page open on the case stays current.
+  if (action === "code") {
+    const caseId = uuidOf(body.case_id, "case");
+    const { error } = await caller.db.rpc("ask_case_coding", { p_case: caseId });
+    if (error) dbError(error);
+    return json(req, { case_id: caseId, dispatched: await dispatch("case-code", caseId) });
   }
 
   throw new HttpError(400, "Unknown action.");
