@@ -305,6 +305,77 @@ def test_titles_are_cut_at_160():
     assert "y" * 159 + "…" in text and "y" * 161 not in text
 
 
+# ───────────────────────────── the signal steps (0042) ─────────────────────────────
+
+def with_signals(s: MemoryStore) -> MemoryStore:
+    """Signals opened from the findings (0042): one to validate tomorrow, one assessment 3 days late, one to
+    validate in 4 days (not yet), one with an action due today, one closed (never listed)."""
+    titles = {r["title"]: i for i, r in s.issue.items()}
+
+    def signal(ref: str, title: str, stage: str, *, due: date, ingredient: str | None = "ing-1",
+               priority: str | None = None) -> None:
+        s.signal[ref] = {"id": ref, "ref": ref, "title": title, "ingredient_id": ingredient, "stage": stage,
+                         "priority": priority, "outcome": None, "validation_due": due,
+                         "assessment_due": due if stage == "assessment" else None,
+                         "action_due": due if stage == "action" else None,
+                         "closed_at": cairo(TODAY, 6).astimezone(timezone.utc) if stage == "closed" else None}
+        s.signal_issue.append({"signal_id": ref, "issue_id": titles.get(title)})
+
+    signal("SIG-2026-003", "Rote-Hand-Brief <Levofloxacin>", "validation", due=date(2026, 11, 7))
+    signal("SIG-2026-001", "Fluorchinolone: Aortenaneurysma", "assessment", due=date(2026, 11, 3), priority="high")
+    signal("SIG-2026-004", "Levofloxacin: Netzhaut", "validation", due=date(2026, 11, 10))
+    signal("SIG-2026-002", "Levofloxacin und Sehnen", "action", due=TODAY, priority="medium")
+    signal("SIG-2026-005", "Levofloxacin: gesendet", "closed", due=date(2026, 10, 25))
+    return s
+
+
+def test_the_store_lists_signal_steps_late_or_due_within_two_days_most_late_first():
+    s = with_signals(store_with_findings())
+    rows = s.signal_reminders(TODAY, within_days=2)
+    assert [(r["ref"], r["stage"], r["days_left"]) for r in rows] == [
+        ("SIG-2026-001", "assessment", -3), ("SIG-2026-002", "action", 0), ("SIG-2026-003", "validation", 1)]
+    assert rows[0]["next_due"] == date(2026, 11, 3) and rows[0]["title"] == "Fluorchinolone: Aortenaneurysma"
+    assert all(r["ingredient"] == "levofloxacin" and r["ingredient_id"] == "ing-1" for r in rows)
+    assert all("signal_id" in r for r in rows)
+
+
+def test_step_text_in_her_words():
+    assert reminders.step_text("validation", date(2026, 11, 7), 1) == "Validate · due Sat 7 Nov, 1 day left"
+    assert reminders.step_text("assessment", date(2026, 11, 3), -3) == "Assess · 3 days late (was due Tue 3 Nov)"
+    assert reminders.step_text("action", date(2026, 11, 6), 0) == "Action · due today, Fri 6 Nov"
+
+
+def test_the_message_adds_the_signal_steps_after_the_findings():
+    s = with_signals(store_with_findings())
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    text = s.notification[0]["summary"]
+    assert text.startswith("<b>PHAROS</b> · Egyptian Drug Authority · 6 Nov 2026")
+    assert "<b>4 findings to report to the authority</b>" in text
+    assert "<b>3 signal steps due</b>" in text
+    assert "1 late, 2 due within 2 days" in text
+    assert text.index("findings to report") < text.index("signal steps due"), "the findings first, then the signals"
+    lines = [ln for ln in text.splitlines() if ln.startswith("• ")]
+    assert lines[4:] == [
+        "• SIG-2026-001 · Fluorchinolone: Aortenaneurysma · levofloxacin · Assess · 3 days late (was due Tue 3 Nov)",
+        "• SIG-2026-002 · Levofloxacin und Sehnen · levofloxacin · Action · due today, Fri 6 Nov",
+        "• SIG-2026-003 · Rote-Hand-Brief &lt;Levofloxacin&gt; · levofloxacin · Validate · due Sat 7 Nov, 1 day left"]
+    assert text.count("https://pharos-satopharma.pages.dev/ingredients/ing-1") == 7, "a link under every line"
+    for absent in ("SIG-2026-004", "SIG-2026-005"):
+        assert absent not in text
+
+
+def test_signal_steps_alone_are_enough_to_send():
+    s = with_signals(store_with_findings())
+    s.review_event.clear()                       # no finding has a running clock any more
+    assert s.eda_reminders(TODAY, within_days=2) == []
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    text = s.notification[0]["summary"]
+    assert text.startswith("<b>PHAROS</b> · Signal steps · 6 Nov 2026")
+    assert "findings to report" not in text
+    assert "<b>3 signal steps due</b>" in text
+    assert len([ln for ln in text.splitlines() if ln.startswith("• ")]) == 3
+
+
 # ───────────────────────────── where it runs ─────────────────────────────
 
 def test_the_collector_reminds_after_the_daily_message_and_never_on_a_backfill():

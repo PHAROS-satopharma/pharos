@@ -42,7 +42,7 @@ const mention = (document_id: string, issue_id: string | null): Mention => ({
   decision: null,
 });
 
-const running: FindingState = { day_zero: '2026-11-03', due: '2026-11-08', days_left: 2, clock: 'running', sent: null };
+const running: FindingState = { day_zero: '2026-11-03', due: '2026-11-08', days_left: 2, clock: 'running', sent: null, signal: null };
 
 const DATA: IngredientScreenData = {
   ingredient: { id: 'i', inn_en: 'levofloxacin', atc_code: 'J01MA12', active: true, classes: [], names: 1, name_languages: 1, class_words: 0, class_languages: 0 },
@@ -56,8 +56,8 @@ const DATA: IngredientScreenData = {
   literature: { papers: 0, by_name: 0, by_class: 0, pubmed: 0, pmc: 0, by_query: [], first: [] },
   findings: {
     n1: running,
-    n2: { day_zero: '2026-10-29', due: '2026-11-03', days_left: -3, clock: 'late', sent: null },
-    n3: { day_zero: '2026-11-01', due: '2026-11-06', days_left: 0, clock: 'off', sent: null },
+    n2: { day_zero: '2026-10-29', due: '2026-11-03', days_left: -3, clock: 'late', sent: null, signal: null },
+    n3: { day_zero: '2026-11-01', due: '2026-11-06', days_left: 0, clock: 'off', sent: null, signal: null },
   },
 };
 
