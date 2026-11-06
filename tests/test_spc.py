@@ -680,3 +680,112 @@ def test_ema_epar_not_authorised_is_not_authorised():
 def test_ema_epar_failed_report_raises():
     with pytest.raises(FetchError):
         ema_epar.discover(FakeCtx(), {"inn_en": "ibuprofen"})
+
+
+# ───────────────────────────── time: labels are read in turn ─────────────────────────────
+
+
+class _Clock:
+    """A clock that moves one second per label read, so a deadline falls between two labels."""
+
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def _three_products(module, clock, *, reference: str | None = None):
+    def discover(ctx, ing):
+        return [Product(national_id=n, product_name=n, country_code="ES") for n in ("A1", "B2", "C3")]
+
+    def snapshot(ctx, p):
+        clock.t += 1
+        return Snapshot(sections={"4.4": f"Texto {p['national_id']}."}, lang="es")
+
+    module.discover, module.snapshot = discover, snapshot
+
+
+def test_out_of_time_leaves_labels_for_the_next_run_which_reads_them_first(spc_world):
+    # 6 Nov 2026: paracetamol's hundreds of products ran the weekly watch past GitHub's timeout.
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    clock, read = _Clock(), []
+    _three_products(module, clock)
+    inner = module.snapshot
+    module.snapshot = lambda c, p: (read.append(p["national_id"]), inner(c, p))[1]
+    run_spc(ctx, db, store=store, notifier=notifier, deadline=2, clock=clock)
+    assert read == ["A1", "B2"]
+    run = _spc_runs(store)[-1]
+    assert "out of time: 1 label(s) left for the next run" in run["error"]
+    assert store.source["spc-cima"]["health"] == "ok"            # time is never a failed run
+    assert store.source["spc-cima"]["consecutive_failures"] == 0
+    clock.t, read[:] = 0, []
+    run_spc(ctx, db, store=store, notifier=notifier, deadline=1, clock=clock)
+    assert read == ["C3"]                                          # the one never read goes first
+    clock.t, read[:] = 0, []
+    run_spc(ctx, db, store=store, notifier=notifier, deadline=2, clock=clock)
+    assert read == ["A1", "B2"]                                    # then the one read longest ago
+
+
+def test_our_reference_product_is_read_first(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    clock, read = _Clock(), []
+    _three_products(module, clock)
+    run_spc(ctx, db, store=store, notifier=notifier)               # no deadline: all three read
+    for row in db.products.values():
+        row["is_reference"] = row["national_id"] == "C3"
+    inner = module.snapshot
+    module.snapshot = lambda c, p: (read.append(p["national_id"]), inner(c, p))[1]
+    clock.t = 0
+    run_spc(ctx, db, store=store, notifier=notifier, deadline=1, clock=clock)
+    assert read == ["C3"]
+
+
+def test_a_label_that_failed_is_not_marked_read(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    clock = _Clock()
+    _three_products(module, clock)
+    inner = module.snapshot
+
+    def snapshot(c, p):
+        if p["national_id"] == "A1":
+            raise SnapshotError("CIMA A1: HTTP 500")
+        return inner(c, p)
+
+    module.snapshot = snapshot
+    run_spc(ctx, db, store=store, notifier=notifier)
+    checked = {row["national_id"]: row.get("checked_at") for row in db.products.values()}
+    assert checked["A1"] is None and checked["B2"] and checked["C3"]
+
+
+def test_each_source_gets_its_share_of_the_time_left(spc_world, monkeypatch):
+    import sys
+    import types
+
+    from collectors.spc import run as spc_run
+
+    store, db, ctx, notifier, module = spc_world
+    clock, read = _Clock(), []
+    _three_products(module, clock)
+    inner = module.snapshot
+    module.snapshot = lambda c, p: (read.append(("ES", p["national_id"])), inner(c, p))[1]
+    japan = types.ModuleType("collectors.spc._fake_japan")
+    japan.discover = lambda c, ing: [Product(national_id="J1", product_name="J1", country_code="JP")]
+
+    def jp_snapshot(c, p):
+        clock.t += 1
+        read.append(("JP", p["national_id"]))
+        return Snapshot(sections={"4.4": "x"}, lang="ja")
+
+    japan.snapshot = jp_snapshot
+    monkeypatch.setitem(sys.modules, "collectors.spc._fake_japan", japan)
+    monkeypatch.setitem(spc_run.MODULES, "spc-pmda", "_fake_japan")
+    monkeypatch.setattr(spc_run, "_sources", lambda db: ["spc-cima", "spc-pmda"])
+    spc_run.run_spc(ctx, db, store=store, notifier=notifier, deadline=2, clock=clock)
+    assert read == [("ES", "A1"), ("JP", "J1")]                    # Spain stops at half; Japan is reached

@@ -20,6 +20,14 @@ a fallback, from the full HTML); with none, it is a new baseline — unless the 
 moved past the newest snapshot's, when it is compared with that one all the same. Returns the ids of the issues
 created, which the runner alerts on.
 
+**Time.** The run's time budget (``PHAROS_TIME_BUDGET_MIN``, the runner's deadline) holds here too: each source
+gets an even share of what is left (a source that finishes early leaves its time to the next), and within a
+source the labels are read in turn: our reference products first, then labels never read, then the one read
+longest ago (``spc_product.checked_at``, 0063). What the time does not reach is read first on the next run, and
+the source_run says how many were left; running out of time is never a failed run. Before this (6 Nov 2026)
+a week with paracetamol's hundreds of products ran past GitHub's timeout and the run was killed before it
+reached Japan.
+
 Every SPC source gets a ``source_run`` row per run (products seen, new snapshots, issues, and the
 errors: a discovery or a label that failed, labels with no text), and its health: ``ok`` after a run
 that read labels, ``blocked`` on a bot check, ``degraded`` after ``DEGRADED_AFTER`` failed runs in a
@@ -40,7 +48,7 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any
+from typing import Any, Callable
 
 from collectors.core.context import SourceBlocked, redact
 from collectors.spc.common import Product, Snapshot
@@ -70,9 +78,15 @@ class SpcStats:
     no_label: int = 0
     discover_ok: int = 0
     errors: list[str] = field(default_factory=list)
+    out_of_time: bool = False
+    labels_left: int = 0         # products found but not read this run (out of time)
+    ingredients_left: int = 0    # ingredients not even looked up this run (out of time)
 
     def failed(self, ingredients: int) -> bool:
-        """Nothing worked: no discovery answered, or products were found and no label was read."""
+        """Nothing worked: no discovery answered, or products were found and no label was read.
+        Running out of time is not a failure of the source."""
+        if self.out_of_time:
+            return False
         if ingredients and not self.discover_ok:
             return True
         return self.products > 0 and self.labels_read == 0
@@ -83,6 +97,11 @@ class SpcStats:
             notes.append(f"{len(self.errors)} error(s); first: {self.errors[0]}")
         if self.no_label:
             notes.append(f"{self.no_label} product(s) without label text")
+        if self.out_of_time:
+            left = f"{self.labels_left} label(s)"
+            if self.ingredients_left:
+                left += f" and {self.ingredients_left} ingredient(s)"
+            notes.append(f"out of time: {left} left for the next run")
         return redact("; ".join(notes))[:1000] or None
 
 
@@ -156,7 +175,7 @@ def upsert_product(db, source_id: str, ingredient_id: str, p: Product) -> dict:
                  url = coalesce(excluded.url, spc_product.url),
                  extra = spc_product.extra || excluded.extra, active = true
            returning id, ingredient_id, source_id, country_code, national_id, product_name, mah,
-                     url, extra""",
+                     url, extra, is_reference, checked_at""",
         {"ing": ingredient_id, "src": source_id, "cc": p.country_code, "nid": p.national_id,
          "name": p.product_name, "mah": p.mah, "url": p.url, "extra": _json(p.extra or {})})
     out = dict(row)
@@ -171,6 +190,17 @@ def deactivate_missing(db, source_id: str, ingredient_id: str, keep: list[str]) 
             where source_id = %(s)s and ingredient_id = %(i)s and active
               and not (national_id = any(%(k)s))""",
         {"s": source_id, "i": ingredient_id, "k": keep})
+
+
+def mark_checked(db, product_id: str) -> None:
+    """The label was read (or has no text): its turn comes round again after every other one."""
+    db.execute("update spc_product set checked_at = now() where id = %(p)s", {"p": product_id})
+
+
+def _turn(product: dict) -> tuple:
+    """Reading order within a source: our reference products, then labels never read, then the oldest read."""
+    checked = product.get("checked_at")
+    return (not product.get("is_reference"), checked is not None, checked or "")
 
 
 def last_snapshot(db, product_id: str) -> dict | None:
@@ -352,9 +382,17 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
 
 
 def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stats: SpcStats,
-                  created: list[str]) -> None:
-    """Appends to ``created`` as it goes, so issues opened before a bot check are still alerted."""
-    for ing in ingredients:
+                  created: list[str], deadline: float | None = None,
+                  clock: Callable[[], float] = time.monotonic) -> None:
+    """Appends to ``created`` as it goes, so issues opened before a bot check are still alerted.
+
+    Every ingredient's products are found first, then the labels are read in turn (``_turn``) until
+    ``deadline`` (a ``clock()`` value); what is left is counted in ``stats`` and read first next time."""
+    queue: list[tuple[dict, dict]] = []
+    for n, ing in enumerate(ingredients):
+        if deadline is not None and clock() >= deadline:
+            stats.out_of_time, stats.ingredients_left = True, len(ingredients) - n
+            break
         try:
             found = module.discover(ctx, ing)
         except SourceBlocked:
@@ -365,27 +403,35 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
             continue
         stats.discover_ok += 1
         stats.products += len(found)
-        products = []
         with db.transaction():
             for p in found:
-                products.append(upsert_product(db, source_id, ing["id"], p))
+                queue.append((upsert_product(db, source_id, ing["id"], p), ing))
             if found:
                 deactivate_missing(db, source_id, ing["id"], [p.national_id for p in found])
-        for product in products:
-            try:
-                issue = watch_product(db, ctx, module, source_id, product, ing, stats)
-            except SourceBlocked:
-                raise
-            except Exception as exc:  # noqa: BLE001 - recorded, next product
-                stats.errors.append(redact(f"{product['national_id']}: {type(exc).__name__}: {exc}"))
-                log.warning("SPC %s %s: %s", source_id, product["national_id"], redact(exc))
-                continue
-            if issue:
-                stats.issues += 1
-                created.append(issue)
+    queue.sort(key=lambda pair: _turn(pair[0]))      # stable: ingredient and listing order otherwise
+    for n, (product, ing) in enumerate(queue):
+        if deadline is not None and clock() >= deadline:
+            stats.out_of_time, stats.labels_left = True, len(queue) - n
+            break
+        try:
+            issue = watch_product(db, ctx, module, source_id, product, ing, stats)
+        except SourceBlocked:
+            raise
+        except Exception as exc:  # noqa: BLE001 - recorded, next product; not marked read, so first next time
+            stats.errors.append(redact(f"{product['national_id']}: {type(exc).__name__}: {exc}"))
+            log.warning("SPC %s %s: %s", source_id, product["national_id"], redact(exc))
+            continue
+        mark_checked(db, product["id"])
+        if issue:
+            stats.issues += 1
+            created.append(issue)
+    if stats.out_of_time:
+        log.info("SPC %s out of time: %d label(s), %d ingredient(s) left for the next run",
+                 source_id, stats.labels_left, stats.ingredients_left)
 
 
-def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict]) -> list[str]:
+def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict],
+               deadline: float | None = None, clock: Callable[[], float] = time.monotonic) -> list[str]:
     """One SPC source for every ingredient, with its source_run row and health (see the top)."""
     stats = SpcStats()
     prev = dict(store.get_source(source_id) or {})
@@ -399,7 +445,7 @@ def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict]
     error: str | None = None
     try:
         module = importlib.import_module(f"collectors.spc.{MODULES[source_id]}")
-        _watch_source(ctx, db, module, source_id, ingredients, stats, created)
+        _watch_source(ctx, db, module, source_id, ingredients, stats, created, deadline, clock)
         if stats.failed(len(ingredients)):
             failures += 1
             health = "degraded" if failures >= DEGRADED_AFTER else (prev.get("health") or "unknown")
@@ -441,13 +487,20 @@ def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict]
 
 
 def run_spc(ctx, db, ingredient_ids: list[str] | None = None, *, store=None,
-            notifier=None) -> list[str]:
+            notifier=None, deadline: float | None = None,
+            clock: Callable[[], float] = time.monotonic) -> list[str]:
+    """``deadline``: the runner's (a ``clock()`` value); each source gets an even share of what is left."""
     if store is None:
         from collectors.core.store import Store
 
         store = Store(db)
     created: list[str] = []
     ingredients = _ingredients(db, ingredient_ids)
-    for source_id in _sources(db):
-        created += run_source(ctx, db, store, notifier, source_id, ingredients)
+    sources = _sources(db)
+    for n, source_id in enumerate(sources):
+        share = None
+        if deadline is not None:
+            now = clock()
+            share = now + max(0.0, deadline - now) / (len(sources) - n)
+        created += run_source(ctx, db, store, notifier, source_id, ingredients, share, clock)
     return created
