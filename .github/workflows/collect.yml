@@ -50,6 +50,9 @@ on:
 
 permissions:
   contents: read
+  # Claude signs in with this job's own GitHub token (federation): no Claude key is stored. Anthropic accepts
+  # it only from this repository on main (collectors/core/claude.py).
+  id-token: write
 
 concurrency:
   group: collectors
@@ -246,7 +249,10 @@ jobs:
           PHAROS_IMAP_PORT: ${{ secrets.PHAROS_IMAP_PORT }}
           PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
           PHAROS_IMAP_PASSWORD: ${{ secrets.PHAROS_IMAP_PASSWORD }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Claude by federation: identifiers (repository variables), not secrets.
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
           NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
         run: python -m collectors.cases --mail --waiting || echo "::warning::Cases could not be read; the reason is on each case in Cases."
 
