@@ -62,8 +62,12 @@ export interface RunTotals {
 export const RUN_NOTE =
   /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |item cap reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text)/;
 
+/**
+ * As source_run_failed(): a run failed when its error is not one of the notes above. http_status is only the
+ * first answer's status, and a collector that refuses an answer records an error; one that accepts it (openFDA's
+ * 404 is "No matches found") completes clean, so the status alone never makes a run failed.
+ */
 export function isFailed(r: RunSlice): boolean {
-  if (r.http_status != null && r.http_status >= 400) return true;
   return Boolean(r.error) && !RUN_NOTE.test(r.error ?? '');
 }
 
@@ -81,7 +85,7 @@ export function totalsBySource(runs: RunSlice[]): Map<string, RunTotals> {
     const failed = isFailed(r);
     if (failed) t.failed += 1;
     // only the newest run's own note: an older one no longer describes the source
-    if (newest && (failed || r.error)) t.lastError = r.error ?? `HTTP ${r.http_status ?? ''}`.trim();
+    if (newest && r.error) t.lastError = r.error;
     t.seen += r.items_seen ?? 0;
     t.fresh += r.items_new ?? 0;
     t.matched += r.items_matched ?? 0;
