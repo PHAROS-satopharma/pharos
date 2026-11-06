@@ -18,7 +18,7 @@ import { cx } from '../../ui/cx';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
-import { ClassLine } from './ClassLine';
+import { SearchProfile } from './SearchProfile';
 import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
 
 interface IngredientWithTerms extends Ingredient {
@@ -299,24 +299,14 @@ export function IngredientsPage() {
                     {isOpen ? (
                       <tr className="row-detail">
                         <td colSpan={5}>
-                          <section className="dc-section" aria-label={`Drug class of ${i.inn_en}`}>
-                            <h3 className="dc-section-head">
-                              <span className="micro">Drug class</span>
-                            </h3>
-                            {ofClass.length ? (
-                              ofClass.map((c) => (
-                                <ClassLine key={c.id} cls={c} isAdmin={isAdmin} languages={idx.languages} />
-                              ))
-                            ) : classes.isError ? (
-                              <p className="small danger">The drug classes could not be loaded.</p>
-                            ) : (
-                              <p className="small muted">
-                                {i.atc_code
-                                  ? 'Its drug class is added from the ATC code in the next daily run.'
-                                  : 'No ATC code, so no drug class.'}
-                              </p>
-                            )}
-                          </section>
+                          <SearchProfile
+                            ingredient={i}
+                            terms={i.ingredient_term}
+                            classes={classes.data ?? []}
+                            classesFailed={classes.isError}
+                            isAdmin={isAdmin}
+                            languages={idx.languages}
+                          />
                           <h3 className="dc-section-head">
                             <span className="micro">Names looked for</span>
                           </h3>

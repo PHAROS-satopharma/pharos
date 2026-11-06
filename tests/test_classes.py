@@ -30,12 +30,13 @@ class SavedWeb:
             self.asked.append(f"who {params['code']}")
             return (FIX / f"who-{params['code']}.html").read_bytes()
         if url == c.API_URL:
-            assert params["srsearch"] == "Oxicams haswbstatement:P31=Q2585617"
-            self.asked.append("search Oxicams")
-            return (FIX / "wikidata-search-Oxicams.json").read_bytes()
+            name = params["srsearch"].removesuffix(" haswbstatement:P31=Q2585617")
+            assert name in ("Oxicams", "Antiinflammatory and antirheumatic products, non-steroids"), name
+            self.asked.append(f"search {name}")
+            return (FIX / ("wikidata-search-Oxicams.json" if name == "Oxicams" else "wikidata-search-M01A.json")).read_bytes()
         assert url == c.SPARQL_URL and params["format"] == "json"
         q = params["query"]
-        for code in ("J01MA", "M01AC"):
+        for code in ("J01MA", "M01AC", "J01M", "M01A"):
             if q == c.query_by_atc(code):
                 self.asked.append(f"wikidata {code}")
                 return (FIX / f"wikidata-atc-{code}.json").read_bytes()
@@ -56,6 +57,37 @@ def test_level4_is_the_first_five_characters():
     assert c.level4(" m01ac05 ") == "M01AC"
     assert c.level4("J01M") is None
     assert c.level4(None) is None
+
+
+def test_level3_is_the_class_above_the_group():
+    assert c.level3("J01MA12") == "J01M"
+    assert c.level3(" m01ac05 ") == "M01A"
+    assert c.level3("J01") is None
+    assert c.level3(None) is None
+    assert c.sentence_case("QUINOLONE ANTIBACTERIALS") == "Quinolone antibacterials"
+    assert c.sentence_case("Oxicams") == "Oxicams"
+
+
+def test_the_parent_class_quinolone_antibacterials_with_its_noisy_words():
+    web = SavedWeb()
+    built = c.build_class(web, "J01M")
+    assert (built.code, built.name_en, built.wikidata_qid) == ("J01M", "Quinolone antibacterials", "Q13669486")
+    assert web.asked == ["who J01M", "wikidata J01M"]
+    w = words(built)
+    # WHO's capitals become a name and a word; Wikidata brings the Japanese the level-4 group lacks
+    assert w["en"] == ["girase inhibitor", "Quinolone antibacterial", "quinolone antibacterial agent", "quinolone antibiotic"]
+    assert w["ja"] == ["ニューキノロン", "フルオロキノロン"]
+    assert {t["source"] for t in built.terms if t["term"] == "Quinolone antibacterial"} == {"who"}
+    # "girase inhibitor" is why a parent class starts switched off: an administrator reads the words first
+    assert "girase inhibitor" in w["en"]
+
+
+def test_a_parent_class_nobody_names_is_made_with_no_words():
+    web = SavedWeb()
+    built = c.build_class(web, "M01A")
+    assert built.name_en == "Antiinflammatory and antirheumatic products, non-steroids"
+    assert built.wikidata_qid is None and built.terms == [] and built.how == "no words found"
+    assert web.asked == ["who M01A", "wikidata M01A", "search Antiinflammatory and antirheumatic products, non-steroids"]
 
 
 def test_fluoroquinolones_from_the_atc_code_on_wikidata():
@@ -160,12 +192,19 @@ def test_run_makes_each_class_once_and_links_every_ingredient_of_the_group():
     web = SavedWeb()
     out = c.run(s, web)
     cid = s.drug_class_id("J01MA")
-    assert out.created == ["J01MA Fluoroquinolones"] and not out.failed
-    assert sorted(out.linked) == ["ciprofloxacin → J01MA", "levofloxacin → J01MA"]
+    parent = s.drug_class_id("J01M")
+    assert out.created == ["J01MA Fluoroquinolones", "J01M Quinolone antibacterials"] and not out.failed
+    assert sorted(out.linked) == ["ciprofloxacin → J01M (off)", "ciprofloxacin → J01MA",
+                                  "levofloxacin → J01M (off)", "levofloxacin → J01MA"]
     assert sorted(i for i, k in s.ingredient_class if k == cid) == ["cipro", "levo"]
-    assert web.asked.count("who J01MA") == 1
+    assert web.asked.count("who J01MA") == 1 and web.asked.count("who J01M") == 1
     assert s.drug_class[cid]["origin"] == "atc" and s.drug_class[cid]["wikidata_qid"] == "Q28801726"
-    # every new class word is due for the check of the past
+    # the group is searched; the class above it is shown but off until an administrator has read its words
+    assert s.ingredient_class_state[("levo", cid)] == {"relation": "group", "enabled": True}
+    assert s.ingredient_class_state[("levo", parent)] == {"relation": "parent", "enabled": False}
+    assert all(t.class_id != parent for t in s.load_terms())
+    assert s.class_words("ja") == {}
+    # every new word of the group is due for the check of the past; the parent's wait for the switch
     class_terms = [t for t in s.terms if t.class_id == cid]
     assert len(class_terms) == 17 and all(s._due(t.id) for t in class_terms)
     assert set(s.rematch_due_terms()[1]) == {t.id for t in class_terms}
@@ -173,16 +212,25 @@ def test_run_makes_each_class_once_and_links_every_ingredient_of_the_group():
     web2 = SavedWeb()
     again = c.run(s, web2)
     assert again.created == [] and again.linked == [] and web2.asked == []
+    # switched on, the parent's words are searched and due; a later run never switches it back
+    s.set_class_search("levo", parent, True)
+    assert "ニューキノロン" in s.class_words("ja")["levofloxacin"]
+    assert {t.id for t in s.terms if t.class_id == parent} <= set(s.rematch_due_terms()[1])
+    assert c.run(s, SavedWeb()).linked == [] and s.ingredient_class_state[("levo", parent)]["enabled"]
 
 
 def test_an_existing_class_is_never_changed_only_linked():
     s = store_with(("levo", "levofloxacin", "J01MA12"))
     s.drug_class["hand"] = {"code": "J01MA", "name_en": "Fluoroquinolones", "origin": "hand", "wikidata_qid": None}
+    s.drug_class["hand3"] = {"code": "J01M", "name_en": "Quinolones", "origin": "hand", "wikidata_qid": None}
     web = SavedWeb()
     out = c.run(s, web)
-    assert out.created == [] and out.linked == ["levofloxacin → J01MA"]
-    assert ("levo", "hand") in s.ingredient_class and web.asked == []
+    assert out.created == [] and out.linked == ["levofloxacin → J01MA", "levofloxacin → J01M (off)"]
+    assert ("levo", "hand") in s.ingredient_class and ("levo", "hand3") in s.ingredient_class and web.asked == []
     assert [t for t in s.terms if t.class_id == "hand"] == []
+    # a hand-made class is a manual group (the database trigger of 0049); the class above stays a parent, off
+    assert s.ingredient_class_state[("levo", "hand")] == {"relation": "manual", "enabled": True}
+    assert s.ingredient_class_state[("levo", "hand3")] == {"relation": "parent", "enabled": False}
 
 
 def test_lornoxicam_keeps_nsaid_and_gains_oxicams():
@@ -190,23 +238,31 @@ def test_lornoxicam_keeps_nsaid_and_gains_oxicams():
     ing, nsaid = s.load_seed()
     c.run(s, SavedWeb())
     oxi = s.drug_class_id("M01AC")
-    assert {k for i, k in s.ingredient_class if i == ing} == {nsaid, oxi}
+    above = s.drug_class_id("M01A")
+    assert {k for i, k in s.ingredient_class if i == ing} == {nsaid, oxi, above}
     assert s.drug_class[nsaid]["code"] == "NSAID"
+    assert s.ingredient_class_state[(ing, nsaid)] == {"relation": "manual", "enabled": True}
+    assert s.ingredient_class_state[(ing, oxi)] == {"relation": "group", "enabled": True}
+    # the class above the oxicams has no words anywhere: made, shown, off, for an administrator to fill in
+    assert s.ingredient_class_state[(ing, above)] == {"relation": "parent", "enabled": False}
+    assert s.drug_class[above]["name_en"] == "Antiinflammatory and antirheumatic products, non-steroids"
+    assert [t for t in s.terms if t.class_id == above] == []
 
 
 def test_a_source_that_does_not_answer_makes_nothing_and_is_tried_again():
     s = store_with(("levo", "levofloxacin", "J01MA12"))
     out = c.run(s, SavedWeb(fail="wikidata"))
-    assert out.failed == ["levofloxacin (J01MA)"] and out.created == [] and out.linked == []
+    assert out.failed == ["levofloxacin (J01MA)", "levofloxacin (J01M)"] and out.created == [] and out.linked == []
     assert s.drug_class == {} and s.ingredient_class == []
     out = c.run(s, SavedWeb())
-    assert out.created == ["J01MA Fluoroquinolones"]
+    assert out.created == ["J01MA Fluoroquinolones", "J01M Quinolone antibacterials"]
 
 
 def test_dry_run_writes_nothing():
     s = store_with(("levo", "levofloxacin", "J01MA12"))
     out = c.run(s, SavedWeb(), dry_run=True)
-    assert out.created == ["J01MA Fluoroquinolones"] and out.linked == ["levofloxacin → J01MA"]
+    assert out.created == ["J01MA Fluoroquinolones", "J01M Quinolone antibacterials"]
+    assert out.linked == ["levofloxacin → J01MA", "levofloxacin → J01M (off)"]
     assert s.drug_class == {} and s.ingredient_class == [] and s.terms == []
 
 

@@ -1,8 +1,23 @@
 import { languageName } from '../../lib/labels';
 import type { MatchMode } from '../../lib/types';
 
-/** 'atc': made by the daily job from the ingredient's ATC code (level 4); 'hand': set by hand (the NSAID seed). */
+/** 'atc': made by the daily job from the ingredient's ATC code (level 4 or 3); 'hand': set by hand (the NSAID seed,
+ * a group added on the Ingredients page). */
 export type ClassOrigin = 'atc' | 'hand';
+
+/**
+ * What a class is to an ingredient (ingredient_class.relation, migration 0049): 'group' is its ATC level-4 group,
+ * searched from the start; 'parent' the class above it, shown but switched off until an administrator has read its
+ * words; 'manual' a group given by hand.
+ */
+export type ClassRelation = 'group' | 'parent' | 'manual';
+
+export interface ClassLink {
+  ingredient_id: string;
+  relation: ClassRelation;
+  /** Whether the class's words are looked for (notices, literature, the check of the past). */
+  enabled: boolean;
+}
 
 export interface ClassTerm {
   id: string;
@@ -22,19 +37,30 @@ export interface DrugClass {
   confirmed_by: string | null;
   confirmed_at: string | null;
   class_term: ClassTerm[];
-  ingredient_class: { ingredient_id: string }[];
+  ingredient_class: ClassLink[];
   /** Filled from person_directory: who confirmed the class. */
   confirmed_by_name?: string | null;
 }
 
 export const DRUG_CLASS_SELECT =
   'id,code,name_en,origin,confirmed_by,confirmed_at,' +
-  'class_term(id,lang,term,mode,source,changed_at,rematched_at),ingredient_class(ingredient_id)';
+  'class_term(id,lang,term,mode,source,changed_at,rematched_at),ingredient_class(ingredient_id,relation,enabled)';
 
 export const ORIGIN_LABEL: Record<ClassOrigin, string> = {
   atc: 'from the ATC code',
   hand: 'set by hand',
 };
+
+export const RELATION_LABEL: Record<ClassRelation, string> = {
+  group: 'its group',
+  parent: 'the class above its group',
+  manual: 'a group added by hand',
+};
+
+/** The link between an ingredient and a class, or undefined when the class is not the ingredient's. */
+export function linkOf(ingredientId: string, c: Pick<DrugClass, 'ingredient_class'>): ClassLink | undefined {
+  return c.ingredient_class.find((l) => l.ingredient_id === ingredientId);
+}
 
 /** "Fluoroquinolones (J01MA)", or the name alone when the code is not an ATC code (NSAID). */
 export function className(c: Pick<DrugClass, 'name_en' | 'code' | 'origin'>): string {

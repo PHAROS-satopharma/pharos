@@ -46,6 +46,9 @@ class MemoryStore:
         self.ingredient: dict[str, dict] = {}
         self.terms: list[Term] = []
         self.ingredient_class: list[tuple[str, str]] = []  # (ingredient_id, class_id)
+        # (ingredient_id, class_id) -> {"relation": group|parent|manual, "enabled"}; a link without an entry
+        # is a searched group (the default of migration 0049)
+        self.ingredient_class_state: dict[tuple[str, str], dict] = {}
         self.spc_mah: dict[str, list[str]] = {}
         self.issue: dict[str, dict] = {}
         self.issue_document: list[dict] = []
@@ -76,6 +79,7 @@ class MemoryStore:
         self.drug_class[cls_id] = {"code": "NSAID", "name_en": "Non-steroidal anti-inflammatory drugs",
                                    "origin": "hand", "wikidata_qid": None}
         self.ingredient_class.append((ing_id, cls_id))
+        self.ingredient_class_state[(ing_id, cls_id)] = {"relation": "manual", "enabled": True}
         class_part, _, ing_part = sql.partition("insert into ingredient (")
         n = 0
         for m in _SEED_CLASS_ROW.finditer(class_part):
@@ -191,18 +195,26 @@ class MemoryStore:
         self.match.append(dict(m))
 
     # ───────────────────────────── watchlist ─────────────────────────────
+    def class_enabled(self, ingredient_id: str, class_id: str) -> bool:
+        """Whether the class's words are searched for this ingredient (ingredient_class.enabled)."""
+        return bool(self.ingredient_class_state.get((ingredient_id, class_id), {}).get("enabled", True))
+
+    def _searched_links(self) -> list[tuple[str, str]]:
+        """The (ingredient, class) links of watched ingredients whose class words are searched."""
+        return [(i, c) for i, c in self.ingredient_class
+                if self.ingredient.get(i, {}).get("active", True) and self.class_enabled(i, c)]
+
     def load_terms(self) -> list[Term]:
         active = {i for i, r in self.ingredient.items() if r.get("active", True)}
-        active_classes = {c for i, c in self.ingredient_class if i in active}
+        active_classes = {c for _, c in self._searched_links()}
         return [t for t in self.terms
                 if (t.ingredient_id and t.ingredient_id in active)
                 or (t.class_id and not t.ingredient_id and t.class_id in active_classes)]
 
     def class_ingredients(self) -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
-        for ing, cls in self.ingredient_class:
-            if self.ingredient.get(ing, {}).get("active", True):
-                out.setdefault(cls, []).append(ing)
+        for ing, cls in self._searched_links():
+            out.setdefault(cls, []).append(ing)
         return out
 
     def active_ingredients(self) -> list[dict]:
@@ -210,9 +222,9 @@ class MemoryStore:
 
     def class_words(self, lang: str = "en") -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
-        for ing, cls in self.ingredient_class:
+        for ing, cls in self._searched_links():
             row = self.ingredient.get(ing)
-            if row is None or not row.get("active", True):
+            if row is None:
                 continue
             words = sorted(t.term for t in self.terms if t.is_class and t.class_id == cls and t.lang == lang)
             if words:
@@ -498,9 +510,26 @@ class MemoryStore:
             self.term_state[tid] = {"changed_at": _now(), "rematched_at": None, "source": t["source"]}
         return cid
 
-    def link_ingredient_class(self, ingredient_id: str, class_id: str) -> None:
+    def link_ingredient_class(self, ingredient_id: str, class_id: str, *, relation: str = "group",
+                              enabled: bool = True) -> None:
+        if (ingredient_id, class_id) in self.ingredient_class:
+            return  # a link that exists is never changed
+        if relation == "group" and self.drug_class.get(class_id, {}).get("origin") == "hand":
+            relation = "manual"  # the database trigger ingredient_class_relation (0049)
+        self.ingredient_class.append((ingredient_id, class_id))
+        self.ingredient_class_state[(ingredient_id, class_id)] = {"relation": relation, "enabled": enabled}
+
+    def set_class_search(self, ingredient_id: str, class_id: str, enabled: bool) -> None:
+        """The app's set_class_search(): switching a class on again makes its words due for the check of the
+        past (trigger class_search_enabled_again)."""
         if (ingredient_id, class_id) not in self.ingredient_class:
-            self.ingredient_class.append((ingredient_id, class_id))
+            raise KeyError("That class is not linked to this ingredient.")
+        st = self.ingredient_class_state.setdefault((ingredient_id, class_id), {"relation": "group", "enabled": True})
+        if enabled and not st["enabled"]:
+            for t in self.terms:
+                if t.is_class and t.class_id == class_id:
+                    self.term_state.setdefault(t.id, {"rematched_at": None, "source": None})["changed_at"] = _now()
+        st["enabled"] = enabled
 
     # ───────────────────────────── the check of the past ─────────────────────────────
     def _due(self, term_id: str) -> bool:

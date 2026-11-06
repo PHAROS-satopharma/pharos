@@ -290,8 +290,10 @@ messages* (admins only):
    names.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
-7. The next daily run adds its drug class from the ATC code (see below) and starts the check of the past for
-   its names. To have the past checked sooner, run *Actions -> PHAROS check of the past -> Run workflow*.
+7. The next daily run adds its group from the ATC code (searched) and the class above it (shown, switched off
+   until you have read its words; see below) and starts the check of the past for its names. To have the past
+   checked sooner, run *Actions -> PHAROS check of the past -> Run workflow*; to have the classes made sooner,
+   *Actions -> PHAROS collect -> Run workflow -> classes*.
 8. The NCBI literature watch searches PubMed and PubMed Central for its English name and its English class
    words at its next daily run, looking back 12 months first (stored as history; papers never go to
    Telegram). See NCBI literature below.
@@ -313,8 +315,10 @@ vertical pass; the Sources screen is the horizontal one.
   by hand*.
 - **Each mention** shows its date (published, else the day it was first seen), its type, the original title
   linked to the page a person opens (the same link as on the Sources screen), the words that matched with their
-  language, *By class* when only a class word matched, and *History* when it came from a backfill or the check of
-  the past. An e-mail with no web page opens with **Read the e-mail**. Its notice shows its status and latest
+  language, how it was found when no name of the ingredient matched (*Group: Fluoroquinolones*, *Group (by
+  hand): NSAID*, or *Related class: Quinolone antibacterials · assess* for a word of the class above the group,
+  a class-level signal to be assessed), and *History* when it came from a backfill or the check of the past. A
+  class that is switched off is marked *(off)* in the head of the screen. An e-mail with no web page opens with **Read the e-mail**. Its notice shows its status and latest
   decision (who, when, why); a reviewer or administrator records **Concerns us** or **Doesn't concern us**
   (a reason is required) right there, or **Change** after a decision. The decision shows at once on every
   mention filed under the same notice.
@@ -332,15 +336,32 @@ The screen reads everything with one call, `ingredient_screen()` (migration 0039
 ## Drug classes and the check of the past
 
 - **Drug classes from the ATC code.** The daily run starts with `python -m collectors.classes`. For each
-  watched ingredient with an ATC code, its level-4 group (levofloxacin J01MA12 -> J01MA Fluoroquinolones) is
-  made a drug class once: the name from WHO's ATC index (atcddd.fhi.no), the words from Wikidata (the item
+  watched ingredient with an ATC code, its level-4 group (levofloxacin J01MA12 -> J01MA Fluoroquinolones) and
+  the level-3 class above it (J01M Quinolone antibacterials) are each made a drug class once: the name from WHO's ATC index (atcddd.fhi.no), the words from Wikidata (the item
   with that ATC code, or else the drug class Wikidata names exactly as WHO does), in the 15 regulator
   languages. Junk is dropped, plurals are cut to a stem that finds singular and plural, and a word another
   word already finds is dropped. A class that exists is never changed; the ingredient is only linked to it.
   If WHO or Wikidata does not answer, nothing is made and the ingredient is tried again the next day (a
-  warning in the run). `python -m collectors.classes --dry-run` prints what it would make.
+  warning in the run). `python -m collectors.classes --dry-run` prints what it would make; *Actions -> PHAROS
+  collect -> Run workflow -> classes* runs only this step.
+- **The search profile** (open an ingredient on the Ingredients page). *Ingredient only* looks for its own
+  names; *Ingredient + groups* adds the words of every one of its classes; *Custom* is what the page shows when
+  some classes are switched on and some off. The mode is read from the switches, not stored. Each class line
+  says what the class is to the ingredient (*its group*, *the class above its group*, *a group added by hand*)
+  and has its switch, **Searched** / **Not searched**. **Words PHAROS looks for** lists every word searched for
+  the ingredient, by language, with where it comes from and how it matches.
+- **The class above the group starts switched off.** Its words come from Wikidata with noise ("girase
+  inhibitor"), a wide class brings notices that are not about the ingredient, and each English word is a
+  12-month look-back on PubMed and PubMed Central. Read its words, remove the wrong ones, then switch it on:
+  the check of the past and the literature look-back start for it. It is the way to Japanese words for
+  fluoroquinolones (ニューキノロン, フルオロキノロン), which Wikidata has only at that level.
+- **A group by hand.** **Add group** on the ingredient's line (administrators) names a pharmacotherapeutic
+  group in words, never an ATC code ("Respiratory fluoroquinolones"). An existing class with that name is
+  reused; a new one starts with no words, which you add on its line. It can be removed from the ingredient
+  (**Remove this group from …**); a class from the ATC code is switched off instead, never removed. The ATC
+  classes and codes are never changed by any of this.
 - **On the Ingredients page** (open an ingredient): "Fluoroquinolones (J01MA) · 17 words in 12 languages ·
-  from the ATC code", then **Confirm**, which records the administrator's name and the date. Opening the
+  from the ATC code · its group", its switch, then **Confirm**, which records the administrator's name and the date. Opening the
   class lists its words by language; each can be tested against the archive, and an administrator adds or
   removes words. Check the words before confirming: Wikidata has gaps (no Japanese or Portuguese word for
   fluoroquinolones, and German only as "Fluorchinolonantibiotikum", from which "Fluorchinolon" is made).

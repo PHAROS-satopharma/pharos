@@ -24,6 +24,7 @@ import { caseReportLabel, dueLine, mlmLabel, orderPapers, withPaperDecision } fr
 import { paperStateKey, useMlmMonitored, usePaperStates } from './paperState';
 import { PRESETS, cairoDayOf, presetDays, rangeError, rangeFromSearch, rangeLabel, type DayRange } from './range';
 import { ReadEmail } from './ReadEmail';
+import { classesLine, relationTag } from './relation';
 import type {
   Decision,
   IngredientScreenData,
@@ -84,7 +85,7 @@ export function IngredientScreen() {
 function IngredientLine({ ing }: { ing: ScreenIngredient }) {
   const parts = [
     ing.atc_code ? `ATC ${ing.atc_code}` : 'No ATC code',
-    ing.classes.length ? ing.classes.map((c) => c.name_en).join(', ') : null,
+    classesLine(ing.classes),
     `Looked for by ${plural(ing.names, 'name', 'names')} in ${plural(ing.name_languages, 'language', 'languages')}` +
       (ing.class_words
         ? ` and ${plural(ing.class_words, 'class word', 'class words')} in ${plural(ing.class_languages, 'language', 'languages')}`
@@ -300,6 +301,7 @@ function CountryBlock({ c, queryKey }: { c: CountryAnswer; queryKey: readonly un
 function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolean; queryKey: readonly unknown[] }) {
   const href = safeHref(m.link);
   const sections = Array.isArray(m.sections) ? m.sections.filter((s) => typeof s === 'string') : [];
+  const byClass = relationTag(m);
   return (
     <li className={cx('scr-mention', m.is_backfill && 'is-history')}>
       <div className="scr-meta">
@@ -308,9 +310,9 @@ function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolea
         </span>
         {m.doc_type !== 'other' ? <span>{DOC_TYPE_LABEL[m.doc_type]}</span> : null}
         {showWhere ? <span>{m.regulator_name}</span> : null}
-        {m.by_class ? (
-          <Tag tone="quiet" title="Only words of its drug class matched, not the ingredient's own names">
-            By class
+        {byClass ? (
+          <Tag tone="quiet" title={byClass.title}>
+            {byClass.text}
           </Tag>
         ) : null}
         {m.is_backfill ? (
