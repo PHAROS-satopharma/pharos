@@ -1314,6 +1314,12 @@ button.stat[aria-pressed='true'] {
   flex-wrap: wrap;
   gap: 4px;
 }
+.local-term {
+  display: block;
+}
+.local-term + .local-term {
+  margin-top: 8px;
+}
 .cell-sub {
   display: block;
   margin-top: 5px;
@@ -1601,6 +1607,13 @@ button.stat[aria-pressed='true'] {
   border-left-color: var(--danger);
   background: var(--danger-tint);
   color: var(--text);
+}
+.terms-warning p,
+.terms-warning ul {
+  margin: 0 0 8px;
+}
+.terms-warning ul {
+  padding-left: 18px;
 }
 
 /* ───────── panels ───────── */

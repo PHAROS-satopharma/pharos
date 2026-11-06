@@ -20,10 +20,10 @@ import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
 import { EditIngredient } from './EditIngredient';
 import { JapanCodeEdit } from './JapanCodeEdit';
+import { localTerms } from './japanCode';
 import { Readiness } from './Readiness';
 import { SearchProfile } from './SearchProfile';
 import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
-import { isJapanCodeTerm } from './editTerms';
 
 interface IngredientWithTerms extends Ingredient {
   confirmed_by_person: { full_name: string } | null;
@@ -203,7 +203,7 @@ export function IngredientsPage() {
               <tr>
                 <th scope="col">Ingredient</th>
                 <th scope="col">Names looked for</th>
-                <th scope="col">Country-specific names</th>
+                <th scope="col">Local codes</th>
                 <th scope="col">Confirmed</th>
                 <th scope="col">Watched</th>
               </tr>
@@ -211,17 +211,7 @@ export function IngredientsPage() {
             <tbody>
               {list.data.map((i) => {
                 const langs = [...new Set(i.ingredient_term.map((t) => t.lang))].map(languageName).sort();
-                // The Japan code is PMDA's product code, not a name: it is not a country-specific name.
-                const ctry = [
-                  ...new Set(
-                    i.ingredient_term
-                      .filter((t) => !isJapanCodeTerm(t))
-                      .map((t) => t.country_code)
-                      .filter((c): c is string => Boolean(c)),
-                  ),
-                ]
-                  .map((c) => idx.nameOf(c))
-                  .sort();
+                const local = localTerms(i.ingredient_term, idx.nameOf);
                 const isOpen = open === i.id;
                 const ofClass = classesOf(i.id, classes.data ?? []);
                 return (
@@ -266,14 +256,15 @@ export function IngredientsPage() {
                         {langs.length ? <span className="cell-sub">{langs.join(', ')}</span> : null}
                       </td>
                       <td className="col-countries">
-                        {ctry.length ? (
-                          <span className="chips">
-                            {ctry.map((c) => (
-                              <span key={c} className="chip chip-quiet">
-                                {c}
+                        {local.length ? (
+                          local.map((l) => (
+                            <span key={`${l.where}:${l.term}`} className="local-term">
+                              <span className={cx('cell-line', l.isCode && 'mono')}>{l.term}</span>
+                              <span className="cell-sub">
+                                {l.isCode ? `${l.where}'s drug code, for its label watch` : `Looked for in ${l.where} only`}
                               </span>
-                            ))}
-                          </span>
+                            </span>
+                          ))
                         ) : (
                           <span className="muted">—</span>
                         )}

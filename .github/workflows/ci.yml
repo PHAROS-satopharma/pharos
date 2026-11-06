@@ -650,7 +650,7 @@ jobs:
           # A skip here would mean the database URL never arrived: that is a failure, not a pass.
           if grep -q "skipped" store-pg.log; then echo "::error::test_store_pg.py was skipped"; exit 1; fi
 
-      # ───────────── Edge Functions: deno check ─────────────
+      # ───────────── Edge Functions: deno check + deno test ─────────────
       - name: Deno
         if: steps.changes.outputs.deno == 'true'
         uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
@@ -659,6 +659,9 @@ jobs:
       - name: Type-check Edge Functions
         if: steps.changes.outputs.deno == 'true'
         run: deno check supabase/functions/*/index.ts
+      - name: Edge Function tests
+        if: steps.changes.outputs.deno == 'true'
+        run: deno test --allow-env supabase/functions/
 
       # ───────────── email Worker: typecheck ─────────────
       - name: Node 22 (Worker)

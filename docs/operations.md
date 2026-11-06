@@ -335,8 +335,7 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   PMDA; a new code replaces the old one and leaves every name alone (`set_japan_code()`, migration 0052; audited).
   Japan's label watch uses it at its next weekly run. Like any new word it is due for the check of the past that
   night (0034); the readiness line does not wait for that, since a code is not a name. Without a code the row says *No Japan code
-  yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back. The code is not a
-  name, so the row's *Country-specific names* column does not list Japan for it.
+  yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
 
 ### Editing an ingredient on the watchlist
 

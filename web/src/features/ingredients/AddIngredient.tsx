@@ -12,6 +12,7 @@ import { Field, Input } from '../../ui/Input';
 import { Loading, Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { TermEditor, defaultMode, newUid, type TermDraft } from './TermEditor';
+import { TermsWarning } from './TermsWarning';
 
 function norm(s: string): string {
   return s
@@ -49,6 +50,11 @@ function toDrafts(terms: LookupTerm[], inn: string): TermDraft[] {
   return out;
 }
 
+function withKept(drafts: TermDraft[], kept: TermDraft[]): TermDraft[] {
+  const seen = new Set(drafts.map((t) => `${t.lang}|${t.term.trim().toLowerCase()}`));
+  return [...drafts, ...kept.filter((t) => !seen.has(`${t.lang}|${t.term.trim().toLowerCase()}`))];
+}
+
 export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string>; onDone: () => void }) {
   const { person } = useAuth();
   const qc = useQueryClient();
@@ -59,6 +65,7 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
   const [confirmed, setConfirmed] = useState<LookupCandidate | null>(null);
   const [terms, setTerms] = useState<TermDraft[]>([]);
   const [termsError, setTermsError] = useState<string | null>(null);
+  const [termsWarnings, setTermsWarnings] = useState<string[]>([]);
   const [termsLoading, setTermsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -82,20 +89,24 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
   );
 
   async function confirm(c: LookupCandidate) {
+    // Loading the names again keeps the rows the person typed (a brand, a Japanese code) for the same ingredient.
+    const kept = c === confirmed ? terms.filter((t) => t.term.trim() && (t.source === 'manual' || t.source === 'pmda')) : [];
     setConfirmed(c);
     setTermsError(null);
+    setTermsWarnings([]);
     setTermsLoading(true);
     try {
-      const r = await invoke<{ terms?: LookupTerm[] }>('ingredient-lookup', {
+      const r = await invoke<{ terms?: LookupTerm[]; warnings?: string[] }>('ingredient-lookup', {
         action: 'terms',
         wikidata_qid: c.wikidata_qid,
         atc_code: c.atc_code,
         inn_en: c.inn_en,
       });
-      setTerms(toDrafts(r.terms ?? [], c.inn_en));
+      setTerms(withKept(toDrafts(r.terms ?? [], c.inn_en), kept));
+      setTermsWarnings(r.warnings ?? []);
     } catch (e) {
       setTermsError(errorMessage(e));
-      setTerms(toDrafts([], c.inn_en));
+      setTerms(withKept(toDrafts([], c.inn_en), kept));
     } finally {
       setTermsLoading(false);
     }
@@ -169,6 +180,7 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
             onClick={() => {
               setConfirmed(null);
               setTerms([]);
+              setTermsWarnings([]);
             }}
           >
             Choose a different ingredient
@@ -189,6 +201,7 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
         {termsError ? (
           <Notice tone="error">The suggested terms could not be loaded ({termsError}). Add them by hand.</Notice>
         ) : null}
+        <TermsWarning warnings={termsWarnings} busy={termsLoading} onReload={() => void confirm(confirmed)} />
         {termsLoading ? (
           <Loading label="Gathering the names in each language" />
         ) : (
