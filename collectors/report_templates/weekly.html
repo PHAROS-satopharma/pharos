@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} · {{ week.label }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&family=Noto+Sans+Arabic:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* The identity of the monthly report (monthly.html): the same paper, navy, rules and type. */
+  :root {
+    --ink: #02224C;   /* the logo's navy */
+    --paper: #F6F4EF;
+    --rule: {{ page.rule }};
+    --muted: {{ page.muted }};
+    --sea: #1F4E5F;
+    --beacon: #E3A336;   /* markers only, never text */
+    --sans: "IBM Plex Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans Arabic", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  @page { size: A4; margin: {{ page.top }} {{ page.side }} {{ page.bottom }} {{ page.side }}; }
+  * { box-sizing: border-box; border-radius: 0; box-shadow: none; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { font: 9pt/1.45 var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: var(--sea); text-decoration: underline; text-decoration-thickness: .5px; word-break: break-all; }
+
+  .masthead { display: flex; justify-content: space-between; align-items: flex-end;
+              border-bottom: 1px solid var(--ink); padding-bottom: 6mm; margin-bottom: 7mm; }
+  .logo { display: block; width: 45mm; height: auto; max-width: none; object-fit: contain; }
+  .meta { text-align: right; font: 400 8pt/1.5 var(--mono); color: var(--muted); }
+  .meta strong { display: block; font: 500 11pt/1.3 var(--sans); color: var(--ink); }
+
+  h1 { font: 600 15pt/1.2 var(--sans); margin: 0 0 2mm; }
+  h2 { font: 600 10.5pt/1.2 var(--sans); color: var(--sea); margin: 9mm 0 3mm;
+       padding-bottom: 2mm; border-bottom: 1px solid var(--rule); break-after: avoid; }
+  h2 .n { font: 500 8pt var(--mono); color: var(--muted); margin-right: 3mm; }
+  /* Sections 02 to 06 each open a new page. */
+  section.part { break-before: page; }
+  section.part > h2:first-child { margin-top: 0; }
+  h3 { font: 600 9.5pt/1.25 var(--sans); margin: 6mm 0 2mm; break-after: avoid; }
+  h3 .sub { font: 400 8pt var(--sans); color: var(--muted); margin-left: 2mm; }
+  h4 { font: 500 6.5pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+       margin: 4mm 0 1.5mm; break-after: avoid; }
+  .micro { font: 500 6.5pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+           color: var(--muted); }
+  .lede { color: var(--muted); margin: 0 0 3mm; }
+
+  .figures { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink);
+             border-bottom: 1px solid var(--rule); }
+  .figure { padding: 3mm 3mm 3mm 0; border-right: 1px solid var(--rule); }
+  .figure:last-child { border-right: 0; }
+  .figure .v { font: 500 17pt/1.1 var(--mono); margin-top: 1.5mm; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font: 500 6.5pt/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+       color: var(--muted); border-bottom: 1px solid var(--ink); padding: 1.6mm 2mm 1.6mm 0; }
+  td { border-bottom: 1px solid var(--rule); padding: 1.6mm 2mm 1.6mm 0; vertical-align: top; }
+  tr { break-inside: avoid; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  td.code, .code { font: 400 7.5pt var(--mono); color: var(--muted); }
+  .title-orig { font-weight: 500; unicode-bidi: plaintext; }
+  .empty { color: var(--muted); padding: 3mm 0; border-bottom: 1px solid var(--rule); }
+  .comment { color: var(--muted); }
+  .tag { font: 500 6.5pt/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+         border: 1px solid var(--rule); padding: .5mm 1mm; margin-left: 1mm; white-space: nowrap; }
+
+  /* The answer for a country: a square marker, as on the Ingredients screen. */
+  .answer { white-space: nowrap; }
+  .dot { display: inline-block; width: 2mm; height: 2mm; margin-right: 1.5mm; vertical-align: 0;
+         border: 1px solid var(--ink); }
+  .dot.mentioned { background: var(--ink); }
+  .dot.fine { background: var(--sea); border-color: var(--sea); }
+  .dot.check { background: var(--beacon); border-color: var(--beacon); }
+  .ingredient { break-before: page; }
+  .ingredient:first-of-type { break-before: auto; }
+  .ingredient .summary { font: 400 8pt var(--mono); color: var(--muted); margin: 0 0 2mm; }
+  .mention td { padding-top: 1mm; }
+  .mention .what { font-size: 8pt; color: var(--muted); }
+  .decision strong { font-weight: 600; }
+
+  .sato { display: block; width: auto; }
+  .closing { margin-top: 12mm; padding-top: 4mm; border-top: 1px solid var(--ink); display: flex;
+             align-items: center; gap: 4mm; break-inside: avoid; }
+  .closing .sato { height: 7mm; }
+  .closing .rule { align-self: stretch; width: 1px; background: var(--rule); }
+  .closing .text { display: flex; flex-direction: column; gap: 1mm; }
+  .closing strong { font: 600 8.5pt/1.3 var(--sans); }
+</style>
+</head>
+<body>
+{% macro link(url, text=None) %}{% if url %}<a href="{{ url }}">{{ text or url }}</a>{% endif %}{% endmacro %}
+{% macro by_email(m) %}{% if not m.link and m.by_email %}<span class="comment">Arrived by e-mail; open it in PHAROS</span>{% endif %}{% endmacro %}
+{% macro answer_dot(a) %}<span class="dot {{ 'mentioned' if a == 'mentioned' else ('fine' if a == 'fine' else 'check') }}"></span>{% endmacro %}
+
+<header class="masthead">
+  <img class="logo" src="{{ logo_src }}" alt="PHAROS — Pharmaceutical Alerts &amp; Regulatory Observation System">
+  <div class="meta"><strong>{{ week.name }}</strong>{{ week.label }}</div>
+</header>
+
+<h1>{{ title }}</h1>
+<p class="micro">Sunday to Saturday, Cairo time · every source read in its own language · titles exactly as published</p>
+
+<div class="figures">
+  {% for k, v in data.figures %}
+  <div class="figure"><div class="micro">{{ k }}</div><div class="v">{{ v }}</div></div>
+  {% endfor %}
+</div>
+
+<h2><span class="n">01</span>Summary</h2>
+<table>
+  {% for k, v in data.summary %}{% if k not in ("Report",) %}
+  <tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
+  {% endif %}{% endfor %}
+</table>
+
+<h3>Decisions taken this week</h3>
+{% if data.decisions %}
+<table>
+  <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th></tr></thead>
+  <tbody>
+  {% for d in data.decisions %}
+  <tr>
+    <td class="code">{{ d.at }}</td>
+    <td class="title-orig" dir="auto">{{ d.title }}</td>
+    <td>{{ d.decision }}</td>
+    <td>{{ d.person }}</td>
+    <td class="comment">{{ d.reason }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No decision was taken this week.</div>
+{% endif %}
+
+{% set a = data.authorities %}
+<section class="part">
+<h2><span class="n">02</span>Authorities read</h2>
+<p class="lede">The reads of each authority's own notices this week (safety notices and recalls). A country that was
+not read this week is to be checked by hand.</p>
+{% for group, rows in ((hers, a.hers), (others, a.others)) %}
+<h3>{{ group }}</h3>
+{% if rows %}
+<table>
+  <thead><tr><th>Country</th><th>Authorities</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">New items</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td>{% if r.read and not r.failed %}<span class="dot fine"></span>{% else %}<span class="dot check"></span>{% endif %}{{ r.country }}</td>
+    <td>{{ r.authorities }}</td>
+    {% if r.read %}
+    <td class="num">{{ r.runs }}</td><td class="num">{{ r.failed }}</td>
+    {% else %}
+    <td class="num comment" colspan="2">Not read this week</td>
+    {% endif %}
+    <td class="num">{{ r.new }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">None.</div>
+{% endif %}
+{% endfor %}
+<h3>Label watch and literature</h3>
+<table>
+  <thead><tr><th>What</th><th class="num">Sources</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">Items read</th></tr></thead>
+  <tbody>
+  <tr><td>Product information of our ingredients</td><td class="num">{{ a.label_watch.sources }}</td>
+    <td class="num">{{ a.label_watch.runs }}</td><td class="num">{{ a.label_watch.failed }}</td><td class="num">{{ a.label_watch.seen }}</td></tr>
+  <tr><td>NCBI literature (PubMed and PubMed Central)</td><td class="num">{{ a.literature.sources }}</td>
+    <td class="num">{{ a.literature.runs }}</td><td class="num">{{ a.literature.failed }}</td><td class="num">{{ a.literature.seen }}</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section class="part">
+<h2><span class="n">03</span>Our ingredients by country</h2>
+<p class="lede">Each watched ingredient, answered for every country exactly as its Ingredients screen answers for
+this week. A notice found by the ingredient's class is marked "by class"; history was found when PHAROS first read
+an authority and was never alerted.</p>
+{% for i in data.ingredients %}
+<div class="ingredient">
+<h3>{{ i.name }}<span class="sub">{% if i.atc %}{{ i.atc }}{% endif %}{% if i.classes %} · {{ i.classes }}{% endif %}</span></h3>
+<p class="summary">{{ i.summary }}</p>
+{% if i.countries %}
+<table>
+  <thead><tr><th>Country</th><th>Answer</th><th>Reads</th></tr></thead>
+  <tbody>
+  {% for c in i.countries %}
+  {% if loop.first or c.group != loop.previtem.group %}
+  <tr><td colspan="3"><h4>{{ c.group }}</h4></td></tr>
+  {% endif %}
+  <tr>
+    <td>{{ c.country }}</td>
+    <td class="answer">{{ answer_dot(c.answer) }}{{ c.answer_text }}</td>
+    <td class="comment">{{ c.reads_text }}</td>
+  </tr>
+  {% for m in c.mentions %}
+  <tr class="mention">
+    <td class="code">{{ m.day }}</td>
+    <td colspan="2">
+      <span class="title-orig" dir="auto">{{ m.title }}</span>{% if m.by_class %}<span class="tag">by class</span>{% endif %}{% if m.history %}<span class="tag">history</span>{% endif %}<br>
+      <span class="what">{% if c.several %}{{ m.authority }} · {% endif %}{% if m.doc_type %}{{ m.doc_type }} · {% endif %}{% if m.lang %}{{ m.lang | language }} · {% endif %}Words: {{ m.words }}</span><br>
+      {{ link(m.link) }}{{ by_email(m) }}<br>
+      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}{% if m.reason %} · <span class="comment">{{ m.reason }}</span>{% endif %}</span>
+    </td>
+  </tr>
+  {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No authority is listed.</div>
+{% endif %}
+<h4>Label changes</h4>
+{% if i.label_changes %}
+<table>
+  <tbody>
+  {% for m in i.label_changes %}
+  <tr class="mention">
+    <td class="code">{{ m.day }}</td>
+    <td>
+      <span class="title-orig" dir="auto">{{ m.title }}</span>{% if m.history %}<span class="tag">history</span>{% endif %}<br>
+      <span class="what">{{ m.authority }}, {{ m.country }}{% if m.sections %} · Sections changed: {{ m.sections }}{% endif %}</span><br>
+      {{ link(m.link) }}<br>
+      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}</span>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No label change this week.</div>
+{% endif %}
+</div>
+{% endfor %}
+{% if not data.ingredients %}<div class="empty">No ingredient is on the watchlist.</div>{% endif %}
+</section>
+
+<section class="part">
+<h2><span class="n">04</span>NCBI literature</h2>
+<p class="lede">PubMed and PubMed Central, searched for each ingredient's name and the English words of its class.
+Every paper first seen this week.</p>
+{% for i in data.ingredients %}
+{% set l = i.literature %}
+<h3>{{ i.name }}<span class="sub">{{ l.papers }} {{ "paper" if l.papers == 1 else "papers" }} · {{ l.by_name }} by name · {{ l.by_class }} by class</span></h3>
+<h4>Searches</h4>
+<table>
+  <thead><tr><th>Search</th><th>Searched as</th><th class="num">PubMed</th><th class="num">PubMed Central</th></tr></thead>
+  <tbody>
+  {% for s in l.searches %}
+  <tr><td class="code">{{ s.query }}</td><td>{{ s.kind }}</td><td class="num">{{ s.pubmed }}</td><td class="num">{{ s.pmc }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<h4>Papers</h4>
+{% if l.list %}
+<table>
+  <thead><tr><th>Date</th><th>Title</th><th>PubMed</th><th>PubMed Central</th></tr></thead>
+  <tbody>
+  {% for p in l.list %}
+  <tr>
+    <td class="code">{{ p.day }}</td>
+    <td><span class="title-orig" dir="auto">{{ p.title }}</span>{% if p.by_class %}<span class="tag">by class</span>{% endif %}{% if p.history %}<span class="tag">history</span>{% endif %}
+      {% if p.journal %}<br><span class="comment">{{ p.journal }}</span>{% endif %}</td>
+    <td class="code">{{ link(p.pubmed, p.pubmed_id) }}</td>
+    <td class="code">{{ link(p.pmc, p.pmc_id) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No paper this week.</div>
+{% endif %}
+{% endfor %}
+</section>
+
+<section class="part">
+<h2><span class="n">05</span>Everything new, per authority</h2>
+<p class="lede">Every item the authorities published this week, matched or not, and who looked at the country in
+PHAROS this week.</p>
+{% for n in data.new %}
+{% if loop.first or n.group != loop.previtem.group %}<h3>{{ n.group }}</h3>{% endif %}
+<h4>{{ n.country }} · {{ n.authorities }}</h4>
+{% if n["items"] %}
+<table>
+  <tbody>
+  {% for it in n["items"] %}
+  <tr>
+    <td class="code" style="width: 22mm">{{ it.day }}</td>
+    <td><span class="title-orig" dir="auto">{{ it.title }}</span>{% if it.matched %}<span class="tag">matched</span>{% endif %}<br>
+      <span class="comment">{{ it.authority }}{% if it.doc_type %} · {{ it.doc_type }}{% endif %}{% if it.lang %} · {{ it.lang | language }}{% endif %}</span><br>
+      {{ link(it.link) }}{{ by_email(it) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Nothing new this week.</div>
+{% endif %}
+<p class="comment">{% if n.looks %}Looked at by {{ looks_text(n.looks) }}{% else %}Not looked at in PHAROS this week.{% endif %}</p>
+{% endfor %}
+</section>
+
+{% set ch = data.check %}
+<section class="part">
+<h2><span class="n">06</span>To check by hand</h2>
+<h3>Her pages the app does not read in full</h3>
+{% if ch.pages %}
+<table>
+  <thead><tr><th>Country</th><th>Page</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for p in ch.pages %}
+  <tr>
+    <td>{{ p.country }}</td>
+    <td>{{ p.label }}{% if p.kind %} <span class="comment">· {{ p.kind }}</span>{% endif %}<br>{{ link(p.url) }}</td>
+    <td>{{ p.status }}{% if p.note %}<br><span class="comment">{{ p.note }}</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">The app reads every page of hers.</div>
+{% endif %}
+
+<h3>Sources whose reads failed</h3>
+{% if ch.failed %}
+<table>
+  <thead><tr><th>Country</th><th>Source</th><th class="num">Failed</th><th>Last failure</th></tr></thead>
+  <tbody>
+  {% for r in ch.failed %}
+  <tr>
+    <td>{{ r.country }}</td>
+    <td>{{ r.authority }}<br><span class="comment">{{ r.source }}</span>{% if r.page %}<br>{{ link(r.page) }}{% endif %}</td>
+    <td class="num">{{ r.failed }} of {{ r.runs }}</td>
+    <td class="comment">{{ r.why }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No read failed this week.</div>
+{% endif %}
+
+<h3>Sources not read this week</h3>
+{% if ch.unread %}
+<table>
+  <thead><tr><th>Country</th><th>Source</th></tr></thead>
+  <tbody>
+  {% for r in ch.unread %}
+  <tr><td>{{ r.country }}</td><td>{{ r.authority }}<br><span class="comment">{{ r.source }}</span>{% if r.page %}<br>{{ link(r.page) }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Every source switched on was read this week.</div>
+{% endif %}
+
+<section class="closing">
+  <img class="sato" src="{{ sato_src }}" alt="Sato Pharma">
+  <span class="rule"></span>
+  <div class="text"><strong>{{ credit }}</strong><span class="micro">{{ copyright }}</span></div>
+</section>
+</section>
+</body>
+</html>
