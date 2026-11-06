@@ -638,7 +638,7 @@ SQL test: `supabase/tests/japan_code.sql`; web: `japanCode.test.ts`.
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | collectors; archive-url; case-intake |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_BOT_USERNAME` | collectors; webhook |
 | `GITHUB_DISPATCH_TOKEN`, `GITHUB_REPO` | probe-source; case-intake |
-| `ANTHROPIC_API_KEY` | collectors/cases: the case reader (case-read.yml and the "Cases" step of collect.yml). Without it cases wait unread and the run warns |
+| `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_ORGANIZATION_ID`, `ANTHROPIC_SERVICE_ACCOUNT_ID` (repository **variables**, with `id-token: write`) | collectors/cases and collectors/coding: the Claude reader (case-read.yml and the "Cases" step of collect.yml) signs in by federation, no key stored (`collectors/core/claude.py`). Without them cases wait unread and the run warns. `ANTHROPIC_API_KEY` is only for running a collector by hand |
 | `PHAROS_E2B_SENDER`, `PHAROS_E2B_RECEIVER` | collectors/cases/e2b.py (optional: the sender and receiver identifiers in the E2B(R3) file; default `SATOPHARMA` and `EDA`) |
 | `NCBI_API_KEY` | pubmed; literature-search (optional: 10 NCBI requests a second instead of 3) |
 | `ADMIN_TELEGRAM_CHAT_ID` | pg_cron watchdog (stored in Supabase Vault) |

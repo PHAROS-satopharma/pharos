@@ -11,8 +11,9 @@ A passing failure (the API overloaded, the network) puts the case back in the qu
 the reviewer sees with a "Read again" button. A case left in ``reading`` by a run that died is taken again after
 ``STUCK_MINUTES``.
 
-Environment: ``ANTHROPIC_API_KEY``. Only the document goes to the API; the ingredient names the company watches go
-with it so the reader can tell the suspect product.
+Sign-in: federation in the workflows, or ``ANTHROPIC_API_KEY`` by hand (``collectors.core.claude``). Only the
+document goes to the API; the ingredient names the company watches go with it so the reader can tell the suspect
+product.
 """
 
 from __future__ import annotations
@@ -101,7 +102,9 @@ def call_reader(blocks: list[dict], ingredients: list[dict], client: Any = None)
     """The reader's answer (parsed JSON) and the model that gave it."""
     import anthropic
 
-    client = client or anthropic.Anthropic()
+    from collectors.core import claude
+
+    client = client or claude.client()
     names = ", ".join(i["inn_en"] for i in ingredients) or "(none listed)"
     try:
         with client.messages.stream(
@@ -115,6 +118,8 @@ def call_reader(blocks: list[dict], ingredients: list[dict], client: Any = None)
             message = stream.get_final_message()
     except (anthropic.APIConnectionError, anthropic.RateLimitError, anthropic.InternalServerError) as exc:
         raise ReadFailed(f"The reader could not be reached ({type(exc).__name__}).", passing=True) from exc
+    except anthropic.WorkloadIdentityError as exc:
+        raise ReadFailed(f"PHAROS could not sign in to the reader: {str(exc)[:300]}", passing=True) from exc
     except anthropic.APIStatusError as exc:
         raise ReadFailed(f"The reader refused the request (HTTP {exc.status_code}): {str(exc)[:300]}") from exc
     if message.stop_reason == "refusal":
@@ -186,6 +191,10 @@ def read_case(db: Any, archive: Archive, case: dict, *, reader: Callable[..., tu
             blocks = content.blocks_for(data, case.get("mime") or "", case.get("file_name"))
         except content.Unreadable as exc:
             raise ReadFailed(str(exc)) from exc
+        if case["origin"] == "paper":
+            from collectors.cases import paper
+
+            blocks += paper.attached_pdf_blocks(data, archive)   # the open-access PDF its text file names
         ingredients = watched_ingredients(db)
         reading, model = reader(blocks, ingredients)
     except ReadFailed as exc:

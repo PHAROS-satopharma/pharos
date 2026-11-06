@@ -77,9 +77,9 @@ class Reader:
     """The two questions put to Claude. Raises on any failure: the coder then falls back to the search."""
 
     def __init__(self, client: Any = None) -> None:
-        import anthropic
+        from collectors.core import claude
 
-        self.client = client or anthropic.Anthropic()
+        self.client = client or claude.client()
         self.model = MODEL
 
     def _ask(self, text: str, schema: dict) -> dict:
@@ -286,9 +286,9 @@ def code_waiting(db: Any, *, case_id: str | None = None, limit: int = 20,
 
 
 def default_reader() -> Reader | None:
-    import os
+    from collectors.core import claude
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        log.info("the reader is not set up (ANTHROPIC_API_KEY is missing): codes come from MeSH's closest names")
+    if not claude.configured():
+        log.info("%s: codes come from MeSH's closest names", claude.MISSING)
         return None
     return Reader()

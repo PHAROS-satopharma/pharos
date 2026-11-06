@@ -49,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     install_log_redaction()
     from collectors.cases import e2b, mail, read
     from collectors.coding import coder
+    from collectors.core import claude
     from collectors.core.archive import Archive
     from collectors.core.db import Db
     from collectors.core.imap_inbox import NOT_CONFIGURED
@@ -65,9 +66,9 @@ def main(argv: list[str] | None = None) -> int:
             if str(exc) != NOT_CONFIGURED:
                 raise
             log.info("mail: %s", NOT_CONFIGURED)
-    reader = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    reader = claude.configured()
     if (args.case or args.waiting) and not reader:
-        log.warning("the reader is not set up (ANTHROPIC_API_KEY is missing): the cases wait unread")
+        log.warning("%s: the cases wait unread", claude.MISSING)
     if args.case and reader:
         print("read:", read.read_waiting(db, archive, case_id=args.case))
     if args.waiting and reader:

@@ -6,12 +6,17 @@ Objects live in Cloudflare R2 (bucket lock forbids overwrite and delete) under
 still returns the original; PDFs and images are stored as they are.
 
 When the R2 variables are absent (tests, local dry runs) objects go to ``./.archive/`` instead.
+
+``put(..., meta=…)`` keeps a few words about an original with it (an open-access PDF's licence and version): R2
+user metadata on the object (ASCII, each value at most 300 characters), or ``<key>.meta.json`` beside a local
+object. Like the object, they are written once and never changed.
 """
 
 from __future__ import annotations
 
 import gzip
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -33,6 +38,22 @@ def key_for(sha: str) -> str:
 def _is_text(mime: str) -> bool:
     mime = (mime or "").split(";")[0].strip().lower()
     return mime.startswith(_TEXT_MIMES) or mime.endswith("+xml")
+
+
+META_VALUE_MAX = 300
+
+
+def clean_meta(meta: dict | None) -> dict[str, str]:
+    """User metadata R2 accepts: lower-case names of letters, digits and dashes; ASCII values, at most
+    ``META_VALUE_MAX`` characters; empty values left out."""
+    out: dict[str, str] = {}
+    for name, value in (meta or {}).items():
+        key = "".join(c if c.isascii() and (c.isalnum() or c == "-") else "-" for c in str(name).lower()).strip("-")
+        text = str(value if value is not None else "").encode("ascii", "replace").decode("ascii")
+        text = " ".join(text.split())[:META_VALUE_MAX]
+        if key and text and key != "sha256":
+            out[key] = text
+    return out
 
 
 class Archive:
@@ -67,16 +88,16 @@ class Archive:
             return "disabled"
         return "r2" if self._s3 is not None else "local"
 
-    def put(self, content: bytes, mime: str) -> tuple[str, str]:
+    def put(self, content: bytes, mime: str, meta: dict | None = None) -> tuple[str, str]:
         """Store ``content``; return ``(sha256, key)``. Never overwrites an existing object."""
         sha = sha256_hex(content)
         key = key_for(sha)
         if not self.enabled or key in self._known:
             return sha, key
         if self._s3 is not None:
-            self._put_r2(key, content, mime, sha)
+            self._put_r2(key, content, mime, sha, meta=meta)
         else:
-            self._put_local(key, content)
+            self._put_local(key, content, meta=meta)
         self._known.add(key)
         return sha, key
 
@@ -122,18 +143,19 @@ class Archive:
         self._known.add(chosen)
         return sha, chosen
 
-    def _put_r2(self, key: str, content: bytes, mime: str, sha: str, *, check: bool = True) -> None:
+    def _put_r2(self, key: str, content: bytes, mime: str, sha: str, *, check: bool = True,
+                meta: dict | None = None) -> None:
         if check and self.exists(key):
             return  # already archived; the bucket lock would refuse an overwrite anyway
         extra: dict = {"ContentType": mime or "application/octet-stream",
-                       "Metadata": {"sha256": sha}}
+                       "Metadata": {**clean_meta(meta), "sha256": sha}}
         body = content
         if _is_text(mime):
             body = gzip.compress(content, mtime=0)
             extra["ContentEncoding"] = "gzip"
         self._s3.put_object(Bucket=self.bucket, Key=key, Body=body, **extra)
 
-    def _put_local(self, key: str, content: bytes) -> None:
+    def _put_local(self, key: str, content: bytes, meta: dict | None = None) -> None:
         path = self.local_dir / key
         if path.exists():
             return
@@ -141,6 +163,22 @@ class Archive:
         tmp = path.with_suffix(".tmp")
         tmp.write_bytes(content)
         tmp.replace(path)
+        if clean_meta(meta):
+            path.with_name(path.name + ".meta.json").write_text(json.dumps(clean_meta(meta), sort_keys=True))
+
+    def meta(self, key: str) -> dict[str, str]:
+        """The metadata kept with an original (``sha256`` included on R2); {} when there is none."""
+        if not self.enabled:
+            return {}
+        if self._s3 is not None:
+            from botocore.exceptions import ClientError
+
+            try:
+                return dict(self._s3.head_object(Bucket=self.bucket, Key=key).get("Metadata") or {})
+            except ClientError:
+                return {}
+        side = self.local_dir / (key + ".meta.json")
+        return json.loads(side.read_text()) if side.exists() else {}
 
     def get(self, key: str) -> bytes | None:
         """Read an original back (used to attach a PDF to a Telegram message). ``None`` if missing."""

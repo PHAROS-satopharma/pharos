@@ -304,6 +304,88 @@ sources:
     expected_max_gap_days: 21
     options: {lookback_days: 45, page_size: 100}
 
+  # FDA's own e-mail lists are published as public RSS feeds on GovDelivery (public.govdelivery.com), which
+  # answers our servers although fda.gov does not. Each entry carries the whole bulletin, so the entry page
+  # is not opened. A feed holds the last 25 bulletins; that is all the history there is (the bulletin
+  # archive needs a sign-in). Every bulletin is kept: matching decides what concerns us. Topic numbers were
+  # found on 6 Nov 2026; topic 406 "Drug Safety Communications" stopped in Dec 2024, and the communications
+  # now go out on the Drug Information list (topic 118).
+  - id: fda-medwatch-gd
+    regulator: FDA
+    kind: safety
+    channel: rss
+    url: https://public.govdelivery.com/topics/USFDA_190/feed.rss
+    page: https://www.fda.gov/safety/medwatch-fda-safety-information-and-adverse-event-reporting-program
+    parser: feed
+    notes: FDA's MedWatch Safety Alerts e-mail list, read from its GovDelivery feed.
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 21
+    options:
+      follow: false
+      doc_type: safety_alert
+      doc_type_rules:
+        - {keyword: recall, doc_type: recall}
+        - {keyword: "drug safety communication", doc_type: safety_update}
+
+  - id: fda-druginfo-gd
+    regulator: FDA
+    kind: safety
+    channel: rss
+    url: https://public.govdelivery.com/topics/USFDA_118/feed.rss
+    page: https://www.fda.gov/drugs/drug-safety-and-availability/drug-safety-communications
+    parser: feed
+    notes: >-
+      FDA's Drug Information e-mail list (CDER), read from its GovDelivery feed. It carries the Drug Safety
+      Communications (Kybella, 16 Sep 2026) together with approvals and guidance.
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 30
+    options:
+      follow: false
+      doc_type: other
+      doc_type_rules:
+        - {keyword: "drug safety communication", doc_type: safety_update}
+        - {keyword: "warning", doc_type: safety_update}
+        - {keyword: "labeling", doc_type: safety_update}
+        - {keyword: "recall", doc_type: recall}
+
+  - id: fda-press-gd
+    regulator: FDA
+    kind: safety
+    channel: rss
+    url: https://public.govdelivery.com/topics/USFDA_139/feed.rss
+    page: https://www.fda.gov/news-events/fda-newsroom/press-announcements
+    parser: feed
+    notes: FDA's Press Releases e-mail list, read from its GovDelivery feed.
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 21
+    options:
+      follow: false
+      doc_type: other
+      doc_type_rules:
+        - {keyword: "drug safety communication", doc_type: safety_update}
+        - {keyword: "warning", doc_type: safety_update}
+        - {keyword: "recall", doc_type: recall}
+
+  - id: fda-srlc-gd
+    regulator: FDA
+    kind: safety
+    channel: rss
+    url: https://public.govdelivery.com/topics/USFDA_60/feed.rss
+    page: https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/
+    parser: feed
+    notes: >-
+      FDA's Drug Safety-related Labeling Changes e-mail list (CDER), read from its GovDelivery feed: each
+      bulletin lists the medicines whose safety labeling changed that week.
+    languages: [en]
+    schedule: 4h
+    expected_max_gap_days: 21
+    options:
+      follow: false
+      doc_type: label_change
+
   # ───────────── United Kingdom ─────────────
   - id: mhra-dsu
     regulator: MHRA
