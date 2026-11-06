@@ -35,6 +35,9 @@ export function mentionOfChange(c: LabelChange): Mention {
     doc_type: 'label_change',
     terms: [],
     by_class: false,
+    // A label change is found by the product's ingredient, never by a drug class.
+    relation: 'name',
+    class_name: null,
     is_backfill: c.is_backfill,
     sections: c.sections,
     issue_id: c.issue_id,
