@@ -1,6 +1,6 @@
-// The five-day clock to the Egyptian Drug Authority (migration 0041), as finding_state() answers it per notice.
-// Pure helpers, no I/O. The database decides the clock; these only word it and keep the screen's copy of it in
-// step after a decision, a report sent or a report withdrawn.
+// The five-day clock to the Egyptian Drug Authority (migrations 0041 and 0050), as finding_state() answers it per
+// notice. Pure helpers, no I/O. The database decides the clock; these only word it and keep the screen's copy of
+// it in step after a decision, a report sent or a report withdrawn.
 
 import { formatDate } from '../../lib/format';
 import type { IssueStatus } from '../../lib/types';
@@ -83,7 +83,8 @@ export function withSent(data: IngredientScreenData, issueId: string, sent: Auth
   return patch(data, issueId, (f) => ({ ...f, clock: 'sent', sent }));
 }
 
-/** The screen after a decision: Concerns us starts (or keeps) the clock; anything else switches it off. The due
+/** The screen after a decision: Concerns us starts (or keeps) the clock — or finds the notice already sent, since a
+ *  report to the authority is never forgotten; anything else switches the clock off and keeps the report. The due
  *  day is the database's and does not move with a decision (day zero is the day PHAROS first showed the notice). */
 export function withClockDecision(
   data: IngredientScreenData,
@@ -91,7 +92,10 @@ export function withClockDecision(
   to: IssueStatus,
   today: string,
 ): IngredientScreenData {
-  return patch(data, issueId, (f) => (to === 'relevant' ? runningClock(f, today) : { ...f, clock: 'off', sent: null }));
+  return patch(data, issueId, (f) => {
+    if (to !== 'relevant') return { ...f, clock: 'off' };
+    return f.sent ? { ...f, clock: 'sent' } : runningClock(f, today);
+  });
 }
 
 /** The screen after a wrong report was withdrawn: the clock runs again from the same due day. */

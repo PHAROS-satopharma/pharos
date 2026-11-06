@@ -1,7 +1,11 @@
--- PHAROS CI — the five-day clock to the Egyptian Drug Authority (0041): finding_state(), authority_report and
--- v_eda_clock. Runs on the database ci.yml prepared: CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3)
+-- PHAROS CI — the five-day clock to the Egyptian Drug Authority (0041, 0050): finding_state(), authority_report
+-- and v_eda_clock. Runs on the database ci.yml prepared: CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3)
 -- exist. Everything here happens in one transaction that is rolled back at the end (review_event and
 -- authority_report cannot be deleted).
+--
+-- Day zero (0050) is the Cairo day PHAROS first showed the notice: the day the issue row was created, not the
+-- anchor document's first_seen_at (the anchor moves to an EMA document that arrives later; a re-match creates a
+-- notice for an old document). The issues below are created with an explicit created_at for that reason.
 
 begin;
 
@@ -45,19 +49,32 @@ insert into document (id, source_id, external_id, url, title_orig, lang, doc_typ
   ('00000000-0000-0000-0000-00000041b003', 'ci-ec-html', 'c3', 'https://clock.example.test/alerts/3',
    'CI clockamine: nobody decided', 'en', 'dhpc', pg_temp.ec_noon_ago(1)),
   ('00000000-0000-0000-0000-00000041b004', 'ci-ec-html', 'c4', 'https://clock.example.test/alerts/4',
-   'CI clockamine: sent and withdrawn', 'en', 'dhpc', pg_temp.ec_noon_ago(3));
+   'CI clockamine: sent and withdrawn', 'en', 'dhpc', pg_temp.ec_noon_ago(3)),
+  -- b005: shown two days ago; b006: the EMA document that arrives today and becomes the anchor of the same notice
+  ('00000000-0000-0000-0000-00000041b005', 'ci-ec-html', 'c5', 'https://clock.example.test/alerts/5',
+   'CI clockamine: a national copy', 'en', 'dhpc', pg_temp.ec_noon_ago(2)),
+  ('00000000-0000-0000-0000-00000041b006', 'ci-ec-html', 'c6', 'https://clock.example.test/alerts/6',
+   'CI clockamine: the EMA document', 'en', 'dhpc', pg_temp.ec_noon_ago(0)),
+  -- b007: a document first seen 175 days ago whose notice is only created today (a re-match)
+  ('00000000-0000-0000-0000-00000041b007', 'ci-ec-html', 'c7', 'https://clock.example.test/alerts/7',
+   'CI clockamine: an old document, a new notice', 'en', 'safety_alert', pg_temp.ec_noon_ago(175));
 insert into match (document_id, ingredient_id, term_id, field, matched_text)
 select d.id, '00000000-0000-0000-0000-00000041a001', '00000000-0000-0000-0000-00000041c001', 'title', 'CI clockamine'
   from document d where d.source_id = 'ci-ec-html';
-insert into issue (id, doc_type, title, anchor_document_id, first_date) values
+-- created_at is the day PHAROS first showed the notice (0050); e006 is created now, for the old document b007.
+insert into issue (id, doc_type, title, anchor_document_id, first_date, created_at) values
   ('00000000-0000-0000-0000-00000041e001', 'dhpc', 'CI clockamine: a new warning',
-   '00000000-0000-0000-0000-00000041b001', :'today'::date - 1),
+   '00000000-0000-0000-0000-00000041b001', :'today'::date - 1, pg_temp.ec_noon_ago(1)),
   ('00000000-0000-0000-0000-00000041e002', 'safety_alert', 'CI clockamine: an old warning',
-   '00000000-0000-0000-0000-00000041b002', :'today'::date - 10),
+   '00000000-0000-0000-0000-00000041b002', :'today'::date - 10, pg_temp.ec_noon_ago(10)),
   ('00000000-0000-0000-0000-00000041e003', 'dhpc', 'CI clockamine: nobody decided',
-   '00000000-0000-0000-0000-00000041b003', :'today'::date - 1),
+   '00000000-0000-0000-0000-00000041b003', :'today'::date - 1, pg_temp.ec_noon_ago(1)),
   ('00000000-0000-0000-0000-00000041e004', 'dhpc', 'CI clockamine: sent and withdrawn',
-   '00000000-0000-0000-0000-00000041b004', :'today'::date - 3);
+   '00000000-0000-0000-0000-00000041b004', :'today'::date - 3, pg_temp.ec_noon_ago(3)),
+  ('00000000-0000-0000-0000-00000041e005', 'dhpc', 'CI clockamine: a national copy',
+   '00000000-0000-0000-0000-00000041b005', :'today'::date - 2, pg_temp.ec_noon_ago(2)),
+  ('00000000-0000-0000-0000-00000041e006', 'safety_alert', 'CI clockamine: an old document, a new notice',
+   '00000000-0000-0000-0000-00000041b007', :'today'::date - 175, now());
 insert into issue_document (issue_id, document_id, link, method)
 select i.id, i.anchor_document_id, 'anchor', 'auto' from issue i where i.id::text like '00000000-0000-0000-0000-00000041e%';
 insert into issue_ingredient (issue_id, ingredient_id)
@@ -103,6 +120,35 @@ select pg_temp.ec_assert(:'ec_running'::jsonb -> '00000000-0000-0000-0000-000000
 select pg_temp.ec_assert(:'ec_running'::jsonb -> '00000000-0000-0000-0000-00000041e003' ->> 'clock' = 'off',
   'the undecided notice stays off');
 
+-- ───────────── day zero is the day PHAROS first showed the notice (0050) ─────────────
+-- The anchor moves to an EMA document that arrives later (collectors/merge.py, set_issue_anchor): the due day
+-- does not move. A notice created today for a document first seen 175 days ago is due in five days, not late.
+set role authenticated;
+insert into review_event (issue_id, from_status, to_status, comment, person_id) values
+  ('00000000-0000-0000-0000-00000041e005', 'new', 'relevant', null, my_person_id()),
+  ('00000000-0000-0000-0000-00000041e006', 'new', 'relevant', null, my_person_id());
+reset role;
+update issue_document set link = 'copy'
+ where issue_id = '00000000-0000-0000-0000-00000041e005' and link = 'anchor';
+insert into issue_document (issue_id, document_id, link, method)
+  values ('00000000-0000-0000-0000-00000041e005', '00000000-0000-0000-0000-00000041b006', 'anchor', 'auto');
+update issue set anchor_document_id = '00000000-0000-0000-0000-00000041b006', title = 'CI clockamine: the EMA document',
+       updated_at = now()
+ where id = '00000000-0000-0000-0000-00000041e005';
+set role authenticated;
+select finding_state(array['00000000-0000-0000-0000-00000041e005', '00000000-0000-0000-0000-00000041e006']::uuid[])::text
+  as ec_day_zero \gset
+reset role;
+select pg_temp.ec_assert(:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e005' ->> 'clock' = 'running'
+    and (:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e005' ->> 'day_zero')::date = :'today'::date - 2
+    and (:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e005' ->> 'due')::date = :'today'::date + 3
+    and (:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e005' ->> 'days_left')::int = 3,
+  'the anchor moves to a later document, the due day does not move');
+select pg_temp.ec_assert(:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e006' ->> 'clock' = 'running'
+    and (:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e006' ->> 'day_zero')::date = :'today'::date
+    and (:'ec_day_zero'::jsonb -> '00000000-0000-0000-0000-00000041e006' ->> 'days_left')::int = 5,
+  'a notice created today for an old document is due in five days, not late');
+
 -- ───────────── Sent to the authority ─────────────
 -- A reader cannot record it; a reviewer records only as herself; a notice whose clock is off refuses it.
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
@@ -119,6 +165,9 @@ select pg_temp.ec_refused($q$insert into authority_report (issue_id, sent_on, pe
   values ('00000000-0000-0000-0000-00000041e003', signal_cairo_today(), my_person_id())$q$) as ec_off_sends \gset
 select pg_temp.ec_refused($q$insert into authority_report (issue_id, sent_on, person_id)
   values ('00000000-0000-0000-0000-00000041e001', signal_cairo_today() + 1, my_person_id())$q$) as ec_tomorrow \gset
+-- e002 was first shown ten days ago: a report dated eleven days ago is a typo (0050)
+select pg_temp.ec_refused($q$insert into authority_report (issue_id, sent_on, person_id)
+  values ('00000000-0000-0000-0000-00000041e002', signal_cairo_today() - 11, my_person_id())$q$) as ec_too_early \gset
 insert into authority_report (issue_id, sent_on, reference, note, person_id)
   values ('00000000-0000-0000-0000-00000041e001', signal_cairo_today(), 'EDA/2026/0042', 'By e-mail to the EDA',
           my_person_id());
@@ -136,6 +185,9 @@ select pg_temp.ec_assert(:'ec_reader_sends' like '42501%' and :'ec_as_other' lik
 select pg_temp.ec_assert(:'ec_off_sends' like 'PH409 NO_CONCERN%',
   'a notice whose latest decision is not Concerns us cannot be reported as sent (PH409, NO_CONCERN)');
 select pg_temp.ec_assert(:'ec_tomorrow' like '22023%', 'a report cannot be dated in the future');
+select pg_temp.ec_assert(:'ec_too_early' like '22023%' and :'ec_too_early' like '%before%'
+    and (select count(*) from authority_report where issue_id = '00000000-0000-0000-0000-00000041e002') = 0,
+  'a report cannot be dated before the day PHAROS first showed the notice');
 select pg_temp.ec_assert(:'ec_twice' like 'PH409 ALREADY_SENT%',
   'a notice already reported for this decision is not reported twice (PH409, ALREADY_SENT)');
 select pg_temp.ec_assert(:'ec_sent'::jsonb -> '00000000-0000-0000-0000-00000041e001' ->> 'clock' = 'sent'
@@ -168,12 +220,15 @@ insert into review_event (issue_id, from_status, to_status, comment, person_id)
   values ('00000000-0000-0000-0000-00000041e001', 'not_relevant', 'relevant', 'CI: ours after all', my_person_id());
 select finding_state(array['00000000-0000-0000-0000-00000041e001']::uuid[])::text as ec_again \gset
 reset role;
+-- A report sent to the authority is never forgotten (0050): the clock is off while the decision is not Concerns
+-- us, but the report stays known, and Concerns us again finds the notice already sent.
 select pg_temp.ec_assert(:'ec_reversed'::jsonb -> '00000000-0000-0000-0000-00000041e001' ->> 'clock' = 'off'
-    and :'ec_reversed'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' = 'null'::jsonb,
-  'Doesn''t concern us switches the clock off; the earlier report belongs to the earlier decision');
-select pg_temp.ec_assert(:'ec_again'::jsonb -> '00000000-0000-0000-0000-00000041e001' ->> 'clock' = 'running'
-    and :'ec_again'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' = 'null'::jsonb,
-  'Concerns us again starts the clock again: the authority has not heard of this decision');
+    and :'ec_reversed'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' ->> 'reference' = 'EDA/2026/0042',
+  'Doesn''t concern us switches the clock off; the report to the authority is not forgotten');
+select pg_temp.ec_assert(:'ec_again'::jsonb -> '00000000-0000-0000-0000-00000041e001' ->> 'clock' = 'sent'
+    and :'ec_again'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' ->> 'reference' = 'EDA/2026/0042'
+    and (:'ec_again'::jsonb -> '00000000-0000-0000-0000-00000041e001' -> 'sent' ->> 'on')::date = :'today'::date,
+  'Concerns us again: the authority already has this notice, the clock stays sent');
 
 -- ───────────── a wrong "sent" is withdrawn, never deleted ─────────────
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', false);
@@ -213,10 +268,12 @@ select pg_temp.ec_assert(:'ec_unwithdraw' like '%append-only%', 'a withdrawal ca
 select string_agg(issue_id::text || ':' || clock || ':' || days_left || ':' || ingredient || ':' || country
                   || ':' || coalesce(decided_by, '-'), ' ' order by due, issue_id) as ec_view
   from v_eda_clock where issue_id::text like '00000000-0000-0000-0000-00000041e%' \gset
+-- e001 was sent (and stays sent after its decisions changed); e003 is off; e005 and e006 run.
 select pg_temp.ec_assert(:'ec_view' =
     '00000000-0000-0000-0000-00000041e002:late:-5:CI clockamine:CI Clockland:CI Admin '
     || '00000000-0000-0000-0000-00000041e004:running:2:CI clockamine:CI Clockland:CI Admin '
-    || '00000000-0000-0000-0000-00000041e001:running:4:CI clockamine:CI Clockland:CI Admin',
+    || '00000000-0000-0000-0000-00000041e005:running:3:CI clockamine:CI Clockland:CI Admin '
+    || '00000000-0000-0000-0000-00000041e006:running:5:CI clockamine:CI Clockland:CI Admin',
   'the collectors'' view lists the running and late clocks with ingredient, country and who said Concerns us, '
   || 'never one that is off or sent');
 select pg_temp.ec_assert(
@@ -234,8 +291,15 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 set role authenticated;
 select pg_temp.ec_refused($q$select finding_state(array['00000000-0000-0000-0000-00000041e002']::uuid[])$q$) as ec_stranger \gset
 select pg_temp.ec_refused($q$select * from v_eda_clock$q$) as ec_stranger_view \gset
--- psql unsets a variable for a null, so a query that is not refused answers 'allowed'
-select coalesce(pg_temp.ec_refused($q$select count(*) from authority_report$q$), 'allowed') as ec_stranger_rows \gset
+-- The stranger may run the query (the team's read policy applies), and sees no row of it.
+select count(*) as ec_stranger_rows from authority_report \gset
+reset role;
+-- The service key (bypasses row-level security) is not a member of the team either (0050).
+set role service_role;
+select pg_temp.ec_refused($q$select count(*) from authority_report$q$) as ec_service_rows \gset
+select pg_temp.ec_refused($q$select * from eda_clock(null)$q$) as ec_service_clock \gset
+select pg_temp.ec_refused($q$select * from v_eda_clock$q$) as ec_service_view \gset
+select pg_temp.ec_refused($q$select latest_decision('00000000-0000-0000-0000-00000041e001')$q$) as ec_service_latest \gset
 reset role;
 set role anon;
 select pg_temp.ec_refused($q$select finding_state('{}'::uuid[])$q$) as ec_anon \gset
@@ -245,8 +309,11 @@ select set_config('request.jwt.claims', '', false);
 select pg_temp.ec_assert(:'ec_stranger' like '42501%' and :'ec_stranger_view' like '42501%'
     and :'ec_anon' like '42501%' and :'ec_anon_rows' like '42501%',
   'someone signed in but not on the team, and signed-out visitors, read nothing of the clock');
-select pg_temp.ec_assert(:'ec_stranger_rows' = 'allowed' and (
-  select count(*) from authority_report) > 0, 'row-level security hides authority_report from a stranger');
+select pg_temp.ec_assert(:ec_stranger_rows = 0 and (select count(*) from authority_report) > 0,
+  'row-level security hides authority_report from a stranger: the team sees rows, the stranger sees none');
+select pg_temp.ec_assert(:'ec_service_rows' like '42501%' and :'ec_service_clock' like '42501%'
+    and :'ec_service_view' like '42501%' and :'ec_service_latest' like '42501%',
+  'the service key reads nothing of the clock: authority_report, eda_clock, v_eda_clock and latest_decision refuse it');
 select pg_temp.ec_assert(
   has_function_privilege('authenticated', 'public.finding_state(uuid[])', 'execute')
     and has_function_privilege('authenticated', 'public.withdraw_authority_report(uuid, text)', 'execute')
