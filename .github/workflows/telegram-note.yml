@@ -1,5 +1,5 @@
 # PHAROS — send one PHAROS person a written message from the PHAROS bot on Telegram. Run by hand only.
-# Without "send" ticked it only prints the message. The address must be an active PHAROS person whose
+# Without "send" ticked it only checks the message. The address must be an active PHAROS person whose
 # Telegram is connected (collectors/telegram_note.py refuses anyone else). The text goes as written.
 name: PHAROS Telegram message
 
@@ -46,13 +46,9 @@ jobs:
 
       - name: Send the message
         env:
-          # Inputs go through the environment, never into the command line.
-          EMAIL: ${{ inputs.email }}
-          MESSAGE: ${{ inputs.message }}
-          SEND: ${{ inputs.send }}
+          # The repository and its run logs are public, and a step's env is printed at the head of its log.
+          # The address, the text and "send" are read from the event file instead (--from-event), and the
+          # log never says who it went to or what it said. Never pass an input here.
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: |
-          args=(--email "$EMAIL")
-          [ "$SEND" = "true" ] && args+=(--send)
-          python -m collectors.telegram_note "${args[@]}"
+        run: python -m collectors.telegram_note --from-event "$GITHUB_EVENT_PATH"

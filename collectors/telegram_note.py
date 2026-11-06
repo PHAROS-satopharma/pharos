@@ -11,7 +11,11 @@ the administrator's word for that one message, so ``app_setting.telegram_dry_run
 (as the test message on My account). Every send is recorded in ``notification`` (kind ``report``, no
 notice), with the text in ``summary``, delivered or refused.
 
-    MESSAGE="…" python -m collectors.telegram_note --email sama.mosaad@satopharma.com [--send]
+The workflow runs it with ``--from-event``: the address, the text and "send" are read from the event file,
+and the log says only whether it was previewed, sent or refused, never who to or what (the run logs are
+public; see ``collectors/dispatch_inputs.py``).
+
+    MESSAGE="…" python -m collectors.telegram_note --email someone@example.com [--send]
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ import sys
 
 import httpx
 
+from collectors import dispatch_inputs
 from collectors.alerts import MAX_MESSAGE_CHARS, Telegram, TelegramError, esc
 
 _EMAIL = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
@@ -34,16 +39,16 @@ class Refused(Exception):
 
 def find_person(db, email: str) -> dict:
     if not _EMAIL.match(email or ""):
-        raise Refused(f"not an email address: {email!r}")
+        raise Refused("the address is not an email address")
     row = db.fetchone(
         "select id, full_name, email, active, telegram_chat_id from person where lower(email) = lower(%(e)s)",
         {"e": email})
     if row is None:
-        raise Refused(f"{email} is not a PHAROS person")
+        raise Refused("that address is not a PHAROS person")
     if not row["active"]:
-        raise Refused(f"{row['full_name']} is not active in PHAROS")
+        raise Refused("that person is not active in PHAROS")
     if row["telegram_chat_id"] is None:
-        raise Refused(f"{row['full_name']} has not connected Telegram yet")
+        raise Refused("that person has not connected Telegram yet")
     return row
 
 
@@ -66,18 +71,32 @@ def record(db, person: dict, text: str, message_id: int | None, error: str | Non
 
 def main(argv: list[str] | None = None, *, db=None, telegram=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m collectors.telegram_note")
-    ap.add_argument("--email", required=True, help="the PHAROS person's email address")
+    ap.add_argument("--email", help="the PHAROS person's email address")
     ap.add_argument("--send", action="store_true", help="send it (without this it is only printed)")
+    ap.add_argument("--from-event", metavar="PATH",
+                    help="read email, message and send from the workflow's event file; the log names nobody")
     args = ap.parse_args(argv)
+    public = bool(args.from_event)
+    if public:
+        inputs = dispatch_inputs.read(args.from_event)
+        email, raw = inputs.get("email") or "", inputs.get("message") or ""
+        do_send = dispatch_inputs.ticked(inputs.get("send"))
+    else:
+        if not args.email:
+            ap.error("--email or --from-event is required")
+        email, raw, do_send = args.email, os.environ.get("MESSAGE") or "", args.send
     try:
-        text = message_html(os.environ.get("MESSAGE") or "")
+        text = message_html(raw)
         if db is None:
             from collectors.core.db import Db
 
             db = Db()
-        person = find_person(db, args.email.strip())
-        print(f"To: {person['full_name']} <{person['email']}> on Telegram\n\n{text}")
-        if not args.send:
+        person = find_person(db, email.strip())
+        if public:
+            print(f"Message ready: {len(text)} characters to an active PHAROS person with Telegram connected.")
+        else:
+            print(f"To: {person['full_name']} <{person['email']}> on Telegram\n\n{text}")
+        if not do_send:
             print("Not sent: preview only (run with send ticked to send it).")
             return 0
         if telegram is None:
@@ -95,7 +114,8 @@ def main(argv: list[str] | None = None, *, db=None, telegram=None) -> int:
         print(f"Not sent: Telegram refused it: {exc}", file=sys.stderr)
         return 1
     record(db, person, text, message_id, None)
-    print(f"Sent to {person['full_name']} on Telegram, message {message_id}.")
+    print(f"Sent on Telegram, message {message_id}." if public
+          else f"Sent to {person['full_name']} on Telegram, message {message_id}.")
     return 0
 
 

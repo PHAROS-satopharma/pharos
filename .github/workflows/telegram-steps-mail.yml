@@ -1,5 +1,5 @@
 # PHAROS — email one person the steps to connect Telegram, from pharos@satopharma.com. Run by hand only.
-# Without "send" ticked it only prints the message. The address must be an active PHAROS person whose
+# Without "send" ticked it only checks the message. The address must be an active PHAROS person whose
 # Telegram is not connected yet (collectors/telegram_steps_mail.py refuses anyone else).
 name: PHAROS Telegram steps email
 
@@ -46,15 +46,11 @@ jobs:
 
       - name: Email the Telegram steps
         env:
-          # Inputs go through the environment, never into the command line.
-          EMAIL: ${{ inputs.email }}
-          GREETING: ${{ inputs.greeting }}
-          SEND: ${{ inputs.send }}
+          # The repository and its run logs are public, and a step's env is printed at the head of its log.
+          # The address, the greeting and "send" are read from the event file instead (--from-event), and
+          # the log never says who it went to. Never pass an input here.
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           PHAROS_IMAP_HOST: ${{ secrets.PHAROS_IMAP_HOST }}
           PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
           PHAROS_IMAP_PASSWORD: ${{ secrets.PHAROS_IMAP_PASSWORD }}
-        run: |
-          args=(--email "$EMAIL" --greeting "$GREETING")
-          [ "$SEND" = "true" ] && args+=(--send)
-          python -m collectors.telegram_steps_mail "${args[@]}"
+        run: python -m collectors.telegram_steps_mail --from-event "$GITHUB_EVENT_PATH"
