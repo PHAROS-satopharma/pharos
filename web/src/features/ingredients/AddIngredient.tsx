@@ -25,16 +25,6 @@ function confirmLabel(c: LookupCandidate): string {
   return c.atc_code ? `Confirm ${c.inn_en} (${c.atc_code})` : `Confirm ${c.inn_en} (no ATC code)`;
 }
 
-/**
- * The drug classes an ingredient belongs to. The lookup may name them itself (class_codes); otherwise
- * the ATC code decides: M01A and M02AA are the non-steroidal anti-inflammatory groups (NSAID).
- */
-export function classCodesFor(c: LookupCandidate): string[] {
-  if (Array.isArray(c.class_codes)) return c.class_codes.filter((x) => typeof x === 'string' && x !== '');
-  const atc = (c.atc_code ?? '').toUpperCase();
-  return atc.startsWith('M01A') || atc.startsWith('M02AA') ? ['NSAID'] : [];
-}
-
 function toDrafts(terms: LookupTerm[], inn: string): TermDraft[] {
   const seen = new Set<string>();
   const out: TermDraft[] = [];
@@ -137,7 +127,8 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
             .filter(Boolean),
           source: t.source || 'manual',
         }));
-      // One step in the database: the ingredient, its terms and its classes are saved together or not at all.
+      // One step in the database: the ingredient and its terms are saved together or not at all. Its drug
+      // class and class words are made from the ATC code by the daily run (collectors/classes.py).
       unwrap<string>(
         await supabase.rpc('save_ingredient', {
           p: {
@@ -145,7 +136,6 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
             atc_code: confirmed.atc_code,
             wikidata_qid: confirmed.wikidata_qid,
             rxcui: confirmed.rxcui,
-            class_codes: classCodesFor(confirmed),
             terms: termRows,
           },
         }),
@@ -189,16 +179,13 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
           each against the archive. Nothing is saved until you press Save.
         </p>
         <p className="small muted">
-          After saving, the next daily run adds its group from the ATC code (searched) and the class above it (shown,
-          switched off until you have read its words), and starts checking the notices PHAROS already holds from the
-          last 12 months for these names, as history (no messages). The search profile is set on the ingredient’s line.
+          After saving, everything else follows by itself: tonight the group is added from the ATC code (searched) and
+          the class above it (shown, switched off until you have read its words), the notices PHAROS already holds from
+          the last 12 months are checked for these names (as history, no messages), and PubMed and PubMed Central are
+          searched 12 months back; on Monday the label watch reads every watched country. The search profile is set on
+          the ingredient’s line, whose row says <strong>Still preparing</strong> until all of it has run, then{' '}
+          <strong>Ready</strong>.
         </p>
-        {classCodesFor(confirmed).includes('NSAID') ? (
-          <p className="small">
-            Saved as an <strong>NSAID</strong>: notices that name only the class (for example “NSAR-haltige
-            Arzneimittel”) reach the daily digest, not an immediate message.
-          </p>
-        ) : null}
         {termsError ? (
           <Notice tone="error">The suggested terms could not be loaded ({termsError}). Add them by hand.</Notice>
         ) : null}

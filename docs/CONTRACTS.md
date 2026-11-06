@@ -449,6 +449,46 @@ Collector: `structured.case_report` is set by `collectors/parsers/pubmed.py` (`c
 `tests/test_pubmed_ncbi.py`, `tests/test_alerts.py`, `tests/test_store_pg.py`, `tests/test_report_weekly.py`,
 `tests/test_mlm.py`.
 
+## Any ingredient she adds is covered (0045)
+
+```sql
+ingredient_readiness(p_ingredient uuid) returns jsonb
+  -- security definer; screen_reader() or 42501; P0002 for an ingredient not on the watchlist; execute for
+  -- authenticated only (revoked from public and anon). One answer for the Ingredients page and the weekly report:
+  -- {names:       {languages_with_a_name, of, missing: [lang]},      -- kind 'code' is not a name; of = every
+  --                                                                 -- language of every regulator
+  --  class:       {atc, classes, words, confirmed},                 -- classes = every linked class; words, the
+  --                                                                 -- past check and NCBI count only the classes
+  --                                                                 -- searched (ingredient_class.enabled, 0049)
+  --  past_check:  {done, words_due, job_running},                   -- due: rematched_at null or < changed_at
+  --  ncbi:        {searches, expected, look_back_done, last_run},   -- expected = 2 × (name ∪ English class words)
+  --  label_watch: {products, by_source: {<source_id>: {country, regulator, products, read}},
+  --                waiting: [country], empty: [country], first_snapshot, japan_code},
+  --                -- enabled spc sources only; read = a source_run since ingredient.created_at that
+  --                -- source_run_failed() does not call a failure; waiting = countries with an unread source;
+  --                -- empty = read, no active spc_product; japan_code = an ingredient_term kind 'code', JP
+  --  eurd:        {found, list_read, frequency, dlp, next_submission},  -- the substance alone before a combination
+  --  ema_mlm:     {monitored},
+  --  telegram:    {people: [full_name]},   -- active, telegram linked, subscription 'ingredient' for all or this one
+  --  ready}
+  -- ready = a name in ≥1 language ∧ (no ATC ∨ classes > 0) ∧ past_check.done ∧ ncbi.look_back_done
+  --         ∧ (products > 0 ∨ waiting = []) ∧ telegram.people ≥ 1.  japan_code, eurd and ema_mlm never hold it back.
+subscription (Dr Sama, kind 'ingredient', ingredient_id null)  -- inserted by 0045 by her address, once (as 0033)
+```
+
+Her words, shared by `web/src/features/ingredients/readiness.ts` and `collectors/report_weekly.py`
+(`readiness_items`, `readiness_text`; `tests/test_report_weekly.py` holds both to the same phrases): `Ready`, or
+`Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words tonight`
+(an ATC code and no class yet),
+`check of the past running` | `tonight`, `NCBI look-back running` | `tonight`, `label watch on Monday (A, B)`
+(up to three country names, else `n countries`), `nobody receives its Telegram messages yet`.
+
+Collector: `collectors/eurd.py` (daily, `collect.yml` step "EURD list"; `eurd_entry` as 0028). Web:
+`Readiness.tsx` (rpc `ingredient_readiness`, query key `['ingredient-readiness', id]`), `readiness.ts`,
+`styles/readiness.css`; the Japan code is an `ingredient_term` kind `code`, lang `ja`, country `JP`, mode `exact`,
+source `pmda` (`TermEditor.tsx`). SQL test: `supabase/tests/ingredient_readiness.sql`; Python: `tests/test_eurd.py`,
+`tests/test_report_weekly.py`; web: `readiness.test.ts`.
+
 ## Environment / secrets
 
 | Secret | Used by |

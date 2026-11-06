@@ -272,6 +272,10 @@ class FakeDb:
             return {"f": {"i-1": {"day_zero": "2026-11-05", "due": "2026-11-10", "days_left": -4, "clock": "sent",
                                   "sent": {"id": "ar-1", "on": "2026-11-06", "reference": "EDA/2026/0042",
                                            "person": "Sama Hassan", "note": None}}}}
+        if "ingredient_readiness(" in sql:
+            # How far the ingredient is prepared, as the Ingredients page reads it (0045).
+            assert params == {"i": SCREEN["ingredient"]["id"]}
+            return {"readiness": READINESS}
         assert params == {"f": date(2026, 11, 1), "t": date(2026, 11, 7), "i": SCREEN["ingredient"]["id"]}
         if "label_changes(" in sql:
             # Our label under "Label changes" (0043): the changes of the week with the gap against our label.
@@ -367,9 +371,85 @@ class FakeDb:
         self.written.append(params)
 
 
+# ingredient_readiness() (0045) for an ingredient added this week: the class is made, its check of the past is
+# running, NCBI has not looked back yet, the label watch has not run, nobody receives its messages.
+READINESS = {
+    "names": {"languages_with_a_name": 1, "of": 15, "missing": ["de", "fr"]},
+    "class": {"atc": True, "classes": 1, "words": 17, "confirmed": False},
+    "past_check": {"done": False, "words_due": 18, "job_running": True},
+    "ncbi": {"searches": 0, "expected": 4, "look_back_done": False, "last_run": None},
+    "label_watch": {"products": 0, "by_source": {"spc-cima": {"country": "Spain", "regulator": "AEMPS", "products": 0,
+                                                              "read": False},
+                                                 "spc-pmda": {"country": "Japan", "regulator": "PMDA", "products": 0,
+                                                              "read": False}},
+                    "waiting": ["Japan", "Spain"], "empty": [], "first_snapshot": False, "japan_code": False},
+    "eurd": {"found": True, "list_read": True, "frequency": "7 years", "dlp": "2031-12-01",
+             "next_submission": "2032-02-29"},
+    "ema_mlm": {"monitored": False},
+    "telegram": {"people": []},
+    "ready": False,
+}
+
+
 def _data():
     db = FakeDb()
     return db, rw.assemble(rw.gather_week(db, NOV1), NOV1, made_at=datetime(2026, 11, 8, 3, 2, tzinfo=UTC))
+
+
+# ───────────────────────────── readiness: any ingredient she adds is covered (0045) ─────────────────────────────
+
+def test_readiness_is_worded_as_on_the_ingredients_page():
+    """One line per ingredient, in her words: Ready, or what is still running or still to come."""
+    assert rw.readiness_text(READINESS) == ("Still preparing: check of the past running · NCBI look-back tonight · "
+                                            "label watch on Monday (Japan, Spain) · nobody receives its Telegram messages yet")
+    fresh = {**READINESS, "class": {"atc": True, "classes": 0, "words": 0, "confirmed": False},
+             "past_check": {"done": False, "words_due": 1, "job_running": False},
+             "ncbi": {"searches": 2, "expected": 4, "look_back_done": False, "last_run": "2026-11-06T00:40:00Z"}}
+    assert rw.readiness_items(fresh)[:3] == ["class words tonight", "check of the past tonight", "NCBI look-back running"]
+    done = {**READINESS, "ready": True, "class": {"atc": True, "classes": 1, "words": 17, "confirmed": True},
+            "past_check": {"done": True, "words_due": 0, "job_running": False},
+            "ncbi": {"searches": 4, "expected": 4, "look_back_done": True, "last_run": "2026-11-06T00:40:00Z"},
+            "label_watch": {**READINESS["label_watch"], "products": 2, "waiting": []},
+            "telegram": {"people": ["Sama Hassan"]}}
+    assert rw.readiness_items(done) == [] and rw.readiness_text(done) == "Ready"
+    # a label watch that ran everywhere and found nothing is an answer, not something still running
+    none = {**done, "label_watch": {**done["label_watch"], "products": 0, "empty": ["Japan", "Spain"]}}
+    assert rw.readiness_items(none) == []
+    # no ATC code: no class to wait for; no name at all is said first
+    assert rw.readiness_items({**done, "class": {"atc": False, "classes": 0, "words": 0, "confirmed": False}}) == []
+    assert rw.readiness_items({**done, "names": {"languages_with_a_name": 0, "of": 15, "missing": []}}) == [
+        "no name to look for yet"]
+    assert rw.country_list(["France", "Germany", "Japan", "Spain"]) == "4 countries"
+
+
+def test_readiness_words_are_the_screens():
+    """The report's readiness words are the Ingredients page's (web/src/features/ingredients/readiness.ts)."""
+    ts = (ROOT / "web/src/features/ingredients/readiness.ts").read_text(encoding="utf-8")
+    for words in ("Still preparing: ", "Ready", "no name to look for yet", "class words tonight",
+                  "check of the past running", "check of the past tonight", "NCBI look-back running",
+                  "NCBI look-back tonight", "label watch on Monday (", "nobody receives its Telegram messages yet",
+                  " countries"):
+        assert words in ts, words
+
+
+def test_assemble_carries_each_ingredients_readiness():
+    db, data = _data()
+    assert any("ingredient_readiness(" in s for s in db.sql)
+    assert data["readiness"] == [{"name": "levofloxacin", "ready": False,
+                                  "text": rw.readiness_text(READINESS)}]
+    assert data["ingredients"][0]["readiness"] == data["readiness"][0]
+
+
+def test_the_pdf_and_excel_say_how_far_each_ingredient_is():
+    _, data = _data()
+    html = rw.render_weekly_html(data)
+    assert "Each ingredient: ready or still preparing" in html
+    assert "label watch on Monday (Japan, Spain)" in html
+    # in section 01, before the authorities are read
+    assert html.index("Each ingredient: ready or still preparing") < html.index('<span class="n">02</span>')
+    wb = load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))
+    rows = list(wb["Summary"].iter_rows(values_only=True))
+    assert ("Readiness: levofloxacin", rw.readiness_text(READINESS)) in [(r[0], r[1]) for r in rows]
 
 
 def test_clock_cells_say_due_late_and_sent_in_her_words():
