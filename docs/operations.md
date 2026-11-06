@@ -30,7 +30,8 @@ Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under th
 normal run one source gets at most 10 minutes (NCBI literature 15). When the budget runs out the run stops starting new notices
 and sources and ends cleanly; what is left waits for the next run, and the source checked longest ago goes
 first next time. The screening log shows "time budget reached" on a source that was cut short. A run that
-crashes is recorded as not ok.
+crashes is recorded as not ok. Every run except the weekly one ends with a pack asked for on Reports, when one
+waits (at most 20 minutes, see *Packs on request*): the 4h, 12h and monthly runs have 60 minutes, the daily 80.
 
 ## Actions minutes budget
 
@@ -539,8 +540,8 @@ What an inspector can be shown for any week (0046, 0047; the Reports page).
 - **Who signs.** A reviewer or an administrator signs a weekly report: "I have reviewed this report" (Reviewed)
   or "I approve this report" (Approved); an administrator is offered Approved first, a reviewer Reviewed. A reader
   sees the signatures and cannot sign. The monthly reports (administrators only) and the signals signed before
-  November 2026 keep their signatures in `sign_off`. Packs (PSUR, inspection) are signed once they are made:
-  until then `record_fingerprint('pack', …)` and `sign_record('pack', …)` answer "not yet".
+  November 2026 keep their signatures in `sign_off`. Packs (PSUR, inspection) are signed the same way once they
+  are made (0048, below): a pack still waiting has no files, so no fingerprint, and cannot be signed.
 - **How.** The signer chooses what the signature means, types their password and may add a comment. The page
   signs in again with that password; `sign_record()` accepts the signature only when the token shows a password
   sign-in in the last five minutes, and stores the name and role at that moment, the meaning, the database
@@ -560,6 +561,45 @@ What an inspector can be shown for any week (0046, 0047; the Reports page).
 - **The archive check.** `db-backup.yml` verify-archive (Sundays 00:43 UTC) re-hashes 50 random originals and
   10 random report files (the weekly and monthly PDF and Excel under `reports/`) against the database, checks
   that an overwrite is refused, and records the result in `archive_check`.
+
+## Packs on request
+
+A PSUR pack (one ingredient) or an inspection pack (the whole system), asked for on Reports → Packs (0048, the
+QPPV plan's phase 15). A reviewer or an administrator chooses the pack, the ingredient for a PSUR pack, and the
+days: at most five years, the first day not in the future. A PSUR pack starts at the ingredient's EURD interval
+(the day after the previous data lock point to the next one, as EMA's list sets it), cut at today; an ingredient
+with no interval that has started, and an inspection pack, start at the last 12 months. A reader sees the packs
+and their files and cannot ask for one.
+
+- **When it is made.** `request_report()` queues the request; the step "Packs on request", the last step of
+  every `collect.yml` run except the weekly and the classes runs, makes the oldest one waiting, one per run,
+  so within four hours. Chromium and the fonts are installed only when a request waits. The same pack asked for
+  again while it waits is the same request; once made it can be asked for again (a new request, new files).
+- **Time budget.** 15 minutes per request, checked between the pieces it is read in. A pack not finished waits
+  for the next run, with the note "Took longer than 15 minutes; the next collection run goes on with it."; after
+  three tries it is marked failed, with the reason. A run that died while making one leaves it "Being made now";
+  after two hours the next run takes it again. A pack that fails is never retried by itself: the reason is on
+  the request, and it is asked for again on Reports. A pack never fails the collection run.
+- **What it is read from.** The weekly report's own functions (`ingredient_screen()`, `ingredient_papers()`,
+  `paper_state()`, `label_changes()`, `finding_state()`, `screening_log()`), in pieces of at most 366 days (the
+  most each answers), summed: the pack, the weekly reports and the screens never disagree.
+- **The PSUR pack.** The EURD interval; §3 regulatory actions (every notice naming the ingredient or its class,
+  by country, with its decision, its report to the authority and its signal) and the answer of every country;
+  §4 label changes, each against our label; §11 literature, possible case reports first, with day zero and
+  the 15- and 90-day dates, and the searches; §15–16 signals (every signal a finding of these days belongs to,
+  with its stage, outcome and every step); the screening annex. Findings that do not concern us are left out of
+  §3, §4 and §11, counted in the PDF and listed with their reason on the Excel sheet "Not relevant".
+- **The inspection pack.** Coverage (every page of hers and whether the app reads it), the screening log,
+  every decision, every signature with whether the file still matches it, every report to the authority
+  (withdrawn ones too, with the reason), every weekly report with the SHA-256 of both files and its signatures,
+  the archive checks, the changes in the audit log counted per table, and the people and their roles.
+- **The files.** A4 PDF and an Excel file with a sheet per section, archived in R2 under
+  `reports/packs/<psur|inspection>/<request id>/` (never overwritten: a pack made again is stored as `-r2`),
+  with the SHA-256 of each on the request, the code (`git_sha`) and the run that made it. Reports shows both
+  files with their SHA-256 and the signatures, exactly as a weekly report.
+- **Who is told.** The person who asked (when their Telegram is linked) and every administrator: "pack ready",
+  with the PDF attached up to 20 MB, or "pack not made" with the reason. Dry run as every message: with
+  `telegram_dry_run` on, the notification is recorded and nothing is sent.
 
 ## NCBI literature (PubMed and PubMed Central)
 

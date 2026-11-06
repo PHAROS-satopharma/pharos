@@ -440,6 +440,57 @@ class Store:
                 order by o.due, s.ref""", {"d": today, "w": within_days})
         return [{**r, "days_left": int(r["days_left"])} for r in rows]
 
+    # ───────────────────────────── packs on request (0048) ─────────────────────────────
+    REPORT_STALE = "2 hours"   # a build started this long ago and never finished (the run died) is taken again
+
+    def report_requests_waiting(self) -> int:
+        """How many packs wait to be made: queued, or a build that started over two hours ago and never ended."""
+        row = self.db.fetchone(
+            f"""select count(*) as n from report_request
+                 where status = 'queued'
+                    or (status = 'building' and started_at < now() - interval '{self.REPORT_STALE}')""")
+        return int((row or {}).get("n") or 0)
+
+    def claim_report_request(self) -> dict | None:
+        """Takes the oldest waiting request for this run (a run in parallel skips it), marks it building and
+        counts the attempt. Returns it with the name of the person who asked, or None."""
+        row = self.db.fetchone(
+            f"""with next as (
+                  select id from report_request
+                   where status = 'queued'
+                      or (status = 'building' and started_at < now() - interval '{self.REPORT_STALE}')
+                   order by requested_at, id
+                   limit 1
+                   for update skip locked)
+                update report_request r
+                   set status = 'building', attempts = r.attempts + 1, started_at = now()
+                  from next
+                 where r.id = next.id
+             returning r.id::text as id, r.kind, r.ingredient_id::text as ingredient_id, r.from_day, r.to_day,
+                       r.requested_by::text as requested_by, r.requested_at, r.attempts, r.error,
+                       (select p.full_name from person p where p.id = r.requested_by) as requested_by_name,
+                       (select i.inn_en from ingredient i where i.id = r.ingredient_id) as ingredient_name""")
+        return dict(row) if row else None
+
+    def finish_report_request(self, request_id: str, *, pdf_r2_key: str, pdf_sha256: str, xlsx_r2_key: str,
+                              xlsx_sha256: str, git_sha: str | None, made_by_run: str | None) -> None:
+        self.db.execute(
+            """update report_request
+                  set status = 'done', error = null, made_at = now(), pdf_r2_key = %(pk)s, pdf_sha256 = %(ps)s,
+                      xlsx_r2_key = %(xk)s, xlsx_sha256 = %(xs)s, git_sha = %(g)s, made_by_run = %(r)s
+                where id = %(id)s::uuid""",
+            {"id": request_id, "pk": pdf_r2_key, "ps": pdf_sha256, "xk": xlsx_r2_key, "xs": xlsx_sha256,
+             "g": git_sha, "r": made_by_run})
+
+    def fail_report_request(self, request_id: str, error: str) -> None:
+        self.db.execute("update report_request set status = 'failed', error = %(e)s where id = %(id)s::uuid",
+                        {"id": request_id, "e": error[:1000]})
+
+    def requeue_report_request(self, request_id: str, note: str) -> None:
+        """A build cut short by its time budget waits for the next run, with the note shown on Reports."""
+        self.db.execute("update report_request set status = 'queued', error = %(e)s where id = %(id)s::uuid",
+                        {"id": request_id, "e": note[:1000]})
+
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         """Delivered, or at least its text was: a PDF refused after the text went out still has a
         message id, and sending the text again would repeat it."""

@@ -1,0 +1,169 @@
+{% extends "pack_base.html" %}
+{# The PSUR pack (collectors/report_pack.py, phase 15): what PHAROS read for one ingredient over the days asked
+   for, laid out by the PSUR sections it feeds (GVP Module VII): §3 regulatory actions, §4 label changes, §11
+   literature, §15–16 signals. The Excel file holds the same rows, and the findings that do not concern us. #}
+{% block subtitle %} · {{ data.ingredient.name }}{% endblock %}
+{% block sections %}
+{% from "pack_macros.html" import link, by_email, answer_dot %}
+{% macro decision(m) %}<span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %}<br><span class="comment">{{ m.decided_by }}, {{ m.decided_at }}</span>{% endif %}{% if m.reason %}<br><span class="comment">{{ m.reason }}</span>{% endif %}</span>{% endmacro %}
+{% macro clock(m) %}{% if m.sent_text %}{{ m.sent_text }}{% elif m.due %}Due to the authority {{ m.due }}{% endif %}{% if m.signal %}<br><span class="comment">{{ m.signal }}</span>{% endif %}{% endmacro %}
+
+<h3>The reporting interval</h3>
+{% if data.eurd %}
+<table>
+  <thead><tr><th>Substance</th><th>Frequency</th><th>Data lock point</th><th>Interval</th><th>Next DLP</th><th>Generics</th></tr></thead>
+  <tbody>
+  {% for e in data.eurd %}
+  <tr>
+    <td>{{ e.substance }}{% if e.combination %} <span class="tag">Combination</span>{% endif %}{% if e.list %}<br><span class="comment">EURD list {{ e.list }}</span>{% endif %}</td>
+    <td>{{ e.frequency }}</td><td>{{ e.dlp }}</td><td>{{ e.interval }}</td><td>{{ e.next_dlp }}</td><td>{{ e.generics }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">{{ data.ingredient.name }} is not in EMA's EURD list.</div>
+{% endif %}
+<p class="lede">This pack covers {{ period.label }}{% if data.asked %}, asked for by {{ data.asked }}{% endif %}.</p>
+
+<section class="part">
+<h2><span class="n">02</span>§3 Regulatory actions</h2>
+<p class="lede">Every notice of an authority that names {{ data.ingredient.name }} or its class, by country, with the decision taken on it, its report to the authority and its signal.</p>
+{% if data.actions %}
+{% for a in data.actions %}
+<h3>{{ a.country }} <span class="sub">{{ a.group }} · {{ a.authorities }}</span></h3>
+<table>
+  <thead><tr><th>Date</th><th>Notice</th><th>Decision</th><th>Authority and signal</th></tr></thead>
+  <tbody>
+  {% for m in a.mentions %}
+  <tr class="mention">
+    <td>{{ m.day }}</td>
+    <td><span class="title-orig" lang="{{ m.lang or '' }}">{{ m.title }}</span>{% if m.doc_type %} <span class="tag">{{ m.doc_type }}</span>{% endif %}{% if m.by_class %} <span class="tag">By class</span>{% endif %}{% if m.history %} <span class="tag">History</span>{% endif %}
+      <div class="what">{{ m.authority }}{% if m.words %} · {{ m.words }}{% endif %}</div>{{ link(m.link) }}{{ by_email(m) }}</td>
+    <td>{{ decision(m) }}</td>
+    <td>{{ clock(m) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+{% else %}
+<div class="empty">No authority named {{ data.ingredient.name }} in these days.</div>
+{% endif %}
+
+<h3>Every country, over these days</h3>
+<table>
+  <thead><tr><th>Country</th><th>Group</th><th>Answer</th></tr></thead>
+  <tbody>
+  {% for c in data.countries %}
+  <tr><td>{{ c.country }}</td><td class="comment">{{ c.group }}</td><td class="answer">{{ answer_dot(c.answer) }}{{ c.answer_text }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</section>
+
+<section class="part">
+<h2><span class="n">03</span>§4 Label changes</h2>
+<p class="lede">The changes PHAROS detected in the product information of reference products, each against our own label.</p>
+{% if data.labels %}
+<table>
+  <thead><tr><th>Detected</th><th>Product</th><th>Sections</th><th>Our label</th><th>Decision</th><th>Authority and signal</th></tr></thead>
+  <tbody>
+  {% for m in data.labels %}
+  <tr>
+    <td>{{ m.day }}{% if m.label_day %}<br><span class="comment">Label of {{ m.label_day }}</span>{% endif %}</td>
+    <td>{{ m.product }}{% if m.reference %} <span class="tag">Reference</span>{% endif %}<div class="what">{{ m.country }} · {{ m.authority }}{% if m.mah %} · {{ m.mah }}{% endif %}</div>{{ link(m.link) }}</td>
+    <td>{{ m.sections }}</td>
+    <td>{{ m.gap_summary }}{% if m.our_label %}<br><span class="comment">{{ m.our_label }}</span>{% endif %}</td>
+    <td>{{ decision(m) }}</td>
+    <td>{{ clock(m) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No label change was detected in these days.</div>
+{% endif %}
+</section>
+
+<section class="part">
+<h2><span class="n">04</span>§11 Literature</h2>
+<p class="lede">{{ data.literature.papers | length }} papers in PubMed and PubMed Central{% if data.literature.case_reports %}, {{ data.literature.case_reports }} of them possible case reports (listed first){% endif %}.{% if data.literature.mlm %} {{ data.literature.mlm }}.{% endif %}</p>
+{% if data.literature.papers %}
+<table>
+  <thead><tr><th>Date</th><th>Paper</th><th>Case report</th><th>Decision</th></tr></thead>
+  <tbody>
+  {% for p in data.literature.papers %}
+  <tr>
+    <td>{{ p.day }}</td>
+    <td><span class="title-orig" lang="{{ p.lang or '' }}">{{ p.title }}</span>{% if p.by_class %} <span class="tag">By class</span>{% endif %}{% if p.history %} <span class="tag">History</span>{% endif %}
+      <div class="what">{{ p.journal }}</div>{% if p.pubmed %}{{ link(p.pubmed, 'PubMed ' ~ p.pubmed_id) }}{% endif %}{% if p.pmc %}{% if p.pubmed %} · {% endif %}{{ link(p.pmc, p.pmc_id) }}{% endif %}</td>
+    <td>{% if p.case_report %}Possible: {{ p.case_reason }}<br><span class="comment">Day zero {{ p.day_zero }} · 15 days {{ p.due_serious }} · 90 days {{ p.due_nonserious }}</span>{% endif %}</td>
+    <td>{{ decision(p) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No paper in these days.</div>
+{% endif %}
+{% if data.literature.searches %}
+<h4>Searches</h4>
+<table>
+  <thead><tr><th>Search</th><th>Searched as</th><th class="num">PubMed</th><th class="num">PubMed Central</th></tr></thead>
+  <tbody>
+  {% for s in data.literature.searches %}
+  <tr><td>{{ s.query }}</td><td class="comment">{{ s.kind }}</td><td class="num">{{ s.pubmed }}</td><td class="num">{{ s.pmc }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+</section>
+
+<section class="part">
+<h2><span class="n">05</span>§15–16 Signals</h2>
+<p class="lede">Every signal opened from a finding of these days: its stage, its outcome and every step taken.</p>
+{% if data.signals %}
+<table>
+  <thead><tr><th>Signal</th><th>Stage</th><th>Outcome</th><th>Steps</th></tr></thead>
+  <tbody>
+  {% for s in data.signals %}
+  <tr>
+    <td><strong>{{ s.ref }}</strong><br>{{ s.title }}{% if s.findings %}<div class="what">{{ s.findings | join('; ') }}</div>{% endif %}</td>
+    <td>{{ s.stage }}{% if s.priority %}, {{ s.priority }} priority{% endif %}{% if s.next_due %}<br><span class="comment">Next step due {{ s.next_due }}{% if s.overdue %} (late){% endif %}</span>{% endif %}{% if s.owner %}<br><span class="comment">Owner: {{ s.owner }}</span>{% endif %}</td>
+    <td>{{ s.outcome }}</td>
+    <td><ul class="steps">{% for e in s.steps %}<li>{{ e.at }} · {{ e.step }} · {{ e.person }}{% if e.comment %}: {{ e.comment }}{% endif %}</li>{% endfor %}</ul></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No finding of these days opened a signal.</div>
+{% endif %}
+
+<h3>Findings that do not concern us</h3>
+<p class="lede">Left out of the sections above; each is listed, with its reason, on the sheet "Not relevant" of the Excel file.</p>
+<table>
+  {% for k, n in data.not_relevant_counts %}
+  <tr><td>{{ k }}</td><td class="num">{{ n }}</td></tr>
+  {% endfor %}
+</table>
+</section>
+
+<section class="part">
+<h2><span class="n">06</span>Screening annex</h2>
+<p class="lede">Every source PHAROS reads, and how often it read it in these days.</p>
+<table>
+  <thead><tr><th>Country</th><th>Source</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">Matched</th><th>Last read</th></tr></thead>
+  <tbody>
+  {% for r in data.annex %}
+  <tr>
+    <td>{{ r.country }}</td>
+    <td>{{ r.authority }}<br><span class="comment">{{ r.source }} · {{ r.kind }}{% if not r.enabled %} · switched off{% endif %}</span>{% if r.why %}<br><span class="comment">{{ r.why }}</span>{% endif %}</td>
+    <td class="num">{{ r.runs }}</td><td class="num">{{ r.failed }}</td><td class="num">{{ r.matched }}</td><td class="code">{{ r.last_run }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</section>
+{% endblock %}

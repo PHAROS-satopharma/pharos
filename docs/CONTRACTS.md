@@ -558,7 +558,7 @@ audit_log  -- append-only (0046): trigger audit_log_no_change (before update or 
 sign_kind  -- + 'weekly_report', 'pack' (0046; used from 0047 on).
 record_fingerprint(p_kind sign_kind, p_id uuid) returns text   -- 0047, same signature and grants, now plpgsql:
   -- null for someone not on the team; monthly_report and weekly_report: sha256(pdf_sha256 || ':' || xlsx_sha256)
-  -- as hex; signal as 0030; pack raises 0A000 "… not yet …" until the pack table exists (Phase 15 replaces it).
+  -- as hex; signal as 0030; pack: as the reports, from report_request (0048; null until the pack is made).
 sign_record(p_kind, p_id, p_meaning sign_meaning, p_comment) returns uuid   -- 0047, same signature and grants:
   -- weekly_report (and pack): reviewer or admin, either meaning (reviewed / approved); monthly_report: admin;
   -- signal: reviewer or admin, once closed. Password sign-in in the last 300 s (amr) or 28P01; the same person,
@@ -570,6 +570,36 @@ Web: Reports (`web/src/features/reports/ReportsPage.tsx`, `FileHash.tsx`), `web/
 `shortHash`, `signatureState`, `STATE_LABEL` "Fingerprint matches" / "File changed since signing",
 `defaultMeaning`), `styles/signoff.css`. Workflow: `db-backup.yml` verify-archive samples 50 originals plus 10
 `weekly_report` / `monthly_report` files. SQL test: `supabase/tests/sign_off_weekly.sql`; web: `signoff.test.ts`.
+
+## Packs on request (0048)
+
+```sql
+report_request (id uuid, kind text 'psur'|'inspection', ingredient_id uuid (psur only, required there),
+  from_day date, to_day date (Cairo days, both included, at most 5 years), requested_by uuid → person,
+  requested_at, status text 'queued'|'building'|'done'|'failed', error text (the reason, or a note while it
+  waits), attempts int, started_at, pdf_r2_key, pdf_sha256, xlsx_r2_key, xlsx_sha256, made_at (all five
+  required when done), git_sha, made_by_run)
+  -- unique (kind, ingredient, from_day, to_day) while queued or building (report_request_one_waiting).
+  -- The team reads (my_role() is not null); no write for anon or authenticated; service_role holds nothing;
+  -- audited (audit_row). The collector writes on its direct connection (the owner).
+request_report(p_kind text, p_ingredient uuid, p_from date, p_to date) returns uuid   -- security definer:
+  -- reviewer or admin (42501); kind, ingredient and days checked (22023; an unknown ingredient P0002; more than
+  -- five years or a first day after signal_cairo_today() 22023). The same pack still waiting: its id.
+record_fingerprint('pack', id)   -- sha256(pdf_sha256 || ':' || xlsx_sha256) of the request; null until made,
+  -- so sign_record('pack', …) refuses a pack not made (22023) and signs a made one as a weekly report.
+```
+
+Collector: `collectors/report_pack.py` (`python -m collectors.report_pack [--dry-run]`; `--waiting` prints the
+count), templates `report_templates/pack_base.html`, `pack_macros.html`, `psur.html`, `inspection.html`.
+`Store`: `report_requests_waiting()`, `claim_report_request()` (the oldest queued, or building for over 2 hours;
+`for update skip locked`; attempts + 1; returns `requested_by_name`, `ingredient_name`),
+`finish_report_request()`, `fail_report_request()`, `requeue_report_request()`; `MemoryStore` the same plus
+`add_report_request()`. Archive keys `reports/packs/<kind>/<id>/<stem>.pdf|.xlsx` (`put_named(revise=True)`);
+`archive-url` serves them. Telegram kind `report`, to the requester (`reminder_people()`) and `admins()`.
+Workflow: `collect.yml` steps "Packs waiting?" and "Packs on request" (last; `!cancelled()`; 20 minutes; never
+weekly or classes). Web: `web/src/lib/psur.ts` (`frequencyMonths`, `intervalFor`), `features/reports/packs.ts`,
+`Packs.tsx` (query key `['report-requests']`), `styles/reports-packs.css`. Tests: `tests/test_report_pack.py`,
+`tests/test_store_pg.py`, `supabase/tests/report_request.sql`, `packs.test.ts`, `psur.test.ts`.
 
 ## The Japan code of an ingredient that exists (0052)
 
