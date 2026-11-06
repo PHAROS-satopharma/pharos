@@ -169,6 +169,7 @@ def summary_rows(data: dict, month: Month) -> list[tuple[str, Any]]:
 # ───────────────────────────── XLSX ─────────────────────────────
 
 XLSX_INK, XLSX_RULE = "02224C", "D9D5CC"   # the navy of the logo, the hairline
+XLSX_SEA, XLSX_MUTED = "1F4E5F", "5B6670"   # headings and links; the quiet words
 
 
 def xlsx_workbook(title: str):
@@ -184,11 +185,25 @@ def xlsx_workbook(title: str):
 
 
 def xlsx_print_credit(ws) -> None:
-    """Every printed page carries the credit and its page number."""
+    """Every printed page carries the report's name above, the credit and its page number below, and prints on A4
+    landscape, one page wide; the screen shows no gridlines (the hairlines are the rules)."""
+    title = ws.parent.properties.title or ""
+    ws.oddHeader.left.text = f"{title} · {ws.title}" if title else ws.title
+    ws.oddHeader.left.size = 8
+    ws.oddHeader.left.color = XLSX_INK
     ws.oddFooter.left.text = f"{copyright_line()} Pharmacovigilance Department."
     ws.oddFooter.left.size = 8
     ws.oddFooter.right.text = "Page &P of &N"
     ws.oddFooter.right.size = 8
+    ws.sheet_view.showGridLines = False
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_options.horizontalCentered = True
+    ws.page_margins.left = ws.page_margins.right = 0.4
+    ws.page_margins.top = ws.page_margins.bottom = 0.6
 
 
 def xlsx_text(cell, value: Any) -> None:
@@ -205,40 +220,58 @@ def xlsx_text(cell, value: Any) -> None:
 
 
 def xlsx_sheet(wb, title: str, header: list[str], rows: list[list[Any]], widths: list[int], *,
-               links: bool = False):
-    """One table: a navy header row, wrapped body rows under a hairline, frozen and filterable. With ``links``,
-    every cell holding a web address opens it."""
+               links: bool = False, empty: str | None = None):
+    """One table: a navy header row (printed on every page), wrapped body rows under a hairline, frozen and
+    filterable, numbers to the right. With ``links``, every cell holding a web address opens it. With no row,
+    ``empty`` says so in words."""
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
 
-    head_font = Font(name="IBM Plex Sans", bold=True, color="FFFFFF")
-    head_fill = PatternFill("solid", fgColor="1F4E5F")
+    head_font = Font(name="IBM Plex Sans", bold=True, size=9, color="FFFFFF")
+    head_fill = PatternFill("solid", fgColor=XLSX_INK)
     thin = Border(bottom=Side(style="thin", color=XLSX_RULE))
-    body_font = Font(name="IBM Plex Sans", color=XLSX_INK)
+    body_font = Font(name="IBM Plex Sans", size=9, color=XLSX_INK)
+    link_font = Font(name="IBM Plex Sans", size=9, color=XLSX_SEA, underline="single")
     ws = wb.create_sheet(title)
     ws.append(header)
+    ws.row_dimensions[1].height = 24
     for c in ws[1]:
-        c.font, c.fill, c.alignment = head_font, head_fill, Alignment(vertical="center")
+        c.font, c.fill = head_font, head_fill
+        c.alignment = Alignment(vertical="center", wrap_text=True)
+    numeric = [True] * len(header)
     for r, values in enumerate(rows, start=2):
         for k, v in enumerate(values, start=1):
             c = ws.cell(row=r, column=k)
             xlsx_text(c, v)
             c.font, c.border = body_font, thin
-            c.alignment = Alignment(wrap_text=True, vertical="top")
+            number = isinstance(v, (int, float)) and not isinstance(v, bool)
+            if k <= len(numeric) and not number and v not in (None, ""):
+                numeric[k - 1] = False
+            c.alignment = Alignment(wrap_text=not number, vertical="top", horizontal="right" if number else None)
             if links and isinstance(v, str) and v.startswith(("https://", "http://")):
                 c.hyperlink = v
+                c.font = link_font
+    # a column of numbers has its header over them, on the right
+    for k, is_number in enumerate(numeric, start=1):
+        if is_number and rows:
+            ws.cell(row=1, column=k).alignment = Alignment(vertical="center", horizontal="right", wrap_text=True)
     for k, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(k)].width = w
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
+    if not rows and empty:
+        c = ws.cell(row=2, column=1, value=empty)
+        c.font = Font(name="IBM Plex Sans", size=9, italic=True, color=XLSX_MUTED)
+    ws.print_title_rows = "1:1"
     xlsx_print_credit(ws)
     return ws
 
 
-def xlsx_summary(ws, rows: list[tuple[str, Any]]) -> None:
-    """The Summary sheet: the wide PHAROS logo, the figures, then the maker's credit (a hairline, the small Sato
-    Pharma logo, the credit and the copyright)."""
-    from openpyxl.styles import Border, Font, Side
+def xlsx_summary(ws, rows: list[tuple[str, Any]],
+                 groups: list[tuple[str, list[tuple[str, Any]]]] | None = None) -> None:
+    """The Summary sheet: the wide PHAROS logo, the figures (under their headings when ``groups`` are given), then
+    the maker's credit (a hairline, the small Sato Pharma logo, the credit and the copyright)."""
+    from openpyxl.styles import Alignment, Border, Font, Side
 
     first = 1
     if LOGO_WIDE.exists():
@@ -259,6 +292,31 @@ def xlsx_summary(ws, rows: list[tuple[str, Any]]) -> None:
     ws.column_dimensions["B"].width = 48
     ws[f"A{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=XLSX_INK)
     ws[f"B{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=XLSX_INK)
+    if groups:
+        quiet = Font(name="IBM Plex Sans", size=9, color=XLSX_MUTED)
+        label = Font(name="IBM Plex Sans", size=9, color=XLSX_INK)
+        rule = Border(bottom=Side(style="thin", color=XLSX_RULE))
+        for r in range(first + 1, ws.max_row + 1):
+            ws[f"A{r}"].font = ws[f"B{r}"].font = quiet
+        for heading, items in groups:
+            ws.append([])
+            ws.append([heading])
+            h = ws.max_row
+            ws.row_dimensions[h].height = 20
+            ws[f"A{h}"].font = Font(name="IBM Plex Sans", bold=True, size=10, color=XLSX_SEA)
+            for col in ("A", "B"):
+                ws[f"{col}{h}"].border = Border(bottom=Side(style="thin", color=XLSX_INK))
+                ws[f"{col}{h}"].alignment = Alignment(vertical="bottom")
+            for k, v in items:
+                ws.append([k, None])
+                r = ws.max_row
+                xlsx_text(ws.cell(row=r, column=2), v)
+                for col in ("A", "B"):
+                    ws[f"{col}{r}"].font, ws[f"{col}{r}"].border = label, rule
+                ws[f"A{r}"].alignment = Alignment(vertical="top", wrap_text=True)
+                ws[f"B{r}"].alignment = Alignment(horizontal="right", vertical="top", wrap_text=True)
+        ws.column_dimensions["A"].width = 46
+        ws.column_dimensions["B"].width = 72
     gap = ws.max_row + 2
     for col in ("A", "B"):
         ws[f"{col}{gap}"].border = Border(top=Side(style="thin", color=XLSX_RULE))
@@ -415,6 +473,8 @@ def main(argv: list[str] | None = None) -> int:
                        help="the daily report of yesterday, the last Cairo day that has ended")
     which.add_argument("--day", help="YYYY-MM-DD: the daily report of that Cairo day")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--preview", action="store_true",
+                    help="a daily or weekly report written to REPORT_DIR only: not archived, recorded or sent")
     args = ap.parse_args(argv)
     from collectors import report_weekly
 
@@ -440,7 +500,7 @@ def main(argv: list[str] | None = None) -> int:
 
     db = Db()
     if week is not None:
-        result = report_weekly.make_weekly_report(db, Store(db), week, dry_run=args.dry_run)
+        result = report_weekly.make_weekly_report(db, Store(db), week, dry_run=args.dry_run, preview=args.preview)
     else:
         month = Month(date.fromisoformat(args.month + "-01"))
         result = make_report(db, Store(db), month, dry_run=args.dry_run)
