@@ -94,6 +94,8 @@ export function CodedReactions({ ingredientId, from, to }: { ingredientId: strin
   const topics = q.data?.topics ?? [];
   const labels = q.data?.labels ?? [];
   const anyLabel = labels.length > 0;
+  // "Not in our label" only when our label was read; with the reference label alone, say that one (as section 06)
+  const ours = labels.some((l) => l.source === 'our_label');
   return (
     <section className="scr-section" aria-label="Reactions by MeSH">
       <SectionHead index="05" title="Reactions by MeSH" aside={q.data ? `${terms.length}` : undefined} />
@@ -172,8 +174,15 @@ export function CodedReactions({ ingredientId, from, to }: { ingredientId: strin
                             {LISTED[t.listed].label}
                           </Tag>
                         ) : anyLabel ? (
-                          <Tag tone="danger" title="Neither our label nor the reference label names it or a broader heading.">
-                            Not in our label
+                          <Tag
+                            tone="danger"
+                            title={
+                              ours
+                                ? 'Neither our label nor the reference label names it or a broader heading.'
+                                : 'The reference product’s adverse reactions do not name it or a broader heading. No label of ours in English is read.'
+                            }
+                          >
+                            {ours ? 'Not in our label' : 'Not in the reference label'}
                           </Tag>
                         ) : (
                           <span className="scr-quiet">–</span>

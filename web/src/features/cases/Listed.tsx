@@ -17,7 +17,12 @@ export function Listed({ ingredientId, ui }: { ingredientId: string | null; ui: 
         supabase.rpc('mesh_listed', { p_ingredient: ingredientId, p_ui: ui }),
         supabase.from('label_coded').select('source').eq('ingredient_id', ingredientId!),
       ]);
-      return { listed: unwrap<string | null>(listed), labels: (unwrap<{ source: string }[] | null>(coded) ?? []).length };
+      const rows = unwrap<{ source: string }[] | null>(coded) ?? [];
+      return {
+        listed: unwrap<string | null>(listed),
+        labels: rows.length,
+        ours: rows.some((r) => r.source === 'our_label'),
+      };
     },
   });
   if (!ingredientId || !ui || !q.data || !q.data.labels) return null;
@@ -31,6 +36,16 @@ export function Listed({ ingredientId, ui }: { ingredientId: string | null; ui: 
     return (
       <Tag tone="blue" title="Not found in our label; the reference product’s adverse reactions name it.">
         In the reference label
+      </Tag>
+    );
+  // "Not in our label" only when our label was read; with the reference label alone, say that one
+  if (!q.data.ours)
+    return (
+      <Tag
+        tone="danger"
+        title="The reference product’s adverse reactions do not name it or a broader heading. No label of ours in English is read."
+      >
+        Not in the reference label
       </Tag>
     );
   return (
