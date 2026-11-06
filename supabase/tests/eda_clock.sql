@@ -234,7 +234,8 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 set role authenticated;
 select pg_temp.ec_refused($q$select finding_state(array['00000000-0000-0000-0000-00000041e002']::uuid[])$q$) as ec_stranger \gset
 select pg_temp.ec_refused($q$select * from v_eda_clock$q$) as ec_stranger_view \gset
-select pg_temp.ec_refused($q$select count(*) from authority_report$q$) as ec_stranger_rows \gset
+-- psql unsets a variable for a null, so a query that is not refused answers 'allowed'
+select coalesce(pg_temp.ec_refused($q$select count(*) from authority_report$q$), 'allowed') as ec_stranger_rows \gset
 reset role;
 set role anon;
 select pg_temp.ec_refused($q$select finding_state('{}'::uuid[])$q$) as ec_anon \gset
@@ -244,7 +245,7 @@ select set_config('request.jwt.claims', '', false);
 select pg_temp.ec_assert(:'ec_stranger' like '42501%' and :'ec_stranger_view' like '42501%'
     and :'ec_anon' like '42501%' and :'ec_anon_rows' like '42501%',
   'someone signed in but not on the team, and signed-out visitors, read nothing of the clock');
-select pg_temp.ec_assert(:'ec_stranger_rows' is null and (
+select pg_temp.ec_assert(:'ec_stranger_rows' = 'allowed' and (
   select count(*) from authority_report) > 0, 'row-level security hides authority_report from a stranger');
 select pg_temp.ec_assert(
   has_function_privilege('authenticated', 'public.finding_state(uuid[])', 'execute')
