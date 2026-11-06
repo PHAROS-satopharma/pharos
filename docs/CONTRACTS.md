@@ -297,6 +297,28 @@ ingredient_match_relation(p_ingredient uuid, p_document uuid) returns text
 - Store: `link_ingredient_class(ingredient_id, class_id, *, relation='group', enabled=True)` (on conflict
   nothing); `memstore.set_class_search(ingredient_id, class_id, enabled)`.
 
+## Notices only: a class kept out of the literature search (0051)
+
+```sql
+-- ingredient_class: + literature boolean not null default true; audited; dated in changed_at like enabled
+--   (trigger ingredient_class_relation). Every link existing on 0051 stays in the literature.
+-- It counts only while enabled. enabled and literature = the class's English words are also searched on PubMed
+-- and PubMed Central; enabled and not literature = its words are matched in notices only (every language).
+-- Readers of ENABLED AND LITERATURE: Store.class_words (the daily NCBI watch, collectors/parsers/pubmed.py),
+-- literature-search, report_weekly SEARCHES_SQL, ingredient_screen's literature searches, ingredient_readiness
+-- ncbi (expected and look_back_done). Everything else that 0049 lists still reads enabled alone: load_terms,
+-- class_ingredients, rematch_due_terms, the screen's class_words and class_languages, readiness class words.
+-- Switching literature never makes a word due for the check of the past. Papers already found are kept; a word
+-- back in the literature after STALE_DAYS is looked back on again, after less its days are caught up.
+set_class_literature(p_ingredient uuid, p_class uuid, p_on boolean) returns void
+  -- administrators only (security definer; 42501 for anyone else); P0002 when not linked; null = true
+```
+
+- `ingredient_screen` classes gain `literature`; the screen's head says "NSAID (notices only)".
+- Web: `ClassLink.literature`; the class line's second switch **In the literature search** / **Notices only**
+  (administrators, shown while the class is searched); `profileWords` marks the English words of such a class
+  `notInLiterature`. Store twin: `memstore.set_class_literature(ingredient_id, class_id, on)`.
+
 ## The Ingredients screen (0039)
 
 ```sql

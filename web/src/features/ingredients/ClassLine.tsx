@@ -31,7 +31,9 @@ type HitState = { busy: boolean; count?: number; error?: string };
  * can be tested against the archive, and an administrator adds or removes words. A class word is looked for only
  * in notices in its own language, and a notice that names only the class reaches the daily digest, never an
  * immediate message. The class above the group starts switched off: its words are read first. A group added by
- * hand can be removed from the ingredient; a class from the ATC code is switched off instead.
+ * hand can be removed from the ingredient; a class from the ATC code is switched off instead. A searched class can
+ * be kept out of the literature search (0051): its words then stay in notices only, so a wide class such as
+ * NSAID does not flood PubMed and PubMed Central.
  */
 export function ClassLine({
   cls,
@@ -71,6 +73,14 @@ export function ClassLine({
     },
     onSuccess: refresh,
   });
+  // In the literature or notices only: the words stay in notices either way. Papers already found are kept.
+  const setLiterature = useMutation({
+    mutationFn: async (on: boolean) => {
+      unwrap(await supabase.rpc('set_class_literature', { p_ingredient: ingredientId, p_class: cls.id, p_on: on }));
+    },
+    onSuccess: refresh,
+  });
+  const inLiterature = link.literature !== false;
   const unlink = useMutation({
     mutationFn: async () => {
       unwrap(await supabase.rpc('unlink_search_group', { p_ingredient: ingredientId, p_class: cls.id }));
@@ -143,6 +153,20 @@ export function ClassLine({
             <Tag tone="quiet">{link.enabled ? 'Searched' : 'Not searched'}</Tag>
           )}
         </span>
+        {link.enabled ? (
+          <span className="dc-switch">
+            {isAdmin ? (
+              <Toggle
+                checked={inLiterature}
+                disabled={setLiterature.isPending}
+                onChange={(v) => setLiterature.mutate(v)}
+                label={inLiterature ? 'In the literature search' : 'Notices only'}
+              />
+            ) : !inLiterature ? (
+              <Tag tone="quiet">Notices only</Tag>
+            ) : null}
+          </span>
+        ) : null}
         <span className="dc-confirm">
           {cls.confirmed_at ? (
             <span className="small">
@@ -176,8 +200,15 @@ export function ClassLine({
           New words: the daily run is checking the stored notices of the last 12 months with them.
         </p>
       ) : null}
+      {link.enabled && !inLiterature ? (
+        <p className="dc-note small muted">
+          Notices only: its words are looked for in notices but not on PubMed or PubMed Central. Papers already
+          found by them stay.
+        </p>
+      ) : null}
       {confirm.isError ? <Notice tone="error">Not confirmed: {errorMessage(confirm.error)}</Notice> : null}
       {setSearch.isError ? <Notice tone="error">Not changed: {errorMessage(setSearch.error)}</Notice> : null}
+      {setLiterature.isError ? <Notice tone="error">Not changed: {errorMessage(setLiterature.error)}</Notice> : null}
 
       {open ? (
         <div className="dc-words" id={panelId}>
