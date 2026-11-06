@@ -123,6 +123,15 @@ def test_ocr_fuzzy_is_possible_only(matcher):
     assert not DocumentMatch(hits).has_high
 
 
+def test_ocr_never_finds_a_code_by_near_spelling():
+    # ivabradine's Japan code 2190039 "possibly" matched the number 21900 in a scanned newsletter (6 Nov 2026)
+    code = Term(id="jp", term="2190039", lang="ja", mode="exact", ingredient_id="iv", kind="code")
+    lab = Term(id="lab", term="S16257", lang="en", mode="exact", ingredient_id="iv", kind="synonym")
+    m = Matcher([code, lab])
+    assert m.match_text("Sitzung 21900 und S16258", "attachment", lang="de", ocr=True) == []
+    assert [h.term.id for h in m.match_text("YJ 2190039", "attachment", lang="de", ocr=True)] == ["jp"]
+
+
 def test_class_term_does_not_lift_a_possible_ingredient_hit(matcher):
     # An exact class term ("NSAR") next to an OCR near-miss of the ingredient: still no alert.
     text = "Hinweis zu NSAR. Das Präparat enthält Lornoxicarn 8 mg."
