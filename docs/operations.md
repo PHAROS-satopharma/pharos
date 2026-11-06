@@ -365,13 +365,15 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
   `collectors/eurd.py`), whether EMA's literature monitoring covers it, and who receives its Telegram messages.
 - **Japan:** PMDA's search is a form that answers a POST only, so PHAROS cannot look a package insert up by
-  name. The term editor has a *Japan code* field when an ingredient is added, and an administrator finds the
+  name. The term editor has a *Japan codes* field when an ingredient is added, and an administrator finds the
   same field on any ingredient already on the watchlist: open its row (the triangle beside the name), then
-  *Japan code*. Open the PMDA search (link beside the field), search the name, open the product and copy the
+  *Japan codes*. Open the PMDA search (link beside the field), search the name, open the product and copy the
   7-character code from its address (`…/GeneralList/<code>`; the 12-character YJ code is accepted and kept as the
-  7 characters it starts with), then **Save**. The row shows the code it has now with a link to its products on
-  PMDA; a new code replaces the old one and leaves every name alone (`set_japan_code()`, migration 0052; audited).
-  Japan's label watch uses it at its next weekly run. Like any new word it is due for the check of the past that
+  7 characters it starts with), then **Save**. PMDA files each form under its own code (paracetamol: 1141007
+  tablets, 1141700 suppositories, 1141400 injection): type every one, separated by commas. The row shows the codes
+  it has now, each with a link to its products on PMDA; **Save** keeps exactly the codes typed, removes one left
+  out, and leaves every name alone (`set_japan_codes()`, migration 0069; audited). A wrong code is named and nothing
+  is saved. Japan's label watch reads every code at its next weekly run. Like any new word it is due for the check of the past that
   night (0034); the readiness line does not wait for that, since a code is not a name. Without a code the row says *No Japan code
   yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
 
@@ -382,8 +384,8 @@ the English name or any name: its wording, kind, matching, exclusions or country
 press **Remove** (an emptied name is removed too). Nothing is written until **Save**; **Cancel** leaves it as it
 was. The rows are written directly (the ingredient_term admin policy, 0001; every change is in the audit log), so
 the edit is not one step: if a write fails part-way, the screen says so and the list shows what the database holds.
-A new or changed name is due for the check of the past that night (0034). The Japan code is not in this editor; it
-keeps its own field on the row. The ATC code is not edited here (classes are made from it).
+A new or changed name is due for the check of the past that night (0034). The Japan codes are not in this editor;
+they keep their own field on the row. The ATC code is not edited here (classes are made from it).
 
 ## The Ingredients screen: one ingredient across every source
 
@@ -900,6 +902,40 @@ the days chosen and the same number of days just before:
 Counting is not judging: the numbers and the label are shown side by side, and the team decides whether a term is
 a signal (Signals). *Not in our label* means no MeSH name was found in the text, which is a reason to read the
 label, not a finding that the reaction is unexpected.
+
+## FDA adverse event reports (FAERS)
+
+Section *06 FDA adverse event reports* of the Ingredients screen counts the reports to the FDA Adverse Event
+Reporting System (FAERS) that name the ingredient (migration 0071). The weekly workflow *PHAROS FAERS counts*
+(`faers.yml`, Wednesday 04:13 Cairo; `python -m collectors.faers`) asks openFDA (`api.fda.gov/drug/event.json`) to
+count them; no report is downloaded, only numbers come back, and the log names no ingredient.
+
+- **The period**: the last 8 complete calendar quarters openFDA holds, by the day FDA received each report (on 6 Nov
+  2026: October 2024 to September 2026, 2.68 million reports). FAERS changes once a quarter, so an ingredient counted
+  in the last 6 days is left; run the workflow by hand with *force* to count every ingredient again.
+- **How an ingredient is found**: its INN in capitals, exactly, in three fields at once: `openfda.generic_name` and
+  `openfda.substance_name` (filled only when FDA matched the product to a US label) and
+  `activesubstance.activesubstancename` (the substance as FAERS coded it, also for products sold outside the US).
+  Checked on the live API on 6 Nov 2026: carvedilol 136,140 reports in each US field and 142,304 in the three
+  together; lornoxicam, not sold in the US, none in the US fields and 396 as the active substance. An exact search
+  takes the whole value only: a salt written with the name ("CARVEDILOL PHOSPHATE") or a US name that differs from
+  the INN (acetaminophen for paracetamol) is not counted.
+- **What is kept**: the reports per quarter, and the 100 most reported reactions of the whole period with their
+  reports in each quarter. A reaction is kept by its name exactly as FDA publishes it (a MedDRA preferred term in
+  capitals); PHAROS holds no MedDRA licence and stores no MedDRA code.
+- **PRR, ROR and the flag**: each reaction's reports are compared with every drug's in a 2×2 table: PRR and ROR with
+  their 95% confidence intervals and chi-squared with Yates' correction (`faers.disproportion`). *Disproportionate*
+  means Evans' criteria: at least 3 reports, PRR at least 2 and chi-squared at least 4. It is a reason to look, not a
+  signal: stimulated reporting, an indication's own symptoms and duplicates all raise a PRR.
+- **The label tag**: the reaction's name is matched to MeSH by its exact name (`coding_norm`), and the label tag is the
+  one of section 05. A name MeSH does not have (OFF LABEL USE, for one) has no tag.
+- **The key**: `OPENFDA_API_KEY` (a repository secret, optional) allows 240 requests a minute and lists up to 1,000
+  reactions per request; without it openFDA allows 40 a minute and 100 reactions, so the run takes longer and a
+  quarter's rarer reactions show "–". A run starts no ingredient after 45 minutes; the rest wait for the next run.
+  openFDA's 404 "No matches found" is a zero; a 429 or a server error is asked again after 5, 15 and 35 seconds.
+
+The screen says under the table that the data are FDA's, that a report is not proof the drug caused the reaction,
+that the counts are not how often it happens, and that FDA does not endorse PHAROS.
 
 ## Clinical trials (ClinicalTrials.gov)
 

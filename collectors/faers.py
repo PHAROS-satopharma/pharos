@@ -1,0 +1,440 @@
+"""FDA adverse-event report counts per watched ingredient (openFDA FAERS, migration 0071).
+
+    python -m collectors.faers [--force] [--ingredient ID] [--minutes 45]
+
+FAERS, the FDA Adverse Event Reporting System, holds the reports of suspected side effects that reach the FDA from
+the United States and abroad. openFDA (https://open.fda.gov/apis/drug/event/) publishes them and counts them with its
+``count=`` parameter, so no report is ever downloaded: only numbers come back.
+
+For each active ingredient, over the last 8 complete calendar quarters openFDA holds (by ``receivedate``, the day FDA
+received the report):
+
+- the reports naming the ingredient, per quarter: one ``count=receivedate`` request, added up by quarter (a report has
+  one receive date, so the quarters add up to the whole period);
+- the reactions of those reports (MedDRA preferred terms, kept exactly as FDA gives them, never coded), for the whole
+  period and for each quarter; the 100 most frequent of the whole period are kept;
+- the same for every drug together, asked once a run for all the ingredients; a reaction outside every drug's most
+  frequent is searched on its own.
+
+``disproportion`` turns the whole period's counts into PRR and ROR with their 95% confidence intervals and the
+chi-squared test, and flags a reaction reported disproportionately by Evans' criteria (at least 3 reports, PRR at
+least 2, chi-squared at least 4). A flag is a reason to look, not a finding: the Ingredients screen shows it beside
+the label.
+
+How an ingredient is found (checked on the live API, 6 Nov 2026). The INN in upper case is searched, exactly, in
+three fields at once: ``patient.drug.openfda.generic_name`` and ``substance_name`` (filled only for a product FDA could
+match to a US label: carvedilol 136,140 reports in each, lornoxicam, not sold in the US, none) and
+``patient.drug.activesubstance.activesubstancename`` (the substance as FAERS coded it, also for foreign products:
+lornoxicam 396). Together carvedilol has 142,304. An exact search takes the whole value only, so a salt written
+with the substance ("CARVEDILOL PHOSPHATE", 2,975 reports) is not counted.
+
+openFDA answers 404 "No matches found" for nothing found (a zero, not a failure), refuses a ``count`` longer than 100
+without a key (403 API_KEY_MISSING), and has bad moments (a dropped connection, HTTP 500): every request is paced
+(240 a minute with ``OPENFDA_API_KEY``, 40 without) and asked again after 429 or a server error. FAERS changes once
+a quarter, so an ingredient counted in the last 6 days is left until ``--force``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import math
+import os
+import re
+import sys
+import time
+from dataclasses import asdict, dataclass
+from datetime import date, timedelta
+from typing import Any, Callable
+
+log = logging.getLogger("collectors.faers")
+
+API = "https://api.fda.gov/drug/event.json"
+REACTION = "patient.reaction.reactionmeddrapt.exact"
+NAME_FIELDS = (
+    "patient.drug.openfda.generic_name.exact",
+    "patient.drug.openfda.substance_name.exact",
+    "patient.drug.activesubstance.activesubstancename.exact",
+)
+QUARTERS = 8
+KEEP = 100                     # reactions kept per ingredient
+FRESH_DAYS = 6
+WAITS = (5, 15, 35)            # seconds before asking again after 429, a server error or a dropped connection
+RETRY = {0, 429, 500, 502, 503, 504}
+Z = 1.959964                   # the 97.5th centile of the normal distribution: a 95% interval
+
+Getter = Callable[[dict[str, str]], tuple[int, Any]]
+
+
+# ───────────────────────────── the arithmetic ─────────────────────────────
+@dataclass(frozen=True)
+class Disproportion:
+    prr: float | None
+    prr_low: float | None
+    prr_high: float | None
+    ror: float | None
+    ror_low: float | None
+    ror_high: float | None
+    chi2: float | None
+    flagged: bool
+
+
+def disproportion(a: int, b: int, c: int, d: int) -> Disproportion:
+    """The 2×2 table of one reaction: a = reports of the ingredient with the reaction, b = of the ingredient without
+    it, c = of every other drug with it, d = of every other drug without it.
+
+    PRR = [a/(a+b)] / [c/(c+d)], ROR = ad/bc, each with the 95% interval of its logarithm; chi-squared with Yates'
+    correction. No continuity correction is added: a value that would divide by zero is None (PRR and ROR when c is
+    0, ROR when b is 0), and so is an interval whose logarithm is not defined (a is 0, or d for the ROR). Flagged by
+    Evans' criteria: a >= 3, PRR >= 2 and chi-squared >= 4; a reaction no other drug has (c = 0) counts as PRR >= 2.
+    """
+    if min(a, b, c, d) < 0:
+        raise ValueError("a count cannot be negative")
+    n = a + b + c + d
+    prr = prr_low = prr_high = ror = ror_low = ror_high = chi2 = None
+    if a + b and c:
+        prr = (a / (a + b)) / (c / (c + d))
+        if a:
+            se = math.sqrt(1 / a - 1 / (a + b) + 1 / c - 1 / (c + d))
+            prr_low, prr_high = math.exp(math.log(prr) - Z * se), math.exp(math.log(prr) + Z * se)
+    if b and c:
+        ror = (a * d) / (b * c)
+        if a and d:
+            se = math.sqrt(1 / a + 1 / b + 1 / c + 1 / d)
+            ror_low, ror_high = math.exp(math.log(ror) - Z * se), math.exp(math.log(ror) + Z * se)
+    den = (a + b) * (c + d) * (a + c) * (b + d)
+    if den:
+        chi2 = n * max(0.0, abs(a * d - b * c) - n / 2) ** 2 / den
+    high = prr >= 2 if prr is not None else (c == 0 and a + b > 0)
+    return Disproportion(prr, prr_low, prr_high, ror, ror_low, ror_high, chi2,
+                         a >= 3 and high and chi2 is not None and chi2 >= 4)
+
+
+# ───────────────────────────── quarters ─────────────────────────────
+def quarter_start(d: date) -> date:
+    return date(d.year, (d.month - 1) // 3 * 3 + 1, 1)
+
+
+def next_quarter(q: date) -> date:
+    return date(q.year + 1, 1, 1) if q.month == 10 else date(q.year, q.month + 3, 1)
+
+
+def previous_quarter(q: date) -> date:
+    return date(q.year - 1, 10, 1) if q.month == 1 else date(q.year, q.month - 3, 1)
+
+
+def quarter_end(q: date) -> date:
+    return next_quarter(q) - timedelta(days=1)
+
+
+def last_quarters(latest: date, n: int = QUARTERS) -> list[date]:
+    """The first days of the last ``n`` complete quarters up to ``latest`` (openFDA's newest receive date), oldest
+    first: a quarter whose last day openFDA does not hold yet is not complete."""
+    q = quarter_start(latest)
+    if quarter_end(q) != latest:
+        q = previous_quarter(q)
+    out = [q]
+    while len(out) < n:
+        out.insert(0, previous_quarter(out[0]))
+    return out
+
+
+def period(start: date, end: date) -> str:
+    return f"receivedate:[{start:%Y%m%d} TO {end:%Y%m%d}]"
+
+
+def _quoted(text: str) -> str:
+    return '"' + " ".join(text.replace("\\", " ").replace('"', " ").split()) + '"'
+
+
+def name_search(inn: str) -> str:
+    """The INN in upper case, exactly, in the three fields that name a drug's substance."""
+    name = _quoted(inn.upper())
+    return "(" + " ".join(f"{f}:{name}" for f in NAME_FIELDS) + ")"
+
+
+# ───────────────────────────── openFDA ─────────────────────────────
+class OpenFdaError(Exception):
+    def __init__(self, status: int, said: str = "") -> None:
+        super().__init__(f"openFDA answered HTTP {status}" + (f" ({said})" if said else ""))
+        self.status = status
+
+
+def _said(body: Any) -> str:
+    """openFDA's own words for an error ({"error": {"code", "message"}}), or ""."""
+    err = (body or {}).get("error") if isinstance(body, dict) else None
+    return " ".join(str((err or {}).get(k) or "") for k in ("code", "message")).strip()[:200]
+
+
+class OpenFda:
+    """Paced, retried requests to the drug/event endpoint. ``get`` takes the query parameters and gives back the
+    HTTP status and the decoded JSON (status 0 for a dropped connection)."""
+
+    def __init__(self, get: Getter, key: str | None = None, *, sleep: Callable[[float], None] = time.sleep,
+                 clock: Callable[[], float] = time.monotonic) -> None:
+        self.get, self.key, self.sleep, self.clock = get, key, sleep, clock
+        self.gap = 60 / 240 if key else 60 / 40
+        self.limit = 1000 if key else 100        # a longer count needs a key (403 API_KEY_MISSING)
+        self.requests = 0
+        self._last: float | None = None
+
+    def ask(self, **params: str) -> dict | None:
+        """The answer, or None for openFDA's 404 "No matches found"."""
+        if self.key:
+            params["api_key"] = self.key
+        for attempt in range(len(WAITS) + 1):
+            if self._last is not None:
+                wait = self.gap - (self.clock() - self._last)
+                if wait > 0:
+                    self.sleep(wait)
+            self._last = self.clock()
+            self.requests += 1
+            status, body = self.get(params)
+            if status == 200:
+                return body
+            if status == 404:
+                return None
+            if status in RETRY and attempt < len(WAITS):
+                self.sleep(WAITS[attempt])
+                continue
+            raise OpenFdaError(status, _said(body))
+        raise AssertionError("unreachable")
+
+    def days(self, search: str) -> dict[date, int]:
+        """Reports per receive date."""
+        body = self.ask(search=search, count="receivedate") or {}
+        out: dict[date, int] = {}
+        for r in body.get("results") or []:
+            t = str(r.get("time") or "")
+            if re.fullmatch(r"\d{8}", t):
+                out[date(int(t[:4]), int(t[4:6]), int(t[6:]))] = int(r.get("count") or 0)
+        return out
+
+    def reactions(self, search: str) -> tuple[dict[str, int], bool]:
+        """Reports per reaction, the most frequent first, and whether the list holds every reaction (it is shorter
+        than the longest list openFDA gives)."""
+        body = self.ask(search=search, count=REACTION, limit=str(self.limit)) or {}
+        rows = body.get("results") or []
+        return {str(r["term"]): int(r.get("count") or 0) for r in rows if r.get("term")}, len(rows) < self.limit
+
+    def total(self, search: str) -> int:
+        body = self.ask(search=search, limit="1")
+        return int((((body or {}).get("meta") or {}).get("results") or {}).get("total") or 0)
+
+
+def http_getter(client: Any) -> Getter:
+    """The real getter, over an ``httpx.Client``. A request address carries the key: it is never logged."""
+    import httpx
+
+    def get(params: dict[str, str]) -> tuple[int, Any]:
+        try:
+            res = client.get(API, params=params)
+        except httpx.TransportError:
+            return 0, None
+        try:
+            return res.status_code, res.json()
+        except ValueError:
+            return res.status_code, None
+
+    return get
+
+
+def by_quarter(days: dict[date, int], quarters: list[date]) -> dict[date, int]:
+    out = {q: 0 for q in quarters}
+    for d, n in days.items():
+        q = quarter_start(d)
+        if q in out:
+            out[q] += n
+    return out
+
+
+class Background:
+    """Every drug together, for every ingredient of a run: the reports per quarter, and the reactions of the whole
+    period and of each quarter, each asked once."""
+
+    def __init__(self, api: OpenFda, today: date | None = None) -> None:
+        today = today or date.today()
+        first = quarter_start(today)
+        for _ in range(QUARTERS + 2):
+            first = previous_quarter(first)
+        days = api.days(period(first, today))
+        if not days:
+            raise OpenFdaError(404, "no report in the last two and a half years")
+        self.api = api
+        self.quarters = last_quarters(max(days))
+        self.whole = period(self.quarters[0], quarter_end(self.quarters[-1]))
+        self.reports = by_quarter(days, self.quarters)
+        self._lists: dict[date | None, tuple[dict[str, int], bool]] = {}
+        self._alone: dict[str, int] = {}
+
+    def _list(self, q: date | None) -> tuple[dict[str, int], bool]:
+        if q not in self._lists:
+            self._lists[q] = self.api.reactions(self.whole if q is None else period(q, quarter_end(q)))
+        return self._lists[q]
+
+    def whole_count(self, reaction: str) -> int:
+        """Reports of every drug with the reaction in the whole period: from the most frequent list, else searched."""
+        counts, complete = self._list(None)
+        if reaction in counts:
+            return counts[reaction]
+        if complete:
+            return 0
+        if reaction not in self._alone:
+            self._alone[reaction] = self.api.total(f"{REACTION}:{_quoted(reaction)} AND {self.whole}")
+        return self._alone[reaction]
+
+    def quarter_count(self, q: date, reaction: str) -> int | None:
+        """Reports of every drug with the reaction in one quarter, or None when it is below the list."""
+        counts, complete = self._list(q)
+        return counts.get(reaction, 0 if complete else None)
+
+
+def count_ingredient(api: OpenFda, bg: Background, inn: str) -> dict:
+    """Everything kept for one ingredient: the reports per quarter, and its most frequent reactions with their
+    quarters and their disproportion."""
+    names = name_search(inn)
+    days = api.days(f"{names} AND {bg.whole}")
+    per_q = by_quarter(days, bg.quarters)
+    n_drug = sum(per_q.values())
+    n_all = sum(bg.reports.values())
+    whole, _ = api.reactions(f"{names} AND {bg.whole}") if n_drug else ({}, True)
+    top = sorted(whole.items(), key=lambda kv: (-kv[1], kv[0]))[:KEEP]
+    quarters, counts = [], []
+    for q in bg.quarters:
+        listed, complete = (api.reactions(f"{names} AND {period(q, quarter_end(q))}") if per_q[q] and top
+                            else ({}, True))
+        quarters.append({"quarter": q.isoformat(), "reports": per_q[q], "all_reports": bg.reports[q],
+                         "complete": complete})
+        for reaction, _n in top:
+            if reaction in listed:
+                counts.append({"quarter": q.isoformat(), "reaction": reaction, "reports": listed[reaction],
+                               "all_reports": bg.quarter_count(q, reaction)})
+    reactions = []
+    for reaction, a in top:
+        all_r = max(bg.whole_count(reaction), a)     # never fewer than the ingredient's own (the lists can drift)
+        b, c = n_drug - a, all_r - a
+        stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
+        reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats)})
+    return {"searched": inn.upper().strip(), "first_quarter": bg.quarters[0].isoformat(),
+            "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
+            "quarters": quarters, "reactions": reactions, "counts": counts}
+
+
+# ───────────────────────────── the database ─────────────────────────────
+WAITING_SQL = """
+select i.id::text as id, i.inn_en
+  from ingredient i
+  left join faers_ingredient f on f.ingredient_id = i.id
+ where i.active
+   and (%(force)s or f.fetched_at is null or f.fetched_at < now() - make_interval(days => %(fresh)s))
+   and (%(one)s::uuid is null or i.id = %(one)s::uuid)
+ order by f.fetched_at nulls first, i.inn_en
+"""
+
+FRESH_SQL = """
+select count(*)::int as n from ingredient i join faers_ingredient f on f.ingredient_id = i.id
+ where i.active and f.fetched_at >= now() - make_interval(days => %(fresh)s)
+"""
+
+
+def store(db: Any, ingredient: str, got: dict) -> None:
+    with db.transaction():
+        db.execute(
+            """insert into faers_ingredient (ingredient_id, searched, first_quarter, last_quarter, reports, all_reports,
+                                             fetched_at)
+               values (%(i)s::uuid, %(s)s, %(f)s::date, %(l)s::date, %(n)s, %(a)s, now())
+               on conflict (ingredient_id) do update set searched = excluded.searched,
+                 first_quarter = excluded.first_quarter, last_quarter = excluded.last_quarter,
+                 reports = excluded.reports, all_reports = excluded.all_reports, fetched_at = now()""",
+            {"i": ingredient, "s": got["searched"], "f": got["first_quarter"], "l": got["last_quarter"],
+             "n": got["reports"], "a": got["all_reports"]})
+        # the counts of the last fetch go with their quarters and reactions
+        db.execute("delete from faers_quarter where ingredient_id = %(i)s::uuid", {"i": ingredient})
+        db.execute("delete from faers_reaction where ingredient_id = %(i)s::uuid", {"i": ingredient})
+        db.execute(
+            """insert into faers_quarter (ingredient_id, quarter, reports, all_reports, complete)
+               select %(i)s::uuid, x.quarter, x.reports, x.all_reports, x.complete
+                 from jsonb_to_recordset(%(q)s::jsonb) x(quarter date, reports int, all_reports int, complete boolean)""",
+            {"i": ingredient, "q": json.dumps(got["quarters"])})
+        if got["reactions"]:
+            db.execute(
+                """insert into faers_reaction (ingredient_id, reaction, reports, all_reports, prr, prr_low, prr_high,
+                                               ror, ror_low, ror_high, chi2, flagged)
+                   select %(i)s::uuid, x.reaction, x.reports, x.all_reports, x.prr, x.prr_low, x.prr_high, x.ror,
+                          x.ror_low, x.ror_high, x.chi2, x.flagged
+                     from jsonb_to_recordset(%(r)s::jsonb) x(reaction text, reports int, all_reports int, prr float8,
+                          prr_low float8, prr_high float8, ror float8, ror_low float8, ror_high float8, chi2 float8,
+                          flagged boolean)""",
+                {"i": ingredient, "r": json.dumps(got["reactions"])})
+        if got["counts"]:
+            db.execute(
+                """insert into faers_count (ingredient_id, quarter, reaction, reports, all_reports)
+                   select %(i)s::uuid, x.quarter, x.reaction, x.reports, x.all_reports
+                     from jsonb_to_recordset(%(c)s::jsonb) x(quarter date, reaction text, reports int, all_reports int)""",
+                {"i": ingredient, "c": json.dumps(got["counts"])})
+
+
+def count_reports(db: Any, api: OpenFda, *, force: bool = False, ingredient: str | None = None,
+                  minutes: float = 45, today: date | None = None, clock: Callable[[], float] = time.monotonic) -> str:
+    """Count every ingredient waiting for its FAERS counts; what was done, in words. The run logs are public: no
+    ingredient is named in them, only numbers."""
+    rows = db.fetchall(WAITING_SQL, {"force": force, "fresh": FRESH_DAYS, "one": ingredient})
+    fresh = 0 if force else (db.fetchone(FRESH_SQL, {"fresh": FRESH_DAYS}) or {}).get("n", 0)
+    later = f", {fresh} counted in the last {FRESH_DAYS} days" if fresh else ""
+    if not rows:
+        return "no ingredient waits for its FAERS counts" + later
+    bg = Background(api, today)
+    stop = clock() + minutes * 60
+    counted = none = failed = left = 0
+    for r in rows:
+        if clock() > stop:
+            left += 1
+            continue
+        try:
+            got = count_ingredient(api, bg, r["inn_en"])
+            store(db, r["id"], got)
+        except Exception as exc:              # one ingredient never stops the others
+            failed += 1
+            log.warning("FAERS: an ingredient failed (%s)",
+                        f"HTTP {exc.status}" if isinstance(exc, OpenFdaError) else type(exc).__name__)
+            continue
+        counted += 1
+        none += not got["reports"]
+    q0, q1 = bg.quarters[0], bg.quarters[-1]
+    words = (f"{counted} ingredients counted ({none} with no report) for {q0:%b %Y} to {quarter_end(q1):%b %Y}"
+             + later + (f", {failed} to try again" if failed else "")
+             + (f", {left} left for the next run" if left else ""))
+    return words + f"; {api.requests} requests to openFDA"
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="python -m collectors.faers", description=__doc__.split("\n\n")[0])
+    p.add_argument("--force", action="store_true", help=f"count even an ingredient counted in the last {FRESH_DAYS} days")
+    p.add_argument("--ingredient", help="count this ingredient only (its id)")
+    p.add_argument("--minutes", type=float, default=45, help="start no ingredient after this many minutes")
+    args = p.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    if args.ingredient and not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+                                            args.ingredient):
+        p.error("--ingredient takes an ingredient id")
+
+    import httpx
+
+    from collectors.core.context import install_log_redaction
+    from collectors.core.db import Db
+
+    install_log_redaction()   # the request addresses carry the key and the ingredient: never printed
+    key = os.environ.get("OPENFDA_API_KEY") or None
+    db = Db()
+    try:
+        with httpx.Client(timeout=90, headers={"User-Agent": "PHAROS pharmacovigilance monitor (Sato Pharma)"}) as client:
+            api = OpenFda(http_getter(client), key)
+            print("faers:", count_reports(db, api, force=args.force, ingredient=args.ingredient, minutes=args.minutes))
+    finally:
+        db.close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
