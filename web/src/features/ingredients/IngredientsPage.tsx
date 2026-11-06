@@ -22,6 +22,7 @@ import { EditIngredient } from './EditIngredient';
 import { JapanCodeEdit } from './JapanCodeEdit';
 import { localTerms } from './japanCode';
 import { Readiness } from './Readiness';
+import { MatchAudit } from './MatchAudit';
 import { SearchProfile } from './SearchProfile';
 import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
 
@@ -246,6 +247,7 @@ export function IngredientsPage() {
                           {ofClass.length ? ` · ${ofClass.map((c) => c.name_en).join(', ')}` : ''}
                         </span>
                         <Readiness ingredientId={i.id} active={i.active} />
+                        <MatchAudit ingredientId={i.id} active={i.active} />
                       </td>
                       <td className="col-names">
                         <span className="names-count">

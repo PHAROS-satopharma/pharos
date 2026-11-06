@@ -794,6 +794,10 @@ class Store:
                 order by d.id
                 limit %(n)s""",
             {"s": since, "b": before, "a": after_id, "n": limit})
+        return self._with_context(docs)
+
+    def _with_context(self, docs: list[dict]) -> list[dict]:
+        """Each notice with its kept text, its attachments, the words that already matched it and its issue."""
         if not docs:
             return []
         ids = [str(d["id"]) for d in docs]
@@ -839,6 +843,58 @@ class Store:
                         "matched_terms": matched.get(k, set()), "issue": issues.get(k),
                         "shared_original": d["r2_key"] in shared})
         return out
+
+    # ───────────────────────────── the matching audit (0075) ─────────────────────────────
+    def audit_terms(self) -> list[Term]:
+        """The words that name a watched ingredient itself: its INN in every language, its salts, brands and
+        codes (not the synonyms a lookup proposed)."""
+        rows = self.db.fetchall(
+            """select t.id, t.term, t.lang, t.mode::text as mode, t.exclusions, t.ingredient_id, t.kind::text as kind
+                 from ingredient_term t join ingredient i on i.id = t.ingredient_id
+                where i.active and t.kind::text in ('inn', 'salt', 'brand', 'code')""")
+        return [Term(id=str(r["id"]), term=r["term"], lang=r["lang"], mode=r["mode"],
+                     exclusions=tuple(r["exclusions"] or ()), ingredient_id=str(r["ingredient_id"]),
+                     kind=r["kind"]) for r in rows]
+
+    def audit_candidates(self, words: list[str]) -> list[str]:
+        """Stored notices (not labels or literature) whose title, fields or kept text contain any of ``words``,
+        found in the database so no notice's text is downloaded to look; the matcher then decides."""
+        if not words:
+            return []
+        pats = ["%" + w.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%" for w in words]
+        rows = self.db.fetchall(
+            """select d.id from document d join source s on s.id = d.source_id
+                where s.kind not in ('spc', 'literature')
+                  and (d.title_orig ilike any(%(p)s) or d.structured::text ilike any(%(p)s)
+                       or exists (select 1 from document_text t where t.document_id = d.id and t.text ilike any(%(p)s)))
+                order by d.id""", {"p": pats})
+        return [str(r["id"]) for r in rows]
+
+    def audit_documents(self, ids: list[str]) -> list[dict]:
+        docs = self.db.fetchall(
+            """select d.id, d.source_id, d.url, d.title_orig, d.lang, d.doc_type::text as doc_type,
+                      d.published_date, d.structured, d.r2_key, d.mime, s.parser, r.country_code
+                 from document d join source s on s.id = d.source_id join regulator r on r.id = s.regulator_id
+                where d.id = any(%(ids)s::uuid[]) order by d.id""", {"ids": ids})
+        return self._with_context(docs)
+
+    def audit_names(self) -> list[dict]:
+        """English synonyms and brands a lookup proposed (Wikidata, PubChem), with their ingredient's RxNorm id."""
+        return self.db.fetchall(
+            """select t.id::text as id, t.ingredient_id::text as ingredient_id, t.term, t.kind::text as kind,
+                      t.source, i.rxcui
+                 from ingredient_term t join ingredient i on i.id = t.ingredient_id
+                where i.active and i.rxcui is not null and t.lang = 'en'
+                  and t.kind::text in ('synonym', 'brand') and t.source in ('wikidata', 'pubchem')""")
+
+    def record_match_audit(self, rows: list[dict]) -> None:
+        for r in rows:
+            self.db.execute(
+                """insert into match_audit (ingredient_id, names_checked, notices_named, unlinked_found,
+                                            linked_now, left_over, flagged_names, unchecked_names)
+                   values (%(ingredient_id)s, %(names_checked)s, %(notices_named)s, %(unlinked_found)s,
+                           %(linked_now)s, %(left_over)s::jsonb, %(flagged_names)s::jsonb, %(unchecked_names)s)""",
+                {**r, "left_over": json.dumps(r["left_over"]), "flagged_names": json.dumps(r["flagged_names"])})
 
     def rematch_advance(self, job_id: str, *, cursor: str, checked: int = 0, reread: int = 0,
                         matched: int = 0, issues_created: int = 0) -> None:

@@ -77,6 +77,11 @@ class RxNav:
                 out.append(c["rxcui"])
         return out
 
+    def by_name(self, name: str) -> list[str]:
+        """RxNorm codes whose name is ``name`` (normalised: case, spaces, salt words), at most three."""
+        got = self._json("/rxcui.json", name=name[:200], search=2)
+        return list(((got.get("idGroup") or {}).get("rxnormId") or [])[:3])
+
     def ingredients(self, rxcui: str) -> list[dict]:
         """The ingredient-level concepts (IN, MIN) of an RxNorm code; the code itself when it is one."""
         got = self._json(f"/rxcui/{rxcui}/related.json", tty="IN MIN")

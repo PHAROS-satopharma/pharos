@@ -752,6 +752,25 @@ def test_a_signed_signal_matches_in_the_inspection_pack(store, tag):
         pass
 
 
+def test_the_matching_audit_finds_candidates_in_the_database_and_keeps_its_row(store, tag):
+    src = _source(store, tag)
+    ing = _ingredient(store, tag)
+    word = f"zq{tag}mab"
+    named = store.insert_document(_doc(src.id, "m1", title_orig=f"{word.title()}: new warning"))
+    in_text = store.insert_document(_doc(src.id, "m2", title_orig="Monthly letter"))
+    store.insert_document_text(in_text, None, f"... the risk with {word} 100_% max ...")
+    store.insert_document(_doc(src.id, "m3", title_orig="Nothing about it"))
+    assert store.audit_candidates([word, "100_%x"]) == sorted([str(named), str(in_text)])
+    assert store.audit_candidates(["100_%x"]) == []          # LIKE wildcards are only letters here
+    docs = store.audit_documents([str(named)])
+    assert docs[0]["title_orig"].startswith(word.title()) and docs[0]["issue"] is None
+    store.record_match_audit([{"ingredient_id": ing, "names_checked": 1, "notices_named": 2, "unlinked_found": 1,
+                               "linked_now": 1, "left_over": [], "unchecked_names": 0,
+                               "flagged_names": [{"term_id": "x", "term": "Ofloxacin", "why": "RxNorm: ofloxacin"}]}])
+    row = store.db.fetchone("select * from match_audit where ingredient_id = %(i)s", {"i": ing})
+    assert row["linked_now"] == 1 and row["flagged_names"][0]["term"] == "Ofloxacin"
+
+
 def test_what_a_filter_dropped_is_kept_once_per_title(store, tag):
     src = _source(store, tag)
     store.record_filtered(src.id, [("Veterinary letter: enrofloxacin", "category: veterinary"),
