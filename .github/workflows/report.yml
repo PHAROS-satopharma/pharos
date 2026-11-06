@@ -1,17 +1,25 @@
-# PHAROS — weekly report (XLSX + PDF) for the week that has just ended (Sunday to Saturday, Cairo), every
-# Sunday at 05:00 Cairo (Dr Sama's review, 6 Nov 2026: some findings must reach the EDA within 5 days, so the
-# monthly report came too late). By hand: a week (its Sunday), or a month in the format used until November 2026.
-# GitHub cron is UTC only, and Cairo is UTC+2 in winter and UTC+3 in summer, so there are two triggers and
-# the job keeps the one that is 05:00 in Cairo today (decided by the UTC offset, so a late start never
+# PHAROS — daily report (XLSX + PDF) of the day before, every morning at 07:00 Cairo (owner, 6 Nov 2026: "there
+# must be also a daily report with the outcome"), and the weekly report for the week that has just ended (Sunday
+# to Saturday, Cairo), every Sunday at 05:00 Cairo (Dr Sama's review, 6 Nov 2026: some findings must reach the
+# EDA within 5 days, so the monthly report came too late). The weekly report is the one signed. By hand: a day, a
+# week (its Sunday), or a month in the format used until November 2026.
+# GitHub cron is UTC only, and Cairo is UTC+2 in winter and UTC+3 in summer, so each report has two triggers and
+# the job keeps the one that is on the hour in Cairo today (decided by the UTC offset, so a late start never
 # produces a second report).
-name: PHAROS weekly report
+name: PHAROS daily and weekly report
 
 on:
   schedule:
     - cron: "0 2 * * 0"   # Sunday 05:00 Cairo in summer (UTC+3)
     - cron: "0 3 * * 0"   # Sunday 05:00 Cairo in winter (UTC+2)
+    - cron: "0 4 * * *"   # every day 07:00 Cairo in summer (UTC+3): the daily report of the day before
+    - cron: "0 5 * * *"   # every day 07:00 Cairo in winter (UTC+2)
   workflow_dispatch:
     inputs:
+      day:
+        description: Or a daily report of this day, YYYY-MM-DD (leave the week and month empty)
+        type: string
+        required: false
       week:
         description: Week to report, its Sunday as YYYY-MM-DD (empty = the week that has just ended)
         type: string
@@ -38,21 +46,25 @@ jobs:
     env:
       GIT_SHA: ${{ github.sha }}
     steps:
-      - name: Is it 05:00 in Cairo?
+      - name: Is it the report's hour in Cairo?
         id: gate
         env:
           CRON: ${{ github.event.schedule }}
           EVENT: ${{ github.event_name }}
         run: |
           go=false
+          daily=false
           if [ "$EVENT" = "workflow_dispatch" ]; then go=true
           else
             offset="$(TZ=Africa/Cairo date +%z)"
             { [ "$offset" = "+0300" ] && [ "$CRON" = "0 2 * * 0" ]; } && go=true
             { [ "$offset" = "+0200" ] && [ "$CRON" = "0 3 * * 0" ]; } && go=true
+            if { [ "$offset" = "+0300" ] && [ "$CRON" = "0 4 * * *" ]; } ||
+               { [ "$offset" = "+0200" ] && [ "$CRON" = "0 5 * * *" ]; }; then go=true; daily=true; fi
           fi
           echo "go=$go" >> "$GITHUB_OUTPUT"
-          echo "Cairo offset $(TZ=Africa/Cairo date +%z), trigger '$CRON' → go=$go"
+          echo "daily=$daily" >> "$GITHUB_OUTPUT"
+          echo "Cairo offset $(TZ=Africa/Cairo date +%z), trigger '$CRON' → go=$go, daily=$daily"
 
       - if: steps.gate.outputs.go == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -98,11 +110,20 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          DAILY: ${{ steps.gate.outputs.daily }}
+          DAY: ${{ inputs.day }}
           WEEK: ${{ inputs.week }}
           MONTH: ${{ inputs.month }}
         run: |
-          if [ -n "$WEEK" ] && [ -n "$MONTH" ]; then echo "give a week or a month, not both"; exit 1; fi
-          if [ -n "$WEEK" ]; then
+          given=0
+          for v in "$DAY" "$WEEK" "$MONTH"; do [ -n "$v" ] && given=$((given + 1)); done
+          if [ "$given" -gt 1 ]; then echo "give a day, a week or a month, only one"; exit 1; fi
+          if [ "$DAILY" = "true" ]; then
+            python -m collectors.report --daily
+          elif [ -n "$DAY" ]; then
+            [[ "$DAY" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "day must be YYYY-MM-DD"; exit 1; }
+            python -m collectors.report --day "$DAY"
+          elif [ -n "$WEEK" ]; then
             [[ "$WEEK" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "week must be YYYY-MM-DD, its Sunday"; exit 1; }
             python -m collectors.report --week "$WEEK"
           elif [ -n "$MONTH" ]; then

@@ -1,16 +1,19 @@
-"""PHAROS screening reports: weekly (Sunday to Saturday, Cairo), and monthly for re-making an old one.
+"""PHAROS screening reports: daily and weekly (Cairo calendar), and monthly for re-making an old one.
 
-    python -m collectors.report [--week YYYY-MM-DD | --month YYYY-MM] [--dry-run]
+    python -m collectors.report [--week YYYY-MM-DD | --daily | --day YYYY-MM-DD | --month YYYY-MM] [--dry-run]
 
 Weekly (the default; ``--week`` is the Sunday, default the last complete week): ``PHAROS-weekly-<Sunday>.xlsx``
 and ``.pdf`` (report_templates/weekly.html), built in ``collectors/report_weekly.py`` from the Ingredients
 screen's own functions, recorded in ``weekly_report``.
 
+Daily (``--daily`` for yesterday, ``--day`` for any day; owner, 6 Nov 2026): the same report for one Cairo day,
+``PHAROS-daily-<day>.xlsx`` and ``.pdf``, recorded in ``daily_report``, made every morning at 07:00 Cairo.
+
 Monthly (``--month``, for the months reported before November 2026): ``PHAROS-screening-YYYY-MM.xlsx`` (sheets:
 Summary, Sources screened, Issues found, Review log) and ``.pdf`` (report_templates/monthly.html), recorded in
 ``monthly_report``.
 
-Both are printed by Playwright (A4), archived with their hashes, and the PDF goes to the admins on Telegram
+All are printed by Playwright (A4), archived with their hashes, and the PDF goes to the admins on Telegram
 (dry-run aware). Times are shown in Cairo local time.
 """
 
@@ -408,6 +411,9 @@ def main(argv: list[str] | None = None) -> int:
     which.add_argument("--week", help="YYYY-MM-DD, the Sunday that starts the week (default: the last complete "
                                       "Sunday to Saturday week, Cairo calendar)")
     which.add_argument("--month", help="YYYY-MM: make a monthly report again (the format before November 2026)")
+    which.add_argument("--daily", action="store_true",
+                       help="the daily report of yesterday, the last Cairo day that has ended")
+    which.add_argument("--day", help="YYYY-MM-DD: the daily report of that Cairo day")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
     from collectors import report_weekly
@@ -417,6 +423,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.week:
             week = report_weekly.week_starting(date.fromisoformat(args.week))
+        elif args.day:
+            week = report_weekly.Day(date.fromisoformat(args.day))
+        elif args.daily:
+            week = report_weekly.yesterday()
         elif not args.month:
             week = report_weekly.last_complete_week()
     except ValueError as e:

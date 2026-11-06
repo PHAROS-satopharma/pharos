@@ -18,7 +18,10 @@ import { SignOff } from '../signoff/SignOff';
 import { FileHash } from './FileHash';
 import { Packs } from './Packs';
 import {
+  type DailyReport,
   type WeeklyReport,
+  dailyFileName,
+  dayLabel,
   lastCompleteWeek,
   newestWeekFirst,
   weekDays,
@@ -59,6 +62,80 @@ function Files({ name, pdf, xlsx, save }: { name: string; pdf: [string, string];
         Excel
       </Button>
     </div>
+  );
+}
+
+/** The days shown at once; the earlier ones open below them. */
+const RECENT_DAYS = 14;
+
+function DayRows({ rows, save }: { rows: DailyReport[]; save: Save }) {
+  return (
+    <Table className="reports">
+      <tbody>
+        {rows.map((r) => {
+          const name = dayLabel(r.day);
+          return (
+            <tr key={r.id} className="report-row">
+              <td>
+                <span className="report-month">{name}</span>
+                <span className="cell-sub">
+                  Made <span className="mono">{formatDateTime(r.made_at)}</span>
+                </span>
+              </td>
+              <td className="num">
+                <Files
+                  name={name}
+                  pdf={[r.pdf_r2_key, dailyFileName(r.day, 'pdf')]}
+                  xlsx={[r.xlsx_r2_key, dailyFileName(r.day, 'xlsx')]}
+                  save={save}
+                />
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </Table>
+  );
+}
+
+/** The daily reports (0083): each Cairo day's outcome, made the next morning at 07:00. Not signed: the week is. */
+function DailyReports() {
+  const { error, save } = useSave();
+  const reports = useQuery({
+    queryKey: ['daily-reports'],
+    queryFn: async () =>
+      unwrap<DailyReport[] | null>(
+        await supabase.from('daily_report').select('*').order('day', { ascending: false }),
+      ) ?? [],
+  });
+
+  if (reports.isPending) return <Loading label="Reading the reports" />;
+  if (reports.isError) return <ErrorNote error={reports.error} onRetry={() => void reports.refetch()} />;
+  if (reports.data.length === 0) {
+    return (
+      <Empty title="No daily report yet.">
+        <p>The report is made every morning at 07:00 Cairo time, for the day before.</p>
+      </Empty>
+    );
+  }
+  const recent = reports.data.slice(0, RECENT_DAYS);
+  const earlier = reports.data.slice(RECENT_DAYS);
+  return (
+    <>
+      {error ? <Notice tone="error">The file could not be downloaded: {error}</Notice> : null}
+      <DayRows rows={recent} save={save} />
+      {earlier.length > 0 ? (
+        <details className="reports-monthly">
+          <summary>
+            <span className="reports-monthly-title">Earlier days</span>
+            <span className="reports-monthly-sum">
+              {earlier.length === 1 ? '1 report' : `${formatNumber(earlier.length)} reports`}
+            </span>
+          </summary>
+          <DayRows rows={earlier} save={save} />
+        </details>
+      ) : null}
+    </>
   );
 }
 
@@ -358,19 +435,23 @@ export function ReportsPage() {
       <PageHead
         eyebrow="Evidence"
         title="Reports"
-        lede="The weekly report, the PSUR and inspection packs made on request, and the screening log: what was checked, when, and what it found."
+        lede="The daily report shows each day's outcome. The weekly report is the final one: it is signed and kept for the inspection. Below them, the PSUR and inspection packs made on request, and the screening log."
       />
       <section className="section">
-        <SectionHead index="01" title="Weekly reports" />
+        <SectionHead index="01" title="Daily reports" aside="Each day's outcome, made at 07:00 for the day before" />
+        <DailyReports />
+      </section>
+      <section className="section">
+        <SectionHead index="02" title="Weekly reports" aside="The final report: signed and kept for the inspection" />
         <WeeklyReports />
         <MonthlyReports />
       </section>
       <section className="section">
-        <SectionHead index="02" title="Packs" />
+        <SectionHead index="03" title="Packs" />
         <Packs />
       </section>
       <section className="section">
-        <SectionHead index="03" title="Screening log" />
+        <SectionHead index="04" title="Screening log" />
         <ScreeningLog />
       </section>
     </div>

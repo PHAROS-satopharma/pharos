@@ -43,6 +43,7 @@ from collectors.report import (CAIRO, CREDIT, PAGE, SATO_LOGO, XLSX_MIME, _env, 
 log = logging.getLogger("collectors.report")
 
 TITLE = "PHAROS — Weekly screening report"
+DAILY_TITLE = "PHAROS — Daily screening report"
 HERS = "Reference authorities"
 OTHERS = "Other authorities"
 NOTICE_KINDS = ("safety", "recall")          # the authorities' own notices; spc and literature have sections
@@ -85,6 +86,10 @@ def week_label(start: date) -> str:
 class Week:
     start: date
     name = "Weekly screening report"
+    title = TITLE
+    kind = "weekly"
+    this = "this week"                  # the period in her words: "Not read this week"
+    period_head = "Week (Cairo time)"
 
     def __post_init__(self) -> None:
         if self.start.weekday() != 6:
@@ -117,6 +122,48 @@ class Week:
         a = datetime.combine(self.start, time(0), CAIRO).astimezone(timezone.utc)
         b = datetime.combine(self.start + timedelta(days=7), time(0), CAIRO).astimezone(timezone.utc)
         return a, b
+
+
+@dataclass(frozen=True)
+class Day:
+    """One Cairo day, midnight to midnight: the daily report (owner, 6 Nov 2026: the outcome of every day, made
+    every morning at 07:00 Cairo for the day before). Read exactly as a week is, so the day and its week never
+    disagree; the week stays the report that is signed."""
+    start: date
+    name = "Daily screening report"
+    title = DAILY_TITLE
+    kind = "daily"
+    this = "on the day"
+    period_head = "Day (Cairo time)"
+
+    @property
+    def end(self) -> date:
+        return self.start
+
+    @property
+    def label(self) -> str:
+        """"Thu 5 Nov 2026"."""
+        return f"{self.start:%a} {self.start.day} {self.start:%b %Y}"
+
+    @property
+    def slug(self) -> str:
+        return self.start.isoformat()
+
+    @property
+    def footer(self) -> str:
+        return f"Daily report · {self.label}"
+
+    def bounds_utc(self) -> tuple[datetime, datetime]:
+        """00:00 to the next 00:00, Cairo time, as UTC instants: [a, b)."""
+        a = datetime.combine(self.start, time(0), CAIRO).astimezone(timezone.utc)
+        b = datetime.combine(self.start + timedelta(days=1), time(0), CAIRO).astimezone(timezone.utc)
+        return a, b
+
+
+def yesterday(now: datetime | None = None) -> Day:
+    """The last Cairo day that has ended: on Fri 6 Nov 2026 at 07:00 Cairo, Thu 5 Nov."""
+    today = (now or datetime.now(timezone.utc)).astimezone(CAIRO).date()
+    return Day(today - timedelta(days=1))
 
 
 def week_starting(day: date) -> Week:
@@ -308,13 +355,13 @@ def country_answers(regulators: list[dict]) -> tuple[list[dict], list[dict]]:
             sorted((to_answer(c, False) for c in others), key=order))
 
 
-def answer_text(c: dict) -> str:
-    """The answer in one line, as on the screen, for the week."""
+def answer_text(c: dict, this: str = "this week") -> str:
+    """The answer in one line, as on the screen, for the week (or the day: ``this`` is "on the day")."""
     a = c["answer"]
     if a == "mentioned":
         return f"Mentioned in {plural(len(c['mentions']), 'notice', 'notices')}"
     if a == "not_read":
-        return "Not read this week — check it by hand"
+        return f"Not read {this} — check it by hand"
     if a == "failed":
         return f"{c['failed']} of {plural(c['runs'], 'read', 'reads')} failed — check it by hand"
     if a == "unread_page":
@@ -322,10 +369,10 @@ def answer_text(c: dict) -> str:
     return "Nothing found"
 
 
-def reads_text(c: dict) -> str:
+def reads_text(c: dict, this: str = "this week") -> str:
     if not c["runs"]:
-        return "Not read this week"
-    read = f"Read {plural(c['runs'], 'time', 'times')} this week"
+        return f"Not read {this}"
+    read = f"Read {plural(c['runs'], 'time', 'times')} {this}"
     return f"{read}, {c['failed']} failed" if c["failed"] else read
 
 
@@ -380,7 +427,7 @@ select lower(regexp_replace(btrim(ct.term), '\s+', ' ', 'g')), 'class'
 """
 
 
-def gather_week(db: Any, week: Week) -> dict:
+def gather_week(db: Any, week: Week | Day) -> dict:
     """What the report is made from, read from the app's own functions (the database connection is direct, so
     screen_reader() of migration 0040 lets the report read the screen). Nothing filters by run.trigger."""
     a, b = week.bounds_utc()
@@ -682,7 +729,7 @@ def _paper(p: dict, state: dict | None = None) -> dict:
             "awaiting": not st.get("issue_id") or status in (None, "new", "reviewed")}
 
 
-def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
+def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> dict:
     """Everything the PDF and the Excel file show, worked out once so the two files say the same."""
     made_at = made_at or datetime.now(timezone.utc)
     hers, others = _authority_cards(raw)
@@ -727,7 +774,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         for group, cs in ((HERS, h), (OTHERS, o)):
             for c in cs:
                 countries.append({"group": group, "country": c["country"], "answer": c["answer"],
-                                  "answer_text": answer_text(c), "reads_text": reads_text(c),
+                                  "answer_text": answer_text(c, week.this), "reads_text": reads_text(c, week.this),
                                   "check": to_check_by_hand(c["answer"]),
                                   "several": len(c["regulators"]) > 1,
                                   "mentions": [_mention(m, findings) for m in c["mentions"]]})
@@ -835,8 +882,8 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
     runs = sum(r["runs"] for r in authorities["hers"] + authorities["others"])
     runs_failed = sum(r["failed"] for r in authorities["hers"] + authorities["others"])
     summary = [
-        ("Report", TITLE),
-        ("Week (Cairo time)", week.label),
+        ("Report", week.title),
+        (week.period_head, week.label),
         ("Made (Cairo)", cairo_time(made_at)),
         ("Reference countries read", f"{hers_read} of {len(authorities['hers'])}"),
         ("Other authorities read", f"{others_read} of {len(authorities['others'])}"),
@@ -852,14 +899,14 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         ("Possible case reports in the literature", sum(1 for p in papers.values() if p["case_report"])),
         ("Case reports with no decision yet",
          sum(1 for p in papers.values() if p["case_report"] and p["awaiting"])),
-        ("Decisions taken this week", len(decisions)),
-        ("Reported to the authority this week", len(sent)),
+        (f"Decisions taken {week.this}", len(decisions)),
+        (f"Reported to the authority {week.this}", len(sent)),
         ("Due to the authority", f"{len(due_now)} ({late_now} late)"),
         ("Signals open", f"{len(signals_open)} ({steps_late} {'step' if steps_late == 1 else 'steps'} late)"),
         ("Country answers to check by hand", to_check_answers),
         ("Pages to check by hand", len(pages)),
         ("Sources whose reads failed", len(failed)),
-        ("Sources not read this week", len(unread)),
+        (f"Sources not read {week.this}", len(unread)),
     ]
     figures = [("Reference countries read", f"{hers_read} / {len(authorities['hers'])}"),
                ("New items", len(raw["new_items"])),
@@ -878,8 +925,8 @@ SHEETS = ("Summary", "Decisions", "Authorities read", "Ingredients by country", 
 
 
 def build_weekly_xlsx(data: dict) -> bytes:
-    week: Week = data["week"]
-    wb = xlsx_workbook(f"{TITLE}, {week.label}")
+    week: Week | Day = data["week"]
+    wb = xlsx_workbook(f"{week.title}, {week.label}")
     xlsx_summary(wb.active, data["summary"] + [(f"Readiness: {r['name']}", r["text"]) for r in data["readiness"]])
 
     def yes(v: bool) -> str:
@@ -942,7 +989,7 @@ def build_weekly_xlsx(data: dict) -> bytes:
                [18, 14, 70, 30, 40, 46, 46, 9, 9, 9, 30, 14, 14, 14, 22, 22, 18, 44], links=True)
     xlsx_sheet(wb, "Everything new",
                ["Group", "Country", "Authority", "Date", "Title (original)", "Language", "Link", "Kind", "Type",
-                "Matched the watchlist", "Looked at this week by"],
+                "Matched the watchlist", f"Looked at {week.this} by"],
                [[n["group"], n["country"], it["authority"], it["day"], it["title"], language(it["lang"]),
                  it["link"] or ("By e-mail: open it in PHAROS" if it["by_email"] else ""), it["kind"],
                  it["doc_type"], yes(it["matched"]), _looks_text(n["looks"])]
@@ -956,8 +1003,8 @@ def build_weekly_xlsx(data: dict) -> bytes:
                + [["Reads failed", r["country"], r["authority"], r["source"], r["kind"], r["page"] or "",
                    f"{r['failed']} of {plural(r['runs'], 'read', 'reads')} failed. {r['why']}".strip()]
                   for r in ch["failed"]]
-               + [["Not read this week", r["country"], r["authority"], r["source"], r["kind"], r["page"] or "",
-                   "No read this week"] for r in ch["unread"]],
+               + [[f"Not read {week.this}", r["country"], r["authority"], r["source"], r["kind"], r["page"] or "",
+                   f"No read {week.this}"] for r in ch["unread"]],
                [34, 18, 26, 36, 18, 50, 60], links=True)
     buf = io.BytesIO()
     wb.save(buf)
@@ -974,15 +1021,16 @@ def render_weekly_html(data: dict) -> str:
     env = _env()
     env.filters["language"] = language
     return env.get_template("weekly.html").render(
-        title=TITLE, week=data["week"], page=PAGE, data=data, hers=HERS, others=OTHERS,
+        title=data["week"].title, week=data["week"], page=PAGE, data=data, hers=HERS, others=OTHERS,
         looks_text=_looks_text, logo_src=logo_data_uri(), sato_src=logo_data_uri(SATO_LOGO), credit=CREDIT,
         copyright=copyright_line())
 
 
 # ───────────────────────────── made, stored, sent ─────────────────────────────
 
-def file_stem(week: Week) -> str:
-    return f"PHAROS-weekly-{week.slug}"
+def file_stem(week: Week | Day) -> str:
+    """"PHAROS-weekly-2026-11-01" (the Sunday) or "PHAROS-daily-2026-11-05"."""
+    return f"PHAROS-{week.kind}-{week.slug}"
 
 
 def run_address() -> str | None:
@@ -991,7 +1039,26 @@ def run_address() -> str | None:
     return f"{server}/{repo}/actions/runs/{run}" if server and repo and run else None
 
 
-def make_weekly_report(db: Any, store: Any, week: Week, *, dry_run: bool = False) -> dict:
+# The row of each report: one per week (its Sunday) or one per day; a period made again keeps its row.
+REPORT_ROW = {
+    "weekly": """insert into weekly_report (week_start, week_end, xlsx_r2_key, xlsx_sha256, pdf_r2_key, pdf_sha256,
+                                      git_sha, made_by_run)
+           values (%(s)s, %(e)s, %(xk)s, %(xs)s, %(pk)s, %(ps)s, %(g)s, %(r)s)
+           on conflict (week_start) do update set xlsx_r2_key = excluded.xlsx_r2_key,
+             xlsx_sha256 = excluded.xlsx_sha256, pdf_r2_key = excluded.pdf_r2_key,
+             pdf_sha256 = excluded.pdf_sha256, git_sha = excluded.git_sha, made_by_run = excluded.made_by_run,
+             made_at = now()""",
+    "daily": """insert into daily_report (day, xlsx_r2_key, xlsx_sha256, pdf_r2_key, pdf_sha256, git_sha, made_by_run)
+           values (%(s)s, %(xk)s, %(xs)s, %(pk)s, %(ps)s, %(g)s, %(r)s)
+           on conflict (day) do update set xlsx_r2_key = excluded.xlsx_r2_key,
+             xlsx_sha256 = excluded.xlsx_sha256, pdf_r2_key = excluded.pdf_r2_key,
+             pdf_sha256 = excluded.pdf_sha256, git_sha = excluded.git_sha, made_by_run = excluded.made_by_run,
+             made_at = now()""",
+}
+
+
+def make_weekly_report(db: Any, store: Any, week: Week | Day, *, dry_run: bool = False) -> dict:
+    """Makes, archives, records and sends the report of a week, or of a day (the same report, one day long)."""
     from collectors.alerts import Notifier
     from collectors.core.archive import Archive
 
@@ -1000,19 +1067,13 @@ def make_weekly_report(db: Any, store: Any, week: Week, *, dry_run: bool = False
     pdf = build_pdf(render_weekly_html(data), render_footer(week))
     archive = Archive()
     stem = file_stem(week)
-    base = f"reports/weekly/{week.slug}/{stem}"
-    # A week made again never overwrites (bucket lock): it is stored as -r2, -r3 …; the row keeps the latest,
-    # and the audit log the earlier ones.
+    base = f"reports/{week.kind}/{week.slug}/{stem}"
+    # A week or day made again never overwrites (bucket lock): it is stored as -r2, -r3 …; the row keeps the
+    # latest, and the audit log the earlier ones.
     xlsx_sha, xlsx_key = archive.put_named(f"{base}.xlsx", xlsx, XLSX_MIME, revise=True)
     pdf_sha, pdf_key = archive.put_named(f"{base}.pdf", pdf, "application/pdf", revise=True)
     db.execute(
-        """insert into weekly_report (week_start, week_end, xlsx_r2_key, xlsx_sha256, pdf_r2_key, pdf_sha256,
-                                      git_sha, made_by_run)
-           values (%(s)s, %(e)s, %(xk)s, %(xs)s, %(pk)s, %(ps)s, %(g)s, %(r)s)
-           on conflict (week_start) do update set xlsx_r2_key = excluded.xlsx_r2_key,
-             xlsx_sha256 = excluded.xlsx_sha256, pdf_r2_key = excluded.pdf_r2_key,
-             pdf_sha256 = excluded.pdf_sha256, git_sha = excluded.git_sha, made_by_run = excluded.made_by_run,
-             made_at = now()""",
+        REPORT_ROW[week.kind],
         {"s": week.start, "e": week.end, "xk": xlsx_key, "xs": xlsx_sha, "pk": pdf_key, "ps": pdf_sha,
          "g": os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"), "r": run_address()})
     out_dir = Path(os.environ.get("REPORT_DIR", "."))
@@ -1020,9 +1081,9 @@ def make_weekly_report(db: Any, store: Any, week: Week, *, dry_run: bool = False
     (out_dir / f"{stem}.xlsx").write_bytes(xlsx)
     (out_dir / f"{stem}.pdf").write_bytes(pdf)
     notifier = Notifier(store, store.settings(), dry_run=dry_run, archive=archive)
-    notifier.admin_document(f"{stem}.pdf", pdf, f"{TITLE}, {week.label}")
-    return {"week": week.slug, "xlsx_sha256": xlsx_sha, "pdf_sha256": pdf_sha}
+    notifier.admin_document(f"{stem}.pdf", pdf, f"{week.title}, {week.label}")
+    return {"week" if week.kind == "weekly" else "day": week.slug, "xlsx_sha256": xlsx_sha, "pdf_sha256": pdf_sha}
 
 
-__all__ = ["Week", "week_starting", "last_complete_week", "gather_week", "assemble", "build_weekly_xlsx",
-           "render_weekly_html", "make_weekly_report", "country_answers", "answer_text"]
+__all__ = ["Week", "Day", "yesterday", "week_starting", "last_complete_week", "gather_week", "assemble",
+           "build_weekly_xlsx", "render_weekly_html", "make_weekly_report", "country_answers", "answer_text"]

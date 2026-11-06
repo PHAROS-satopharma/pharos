@@ -6,7 +6,7 @@ export interface Tab {
 
 /**
  * The three screening tabs, in the order she works: one ingredient across every source (vertical), each
- * authority's new items (horizontal), then the weekly report. Everyone sees them.
+ * authority's new items (horizontal), then the reports (daily and weekly). Everyone sees them.
  */
 export const SCREENING_TABS: readonly Tab[] = [
   { to: '/ingredients', label: 'Ingredients' },

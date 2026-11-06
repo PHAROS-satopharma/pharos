@@ -1,6 +1,6 @@
 // archive-url — a 10-minute link to one archived original in R2.
 // {r2_key} → {url}. Only for a signed-in person, and only for a key that a row they can read points to
-// (document, attachment, SPC snapshot, inbound mail, weekly or monthly report, a pack made on request, EURD
+// (document, attachment, SPC snapshot, inbound mail, daily, weekly or monthly report, a pack made on request, EURD
 // list, a case's source file or E2B file). Database backups are never served.
 import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
@@ -28,6 +28,9 @@ serve(async (req) => {
     db.from("monthly_report").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
     db.from("weekly_report").select("id", { count: "exact", head: true }).eq("xlsx_r2_key", r2Key),
     db.from("weekly_report").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
+    // The daily report (0083).
+    db.from("daily_report").select("id", { count: "exact", head: true }).eq("xlsx_r2_key", r2Key),
+    db.from("daily_report").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
     // A PSUR or inspection pack made on request (0048, collectors/report_pack.py).
     db.from("report_request").select("id", { count: "exact", head: true }).eq("xlsx_r2_key", r2Key),
     db.from("report_request").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
