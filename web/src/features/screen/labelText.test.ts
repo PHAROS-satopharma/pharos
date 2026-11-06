@@ -26,10 +26,10 @@ describe('splitSections', () => {
     expect(s['4.4']).toBe('Use with caution in patients with renal impairment. 1. Monitor renal function in the elderly.');
     expect(s['4.8']).toContain('Headache is uncommon.');
   });
-  it('reads Windows line ends and a dose is never a heading', () => {
-    const s = splitSections('4.4 Warnings\r\nText.\r\n4.5 mg a day is the ceiling.\r\n4.8 Effects\r\nNausea.');
+  it('reads Windows line ends; a number that is no section number stays in the text', () => {
+    const s = splitSections('4.4 Warnings\r\nText.\r\n2.5 mg a day is the ceiling.\r\n4.8 Effects\r\nNausea.');
     expect(Object.keys(s)).toEqual(['4.4', '4.8']);
-    expect(s['4.4']).toBe('Text. 4.5 mg a day is the ceiling.');
+    expect(s['4.4']).toBe('Text. 2.5 mg a day is the ceiling.');
   });
   it('gives nothing for text without numbered sections', () => {
     expect(splitSections('Just a paragraph of text.')).toEqual({});

@@ -16,6 +16,7 @@ import { listsItems, offReason, pageStatus, sourceLabels, type PageKind } from '
 import { useLiteratureSearch } from '../literature/useLiteratureSearch';
 import { answerText, countryAnswers, readsText, summaryLine, toCheckByHand, type CountryAnswer } from './answers';
 import { DecisionButtons } from './DecisionButtons';
+import { LabelChanges } from './LabelChanges';
 import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
 import { PRESETS, cairoDayOf, presetDays, rangeError, rangeFromSearch, rangeLabel, type DayRange } from './range';
@@ -196,18 +197,7 @@ function Body({
         </Empty>
       ) : null}
 
-      <section className="scr-section" aria-label="Label changes">
-        <SectionHead index="03" title="Label changes" aside={`${data.label_changes.length}`} />
-        {data.label_changes.length ? (
-          <ol className="scr-mentions">
-            {data.label_changes.map((m) => (
-              <MentionItem key={m.document_id} m={m} showWhere queryKey={queryKey} />
-            ))}
-          </ol>
-        ) : (
-          <p className="scr-quiet">No label change of a product with this ingredient in these days.</p>
-        )}
-      </section>
+      <LabelChanges ingredientId={data.ingredient.id} from={from} to={to} />
 
       <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} />
     </>

@@ -36,8 +36,11 @@ class FakeDb:
 
 
 def _gap(written: dict) -> dict:
-    g = written["g"]
-    return getattr(g, "obj", g)
+    """The gap as stored: a psycopg Jsonb wrapper (.obj) with psycopg, a JSON string without it."""
+    import json
+
+    g = getattr(written["g"], "obj", written["g"])
+    return json.loads(g) if isinstance(g, str) else g
 
 
 def test_recompute_writes_a_gap_for_every_change_and_label_without_one():

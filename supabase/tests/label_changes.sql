@@ -121,8 +121,11 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 set role authenticated;
 select save_our_label('00000000-0000-0000-0000-00000043a001', 'CI Labelamine 10 mg', 'Leaflet 2025', 'en',
   '{"4.4": "Use with caution in patients with renal impairment.", "4.8": "Nausea."}', 'leaflet-2025.pdf') as lc_label1 \gset
+-- (a psql variable is not read inside dollar quotes, so the label is looked up)
 select pg_temp.lc_refused($q$insert into label_gap (spc_change_id, our_label_id, gap)
-  values ('00000000-0000-0000-0000-00000043c001', :'lc_label1', '{}')$q$) as lc_reviewer_writes_gap \gset
+  values ('00000000-0000-0000-0000-00000043c001',
+          (select id from our_label where ingredient_id = '00000000-0000-0000-0000-00000043a001' and superseded_at is null),
+          '{}')$q$) as lc_reviewer_writes_gap \gset
 reset role;
 -- the collector (owner connection) writes the gap
 insert into label_gap (spc_change_id, our_label_id, gap) values

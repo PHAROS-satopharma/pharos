@@ -176,3 +176,136 @@ export interface IngredientScreenData {
   /** The five-day clock of every notice on the screen (finding_state, 0041), fetched with the screen. */
   findings: Findings;
 }
+
+// ───────────────────────────── our label under "Label changes" (migration 0043) ─────────────────────────────
+
+export type GapStatus = 'covered' | 'partly' | 'missing';
+
+/** One sentence the originator added, set against the same section of our label. */
+export interface GapSentence {
+  sentence: string;
+  status: GapStatus;
+  /** Share of its content words found in our closest sentence, 0–1. */
+  score: number;
+  /** Our closest sentence, when any word is shared. */
+  closest: string | null;
+}
+
+export interface GapSection {
+  /** The originator's section as the label watch names it (4.4, us:warnings_and_precautions, ja:8). */
+  section: string;
+  /** The SmPC section of ours it was compared with. */
+  our_section: string;
+  /** Our label has that section. */
+  our_text: boolean;
+  covered: number;
+  partly: number;
+  missing: number;
+  added: GapSentence[];
+}
+
+/** What the collector found for a label change against one version of our label (label_gap.gap). */
+export interface LabelGap {
+  /** False when the two labels are in different languages: nothing is compared, sections is empty. */
+  lang_match: boolean;
+  our_lang: string | null;
+  their_lang: string | null;
+  covered: number;
+  partly: number;
+  missing: number;
+  sections: GapSection[];
+}
+
+/** One word-level change inside a section, as collectors/spc/diff.py stores it. */
+export interface WordChange {
+  op: 'insert' | 'delete' | 'replace';
+  before: string;
+  after: string;
+  /** The words just before the change, to find the place. */
+  context?: string;
+}
+
+export interface DiffSection {
+  section: string;
+  before: string | null;
+  after: string | null;
+  changes: WordChange[];
+}
+
+export interface LabelProduct {
+  id: string;
+  name: string;
+  mah: string | null;
+  country_code: string;
+  country_name: string;
+  source_id: string;
+  regulator_id: string;
+  regulator_name: string;
+  url: string | null;
+  /** The product whose label she follows first for this ingredient (one per ingredient). */
+  is_reference: boolean;
+}
+
+/** The current version of our label the change was compared with. */
+export interface OurLabelRef {
+  id: string;
+  product_name: string;
+  version: string;
+  lang: string;
+  uploaded_at: string;
+  /** The full name of the person who uploaded it. */
+  uploaded_by: string | null;
+}
+
+/** One label change as label_changes() answers it. */
+export interface LabelChange {
+  change_id: string;
+  detected_at: string;
+  /** The Cairo day the change was detected (YYYY-MM-DD): the day the screen filters by. */
+  detected_day: string;
+  /** The date printed on the new label, and on the one before it. */
+  label_date: string | null;
+  previous_label_date: string | null;
+  product: LabelProduct;
+  lang: string | null;
+  link: string | null;
+  document_id: string | null;
+  title: string;
+  sections: string[];
+  diff: DiffSection[];
+  /** Null until the collector compared the change with our current label (within 4 hours of an upload). */
+  gap: LabelGap | null;
+  gap_at: string | null;
+  /** Null when no label of ours is uploaded for the ingredient. */
+  our_label: OurLabelRef | null;
+  issue_id: string | null;
+  issue_status: IssueStatus | null;
+  is_backfill: boolean;
+  decision: Decision | null;
+}
+
+/** A row of our_label as the Our label panel reads it. */
+export interface OurLabelRow {
+  id: string;
+  ingredient_id: string;
+  product_name: string;
+  version: string;
+  lang: string;
+  sections: Record<string, string>;
+  file_name: string | null;
+  uploaded_by: string;
+  uploaded_at: string;
+  superseded_at: string | null;
+}
+
+/**
+ * What the Label changes section holds in the cache. The decision buttons patch `label_changes` (one Mention per
+ * change, keyed by change_id as document_id), `regulators` (always empty here) and `findings`, as they do on the
+ * screen's own data.
+ */
+export interface LabelChangesData {
+  changes: LabelChange[];
+  regulators: ScreenRegulator[];
+  label_changes: Mention[];
+  findings: Findings;
+}

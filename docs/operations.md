@@ -316,14 +316,52 @@ vertical pass; the Sources screen is the horizontal one.
   decision (who, when, why); a reviewer or administrator records **Concerns us** or **Doesn't concern us**
   (a reason is required) right there, or **Change** after a decision. The decision shows at once on every
   mention filed under the same notice.
-- **Label changes** of products with the ingredient are listed apart, with the sections that changed.
+- **Label changes** of products with the ingredient are listed apart, under our own label (next section): the
+  changes *detected* in the days, the reference product first, each with the sections that changed, what the
+  originator added set against our label, the word changes, and the notice's decision.
 - **Literature**: the papers the daily NCBI watch stored for those days, by database and by search, the
   ingredient's own papers first, 50 at a time (**Show more**), each with its PubMed and PubMed Central links.
   Papers have no decision buttons. **Count on PubMed and PubMed Central now** asks NCBI live
   (`literature-search`); those counts are by publication date.
 
 The screen reads everything with one call, `ingredient_screen()` (migration 0039), and more papers with
-`ingredient_papers()`. Both refuse anyone who is not on the team.
+`ingredient_papers()`. Both refuse anyone who is not on the team. Section 03, *Label changes*, reads
+`label_changes()` (migration 0043, next section).
+
+## Our label and the label watch
+
+The label watch (`collectors/spc`, weekly) reads the SmPC or PI of every product with one of our ingredients in
+the countries it covers and records each change of a safety section (`spc_change`). Section 03 of the
+Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the QPPV's third need):
+
+- **Our label.** The panel at the top of section 03 shows the current version of our label for the ingredient:
+  product, version, language, how many sections, who uploaded it and when. A reviewer or administrator presses
+  **Upload our label** (or **Replace**) and gives the approved leaflet or SmPC as a PDF (read on this computer;
+  nothing is uploaded but the sections found), a text file, or pasted text. The screen shows the numbered
+  sections it found; at least one safety section (4.1 to 4.9) is needed. Saving makes a new version
+  (`save_our_label`, 0027); the version before stays in the database, marked superseded, so what an old change
+  was compared with can be traced.
+- **The comparison** is the collector's, not the browser's. When a change is recorded, and on every collection
+  run for the changes of the last year that have no comparison yet against a current version of our label, the
+  collector splits what the originator added into sentences and looks for each one in the same section of our
+  label (`collectors/labels/gap.py`; US and Japanese section headings are mapped to the SmPC section). Each
+  sentence is **Our label says this** (three quarters or more of its content words are in one sentence of ours),
+  **Partly in our label** (two fifths or more) or **Not in our label**; "Ours: …" shows our closest sentence. The
+  result is stored once per change and version of our label (`label_gap`). Labels in different languages are
+  never compared: the screen says so and asks for a look by eye. A new version of our label is compared with the
+  changes of the last year **on the next collection run, within 4 hours**; until then the screen says "Not
+  compared with our label yet".
+- **The reference product.** One product per ingredient — the originator's, as a rule — can be marked
+  **Mark as the reference product** by a reviewer or administrator; it is listed first among the label changes,
+  on the screen and in the weekly report, and marking another product clears it. The mark is in the audit log.
+- **The weekly report** lists the same changes under each ingredient (*Detected 3 Nov 2026*, the label's own
+  date, product, holder, authority, sections) with one line on the gap: *Our label: 2 covered, 1 partly, 1
+  missing*, *Not compared: different language*, *Not compared yet*, or *No label of ours uploaded*.
+- **Days.** Section 03 and the report filter by the Cairo day the change was **detected**, not by the date printed
+  on the label (a label dated 1 October found on 3 November appears in the week of 3 November).
+
+The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
+took its place.
 
 ## Drug classes and the check of the past
 
@@ -364,7 +402,8 @@ Removed in November 2026 (see *What was removed* above). For the record of what 
   row in `signal_event`, which nobody can change or delete; the rows stay. The due days are still in
   `app_setting` `signal_due_days`.
 - **Our labels** kept the text of our own approved product information, section by section, and compared it
-  with an originator's label change. The versions stay in the database.
+  with an originator's label change. The versions stay in the database, and since 6 Nov 2026 the same text is
+  uploaded and read on the Ingredients screen, under *Label changes* (see *Our label and the label watch*).
 - **The PSUR builder** (`/psur`) gathered a PSUR interval's notices, label changes, literature, signals and
   screening annex, with the interval from EMA's EURD list (`eurd_entry`, last list kept).
 - **Oversight** (`/oversight`) listed what was late (`overdue_items(day)`, still in the database; the review time
