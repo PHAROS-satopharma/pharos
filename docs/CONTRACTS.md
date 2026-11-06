@@ -237,7 +237,8 @@ the web test reads it from the migration. Subscription kind `new_items_digest` i
 -- class_term: + source ('seed' | 'wikidata' | 'who' | 'manual'), added_by -> person, changed_at, rematched_at.
 -- ingredient_term: + changed_at, rematched_at.
 -- changed_at is set by the database (trigger) on insert and whenever term, lang, mode or exclusions change,
--- and on every word of an ingredient that is watched again after a pause.
+-- and on every word of an ingredient that is watched again after a pause; a class's words also when an
+-- ingredient that searches it is watched again, or a watched ingredient gets a searched link to it (0055).
 -- A word is DUE while rematched_at is null or rematched_at < changed_at.
 create table rematch_job (id uuid pk, trigger text ('daily'|'manual'), started_at, since date,
   ingredient_term_ids uuid[], class_term_ids uuid[], cursor_document_id uuid, documents_checked int,
@@ -256,7 +257,8 @@ confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the call
   ingredient) and checks the stored notices (not of `spc` or `literature` sources) dated from `since` and
   first seen before the job started, in id order. On reaching the end it sets `rematched_at = started_at` on
   the job's words whose `changed_at <= started_at`. Everything it creates is `is_backfill`: it never alerts
-  and never reaches the digest.
+  and never reaches the digest. A class-only issue that a due class word already matched gains the
+  ingredients that search the class now (`class_gap`); `rematch_documents` gives each issue its `ingredients`.
 - Store methods (`collectors/core/store.py` and `memstore.py`): `rematch_open_job`, `rematch_due_terms`,
   `rematch_create_job`, `rematch_terms`, `rematch_documents`, `rematch_advance`, `rematch_finish`,
   `set_issue_names_ingredient`; for classes `ingredients_for_classes`, `drug_class_id`, `create_drug_class`,

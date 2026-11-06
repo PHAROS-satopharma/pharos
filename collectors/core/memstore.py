@@ -590,6 +590,27 @@ class MemoryStore:
             relation = "manual"  # the database trigger ingredient_class_relation (0049)
         self.ingredient_class.append((ingredient_id, class_id))
         self.ingredient_class_state[(ingredient_id, class_id)] = {"relation": relation, "enabled": enabled}
+        if enabled and self.ingredient.get(ingredient_id, {}).get("active", True):
+            self._class_words_due(class_id)   # the database trigger class_linked (0055)
+
+    def watch_again(self, ingredient_id: str) -> None:
+        """An ingredient watched again after a pause: its words and those of the classes it searches are due
+        (trigger ingredient_watched_again, 0034 and 0055)."""
+        row = self.ingredient[ingredient_id]
+        if row.get("active", True):
+            return
+        row["active"] = True
+        for t in self.terms:
+            if t.ingredient_id == ingredient_id:
+                self.term_state.setdefault(t.id, {"rematched_at": None, "source": None})["changed_at"] = _now()
+        for i, c in self.ingredient_class:
+            if i == ingredient_id and self.ingredient_class_state.get((i, c), {}).get("enabled", True):
+                self._class_words_due(c)
+
+    def _class_words_due(self, class_id: str) -> None:
+        for t in self.terms:
+            if t.is_class and t.class_id == class_id:
+                self.term_state.setdefault(t.id, {"rematched_at": None, "source": None})["changed_at"] = _now()
 
     def set_class_search(self, ingredient_id: str, class_id: str, enabled: bool) -> None:
         """The app's set_class_search(): switching a class on again makes its words due for the check of the
@@ -598,9 +619,7 @@ class MemoryStore:
             raise KeyError("That class is not linked to this ingredient.")
         st = self.ingredient_class_state.setdefault((ingredient_id, class_id), {"relation": "group", "enabled": True})
         if enabled and not st["enabled"]:
-            for t in self.terms:
-                if t.is_class and t.class_id == class_id:
-                    self.term_state.setdefault(t.id, {"rematched_at": None, "source": None})["changed_at"] = _now()
+            self._class_words_due(class_id)
         st["enabled"] = enabled
 
     def set_class_literature(self, ingredient_id: str, class_id: str, on: bool) -> None:
@@ -672,7 +691,8 @@ class MemoryStore:
                 "attachments": [dict(a) for a in self.attachment.values() if a["document_id"] == d["id"]],
                 "matched_terms": {m.get("term_id") or m.get("class_term_id") for m in self.match
                                   if m["document_id"] == d["id"] and (m.get("term_id") or m.get("class_term_id"))},
-                "issue": {"id": iss["id"], "class_only": iss["class_only"]} if iss else None,
+                "issue": {"id": iss["id"], "class_only": iss["class_only"],
+                          "ingredients": {g for i, g in self.issue_ingredient if i == iss["id"]}} if iss else None,
                 "shared_original": bool(d.get("r2_key")) and sum(
                     1 for x in self.document.values() if x.get("r2_key") == d["r2_key"]) > 1,
             })

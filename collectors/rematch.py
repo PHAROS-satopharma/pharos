@@ -13,7 +13,9 @@ after a pause, or a new class word (``collectors/classes.py``). The database mar
 * a word that already matched that notice is skipped, so a notice is never matched twice for one word;
 * a notice that now matches gets its match rows and, when it was read again, its text; a notice that
   already belongs to an issue adds the ingredients to that issue; any other is placed exactly as the
-  collectors place a new notice (``collectors.merge``), marked as history (``is_backfill``).
+  collectors place a new notice (``collectors.merge``), marked as history (``is_backfill``);
+* a class-only issue that a due class word had already found gains the ingredients that search the class now
+  and that it does not name yet: one linked to the class, or watched again, since (``class_gap``, 0055).
 History never sends a Telegram message and never reaches the daily digest.
 
 The progress is kept in ``rematch_job`` (one at a time): the job notes its words and the date it starts
@@ -164,6 +166,16 @@ def match_document(matcher: Matcher, doc: dict, texts: Texts,
     return [h for h in hits if h.term.id not in done]
 
 
+def class_gap(doc: dict, term_class: dict[str, str], class_ingredients: dict[str, list[str]]) -> set[str]:
+    """The ingredients a class-only issue does not name yet although a due class word already matched its
+    notice: those that search the class now (linked to it, or watched again, after the notice arrived)."""
+    issue = doc.get("issue")
+    if not issue or not issue["class_only"]:
+        return set()
+    classes = {term_class[t] for t in doc.get("matched_terms") or () if t in term_class}
+    return {g for c in classes for g in class_ingredients.get(c, [])} - set(issue.get("ingredients") or ())
+
+
 def record(store: Any, doc: dict, texts: Texts, hits: list[Hit], class_ingredients: dict[str, list[str]]) -> bool:
     """Write what the notice now matches. Returns True when a new (history) issue was made for it."""
     doc_id = doc["id"]
@@ -241,6 +253,7 @@ def run(store: Any, archive: Any, settings: dict, *, months: int | None = None, 
              f", continuing after notice {job['cursor_document_id']}" if job["cursor_document_id"] else "")
     matcher = Matcher(terms)
     class_ingredients = store.class_ingredients()
+    term_class = {t.id: t.class_id for t in terms if t.is_class}
     cursor = job["cursor_document_id"]
     while matcher:
         if deadline is not None and clock() >= deadline:
@@ -256,11 +269,14 @@ def run(store: Any, archive: Any, settings: dict, *, months: int | None = None, 
         for doc in docs:
             texts = kept_texts(doc) or read[doc["id"]]
             hits = match_document(matcher, doc, texts, fields)
+            gap = class_gap(doc, term_class, class_ingredients)
             pending["checked"] += 1
             pending["reread"] += int(texts.reread)
-            if hits:
+            if hits or gap:
                 with store.transaction():
-                    created = record(store, doc, texts, hits, class_ingredients)
+                    created = record(store, doc, texts, hits, class_ingredients) if hits else False
+                    if gap:
+                        store.add_issue_ingredients(doc["issue"]["id"], sorted(gap))
                     store.rematch_advance(job["id"], cursor=doc["id"], matched=1, issues_created=int(created),
                                           **pending)
                 out.matched += 1

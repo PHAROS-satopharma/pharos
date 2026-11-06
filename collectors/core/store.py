@@ -713,7 +713,7 @@ class Store:
         """The next stored notices to check, in id order after ``after_id``: dated ``since`` or later (the
         publication date, else the Cairo day it was first seen), first seen before the job started, not a
         label (SPC) or a literature record. Each comes with its kept text, its attachments, the words that
-        already matched it and the issue it belongs to."""
+        already matched it and the issue it belongs to (with the ingredients it names)."""
         docs = self.db.fetchall(
             """select d.id, d.source_id, d.url, d.title_orig, d.lang, d.doc_type::text as doc_type,
                       d.published_date, d.structured, d.r2_key, d.mime, s.parser,
@@ -751,13 +751,16 @@ class Store:
             matched.setdefault(str(r["document_id"]), set()).add(str(r["term"]))
         issues: dict[str, dict] = {}
         for r in self.db.fetchall(
-                """select distinct on (idd.document_id) idd.document_id, i.id, i.class_only
+                """select distinct on (idd.document_id) idd.document_id, i.id, i.class_only,
+                          (select coalesce(array_agg(ii.ingredient_id::text), '{}') from issue_ingredient ii
+                            where ii.issue_id = i.id) as ingredients
                      from issue_document idd join issue i on i.id = idd.issue_id
                     where idd.document_id = any(%(ids)s::uuid[]) and idd.method <> 'suggested'
                     order by idd.document_id, coalesce(i.anchor_document_id = idd.document_id, false) desc,
                              i.created_at""",
                 {"ids": ids}):
-            issues[str(r["document_id"])] = {"id": str(r["id"]), "class_only": r["class_only"]}
+            issues[str(r["document_id"])] = {"id": str(r["id"]), "class_only": r["class_only"],
+                                             "ingredients": set(r["ingredients"] or ())}
         # An original several notices share (one list page for all its rows) is not a notice's own text.
         keys = sorted({d["r2_key"] for d in docs if d["r2_key"]})
         shared = {r["r2_key"] for r in self.db.fetchall(
