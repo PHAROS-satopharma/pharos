@@ -17,6 +17,9 @@ from tests.fakes_a2 import FakeCtx, fetched, source
 
 REGULATORS, SOURCES, _ = load_catalogue()
 CFG = {s.id: s for s in SOURCES}
+# MHRA is listed from GOV.UK's search API (tests/test_govuk_search.py): its newest page, then an empty one.
+MHRA_LIST = {govuk.search_url(CFG["mhra-alerts"], 0): "mhra-search/alerts-0.json",
+             "https://www.gov.uk/api/search.json*": b'{"results": [], "total": 100}'}
 
 
 # ───────────────────── Austria: BASG's RSS carries no DHPC ─────────────────────
@@ -120,8 +123,7 @@ def test_mhra_roundup_body_carries_the_letters():
 def test_mhra_roundup_letters_are_items_of_their_own():
     roundup = "https://www.gov.uk/drug-device-alerts/mhra-safety-roundup-october-2026"
     api = "https://www.gov.uk/api/content/drug-device-alerts/mhra-safety-roundup-october-2026"
-    ctx = FakeCtx({CFG["mhra-alerts"].url: "mhra-alerts/feed.atom",
-                   api: "mhra-alerts/content-roundup-october-2026.json"}, backfill=True)
+    ctx = FakeCtx({**MHRA_LIST, api: "mhra-alerts/content-roundup-october-2026.json"}, backfill=True)
     items = govuk.list_items(ctx, CFG["mhra-alerts"])
     letters = [i for i in items if (i.structured or {}).get("roundup") == roundup]
     assert len(letters) == 8                              # the October 2026 DHPC section
@@ -141,12 +143,10 @@ def test_one_bad_roundup_never_loses_the_feed():
     # Audit of 6 Nov 2026: a roundup whose content-API answer is not JSON (a 200 maintenance page) raised
     # ParseError out of list_items, so the run kept none of the feed's alerts and drug safety updates.
     api = "https://www.gov.uk/api/content/drug-device-alerts/mhra-safety-roundup-october-2026"
-    ctx = FakeCtx({CFG["mhra-alerts"].url: "mhra-alerts/feed.atom",
-                   api: b"<html><body>GOV.UK is down for maintenance</body></html>"}, backfill=True)
+    ctx = FakeCtx({**MHRA_LIST, api: b"<html><body>GOV.UK is down for maintenance</body></html>"}, backfill=True)
     ctx.list_errors = []
     items = govuk.list_items(ctx, CFG["mhra-alerts"])
-    feed = parse_feed(fetched("mhra-alerts/feed.atom").content, CFG["mhra-alerts"], CFG["mhra-alerts"].url)
-    assert len(items) == len(feed)                        # every feed entry kept, no letters this run
+    assert len(items) == 100                              # every listed entry kept, no letters this run
     assert not [i for i in items if (i.structured or {}).get("roundup")]
     assert any("mhra-safety-roundup-october-2026" in e and "ParseError" in e for e in ctx.list_errors)
 
@@ -162,7 +162,7 @@ def test_a_roundup_that_cannot_be_fetched_is_a_note_not_a_failure():
                 raise FetchError(503, url)                # three server errors in a row
             return super().get(url, **kw)
 
-    ctx = Timeout({CFG["mhra-alerts"].url: "mhra-alerts/feed.atom"}, backfill=True)
+    ctx = Timeout(dict(MHRA_LIST), backfill=True)
     ctx.list_errors = []
     items = govuk.list_items(ctx, CFG["mhra-alerts"])
     assert any(i.external_id == "/drug-device-alerts/mhra-safety-roundup-october-2026" for i in items)
