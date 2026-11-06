@@ -374,6 +374,19 @@ def split_smpc_sections(text: str) -> dict[str, str]:
     return out
 
 
+def eu_wanted(key: str) -> bool:
+    """An EU-numbered section the label watch keeps: a watched one (4.1–4.9, sub-sections by their parent) or 10,
+    the revision date (recorded only), of any SmPC in the file (``smpc2:4.4``)."""
+    bare = _SMPC_PREFIX.sub("", key)
+    return bare == "10" or bare in WATCHED_EU or ".".join(bare.split(".")[:2]) in WATCHED_EU
+
+
+def eu_label_sections(text: str) -> dict[str, str]:
+    """The kept sections of a national SmPC file, each SmPC on its own: one file can hold two (Infomed's
+    Ivabradina Aurovitas: one per strength), and the second must not run on inside the first one's section 10."""
+    return {k: v for k, v in split_smpc_sections(text).items() if eu_wanted(k)}
+
+
 def cut_annex_i(text: str) -> str:
     """The SmPC part of an EPAR product-information PDF: Annex I up to Annex II."""
     m_start = re.search(r"(?im)^\s*(ANNEX I|ANHANG I|ANNEXE I|ALLEGATO I|ANEXO I|BIJLAGE I)\s*$",
