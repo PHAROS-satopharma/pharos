@@ -79,7 +79,7 @@ export function wordsSummary(terms: Pick<ClassTerm, 'lang'>[]): string {
   return `${terms.length === 1 ? '1 word' : `${terms.length} words`} in ${langs === 1 ? '1 language' : `${langs} languages`}`;
 }
 
-/** A word saved since the stored notices were last checked with it: the next daily run checks the past again. */
+/** A word saved since the stored notices were last checked with it: the next daily or literature run checks the past again. */
 export function isDue(t: Pick<ClassTerm, 'changed_at' | 'rematched_at'>): boolean {
   return t.rematched_at === null || new Date(t.rematched_at).getTime() < new Date(t.changed_at).getTime();
 }

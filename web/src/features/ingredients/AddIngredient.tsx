@@ -191,7 +191,7 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
           each against the archive. Nothing is saved until you press Save.
         </p>
         <p className="small muted">
-          After saving, everything else follows by itself: tonight the group is added from the ATC code (searched) and
+          After saving, everything else follows by itself: within hours the group is added from the ATC code (searched) and
           the class above it (shown, switched off until you have read its words), the notices PHAROS already holds from
           the last 12 months are checked for these names (as history, no messages), and PubMed and PubMed Central are
           searched 12 months back; on Monday the label watch reads every watched country. The search profile is set on

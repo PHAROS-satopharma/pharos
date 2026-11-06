@@ -8,7 +8,7 @@ import {
   type Readiness,
 } from './readiness';
 
-/** A freshly saved ingredient: one name, its class made tonight, nothing run yet (ingredient_readiness, 0045). */
+/** A freshly saved ingredient: one name, its class made at the next run, nothing run yet (ingredient_readiness, 0045). */
 const fresh: Readiness = {
   names: { languages_with_a_name: 1, of: 15, missing: ['de', 'fr'] },
   class: { atc: true, classes: 0, words: 0, confirmed: false },
@@ -57,14 +57,14 @@ const ready: Readiness = {
 describe('readiness on the ingredient row', () => {
   it('lists what is still running or still to come, in her words, never codes', () => {
     expect(readinessItems(fresh)).toEqual([
-      'class words tonight',
-      'check of the past tonight',
-      'NCBI look-back tonight',
+      'class words waiting',
+      'check of the past waiting',
+      'NCBI look-back waiting',
       'label watch on Monday (Japan, Spain)',
       'nobody receives its Telegram messages yet',
     ]);
     expect(readinessLine(fresh)).toBe(
-      'Still preparing: class words tonight · check of the past tonight · NCBI look-back tonight · ' +
+      'Still preparing: class words waiting · check of the past waiting · NCBI look-back waiting · ' +
         'label watch on Monday (Japan, Spain) · nobody receives its Telegram messages yet',
     );
   });

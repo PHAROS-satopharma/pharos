@@ -10,6 +10,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
 | `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and up to 15 minutes of the check of the past |
+| `collect.yml`, schedule **literature** | 10:41 and 18:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch, then EMA's literature monitoring list (`collectors/mlm.py`) |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
@@ -333,8 +334,8 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
   ingredient by the migration, so a new one is covered the moment it is saved.
 - Otherwise **Still preparing:** followed by what is still running or still to come, in order: *class words
-  tonight* (the daily run, 02:31), *check of the past running* or *tonight*, *NCBI look-back running* or
-  *tonight*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
+  waiting* (the next daily or literature run: 02:31, 10:41 or 18:41), *check of the past running* or *waiting*,
+  *NCBI look-back running* or *waiting*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
   03:23), *nobody receives its
   Telegram messages yet*.
 - Under the line: how many label products were found and where (or *No label found in any watched country*),

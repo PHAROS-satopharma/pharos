@@ -108,7 +108,7 @@ export function SearchProfile({
       ) : (
         <p className="small muted">
           {ingredient.atc_code
-            ? 'Its group and the class above it are added from the ATC code in the next daily run.'
+            ? 'Its group and the class above it are added from the ATC code at the next run (three a day).'
             : 'No ATC code, so no group from it. An administrator can add a group by hand.'}
         </p>
       )}

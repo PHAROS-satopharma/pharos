@@ -1,6 +1,6 @@
 """PHAROS collector run.
 
-    python -m collectors.run --schedule 4h|12h|daily|weekly|monthly|all [--source ID]
+    python -m collectors.run --schedule 4h|12h|daily|literature|weekly|monthly|all [--source ID]
                              [--backfill] [--probe-id UUID] [--spc-ingredient UUID]
                              [--dry-run] [--no-db]
 
@@ -48,7 +48,7 @@ from collectors.parsers.base import html_text
 
 log = logging.getLogger("collectors.run")
 
-SCHEDULES = ("4h", "12h", "daily", "weekly", "monthly", "all")
+SCHEDULES = ("4h", "12h", "daily", "literature", "weekly", "monthly", "all")
 MAX_ATTACHMENTS = 8
 MAX_NEW_ITEMS = 400            # per source per normal run; the rest wait for the next run
 SOURCE_BUDGET_S = 10 * 60      # per source per normal run: one slow source never starves the others
@@ -426,6 +426,10 @@ def select_sources(sources: list[SourceConfig], schedule: str, source_id: str | 
     chosen = [s for s in sources if s.enabled and s.kind != "spc"]
     if backfill or schedule == "all":
         return chosen
+    if schedule == "literature":
+        # the daily run's literature sources (NCBI) twice more a day, so a new ingredient's look-back is not
+        # left for the night; a source switched off on the Sources screen stays off
+        return [s for s in chosen if s.kind == "literature"]
     return [s for s in chosen if s.schedule == schedule]
 
 

@@ -420,12 +420,12 @@ def _data():
 
 def test_readiness_is_worded_as_on_the_ingredients_page():
     """One line per ingredient, in her words: Ready, or what is still running or still to come."""
-    assert rw.readiness_text(READINESS) == ("Still preparing: check of the past running · NCBI look-back tonight · "
+    assert rw.readiness_text(READINESS) == ("Still preparing: check of the past running · NCBI look-back waiting · "
                                             "label watch on Monday (Japan, Spain) · nobody receives its Telegram messages yet")
     fresh = {**READINESS, "class": {"atc": True, "classes": 0, "words": 0, "confirmed": False},
              "past_check": {"done": False, "words_due": 1, "job_running": False},
              "ncbi": {"searches": 2, "expected": 4, "look_back_done": False, "last_run": "2026-11-06T00:40:00Z"}}
-    assert rw.readiness_items(fresh)[:3] == ["class words tonight", "check of the past tonight", "NCBI look-back running"]
+    assert rw.readiness_items(fresh)[:3] == ["class words waiting", "check of the past waiting", "NCBI look-back running"]
     done = {**READINESS, "ready": True, "class": {"atc": True, "classes": 1, "words": 17, "confirmed": True},
             "past_check": {"done": True, "words_due": 0, "job_running": False},
             "ncbi": {"searches": 4, "expected": 4, "look_back_done": True, "last_run": "2026-11-06T00:40:00Z"},
@@ -445,9 +445,9 @@ def test_readiness_is_worded_as_on_the_ingredients_page():
 def test_readiness_words_are_the_screens():
     """The report's readiness words are the Ingredients page's (web/src/features/ingredients/readiness.ts)."""
     ts = (ROOT / "web/src/features/ingredients/readiness.ts").read_text(encoding="utf-8")
-    for words in ("Still preparing: ", "Ready", "no name to look for yet", "class words tonight",
-                  "check of the past running", "check of the past tonight", "NCBI look-back running",
-                  "NCBI look-back tonight", "label watch on Monday (", "nobody receives its Telegram messages yet",
+    for words in ("Still preparing: ", "Ready", "no name to look for yet", "class words waiting",
+                  "check of the past running", "check of the past waiting", "NCBI look-back running",
+                  "NCBI look-back waiting", "label watch on Monday (", "nobody receives its Telegram messages yet",
                   " countries"):
         assert words in ts, words
 
