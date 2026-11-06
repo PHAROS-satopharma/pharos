@@ -1,0 +1,2358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CDER Drug Safety-related Labeling Changes (SrLC) - Recent Updates</title>
+    <link>https://www.fda.gov/</link>
+    <description>CDER Drug Safety-related Labeling Changes (SrLC) - Recent Updates</description>
+    <language>en-us</language>
+    <item>
+      <pubDate>Wed, 04 Nov 2026 07:17:50 -0600</pubDate>
+      <title>CDER Drug Safety Labeling Changes 11/4/2026</title>
+      <guid isPermaLink="false">70359535</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/43199ef</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2900" title="HEPARIN SODIUM 1,000 UNITS IN SODIUM CHLORIDE 0.9% IN PLASTIC CONTAINER"><strong>HEPARIN SODIUM 1,000 UNITS IN SODIUM CHLORIDE 0.9% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019953</td>
+<td>NDA</td>
+<td data-order="2026/10/26">10/26/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2816" title="HEPARIN SODIUM 20,000 UNITS IN DEXTROSE 5% IN PLASTIC CONTAINER"><strong>HEPARIN SODIUM 20,000 UNITS IN DEXTROSE 5% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019952</td>
+<td>NDA</td>
+<td data-order="2026/10/26">10/26/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1646" title="IFEX"><strong>IFEX</strong></a></td>
+<td>IFOSFAMIDE</td>
+<td>019763</td>
+<td>NDA</td>
+<td data-order="2026/10/28">10/28/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2707" title="ILUMYA"><strong>ILUMYA</strong></a></td>
+<td>TILDRAKIZUMAB-ASMN</td>
+<td>761067</td>
+<td>BLA</td>
+<td data-order="2026/10/29">10/29/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1345" title="MINIVELLE"><strong>MINIVELLE</strong></a></td>
+<td>ESTRADIOL</td>
+<td>203752</td>
+<td>NDA</td>
+<td data-order="2026/10/30">10/30/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2324" title="PIQRAY"><strong>PIQRAY</strong></a></td>
+<td>ALPELISIB</td>
+<td>212526</td>
+<td>NDA</td>
+<td data-order="2026/10/28">10/28/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2070" title="TALZENNA"><strong>TALZENNA</strong></a></td>
+<td>TALAZOPARIB TOSYLATE</td>
+<td>211651</td>
+<td>NDA</td>
+<td data-order="2026/10/26">10/26/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3138" title="TALZENNA"><strong>TALZENNA</strong></a></td>
+<td>TALAZOPARIB TOSYLATE</td>
+<td>217439</td>
+<td>NDA</td>
+<td data-order="2026/10/26">10/26/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1352" title="VIVELLE-DOT"><strong>VIVELLE-DOT</strong></a></td>
+<td>ESTRADIOL</td>
+<td>020538</td>
+<td>NDA</td>
+<td data-order="2026/10/30">10/30/2026</td>
+<td data-order="2026/11/03">11/03/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Thu, 29 Oct 2026 08:54:40 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 10/29/2026</title>
+      <guid isPermaLink="false">70314397</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/430e99d</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3362" title="DEXTROSE 10% IN PLASTIC CONTAINER"><strong>DEXTROSE 10% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019626</td>
+<td>NDA</td>
+<td data-order="2026/10/20">10/20/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3363" title="DEXTROSE 2.5% IN PLASTIC CONTAINER"><strong>DEXTROSE 2.5% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019626</td>
+<td>NDA</td>
+<td data-order="2026/10/20">10/20/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3364" title="DEXTROSE 5% IN PLASTIC CONTAINER"><strong>DEXTROSE 5% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019626</td>
+<td>NDA</td>
+<td data-order="2026/10/20">10/20/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3365" title="DEXTROSE 7.7% IN PLASTIC CONTAINER"><strong>DEXTROSE 7.7% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019626</td>
+<td>NDA</td>
+<td data-order="2026/10/20">10/20/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3366" title="DEXTROSE 70% IN PLASTIC CONTAINER"><strong>DEXTROSE 70% IN PLASTIC CONTAINER</strong></a></td>
+<td>&nbsp;</td>
+<td>019626</td>
+<td>NDA</td>
+<td data-order="2026/10/20">10/20/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3036" title="JUBBONTI"><strong>JUBBONTI</strong></a></td>
+<td>DENOSUMAB-BBDZ</td>
+<td>761362</td>
+<td>BLA</td>
+<td data-order="2026/10/23">10/23/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3367" title="LEVOTHYROXINE SODIUM"><strong>LEVOTHYROXINE SODIUM</strong></a></td>
+<td>LEVOTHYROXINE SODIUM</td>
+<td>202231</td>
+<td>NDA</td>
+<td data-order="2026/10/21">10/21/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2643" title="REBLOZYL"><strong>REBLOZYL</strong></a></td>
+<td>LUSPATERCEPT-AAMT</td>
+<td>761136</td>
+<td>BLA</td>
+<td data-order="2026/10/20">10/20/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2346" title="VYLEESI (AUTOINJECTOR)"><strong>VYLEESI (AUTOINJECTOR)</strong></a></td>
+<td>BREMELANOTIDE ACETATE</td>
+<td>210557</td>
+<td>NDA</td>
+<td data-order="2026/10/22">10/22/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1439" title="ZYVOX"><strong>ZYVOX</strong></a></td>
+<td>LINEZOLID</td>
+<td>021130</td>
+<td>NDA</td>
+<td data-order="2026/10/21">10/21/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1441" title="ZYVOX"><strong>ZYVOX</strong></a></td>
+<td>LINEZOLID</td>
+<td>021131</td>
+<td>NDA</td>
+<td data-order="2026/10/21">10/21/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1442" title="ZYVOX"><strong>ZYVOX</strong></a></td>
+<td>LINEZOLID</td>
+<td>021132</td>
+<td>NDA</td>
+<td data-order="2026/10/21">10/21/2026</td>
+<td data-order="2026/10/28">10/28/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 21 Oct 2026 08:25:10 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 10/21/2026</title>
+      <guid isPermaLink="false">70249743</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42fed0f</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3358" title="ANKTIVA"><strong>ANKTIVA</strong></a></td>
+<td>nogapendekin alfa inbakicept-pmln</td>
+<td>761336</td>
+<td>BLA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1154" title="APRISO"><strong>APRISO</strong></a></td>
+<td>MESALAMINE</td>
+<td>022301</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2495" title="AYVAKIT"><strong>AYVAKIT</strong></a></td>
+<td>AVAPRITINIB</td>
+<td>212608</td>
+<td>NDA</td>
+<td data-order="2026/10/16">10/16/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2394" title="AZULFIDINE"><strong>AZULFIDINE</strong></a></td>
+<td>SULFASALAZINE</td>
+<td>007073</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2550" title="AZULFIDINE EN-TABS"><strong>AZULFIDINE EN-TABS</strong></a></td>
+<td>SULFASALAZINE</td>
+<td>007073</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=390" title="CANASA"><strong>CANASA</strong></a></td>
+<td>MESALAMINE</td>
+<td>021252</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2343" title="DIPENTUM"><strong>DIPENTUM</strong></a></td>
+<td>OLSALAZINE SODIUM</td>
+<td>019715</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3359" title="ENFLONSIA"><strong>ENFLONSIA</strong></a></td>
+<td>CLESROVIMAB-CFOR</td>
+<td>761432</td>
+<td>BLA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2466" title="ENSPRYNG"><strong>ENSPRYNG</strong></a></td>
+<td>SATRALIZUMAB</td>
+<td>761149</td>
+<td>BLA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3360" title="IMKELDI"><strong>IMKELDI</strong></a></td>
+<td>IMATINIB MESYLATE</td>
+<td>219097</td>
+<td>NDA</td>
+<td data-order="2026/10/16">10/16/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1153" title="LIALDA"><strong>LIALDA</strong></a></td>
+<td>MESALAMINE</td>
+<td>022000</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3023" title="METHOTREXATE"><strong>METHOTREXATE</strong></a></td>
+<td>METHOTREXATE</td>
+<td>214121</td>
+<td>NDA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1480" title="METHOTREXATE LPF"><strong>METHOTREXATE LPF</strong></a></td>
+<td>METHOTREXATE SODIUM</td>
+<td>011719</td>
+<td>NDA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1481" title="METHOTREXATE PRESERVATIVE FREE"><strong>METHOTREXATE PRESERVATIVE FREE</strong></a></td>
+<td>METHOTREXATE SODIUM</td>
+<td>011719</td>
+<td>NDA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1482" title="METHOTREXATE SODIUM PRESERVATIVE FREE"><strong>METHOTREXATE SODIUM PRESERVATIVE FREE</strong></a></td>
+<td>METHOTREXATE SODIUM</td>
+<td>011719</td>
+<td>NDA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2884" title="ORLADEYO"><strong>ORLADEYO</strong></a></td>
+<td>BEROTRALSTAT HYDROCHLORIDE</td>
+<td>214094</td>
+<td>NDA</td>
+<td data-order="2026/10/16">10/16/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1152" title="PENTASA"><strong>PENTASA</strong></a></td>
+<td>MESALAMINE</td>
+<td>020049</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2999" title="PHYRAGO"><strong>PHYRAGO</strong></a></td>
+<td>DASATINIB</td>
+<td>216099</td>
+<td>NDA</td>
+<td data-order="2026/10/16">10/16/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1148" title="ROWASA"><strong>ROWASA</strong></a></td>
+<td>MESALAMINE</td>
+<td>019618</td>
+<td>NDA</td>
+<td data-order="2026/10/14">10/14/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=444" title="SPRYCEL"><strong>SPRYCEL</strong></a></td>
+<td>DASATINIB</td>
+<td>021986</td>
+<td>NDA</td>
+<td data-order="2026/10/16">10/16/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=891" title="SUPRAX"><strong>SUPRAX</strong></a></td>
+<td>CEFIXIME</td>
+<td>202091</td>
+<td>NDA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1173" title="VELPHORO"><strong>VELPHORO</strong></a></td>
+<td>SUCROFERRIC OXYHYDROXIDE</td>
+<td>205109</td>
+<td>NDA</td>
+<td data-order="2026/10/13">10/13/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2949" title="ZILBRYSQ"><strong>ZILBRYSQ</strong></a></td>
+<td>ZILUCOPLAN SODIUM</td>
+<td>216834</td>
+<td>NDA</td>
+<td data-order="2026/10/15">10/15/2026</td>
+<td data-order="2026/10/21">10/21/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 16 Oct 2026 08:07:57 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 10/16/2026</title>
+      <guid isPermaLink="false">70215237</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42f6645</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3356" title="DUAC"><strong>DUAC</strong></a></td>
+<td>BENZOYL PEROXIDE; CLINDAMYCIN PHOSPHATE</td>
+<td>050741</td>
+<td>NDA</td>
+<td data-order="2026/10/07">10/07/2026</td>
+<td data-order="2026/10/16">10/16/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=297" title="REPATHA"><strong>REPATHA</strong></a></td>
+<td>EVOLOCUMAB</td>
+<td>125522</td>
+<td>BLA</td>
+<td data-order="2026/10/09">10/09/2026</td>
+<td data-order="2026/10/16">10/16/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1473" title="TECENTRIQ"><strong>TECENTRIQ</strong></a></td>
+<td>ATEZOLIZUMAB</td>
+<td>761034</td>
+<td>BLA</td>
+<td data-order="2026/10/08">10/08/2026</td>
+<td data-order="2026/10/16">10/16/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3174" title="TECENTRIQ HYBREZA"><strong>TECENTRIQ HYBREZA</strong></a></td>
+<td>ATEZOLIZUMAB AND HYALURONIDASE-TQJS</td>
+<td>761347</td>
+<td>BLA</td>
+<td data-order="2026/10/08">10/08/2026</td>
+<td data-order="2026/10/16">10/16/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3357" title="TUKYSA"><strong>TUKYSA</strong></a></td>
+<td>TUCATINIB</td>
+<td>213411</td>
+<td>NDA</td>
+<td data-order="2026/10/07">10/07/2026</td>
+<td data-order="2026/10/16">10/16/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Thu, 08 Oct 2026 08:53:45 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 10/8/2026</title>
+      <guid isPermaLink="false">70152307</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42e7073</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2836" title="SERTRALINE HYDROCHLORIDE"><strong>SERTRALINE HYDROCHLORIDE</strong></a></td>
+<td>SERTRALINE HYDROCHLORIDE</td>
+<td>215133</td>
+<td>NDA</td>
+<td data-value="20261006">10/06/2026</td>
+<td>10/07/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 07 Oct 2026 08:28:16 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 10/7/2026</title>
+      <guid isPermaLink="false">70142969</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42e4bf9</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2767" title="CAMZYOS"><strong>CAMZYOS</strong></a></td>
+<td>MAVACAMTEN</td>
+<td>214998</td>
+<td>NDA</td>
+<td data-value="20260930">09/30/2026</td>
+<td>10/06/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2970" title="JAYPIRCA"><strong>JAYPIRCA</strong></a></td>
+<td>PIRTOBRUTINIB</td>
+<td>216059</td>
+<td>NDA</td>
+<td data-value="20261002">10/02/2026</td>
+<td>10/06/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3352" title="MATULANE"><strong>MATULANE</strong></a></td>
+<td>PROCARBAZINE HYDROCHLORIDE</td>
+<td>016785</td>
+<td>NDA</td>
+<td data-value="20260930">09/30/2026</td>
+<td>10/06/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2554" title="ROZLYTREK"><strong>ROZLYTREK</strong></a></td>
+<td>ENTRECTINIB</td>
+<td>212725</td>
+<td>NDA</td>
+<td data-value="20261001">10/01/2026</td>
+<td>10/06/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3353" title="ROZLYTREK"><strong>ROZLYTREK</strong></a></td>
+<td>ENTRECTINIB</td>
+<td>218550</td>
+<td>NDA</td>
+<td data-value="20261001">10/01/2026</td>
+<td>10/06/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=268" title="XENICAL"><strong>XENICAL</strong></a></td>
+<td>ORLISTAT</td>
+<td>020766</td>
+<td>NDA</td>
+<td data-value="20260930">09/30/2026</td>
+<td>10/06/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2605" title="ZEPZELCA"><strong>ZEPZELCA</strong></a></td>
+<td>LURBINECTEDIN</td>
+<td>213702</td>
+<td>NDA</td>
+<td data-value="20260930">09/30/2026</td>
+<td>10/06/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 02 Oct 2026 08:35:56 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 10/2/2026</title>
+      <guid isPermaLink="false">70096735</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42d975f</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3333" title="EYDENZELT"><strong>EYDENZELT</strong></a></td>
+<td>AFLIBERCEPT-BOAV</td>
+<td>761377</td>
+<td>BLA</td>
+<td data-value="20260929">09/29/2026</td>
+<td>10/02/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 30 Sep 2026 08:22:10 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/30/2026</title>
+      <guid isPermaLink="false">70071346</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42d3432</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=216" title="CRESTOR"><strong>CRESTOR</strong></a></td>
+<td>ROSUVASTATIN CALCIUM</td>
+<td>021366</td>
+<td>NDA</td>
+<td data-value="20260923">09/23/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=159" title="LENVIMA"><strong>LENVIMA</strong></a></td>
+<td>LENVATINIB MESYLATE</td>
+<td>206947</td>
+<td>NDA</td>
+<td data-value="20260924">09/24/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2384" title="NUBEQA"><strong>NUBEQA</strong></a></td>
+<td>DAROLUTAMIDE</td>
+<td>212099</td>
+<td>NDA</td>
+<td data-value="20260922">09/22/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3332" title="PREXXARTAN"><strong>PREXXARTAN</strong></a></td>
+<td>VALSARTAN</td>
+<td>209139</td>
+<td>NDA</td>
+<td data-value="20260922">09/22/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2684" title="SCEMBLIX"><strong>SCEMBLIX</strong></a></td>
+<td>ASCIMINIB HYDROCHLORIDE</td>
+<td>215358</td>
+<td>NDA</td>
+<td data-value="20260922">09/22/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2544" title="TEPEZZA"><strong>TEPEZZA</strong></a></td>
+<td>TEPROTUMUMAB-TRBW</td>
+<td>761143</td>
+<td>BLA</td>
+<td data-value="20260923">09/23/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=607" title="VALIUM"><strong>VALIUM</strong></a></td>
+<td>DIAZEPAM</td>
+<td>013263</td>
+<td>NDA</td>
+<td data-value="20260924">09/24/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2899" title="WELIREG"><strong>WELIREG</strong></a></td>
+<td>BELZUTIFAN</td>
+<td>215383</td>
+<td>NDA</td>
+<td data-value="20260924">09/24/2026</td>
+<td>09/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3223" title="WINREVAIR"><strong>WINREVAIR</strong></a></td>
+<td>SOTATERCEPT-CSRK</td>
+<td>761363</td>
+<td>BLA</td>
+<td data-value="20260921">09/21/2026</td>
+<td>09/30/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 25 Sep 2026 09:58:45 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/25/2026</title>
+      <guid isPermaLink="false">70024819</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42c7e73</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" style="width: 12.1103%;" tabindex="0" title="Sort by Drug Name" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" style="width: 20.2638%;" tabindex="0" title="Sort by Active Ingredient" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" style="width: 18.2254%;" tabindex="0" title="Application Number" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" style="width: 15.8273%;" tabindex="0" title="Application Type" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" style="width: 16.4269%;" tabindex="0" title="Approved Supplement Date" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" style="width: 17.0264%;" tabindex="0" title="Database updated" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3329" title="AQNEURSA"><strong>AQNEURSA</strong></a></td>
+<td style="width: 20.2638%;">LEVACETYLLEUCINE</td>
+<td style="width: 18.2254%;">219132</td>
+<td style="width: 15.8273%;">NDA</td>
+<td style="width: 16.4269%;" data-value="20260918">09/18/2026</td>
+<td style="width: 17.0264%;">09/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3331" title="INLURIYO"><strong>INLURIYO</strong></a></td>
+<td style="width: 20.2638%;">IMLUNESTRANT TOSYLATE</td>
+<td style="width: 18.2254%;">218881</td>
+<td style="width: 15.8273%;">NDA</td>
+<td style="width: 16.4269%;" data-value="20260918">09/18/2026</td>
+<td style="width: 17.0264%;">09/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3330" title="SOHONOS"><strong>SOHONOS</strong></a></td>
+<td style="width: 20.2638%;">PALOVAROTENE</td>
+<td style="width: 18.2254%;">215559</td>
+<td style="width: 15.8273%;">NDA</td>
+<td style="width: 16.4269%;" data-value="20260918">09/18/2026</td>
+<td style="width: 17.0264%;">09/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1657" title="VERZENIO"><strong>VERZENIO</strong></a></td>
+<td style="width: 20.2638%;">ABEMACICLIB</td>
+<td style="width: 18.2254%;">208716</td>
+<td style="width: 15.8273%;">NDA</td>
+<td style="width: 16.4269%;" data-value="20260918">09/18/2026</td>
+<td style="width: 17.0264%;">09/24/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Mon, 21 Sep 2026 06:41:51 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/21/2026</title>
+      <guid isPermaLink="false">69976762</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42bc2ba</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" style="width: 12.1103%;" tabindex="0" title="Sort by Drug Name" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" style="width: 20.2638%;" tabindex="0" title="Sort by Active Ingredient" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" style="width: 18.2254%;" tabindex="0" title="Application Number" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" style="width: 15.8273%;" tabindex="0" title="Application Type" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" style="width: 16.4269%;" tabindex="0" title="Approved Supplement Date" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" style="width: 17.0264%;" tabindex="0" title="Database updated" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3215" title="IMDELLTRA"><strong>IMDELLTRA</strong></a></td>
+<td style="width: 20.2638%;">TARLATAMAB-DLLE</td>
+<td style="width: 18.2254%;">761344</td>
+<td style="width: 15.8273%;">BLA</td>
+<td style="width: 16.4269%;" data-value="20260911">09/11/2026</td>
+<td style="width: 17.0264%;">09/17/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3129" title="JOENJA"><strong>JOENJA</strong></a></td>
+<td style="width: 20.2638%;">LENIOLISIB PHOSPHATE</td>
+<td style="width: 18.2254%;">217759</td>
+<td style="width: 15.8273%;">NDA</td>
+<td style="width: 16.4269%;" data-value="20260911">09/11/2026</td>
+<td style="width: 17.0264%;">09/17/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" style="width: 12.1103%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1426" title="KYBELLA"><strong>KYBELLA</strong></a></td>
+<td style="width: 20.2638%;">DEOXYCHOLIC ACID</td>
+<td style="width: 18.2254%;">206333</td>
+<td style="width: 15.8273%;">NDA</td>
+<td style="width: 16.4269%;" data-value="20260911">09/11/2026</td>
+<td style="width: 17.0264%;">09/17/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 16 Sep 2026 09:04:57 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/16/2026</title>
+      <guid isPermaLink="false">69926229</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42afd55</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1250" title="AMELUZ"><strong>AMELUZ</strong></a></td>
+<td>AMINOLEVULINIC ACID HYDROCHLORIDE</td>
+<td>208081</td>
+<td>NDA</td>
+<td data-value="20260909">09/09/2026</td>
+<td>09/11/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Thu, 10 Sep 2026 08:49:56 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/10/2026</title>
+      <guid isPermaLink="false">69826588</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/429781c</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3326" title="BACTOCILL IN PLASTIC CONTAINER"><strong>BACTOCILL IN PLASTIC CONTAINER</strong></a></td>
+<td>OXACILLIN SODIUM</td>
+<td>050640</td>
+<td>NDA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1313" title="BAVENCIO"><strong>BAVENCIO</strong></a></td>
+<td>AVELUMAB</td>
+<td>761049</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/08/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3325" title="CEFAZOLIN IN DEXTROSE"><strong>CEFAZOLIN IN DEXTROSE</strong></a></td>
+<td>CEFAZOLIN SODIUM</td>
+<td>207131</td>
+<td>NDA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=279" title="CLEOCIN HYDROCHLORIDE"><strong>CLEOCIN HYDROCHLORIDE</strong></a></td>
+<td>CLINDAMYCIN HYDROCHLORIDE</td>
+<td>050162</td>
+<td>NDA</td>
+<td data-value="20260901">09/01/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=555" title="ETOPOPHOS PRESERVATIVE FREE"><strong>ETOPOPHOS PRESERVATIVE FREE</strong></a></td>
+<td>ETOPOSIDE PHOSPHATE</td>
+<td>020457</td>
+<td>NDA</td>
+<td data-value="20260902">09/02/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1457" title="IMFINZI"><strong>IMFINZI</strong></a></td>
+<td>DURVALUMAB</td>
+<td>761069</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/08/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2762" title="IMJUDO"><strong>IMJUDO</strong></a></td>
+<td>TREMELIMUMAB-ACTL</td>
+<td>761289</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2282" title="LIBTAYO"><strong>LIBTAYO</strong></a></td>
+<td>CEMIPLIMAB-RWLC</td>
+<td>761097</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2944" title="LOQTORZI"><strong>LOQTORZI</strong></a></td>
+<td>TORIPALIMAB-TPZI</td>
+<td>761240</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3323" title="PENPULIMAB-KCQX"><strong>PENPULIMAB-KCQX</strong></a></td>
+<td>PENPULIMAB-KCQX</td>
+<td>761258</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=813" title="THALOMID"><strong>THALOMID</strong></a></td>
+<td>THALIDOMIDE</td>
+<td>020785</td>
+<td>NDA</td>
+<td data-value="20260902">09/02/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3324" title="UNLOXCYT"><strong>UNLOXCYT</strong></a></td>
+<td>COSIBELIMAB-IPDL</td>
+<td>761297</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=882" title="YERVOY"><strong>YERVOY</strong></a></td>
+<td>IPILIMUMAB</td>
+<td>125377</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 09 Sep 2026 09:03:25 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/9/2026</title>
+      <guid isPermaLink="false">69808892</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42932fc</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3326" title="BACTOCILL IN PLASTIC CONTAINER"><strong>BACTOCILL IN PLASTIC CONTAINER</strong></a></td>
+<td>OXACILLIN SODIUM</td>
+<td>050640</td>
+<td>NDA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1313" title="BAVENCIO"><strong>BAVENCIO</strong></a></td>
+<td>AVELUMAB</td>
+<td>761049</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/08/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3325" title="CEFAZOLIN IN DEXTROSE"><strong>CEFAZOLIN IN DEXTROSE</strong></a></td>
+<td>CEFAZOLIN SODIUM</td>
+<td>207131</td>
+<td>NDA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=279" title="CLEOCIN HYDROCHLORIDE"><strong>CLEOCIN HYDROCHLORIDE</strong></a></td>
+<td>CLINDAMYCIN HYDROCHLORIDE</td>
+<td>050162</td>
+<td>NDA</td>
+<td data-value="20260901">09/01/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=555" title="ETOPOPHOS PRESERVATIVE FREE"><strong>ETOPOPHOS PRESERVATIVE FREE</strong></a></td>
+<td>ETOPOSIDE PHOSPHATE</td>
+<td>020457</td>
+<td>NDA</td>
+<td data-value="20260902">09/02/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1457" title="IMFINZI"><strong>IMFINZI</strong></a></td>
+<td>DURVALUMAB</td>
+<td>761069</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/08/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2762" title="IMJUDO"><strong>IMJUDO</strong></a></td>
+<td>TREMELIMUMAB-ACTL</td>
+<td>761289</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2282" title="LIBTAYO"><strong>LIBTAYO</strong></a></td>
+<td>CEMIPLIMAB-RWLC</td>
+<td>761097</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2944" title="LOQTORZI"><strong>LOQTORZI</strong></a></td>
+<td>TORIPALIMAB-TPZI</td>
+<td>761240</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2823" title="MOUNJARO"><strong>MOUNJARO</strong></a></td>
+<td>TIRZEPATIDE</td>
+<td>215866</td>
+<td>NDA</td>
+<td data-value="20260827">08/27/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3323" title="PENPULIMAB-KCQX"><strong>PENPULIMAB-KCQX</strong></a></td>
+<td>PENPULIMAB-KCQX</td>
+<td>761258</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1304" title="STELARA"><strong>STELARA</strong></a></td>
+<td>USTEKINUMAB</td>
+<td>125261</td>
+<td>BLA</td>
+<td data-value="20260828">08/28/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2090" title="STELARA"><strong>STELARA</strong></a></td>
+<td>USTEKINUMAB</td>
+<td>761044</td>
+<td>BLA</td>
+<td data-value="20260828">08/28/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2992" title="SUNLENCA"><strong>SUNLENCA</strong></a></td>
+<td>LENACAPAVIR SODIUM</td>
+<td>215973</td>
+<td>NDA</td>
+<td data-value="20260827">08/27/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2993" title="SUNLENCA"><strong>SUNLENCA</strong></a></td>
+<td>LENACAPAVIR SODIUM</td>
+<td>215974</td>
+<td>NDA</td>
+<td data-value="20260827">08/27/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=813" title="THALOMID"><strong>THALOMID</strong></a></td>
+<td>THALIDOMIDE</td>
+<td>020785</td>
+<td>NDA</td>
+<td data-value="20260902">09/02/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3324" title="UNLOXCYT"><strong>UNLOXCYT</strong></a></td>
+<td>COSIBELIMAB-IPDL</td>
+<td>761297</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=882" title="YERVOY"><strong>YERVOY</strong></a></td>
+<td>IPILIMUMAB</td>
+<td>125377</td>
+<td>BLA</td>
+<td data-value="20260831">08/31/2026</td>
+<td>09/09/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Thu, 03 Sep 2026 09:18:21 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes 9/3/2026</title>
+      <guid isPermaLink="false">69746586</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/4283f9a</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3321" title="IMAAVY"><strong>IMAAVY</strong></a></td>
+<td>NIPOCALIMAB-AAHU</td>
+<td>761430</td>
+<td>BLA</td>
+<td data-value="20260824">08/24/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2823" title="MOUNJARO"><strong>MOUNJARO</strong></a></td>
+<td>TIRZEPATIDE</td>
+<td>215866</td>
+<td>NDA</td>
+<td data-value="20260827">08/27/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1304" title="STELARA"><strong>STELARA</strong></a></td>
+<td>USTEKINUMAB</td>
+<td>125261</td>
+<td>BLA</td>
+<td data-value="20260828">08/28/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2090" title="STELARA"><strong>STELARA</strong></a></td>
+<td>USTEKINUMAB</td>
+<td>761044</td>
+<td>BLA</td>
+<td data-value="20260828">08/28/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2992" title="SUNLENCA"><strong>SUNLENCA</strong></a></td>
+<td>LENACAPAVIR SODIUM</td>
+<td>215973</td>
+<td>NDA</td>
+<td data-value="20260827">08/27/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2993" title="SUNLENCA"><strong>SUNLENCA</strong></a></td>
+<td>LENACAPAVIR SODIUM</td>
+<td>215974</td>
+<td>NDA</td>
+<td data-value="20260827">08/27/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3111" title="TEVIMBRA"><strong>TEVIMBRA</strong></a></td>
+<td>TISLELIZUMAB-JSGR</td>
+<td>761232</td>
+<td>BLA</td>
+<td data-value="20260825">08/25/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=138" title="TIVICAY"><strong>TIVICAY</strong></a></td>
+<td>DOLUTEGRAVIR SODIUM</td>
+<td>204790</td>
+<td>NDA</td>
+<td data-value="20260825">08/25/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2433" title="TIVICAY PD"><strong>TIVICAY PD</strong></a></td>
+<td>DOLUTEGRAVIR SODIUM</td>
+<td>213983</td>
+<td>NDA</td>
+<td data-value="20260825">08/25/2026</td>
+<td>09/02/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3322" title="ZIIHERA"><strong>ZIIHERA</strong></a></td>
+<td>ZANIDATAMAB-HRII</td>
+<td>761416</td>
+<td>BLA</td>
+<td data-value="20260825">08/25/2026</td>
+<td>09/02/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 28 Aug 2026 08:59:00 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 08/28/2026</title>
+      <guid isPermaLink="false">69681413</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/4274105</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=580" title="BENLYSTA"><strong>BENLYSTA</strong></a></td>
+<td>BELIMUMAB</td>
+<td>125370</td>
+<td>BLA</td>
+<td data-value="20260821">08/21/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1617" title="BENLYSTA"><strong>BENLYSTA</strong></a></td>
+<td>BELIMUMAB</td>
+<td>761043</td>
+<td>BLA</td>
+<td data-value="20260821">08/21/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=225" title="COTELLIC"><strong>COTELLIC</strong></a></td>
+<td>COBIMETINIB FUMARATE</td>
+<td>206192</td>
+<td>NDA</td>
+<td data-value="20260820">08/20/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2726" title="EMPAVELI"><strong>EMPAVELI</strong></a></td>
+<td>PEGCETACOPLAN</td>
+<td>215014</td>
+<td>NDA</td>
+<td data-value="20260820">08/20/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2814" title="LEQVIO"><strong>LEQVIO</strong></a></td>
+<td>INCLISIRAN SODIUM</td>
+<td>214012</td>
+<td>NDA</td>
+<td data-value="20260819">08/19/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3319" title="LIDOCAINE HYDROCHLORIDE PRESERVATIVE FREE"><strong>LIDOCAINE HYDROCHLORIDE PRESERVATIVE FREE</strong></a></td>
+<td>LIDOCAINE HYDROCHLORIDE</td>
+<td>017584</td>
+<td>NDA</td>
+<td data-value="20260817">08/17/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3260" title="OGSIVEO"><strong>OGSIVEO</strong></a></td>
+<td>NIROGACESTAT HYDROBROMIDE</td>
+<td>217677</td>
+<td>NDA</td>
+<td data-value="20260820">08/20/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2725" title="TAKHZYRO"><strong>TAKHZYRO</strong></a></td>
+<td>LANDELUMAB-FLYO</td>
+<td>761090</td>
+<td>BLA</td>
+<td data-value="20260820">08/20/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3320" title="TYZAVAN"><strong>TYZAVAN</strong></a></td>
+<td>VANCOMYCIN HYDROCHLORIDE</td>
+<td>211962</td>
+<td>NDA</td>
+<td data-value="20260818">08/18/2026</td>
+<td>08/27/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=240" title="ZELBORAF"><strong>ZELBORAF</strong></a></td>
+<td>VEMURAFENIB</td>
+<td>202429</td>
+<td>NDA</td>
+<td data-value="20260820">08/20/2026</td>
+<td>08/27/2026</td>
+</tr>
+</tbody>
+</table>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 19 Aug 2026 08:55:42 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 08/19/2026</title>
+      <guid isPermaLink="false">69578705</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/425afd1</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=587" title="ACTOPLUS MET"><strong>ACTOPLUS MET</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE; PIOGLITAZONE HYDROCHLORIDE</td>
+<td>021842</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=530" title="ALECENSA"><strong>ALECENSA</strong></a></td>
+<td>ALECTINIB HYDROCHLORIDE</td>
+<td>208434</td>
+<td>NDA</td>
+<td data-value="20260814">08/14/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=952" title="FORTAMET"><strong>FORTAMET</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE</td>
+<td>021574</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=953" title="GLUMETZA"><strong>GLUMETZA</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE</td>
+<td>021748</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1435" title="INJECTAFER"><strong>INJECTAFER</strong></a></td>
+<td>FERRIC CARBOXYMALTOSE</td>
+<td>203565</td>
+<td>NDA</td>
+<td data-value="20260813">08/13/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=70" title="INVOKAMET"><strong>INVOKAMET</strong></a></td>
+<td>CANAGLIFLOZIN; METFORMIN HYDROCHLORIDE</td>
+<td>204353</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1145" title="INVOKAMET XR"><strong>INVOKAMET XR</strong></a></td>
+<td>CANAGLIFLOZIN; METFORMIN HYDROCHLORIDE</td>
+<td>205879</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=801" title="JANUMET"><strong>JANUMET</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE; SITAGLIPTIN PHOSPHATE</td>
+<td>022044</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=802" title="JANUMET XR"><strong>JANUMET XR</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE; SITAGLIPTIN PHOSPHATE</td>
+<td>202270</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3256" title="JASCAYD"><strong>JASCAYD</strong></a></td>
+<td>NERANDOMILAST</td>
+<td>218764</td>
+<td>NDA</td>
+<td data-value="20260814">08/14/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=643" title="JENTADUETO"><strong>JENTADUETO</strong></a></td>
+<td>LINAGLIPTIN; METFORMIN HYDROCHLORIDE</td>
+<td>201281</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=645" title="JENTADUETO XR"><strong>JENTADUETO XR</strong></a></td>
+<td>LINAGLIPTIN; METFORMIN HYDROCHLORIDE</td>
+<td>208026</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=590" title="KAZANO"><strong>KAZANO</strong></a></td>
+<td>ALOGLIPTIN BENZOATE; METFORMIN HYDROCHLORIDE</td>
+<td>203414</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=800" title="KOMBIGLYZE XR"><strong>KOMBIGLYZE XR</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE; SAXAGLIPTIN HYDROCHLORIDE</td>
+<td>200678</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2831" title="RIMACTANE"><strong>RIMACTANE</strong></a></td>
+<td>RIFAMPIN</td>
+<td>050429</td>
+<td>NDA</td>
+<td data-value="20260812">08/12/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3316" title="RIOMET ER"><strong>RIOMET ER</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE</td>
+<td>212595</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1737" title="SEGLUROMET"><strong>SEGLUROMET</strong></a></td>
+<td>ERTUGLIFLOZIN; METFORMIN HYDROCHLORIDE</td>
+<td>209806</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=342" title="SYNJARDY"><strong>SYNJARDY</strong></a></td>
+<td>EMPAGLIFLOZIN; METFORMIN HYDROCHLORIDE</td>
+<td>206111</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=646" title="SYNJARDY XR"><strong>SYNJARDY XR</strong></a></td>
+<td>EMPAGLIFLOZIN;METFORMIN HYDROCHLORIDE</td>
+<td>208658</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2352" title="TRIJARDY XR"><strong>TRIJARDY XR</strong></a></td>
+<td>EMPAGLIFLOZIN; LINAGLIPTIN; METFORMIN HYDROCHLORIDE</td>
+<td>212614</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3223" title="WINREVAIR"><strong>WINREVAIR</strong></a></td>
+<td>SOTATERCEPT-CSRK</td>
+<td>761363</td>
+<td>BLA</td>
+<td data-value="20260812">08/12/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=64" title="XIGDUO XR"><strong>XIGDUO XR</strong></a></td>
+<td>DAPAGLIFLOZIN PROPANEDIOL; METFORMIN HYDROCHLORIDE</td>
+<td>205649</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3233" title="YESINTEK"><strong>YESINTEK</strong></a></td>
+<td>USTEKINUMAB-KFCE</td>
+<td>761406</td>
+<td>BLA</td>
+<td data-value="20260814">08/14/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3317" title="ZITUVIMET"><strong>ZITUVIMET</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE; SITAGLIPTIN</td>
+<td>216743</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3318" title="ZITUVIMET XR"><strong>ZITUVIMET XR</strong></a></td>
+<td>METFORMIN HYDROCHLORIDE; SITAGLIPTIN</td>
+<td>216778</td>
+<td>NDA</td>
+<td data-value="20260811">08/11/2026</td>
+<td>08/18/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Wed, 12 Aug 2026 10:43:58 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 08/12/2026</title>
+      <guid isPermaLink="false">69508370</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/4249d12</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2880" title="BONSITY"><strong>BONSITY</strong></a></td>
+<td>TERIPARATIDE</td>
+<td>211939</td>
+<td>NDA</td>
+<td data-value="20260803">08/03/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2076" title="FORTEO"><strong>FORTEO</strong></a></td>
+<td>TERIPARATIDE RECOMBINANT HUMAN</td>
+<td>021318</td>
+<td>NDA</td>
+<td data-value="20260803">08/03/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3314" title="INPEFA"><strong>INPEFA</strong></a></td>
+<td>SOTAGLIFLOZIN</td>
+<td>216203</td>
+<td>NDA</td>
+<td data-value="20260806">08/06/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3315" title="IQIRVO"><strong>IQIRVO</strong></a></td>
+<td>ELAFIBRANOR</td>
+<td>218860</td>
+<td>NDA</td>
+<td data-value="20260807">08/07/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1794" title="KEFLEX"><strong>KEFLEX</strong></a></td>
+<td>CEPHALEXIN</td>
+<td>050405</td>
+<td>NDA</td>
+<td data-value="20260803">08/03/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1387" title="NEULASTA"><strong>NEULASTA</strong></a></td>
+<td>PEGFILGRASTIM</td>
+<td>125031</td>
+<td>BLA</td>
+<td data-value="20260804">08/04/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2887" title="SAPHNELO"><strong>SAPHNELO</strong></a></td>
+<td>ANIFROLUMAB-FNIA</td>
+<td>761123</td>
+<td>BLA</td>
+<td data-value="20260807">08/07/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3312" title="TERIPARATIDE"><strong>TERIPARATIDE</strong></a></td>
+<td>TERIPARATIDE</td>
+<td>218771</td>
+<td>NDA</td>
+<td data-value="20260803">08/03/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2347" title="TYMLOS"><strong>TYMLOS</strong></a></td>
+<td>ABALOPARATIDE</td>
+<td>208743</td>
+<td>NDA</td>
+<td data-value="20260803">08/03/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=338" title="XOLAIR"><strong>XOLAIR</strong></a></td>
+<td>OMALIZUMAB</td>
+<td>103976</td>
+<td>BLA</td>
+<td data-value="20260806">08/06/2026</td>
+<td>08/12/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3313" title="YORVIPATH"><strong>YORVIPATH</strong></a></td>
+<td>PALOPEGTERIPARATIDE</td>
+<td>216490</td>
+<td>NDA</td>
+<td data-value="20260803">08/03/2026</td>
+<td>08/12/2026</td>
+</tr>
+</tbody>
+</table>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Mon, 10 Aug 2026 09:25:01 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 08/10/2026</title>
+      <guid isPermaLink="false">69485793</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42444e1</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" style="width: 19.3046%;" tabindex="0" title="Sort by Drug Name" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" style="width: 27.6978%;" tabindex="0" title="Sort by Active Ingredient" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" style="width: 13.5492%;" tabindex="0" title="Application Number" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" style="width: 12.9496%;" tabindex="0" title="Application Type" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" style="width: 13.5492%;" tabindex="0" title="Approved Supplement Date" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" style="width: 12.8297%;" tabindex="0" title="Database updated" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" style="width: 19.3046%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3288" title="ARGATROBAN IN SODIUM CHLORIDE"><strong>ARGATROBAN IN SODIUM CHLORIDE</strong></a></td>
+<td style="width: 27.6978%;">ARGATROBAN</td>
+<td style="width: 13.5492%;">212035</td>
+<td style="width: 12.9496%;">NDA</td>
+<td style="width: 13.5492%;" data-value="20260731">07/31/2026</td>
+<td style="width: 12.8297%;">08/05/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" style="width: 19.3046%;" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3097" title="PLUVICTO"><strong>PLUVICTO</strong></a></td>
+<td style="width: 27.6978%;">LUTETIUM LU-177 VIPIVOTIDE TETRAXETAN</td>
+<td style="width: 13.5492%;">215833</td>
+<td style="width: 12.9496%;">NDA</td>
+<td style="width: 13.5492%;" data-value="20260731">07/31/2026</td>
+<td style="width: 12.8297%;">08/05/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 31 Jul 2026 08:18:41 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/31/2026</title>
+      <guid isPermaLink="false">69402255</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/422fe8f</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2636" title="BREXAFEMME"><strong>BREXAFEMME</strong></a></td>
+<td>IBREXAFUNGERP CITRATE</td>
+<td>214900</td>
+<td>NDA</td>
+<td data-value="20260724">07/24/2026</td>
+<td>07/31/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3004" title="FUROSCIX"><strong>FUROSCIX</strong></a></td>
+<td>FUROSEMIDE</td>
+<td>209988</td>
+<td>NDA</td>
+<td data-value="20260723">07/23/2026</td>
+<td>07/31/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3311" title="IDKIT:HP"><strong>IDKIT:HP</strong></a></td>
+<td>CITRIC ACID; UREA C-13</td>
+<td>021314</td>
+<td>NDA</td>
+<td data-value="20260724">07/24/2026</td>
+<td>07/31/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=417" title="KALETRA"><strong>KALETRA</strong></a></td>
+<td>LOPINAVIR; RITONAVIR</td>
+<td>021251</td>
+<td>NDA</td>
+<td data-value="20260723">07/23/2026</td>
+<td>07/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=418" title="KALETRA"><strong>KALETRA</strong></a></td>
+<td>LOPINAVIR; RITONAVIR</td>
+<td>021906</td>
+<td>NDA</td>
+<td data-value="20260723">07/23/2026</td>
+<td>07/30/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3310" title="MACRILEN"><strong>MACRILEN</strong></a></td>
+<td>MACIMORELIN ACETATE</td>
+<td>205598</td>
+<td>NDA</td>
+<td data-value="20260723">07/23/2026</td>
+<td>07/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=627" title="NORVIR"><strong>NORVIR</strong></a></td>
+<td>RITONAVIR</td>
+<td>022417</td>
+<td>NDA</td>
+<td data-value="20260723">07/23/2026</td>
+<td>07/30/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1121" title="NORVIR"><strong>NORVIR</strong></a></td>
+<td>RITONAVIR</td>
+<td>209512</td>
+<td>NDA</td>
+<td data-value="20260723">07/23/2026</td>
+<td>07/30/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3229" title="REZDIFFRA"><strong>REZDIFFRA</strong></a></td>
+<td>RESMETIROM</td>
+<td>217785</td>
+<td>NDA</td>
+<td data-value="20260724">07/24/2026</td>
+<td>07/31/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=485" title="XTANDI"><strong>XTANDI</strong></a></td>
+<td>ENZALUTAMIDE</td>
+<td>203415</td>
+<td>NDA</td>
+<td data-value="20260724">07/24/2026</td>
+<td>07/31/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2481" title="XTANDI"><strong>XTANDI</strong></a></td>
+<td>ENZALUTAMIDE</td>
+<td>213674</td>
+<td>NDA</td>
+<td data-value="20260724">07/24/2026</td>
+<td>07/31/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2312" title="ZIAC"><strong>ZIAC</strong></a></td>
+<td>BISOPROLOL FUMARATE; HYDROCHLOROTHIAZIDE</td>
+<td>020186</td>
+<td>NDA</td>
+<td data-value="20260724">07/24/2026</td>
+<td>07/31/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Mon, 27 Jul 2026 07:38:12 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/27/2026</title>
+      <guid isPermaLink="false">69355536</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/4224810</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=114" title="CHILDREN'S MOTRIN"><strong>CHILDREN'S MOTRIN</strong></a></td>
+<td>IBUPROFEN</td>
+<td>020516</td>
+<td>NDA</td>
+<td data-value="20260722">07/22/2026</td>
+<td>07/27/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 24 Jul 2026 08:34:58 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/24/2026</title>
+      <guid isPermaLink="false">69332859</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/421ef7b</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2661" title="AUGMENTIN '125'"><strong>AUGMENTIN '125'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050575</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2665" title="AUGMENTIN '125'"><strong>AUGMENTIN '125'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050597</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2663" title="AUGMENTIN '200'"><strong>AUGMENTIN '200'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050725</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2666" title="AUGMENTIN '200'"><strong>AUGMENTIN '200'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050726</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2659" title="AUGMENTIN '250'"><strong>AUGMENTIN '250'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050564</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2669" title="AUGMENTIN '250'"><strong>AUGMENTIN '250'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050575</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2667" title="AUGMENTIN '250'"><strong>AUGMENTIN '250'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050597</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2668" title="AUGMENTIN '400'"><strong>AUGMENTIN '400'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050726</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2660" title="AUGMENTIN '500'"><strong>AUGMENTIN '500'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050564</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2662" title="AUGMENTIN '875'"><strong>AUGMENTIN '875'</strong></a></td>
+<td>AMOXICILLIN; CLAVULANATE POTASSIUM</td>
+<td>050720</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2935" title="FABHALTA"><strong>FABHALTA</strong></a></td>
+<td>IPTACOPAN HYDROCHLORIDE</td>
+<td>218276</td>
+<td>NDA</td>
+<td data-value="20260716">07/16/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2707" title="ILUMYA"><strong>ILUMYA</strong></a></td>
+<td>TILDRAKIZUMAB-ASMN</td>
+<td>761067</td>
+<td>BLA</td>
+<td data-value="20260716">07/16/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=370" title="NEUPOGEN"><strong>NEUPOGEN</strong></a></td>
+<td>FILGRASTIM</td>
+<td>103353</td>
+<td>BLA</td>
+<td data-value="20260716">07/16/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3260" title="OGSIVEO"><strong>OGSIVEO</strong></a></td>
+<td>NIROGACESTAT HYDROBROMIDE</td>
+<td>217677</td>
+<td>NDA</td>
+<td data-value="20260717">07/17/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1056" title="PURIXAN"><strong>PURIXAN</strong></a></td>
+<td>MERCAPTOPURINE</td>
+<td>205919</td>
+<td>NDA</td>
+<td data-value="20260716">07/16/2026</td>
+<td>07/24/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3225" title="REZZAYO"><strong>REZZAYO</strong></a></td>
+<td>REZAFUNGIN ACETATE</td>
+<td>217417</td>
+<td>NDA</td>
+<td data-value="20260716">07/16/2026</td>
+<td>07/24/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Tue, 21 Jul 2026 08:53:19 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/21/2026</title>
+      <guid isPermaLink="false">69297992</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/4216748</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1443" title="ARGATROBAN"><strong>ARGATROBAN</strong></a></td>
+<td>ARGATROBAN</td>
+<td>201811</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=300" title="GLEEVEC"><strong>GLEEVEC</strong></a></td>
+<td>IMATINIB MESYLATE</td>
+<td>021588</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3305" title="LEQEMBI IQLIK"><strong>LEQEMBI IQLIK</strong></a></td>
+<td>LECANEMAB-IRMB</td>
+<td>761375</td>
+<td>BLA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=940" title="ZITHROMAX"><strong>ZITHROMAX</strong></a></td>
+<td>AZITHROMYCIN</td>
+<td>050670</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=244" title="ZITHROMAX"><strong>ZITHROMAX</strong></a></td>
+<td>AZITHROMYCIN</td>
+<td>050710</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=245" title="ZITHROMAX"><strong>ZITHROMAX</strong></a></td>
+<td>AZITHROMYCIN</td>
+<td>050711</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=243" title="ZITHROMAX"><strong>ZITHROMAX</strong></a></td>
+<td>AZITHROMYCIN</td>
+<td>050730</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=242" title="ZITHROMAX"><strong>ZITHROMAX</strong></a></td>
+<td>AZITHROMYCIN</td>
+<td>050733</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=246" title="ZITHROMAX"><strong>ZITHROMAX</strong></a></td>
+<td>AZITHROMYCIN</td>
+<td>050784</td>
+<td>NDA</td>
+<td data-value="20260713">07/13/2026</td>
+<td>07/20/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 17 Jul 2026 08:30:22 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/17/2026</title>
+      <guid isPermaLink="false">69266296</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/420eb78</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1586" title="ELOCON"><strong>ELOCON</strong></a></td>
+<td>MOMETASONE FUROATE</td>
+<td>019543</td>
+<td>NDA</td>
+<td data-value="20260706">07/06/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1597" title="ELOCON"><strong>ELOCON</strong></a></td>
+<td>MOMETASONE FUROATE</td>
+<td>019625</td>
+<td>NDA</td>
+<td data-value="20260706">07/06/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1601" title="ELOCON"><strong>ELOCON</strong></a></td>
+<td>MOMETASONE FUROATE</td>
+<td>019796</td>
+<td>NDA</td>
+<td data-value="20260706">07/06/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2323" title="INBRIJA"><strong>INBRIJA</strong></a></td>
+<td>LEVODOPA</td>
+<td>209184</td>
+<td>NDA</td>
+<td data-value="20260707">07/07/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2432" title="PADCEV"><strong>PADCEV</strong></a></td>
+<td>ENFORTUMAB VEDOTIN-EJFV</td>
+<td>761137</td>
+<td>BLA</td>
+<td data-value="20260710">07/10/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2844" title="RYALTRIS"><strong>RYALTRIS</strong></a></td>
+<td>MOMETASONE FUROATE; OLOPATADINE HYDROCHLORIDE</td>
+<td>211746</td>
+<td>NDA</td>
+<td data-value="20260707">07/07/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=914" title="SPORANOX"><strong>SPORANOX</strong></a></td>
+<td>ITRACONAZOLE</td>
+<td>020083</td>
+<td>NDA</td>
+<td data-value="20260707">07/07/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=915" title="SPORANOX"><strong>SPORANOX</strong></a></td>
+<td>ITRACONAZOLE</td>
+<td>020657</td>
+<td>NDA</td>
+<td data-value="20260707">07/07/2026</td>
+<td>07/16/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2902" title="TUXARIN ER"><strong>TUXARIN ER</strong></a></td>
+<td>CHLORPHENIRAMINE MALEATE; CODEINE PHOSPHATE</td>
+<td>206323</td>
+<td>NDA</td>
+<td data-value="20260710">07/10/2026</td>
+<td>07/16/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Tue, 14 Jul 2026 08:28:57 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/14/2026</title>
+      <guid isPermaLink="false">69237225</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/42079e9</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2337" title="FETROJA"><strong>FETROJA</strong></a></td>
+<td>CEFIDEROCOL SULFATE TOSYLATE</td>
+<td>209445</td>
+<td>NDA</td>
+<td data-value="20260701">07/01/2026</td>
+<td>07/10/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1666" title="KISQALI"><strong>KISQALI</strong></a></td>
+<td>RIBOCICLIB SUCCINATE</td>
+<td>209092</td>
+<td>NDA</td>
+<td data-value="20260701">07/01/2026</td>
+<td>07/10/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1533" title="KISQALI FEMARA CO-PACK (COPACKAGED)"><strong>KISQALI FEMARA CO-PACK (COPACKAGED)</strong></a></td>
+<td>LETROZOLE; RIBOCICLIB SUCCINATE</td>
+<td>209935</td>
+<td>NDA</td>
+<td data-value="20260701">07/01/2026</td>
+<td>07/10/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3302" title="ZYRTEC ALLERGY"><strong>ZYRTEC ALLERGY</strong></a></td>
+<td>CETIRIZINE HYDROCHLORIDE</td>
+<td>022578</td>
+<td>NDA</td>
+<td data-value="20260702">07/02/2026</td>
+<td>07/10/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3303" title="ZYRTEC-D 12 HOUR"><strong>ZYRTEC-D 12 HOUR</strong></a></td>
+<td>CETIRIZINE HYDROCHLORIDE; PSEUDOEPHEDRINE HYDROCHLORIDE</td>
+<td>021150</td>
+<td>NDA</td>
+<td data-value="20260702">07/02/2026</td>
+<td>07/10/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+    <item>
+      <pubDate>Fri, 10 Jul 2026 11:38:57 -0500</pubDate>
+      <title>CDER Drug Safety Labeling Changes - 7/10/2026</title>
+      <guid isPermaLink="false">69203039</guid>
+      <link>https://content.govdelivery.com/accounts/USFDA/bulletins/41ff45f</link>
+      <description>
+        <![CDATA[<table id="example" class="display dataTable no-footer dtr-inline" style="width: 100%;" role="grid" border="1" summary="Layout table showing Safety Labeling Database" width="100%" cellspacing="0" cellpadding="4" aria-describedby="example_info">
+<thead>
+<tr role="row">
+<th class="sorting_asc" tabindex="0" title="Sort by Drug Name" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-sort="ascending" aria-label="Drug Name: activate to sort column descending">Drug Name</th>
+<th class="sorting" tabindex="0" title="Sort by Active Ingredient" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Active Ingredient: activate to sort column ascending">Active Ingredient</th>
+<th class="sorting" tabindex="0" title="Application Number" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Number: activate to sort column ascending">Application Number</th>
+<th class="sorting" tabindex="0" title="Application Type" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Application Type: activate to sort column ascending">Application Type</th>
+<th class="sorting" tabindex="0" title="Approved Supplement Date" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Supplement Date: activate to sort column ascending">Supplement Date</th>
+<th class="sorting" tabindex="0" title="Database updated" colspan="1" rowspan="1" scope="col" aria-controls="example" aria-label="Database Updated: activate to sort column ascending">Database Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2063" title="ERLEADA"><strong>ERLEADA</strong></a></td>
+<td>APALUTAMIDE</td>
+<td>210951</td>
+<td>NDA</td>
+<td data-value="20260629">06/29/2026</td>
+<td>07/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2285" title="RINVOQ"><strong>RINVOQ</strong></a></td>
+<td>UPADACITINIB</td>
+<td>211675</td>
+<td>NDA</td>
+<td data-value="20260630">06/30/2026</td>
+<td>07/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=3096" title="RINVOQ LQ"><strong>RINVOQ LQ</strong></a></td>
+<td>UPADACITINIB</td>
+<td>218347</td>
+<td>NDA</td>
+<td data-value="20260630">06/30/2026</td>
+<td>07/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1236" title="XELJANZ"><strong>XELJANZ</strong></a></td>
+<td>TOFACITINIB CITRATE</td>
+<td>203214</td>
+<td>NDA</td>
+<td data-value="20260630">06/30/2026</td>
+<td>07/09/2026</td>
+</tr>
+<tr class="odd" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=2562" title="XELJANZ"><strong>XELJANZ</strong></a></td>
+<td>TOFACITINIB CITRATE</td>
+<td>213082</td>
+<td>NDA</td>
+<td data-value="20260630">06/30/2026</td>
+<td>07/09/2026</td>
+</tr>
+<tr class="even" role="row">
+<td class="sorting_1" tabindex="0"><a href="https://www.accessdata.fda.gov/scripts/cder/safetylabelingchanges/index.cfm?event=searchdetail.page&amp;DrugNameID=1237" title="XELJANZ XR"><strong>XELJANZ XR</strong></a></td>
+<td>TOFACITINIB CITRATE</td>
+<td>208246</td>
+<td>NDA</td>
+<td data-value="20260630">06/30/2026</td>
+<td>07/09/2026</td>
+</tr>
+</tbody>
+</table>
+<div class="dataTables_info" id="example_info" aria-live="polite"></div>]]>
+      </description>
+    </item>
+  </channel>
+</rss>
