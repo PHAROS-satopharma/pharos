@@ -132,6 +132,50 @@ def test_class_only_and_backfill_issues_are_not_immediate():
         assert n.issue_alert(iid) == 0 and s.notification == []
 
 
+def store_with_paper(*, class_only: bool = False) -> tuple[MemoryStore, str, str]:
+    """The notice above and a PubMed paper on lornoxicam (or only on its class), for the same people."""
+    s, notice = store_with_issue(class_only=class_only)
+    s.upsert_regulator({"id": "NLM", "country_code": "INT", "country_name": "International (literature)",
+                        "name": "National Library of Medicine — PubMed", "languages": ["en"],
+                        "homepage": None})
+    s.source["pubmed"] = {"id": "pubmed", "regulator_id": "NLM", "origin": "catalogue", "kind": "literature"}
+    did = s.insert_document({"source_id": "pubmed", "external_id": "42846100", "lang": "en",
+                             "url": "https://pubmed.ncbi.nlm.nih.gov/42846100/",
+                             "title_orig": "Lornoxicam after knee surgery", "doc_type": "literature",
+                             "published_date": date(2026, 11, 4), "structured": {"pmid": "42846100"},
+                             "is_backfill": False})
+    paper = s.create_issue(doc_type="literature", title="Lornoxicam after knee surgery",
+                           anchor_document_id=did, first_date=date(2026, 11, 4), class_only=class_only,
+                           is_backfill=False)
+    s.link_document(paper, did, link="anchor", method="auto", score=None)
+    if not class_only:
+        s.add_issue_ingredients(paper, ["ing-1"])
+    return s, notice, paper
+
+
+def test_a_paper_is_never_an_immediate_alert(monkeypatch):
+    # Papers are read on the Ingredients screen and in the weekly report, never on Telegram.
+    s, _, paper = store_with_paper()
+    assert Notifier(s, s.settings(), telegram=ExplodingTelegram()).issue_alert(paper) == 0
+    assert s.notification == []
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    tg = RecordingTelegram()
+    live = Notifier(s, {**s.settings(), "telegram_dry_run": False}, telegram=tg)
+    assert live.issue_alert(paper) == 0 and tg.messages == [] and tg.documents == []
+
+
+def test_a_class_paper_is_never_in_the_digest():
+    s, notice, paper = store_with_paper(class_only=True)
+    nine_ten = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)
+    for iid in (notice, paper):
+        s.issue[iid]["created_at"] = nine_ten - timedelta(hours=3)
+    assert s.class_only_issues_since(nine_ten - timedelta(days=1)) == [notice]
+    n = Notifier(s, s.settings(), telegram=ExplodingTelegram(), now=lambda: nine_ten)
+    assert n.digest_if_due() == 1                           # the notice, for its one subscriber
+    assert [r["issue_id"] for r in s.notification] == [notice]
+    assert "Lornoxicam after knee surgery" not in s.notification[0]["summary"]
+
+
 def test_digest_once_a_day_after_the_hour():
     s, iid = store_with_issue(class_only=True)
     nine_ten = datetime(2026, 11, 4, 9, 10, tzinfo=CAIRO).astimezone(timezone.utc)

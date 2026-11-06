@@ -14,6 +14,7 @@
 #             detail: always | matched_only | never   (when to call fetch_detail)
 #             old_detail: matched_only   (a notice older than the alert age: fetch_detail only if its row matched)
 #             max_new_items: N            (new items per normal run; default 400, the time budget still applies)
+#             time_budget_min: N          (minutes per normal run; default 10)
 #             backfill_all: true                       (backfill keeps the whole history)
 #   enabled   only applied when the row is first created; afterwards an admin decides in the app.
 
@@ -847,9 +848,12 @@ sources:
     page: https://pubmed.ncbi.nlm.nih.gov/
     parser: pubmed
     languages: [en]
-    schedule: weekly
+    schedule: daily
     expected_max_gap_days: 120
-    options: {lookback_days: 10, field: tiab, retmax: 200}
+    # PubMed and PubMed Central, every ingredient's name and English class words; a new word looks back
+    # 12 months first (collectors/parsers/pubmed.py). 800 papers in at most 15 minutes a run.
+    options: {lookback_days: 10, look_back_months: 12, page_size: 5000, max_new_items: 800,
+              time_budget_min: 15, backfill_all: true}
 
   # ───────────── Phase 2 (disabled until a live probe confirms them) ─────────────
   - id: ema-prac
