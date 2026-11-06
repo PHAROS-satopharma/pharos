@@ -266,3 +266,11 @@ export function offReason(s: { enabled: boolean; health: string; notes: string |
 export function listsItems(kind: SourceKind): boolean {
   return kind !== 'spc' && kind !== 'literature';
 }
+
+/**
+ * The arguments of mark_country_looked (0056). The look is the time the list on screen was read, not the time
+ * of the click: a notice that arrived while the card stayed open was never shown and stays new.
+ */
+export function markLookedArgs(regulatorId: string, readAt: string): { p_regulator: string; p_seen_to: string } {
+  return { p_regulator: regulatorId, p_seen_to: readAt };
+}
