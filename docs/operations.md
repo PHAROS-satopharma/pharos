@@ -523,6 +523,12 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   held "Do not use", "Ask a doctor" and "Stop use". An EPAR's product information is read one SmPC per strength
   or form (the second one's sections are *smpc2:4.4* …); before, every SmPC after the first ran on inside the
   first one's section 10. The first read of a US label or an EPAR this new way is a new baseline, never a change.
+- **Proven on a real revision** (7 Nov 2026). *PHAROS label change replay* (`replay.yml`, by hand: a DailyMed
+  set id and two versions) reads two published versions of one label the way the watch reads them and names the
+  sections that changed and those that would alert; nothing is stored and no message is sent. Corlanor
+  (ivabradine) versions 16 and 20, the April 2019 approval for children, alert in warnings and precautions,
+  contraindications, adverse reactions, interactions, specific populations and Recent Major Changes; versions 31
+  and 33 have the same safety sections and give no change. The pair is a CI test (`tests/test_spc_replay.py`).
 
 The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
 took its place.

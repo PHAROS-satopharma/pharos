@@ -1,0 +1,53 @@
+# PHAROS — replay a real past revision of a label through the label watch's change detector (dry run: nothing
+# stored, no message). collectors/spc/replay.py. Run by hand with a DailyMed set id and two versions; a pull
+# request that changes the replay runs the Corlanor 2019 paediatric revision (versions 16 and 20) once.
+name: PHAROS label change replay
+
+on:
+  pull_request:
+    paths: [collectors/spc/replay.py, .github/workflows/replay.yml]
+  workflow_dispatch:
+    inputs:
+      setid:
+        description: DailyMed set id
+        type: string
+        default: 92018a65-38f6-45f7-91d4-a34921b81d0d
+      from_version:
+        description: The older version
+        type: string
+        default: "16"
+      to_version:
+        description: The newer version
+        type: string
+        default: "20"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: replay
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - run: pip install -r collectors/requirements.txt
+
+      - name: Replay
+        env:
+          SETID: ${{ inputs.setid || '92018a65-38f6-45f7-91d4-a34921b81d0d' }}
+          FROM: ${{ inputs.from_version || '16' }}
+          TO: ${{ inputs.to_version || '20' }}
+        run: |
+          [[ "$SETID" =~ ^[0-9a-f-]{36}$ && "$FROM" =~ ^[0-9]{1,4}$ && "$TO" =~ ^[0-9]{1,4}$ ]] || { echo "not a set id and two versions"; exit 2; }
+          python -m collectors.spc.replay dailymed "$SETID" "$FROM" "$TO"

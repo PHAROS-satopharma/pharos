@@ -1,0 +1,2219 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="http://www.accessdata.fda.gov/spl/stylesheet/spl.xsl" type="text/xsl"?>
+<document xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:hl7-org:v3 https://www.accessdata.fda.gov/spl/schema/spl.xsd">
+   <id root="e5a7faee-f7dd-4113-8e1d-b01803b0d306"/>
+   <code code="34391-3" displayName="HUMAN PRESCRIPTION DRUG LABEL" codeSystem="2.16.840.1.113883.6.1"/>
+   <title>
+      <content styleCode="bold">These highlights do not include all the information needed to use</content>
+      <content styleCode="bold"> </content>
+      <content styleCode="bold">CORLANOR</content>
+      <content styleCode="bold">
+         <sup> </sup>
+      </content>
+      <content styleCode="bold">
+         <sup>®</sup>
+      </content>
+      <content styleCode="bold"> safely and effectively. </content>
+      <content styleCode="bold">See full prescribing information for</content>
+      <content styleCode="bold"> </content>
+      <content styleCode="bold">CORLANOR</content>
+      <content styleCode="bold">.</content>
+      <br/>
+      <content styleCode="bold">CORLANOR</content>
+      <content styleCode="bold"> </content>
+      <content styleCode="bold">(</content>
+      <content styleCode="bold">ivabradine</content>
+      <content styleCode="bold">) </content>
+      <content styleCode="bold">t</content>
+      <content styleCode="bold">ablets</content>
+      <content styleCode="bold">, for oral use</content>
+      <br/>
+      <content styleCode="bold">Initial U.S. Approval: </content>
+      <content styleCode="bold">2015</content>
+      <br/>
+   </title>
+   <effectiveTime value="20170117"/>
+   <setId root="92018a65-38f6-45f7-91d4-a34921b81d0d"/>
+   <versionNumber value="16"/>
+   <author>
+      <time/>
+      <assignedEntity>
+         <representedOrganization>
+            <id extension="039976196" root="1.3.6.1.4.1.519.1"/>
+            <name>Amgen Inc</name>
+            <assignedEntity>
+               <assignedOrganization>
+                  <assignedEntity>
+                     <assignedOrganization>
+                        <id extension="431189117" root="1.3.6.1.4.1.519.1"/>
+                        <name>F.I.S. Fabbrica Italiana Sintetici S.p.A.</name>
+                     </assignedOrganization>
+                     <performance>
+                        <actDefinition>
+                           <code code="C25391" displayName="ANALYSIS" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <product>
+                              <manufacturedProduct classCode="MANU">
+                                 <manufacturedMaterialKind>
+                                    <code code="55513-800" codeSystem="2.16.840.1.113883.6.69"/>
+                                 </manufacturedMaterialKind>
+                              </manufacturedProduct>
+                           </product>
+                        </actDefinition>
+                     </performance>
+                     <performance>
+                        <actDefinition>
+                           <code code="C25391" displayName="ANALYSIS" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <product>
+                              <manufacturedProduct classCode="MANU">
+                                 <manufacturedMaterialKind>
+                                    <code code="55513-810" codeSystem="2.16.840.1.113883.6.69"/>
+                                 </manufacturedMaterialKind>
+                              </manufacturedProduct>
+                           </product>
+                        </actDefinition>
+                     </performance>
+                     <performance>
+                        <actDefinition>
+                           <code code="C43360" displayName="MANUFACTURE" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <product>
+                              <manufacturedProduct classCode="MANU">
+                                 <manufacturedMaterialKind>
+                                    <code code="55513-800" codeSystem="2.16.840.1.113883.6.69"/>
+                                 </manufacturedMaterialKind>
+                              </manufacturedProduct>
+                           </product>
+                        </actDefinition>
+                     </performance>
+                     <performance>
+                        <actDefinition>
+                           <code code="C43360" displayName="MANUFACTURE" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <product>
+                              <manufacturedProduct classCode="MANU">
+                                 <manufacturedMaterialKind>
+                                    <code code="55513-810" codeSystem="2.16.840.1.113883.6.69"/>
+                                 </manufacturedMaterialKind>
+                              </manufacturedProduct>
+                           </product>
+                        </actDefinition>
+                     </performance>
+                     <performance>
+                        <actDefinition>
+                           <code code="C84731" displayName="PACK" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <product>
+                              <manufacturedProduct classCode="MANU">
+                                 <manufacturedMaterialKind>
+                                    <code code="55513-800" codeSystem="2.16.840.1.113883.6.69"/>
+                                 </manufacturedMaterialKind>
+                              </manufacturedProduct>
+                           </product>
+                        </actDefinition>
+                     </performance>
+                     <performance>
+                        <actDefinition>
+                           <code code="C84731" displayName="PACK" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <product>
+                              <manufacturedProduct classCode="MANU">
+                                 <manufacturedMaterialKind>
+                                    <code code="55513-810" codeSystem="2.16.840.1.113883.6.69"/>
+                                 </manufacturedMaterialKind>
+                              </manufacturedProduct>
+                           </product>
+                        </actDefinition>
+                     </performance>
+                  </assignedEntity>
+               </assignedOrganization>
+            </assignedEntity>
+         </representedOrganization>
+      </assignedEntity>
+   </author>
+   <component>
+      <structuredBody>
+         <component>
+            <section>
+               <id root="486fea73-aaa8-465f-a9d0-87e849f23118"/>
+               <code code="48780-1" displayName="SPL LISTING DATA ELEMENTS SECTION" codeSystem="2.16.840.1.113883.6.1"/>
+               <effectiveTime value="20181129"/>
+               <subject>
+                  <manufacturedProduct>
+                     <manufacturedProduct>
+                        <code code="55513-800" codeSystem="2.16.840.1.113883.6.69"/>
+                        <name>Corlanor</name>
+                        <formCode code="C42931" displayName="TABLET, FILM COATED" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                        <asEntityWithGeneric>
+                           <genericMedicine>
+                              <name>ivabradine</name>
+                           </genericMedicine>
+                        </asEntityWithGeneric>
+                        <ingredient classCode="ACTIM">
+                           <quantity>
+                              <numerator unit="mg" value="5"/>
+                              <denominator unit="1" value="1"/>
+                           </quantity>
+                           <ingredientSubstance>
+                              <code code="TP19837BZK" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>IVABRADINE HYDROCHLORIDE</name>
+                              <activeMoiety>
+                                 <activeMoiety>
+                                    <code code="3H48L0LPZQ" codeSystem="2.16.840.1.113883.4.9"/>
+                                    <name>IVABRADINE</name>
+                                 </activeMoiety>
+                              </activeMoiety>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="EWQ57Q8I5X" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>LACTOSE MONOHYDRATE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="O8232NY3SJ" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>STARCH, CORN</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="7CVR7L4A2D" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>MALTODEXTRIN</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="70097M6I30" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>MAGNESIUM STEARATE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="ETJ7Z6XBU4" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>SILICON DIOXIDE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="3NXW29V3WO" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>HYPROMELLOSES</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="15FIX9V2JP" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>TITANIUM DIOXIDE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="PDC6A3C0OX" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>GLYCERIN</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="30IQX730WE" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>POLYETHYLENE GLYCOL 6000</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="EX438O2MRT" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>FERRIC OXIDE YELLOW</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="1K09F3G675" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>FERRIC OXIDE RED</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <asContent>
+                           <quantity>
+                              <numerator unit="1" value="60"/>
+                              <denominator value="1"/>
+                           </quantity>
+                           <containerPackagedProduct>
+                              <code code="55513-800-60" codeSystem="2.16.840.1.113883.6.69"/>
+                              <formCode code="C43169" displayName="BOTTLE" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           </containerPackagedProduct>
+                           <subjectOf>
+                              <characteristic>
+                                 <code code="SPLCMBPRDTP" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                                 <value code="C112160" displayName="Type 0: Not a Combination Product" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV"/>
+                              </characteristic>
+                           </subjectOf>
+                           <subjectOf>
+                              <marketingAct>
+                                 <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                                 <statusCode code="active"/>
+                                 <effectiveTime>
+                                    <low value="20150420"/>
+                                 </effectiveTime>
+                              </marketingAct>
+                           </subjectOf>
+                        </asContent>
+                        <asContent>
+                           <quantity>
+                              <numerator unit="1" value="180"/>
+                              <denominator value="1"/>
+                           </quantity>
+                           <containerPackagedProduct>
+                              <code code="55513-800-80" codeSystem="2.16.840.1.113883.6.69"/>
+                              <formCode code="C43169" displayName="BOTTLE" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           </containerPackagedProduct>
+                           <subjectOf>
+                              <characteristic>
+                                 <code code="SPLCMBPRDTP" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                                 <value code="C112160" displayName="Type 0: Not a Combination Product" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV"/>
+                              </characteristic>
+                           </subjectOf>
+                           <subjectOf>
+                              <marketingAct>
+                                 <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                                 <statusCode code="active"/>
+                                 <effectiveTime>
+                                    <low value="20150420"/>
+                                 </effectiveTime>
+                              </marketingAct>
+                           </subjectOf>
+                        </asContent>
+                     </manufacturedProduct>
+                     <subjectOf>
+                        <approval>
+                           <id extension="NDA206143" root="2.16.840.1.113883.3.150"/>
+                           <code code="C73594" displayName="NDA" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <author>
+                              <territorialAuthority>
+                                 <territory>
+                                    <code code="USA" codeSystem="2.16.840.1.113883.5.28"/>
+                                 </territory>
+                              </territorialAuthority>
+                           </author>
+                        </approval>
+                     </subjectOf>
+                     <subjectOf>
+                        <marketingAct>
+                           <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <statusCode code="active"/>
+                           <effectiveTime>
+                              <low value="20150420"/>
+                           </effectiveTime>
+                        </marketingAct>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLCOLOR" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value code="C48328" displayName="PINK" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV">
+                              <originalText>salmon colored</originalText>
+                           </value>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLIMPRINT" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value xsi:type="ST">5</value>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLSCORE" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value value="2" xsi:type="INT"/>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLSHAPE" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value code="C48345" displayName="OVAL" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV"/>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLSIZE" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value unit="mm" value="9" xsi:type="PQ"/>
+                        </characteristic>
+                     </subjectOf>
+                     <consumedIn>
+                        <substanceAdministration>
+                           <routeCode code="C38288" displayName="ORAL" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                        </substanceAdministration>
+                     </consumedIn>
+                  </manufacturedProduct>
+               </subject>
+               <subject>
+                  <manufacturedProduct>
+                     <manufacturedProduct>
+                        <code code="55513-810" codeSystem="2.16.840.1.113883.6.69"/>
+                        <name>Corlanor</name>
+                        <formCode code="C42931" displayName="TABLET, FILM COATED" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                        <asEntityWithGeneric>
+                           <genericMedicine>
+                              <name>ivabradine</name>
+                           </genericMedicine>
+                        </asEntityWithGeneric>
+                        <ingredient classCode="ACTIM">
+                           <quantity>
+                              <numerator unit="mg" value="7.5"/>
+                              <denominator unit="1" value="1"/>
+                           </quantity>
+                           <ingredientSubstance>
+                              <code code="TP19837BZK" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>IVABRADINE HYDROCHLORIDE</name>
+                              <activeMoiety>
+                                 <activeMoiety>
+                                    <code code="3H48L0LPZQ" codeSystem="2.16.840.1.113883.4.9"/>
+                                    <name>IVABRADINE</name>
+                                 </activeMoiety>
+                              </activeMoiety>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="EWQ57Q8I5X" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>LACTOSE MONOHYDRATE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="O8232NY3SJ" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>STARCH, CORN</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="7CVR7L4A2D" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>MALTODEXTRIN</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="70097M6I30" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>MAGNESIUM STEARATE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="ETJ7Z6XBU4" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>SILICON DIOXIDE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="3NXW29V3WO" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>HYPROMELLOSES</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="15FIX9V2JP" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>TITANIUM DIOXIDE</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="PDC6A3C0OX" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>GLYCERIN</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="30IQX730WE" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>POLYETHYLENE GLYCOL 6000</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="EX438O2MRT" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>FERRIC OXIDE YELLOW</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <ingredient classCode="IACT">
+                           <ingredientSubstance>
+                              <code code="1K09F3G675" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>FERRIC OXIDE RED</name>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <asContent>
+                           <quantity>
+                              <numerator unit="1" value="60"/>
+                              <denominator value="1"/>
+                           </quantity>
+                           <containerPackagedProduct>
+                              <code code="55513-810-60" codeSystem="2.16.840.1.113883.6.69"/>
+                              <formCode code="C43169" displayName="BOTTLE" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           </containerPackagedProduct>
+                           <subjectOf>
+                              <characteristic>
+                                 <code code="SPLCMBPRDTP" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                                 <value code="C112160" displayName="Type 0: Not a Combination Product" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV"/>
+                              </characteristic>
+                           </subjectOf>
+                           <subjectOf>
+                              <marketingAct>
+                                 <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                                 <statusCode code="active"/>
+                                 <effectiveTime>
+                                    <low value="20150420"/>
+                                 </effectiveTime>
+                              </marketingAct>
+                           </subjectOf>
+                        </asContent>
+                        <asContent>
+                           <quantity>
+                              <numerator unit="1" value="180"/>
+                              <denominator value="1"/>
+                           </quantity>
+                           <containerPackagedProduct>
+                              <code code="55513-810-80" codeSystem="2.16.840.1.113883.6.69"/>
+                              <formCode code="C43169" displayName="BOTTLE" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           </containerPackagedProduct>
+                           <subjectOf>
+                              <characteristic>
+                                 <code code="SPLCMBPRDTP" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                                 <value code="C112160" displayName="Type 0: Not a Combination Product" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV"/>
+                              </characteristic>
+                           </subjectOf>
+                           <subjectOf>
+                              <marketingAct>
+                                 <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                                 <statusCode code="active"/>
+                                 <effectiveTime>
+                                    <low value="20150420"/>
+                                 </effectiveTime>
+                              </marketingAct>
+                           </subjectOf>
+                        </asContent>
+                     </manufacturedProduct>
+                     <subjectOf>
+                        <approval>
+                           <id extension="NDA206143" root="2.16.840.1.113883.3.150"/>
+                           <code code="C73594" displayName="NDA" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <author>
+                              <territorialAuthority>
+                                 <territory>
+                                    <code code="USA" codeSystem="2.16.840.1.113883.5.28"/>
+                                 </territory>
+                              </territorialAuthority>
+                           </author>
+                        </approval>
+                     </subjectOf>
+                     <subjectOf>
+                        <marketingAct>
+                           <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <statusCode code="active"/>
+                           <effectiveTime>
+                              <low value="20150420"/>
+                           </effectiveTime>
+                        </marketingAct>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLCOLOR" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value code="C48328" displayName="PINK" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV">
+                              <originalText>salmon colored</originalText>
+                           </value>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLIMPRINT" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value xsi:type="ST">7;5</value>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLSCORE" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value value="1" xsi:type="INT"/>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLSHAPE" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value code="C48353" displayName="TRIANGLE" codeSystem="2.16.840.1.113883.3.26.1.1" xsi:type="CV"/>
+                        </characteristic>
+                     </subjectOf>
+                     <subjectOf>
+                        <characteristic classCode="OBS">
+                           <code code="SPLSIZE" codeSystem="2.16.840.1.113883.1.11.19255"/>
+                           <value unit="mm" value="7" xsi:type="PQ"/>
+                        </characteristic>
+                     </subjectOf>
+                     <consumedIn>
+                        <substanceAdministration>
+                           <routeCode code="C38288" displayName="ORAL" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                        </substanceAdministration>
+                     </consumedIn>
+                  </manufacturedProduct>
+               </subject>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="7cd7cd68-d2b9-47e5-8af3-b1326479cfb1"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="43683-2" displayName="RECENT MAJOR CHANGES SECTION"/>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <table>
+                           <col width="184"/>
+                           <col width="150"/>
+                           <tbody>
+                              <tr>
+                                 <td>•   Warning and Precautions (<linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>)</td>
+                                 <td>              01/2017</td>
+                              </tr>
+                           </tbody>
+                        </table>
+                     </text>
+                  </highlight>
+               </excerpt>
+            </section>
+         </component>
+         <component>
+            <section ID="_1__INDICATIONS_AND">
+               <id root="e78ed840-8e19-45c9-818c-790df7f8e8da"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34067-9" displayName="INDICATIONS &amp; USAGE SECTION"/>
+               <title>
+                  <content styleCode="bold">1.</content>
+		     
+	<content styleCode="bold">INDICATIONS AND USAGE</content>
+               </title>
+               <text>
+                  <paragraph>Corlanor is indicated to reduce the risk of hospitalization for worsening heart failure in patients with stable, symptomatic chronic heart failure with left ventricular ejection fraction ≤ 35%, who are in sinus rhythm with resting heart rate ≥ 70 beats per minute and either are on maximally tolerated doses of beta-blockers or have a contraindication to beta-blocker use. </paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <paragraph>Corlanor (ivabradine) is a hyperpolarization-activated cyclic nucleotide-gated channel blocker indicated to reduce the risk of hospitalization for worsening heart failure in patients with stable, symptomatic chronic heart failure with left ventricular ejection fraction ≤ 35%, who are in sinus rhythm with resting heart rate ≥ 70 beats per minute and either are on maximally tolerated doses of beta-blockers or have a contraindication to beta-blocker use. (<linkHtml href="#_1__INDICATIONS_AND">1</linkHtml>)</paragraph>
+                     </text>
+                  </highlight>
+               </excerpt>
+            </section>
+         </component>
+         <component>
+            <section ID="_2__DOSAGE_AND">
+               <id root="a6ad92fc-f3e6-4810-87ff-c5cebef24323"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34068-7" displayName="DOSAGE &amp; ADMINISTRATION SECTION"/>
+               <title>
+                  <content styleCode="bold">2.</content>
+		     
+	<content styleCode="bold">DOSAGE AND ADMINIST</content>
+                  <content styleCode="bold">R</content>
+                  <content styleCode="bold">ATION</content>
+               </title>
+               <text>
+                  <paragraph>The recommended starting dose of Corlanor is 5 mg twice daily with meals. Assess patient after two weeks and adjust dose to achieve a resting heart rate between 50 and 60 beats per minute (bpm) as shown in Table 1. Thereafter, adjust dose as needed based on resting heart rate and tolerability. The maximum dose is 7.5 mg twice daily.</paragraph>
+                  <paragraph>In patients with a history of conduction defects, or other patients in whom bradycardia could lead to hemodynamic compromise, initiate therapy at 2.5 mg twice daily before increasing the dose based on heart rate <content styleCode="italics">[see Warnings and Precautions (</content>
+                     <content styleCode="italics">
+                        <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                     </content>
+                     <content styleCode="italics">)].</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Table 1</content>
+                     <content styleCode="bold">.</content>
+                     <content styleCode="bold"> Dose </content>
+                     <content styleCode="bold">Adjustment</content>
+                  </paragraph>
+                  <table>
+                     <col width="168"/>
+                     <col width="289"/>
+                     <tbody>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule " valign="bottom">
+                              <content styleCode="bold">Heart Rate</content>
+                           </td>
+                           <td styleCode="Toprule Lrule Rrule " valign="bottom">
+                              <content styleCode="bold">Dose </content>
+                              <content styleCode="bold">Adjustment</content>
+                           </td>
+                        </tr>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule ">&gt; 60 bpm</td>
+                           <td styleCode="Toprule Lrule Rrule " valign="bottom">Increase dose by 2.5 mg (given twice daily) up to a maximum dose of 7.5 mg twice daily</td>
+                        </tr>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule ">50-60 bpm</td>
+                           <td styleCode="Toprule Lrule Rrule " valign="bottom">Maintain dose</td>
+                        </tr>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule ">&lt; 50 bpm or signs and symptoms of bradycardia</td>
+                           <td styleCode="Toprule Lrule Rrule " valign="bottom">Decrease dose by 2.5 mg (given twice daily); if current dose is 2.5 mg twice daily, discontinue therapy*</td>
+                        </tr>
+                     </tbody>
+                  </table>
+                  <paragraph>*<content styleCode="italics">[</content>
+                     <content styleCode="italics">see </content>
+                     <content styleCode="italics">Warnings and Precautions (</content>
+                     <content styleCode="italics">
+                        <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                     </content>
+                     <content styleCode="italics">)]</content>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <list listType="unordered" styleCode="Disc">
+                           <item>Starting dose is 5 mg twice daily. After 2 weeks of treatment, adjust dose based on heart rate. The maximum dose is 7.5 mg twice daily. (<linkHtml href="#_2__DOSAGE_AND">2</linkHtml>)<br/>
+                           </item>
+                           <item>In patients with conduction defects or in whom bradycardia could lead to hemodynamic compromise, initiate dosing at 2.5 mg twice daily. (<linkHtml href="#_2__DOSAGE_AND">2</linkHtml>)</item>
+                        </list>
+                     </text>
+                  </highlight>
+               </excerpt>
+            </section>
+         </component>
+         <component>
+            <section ID="_3__DOSAGE_FORMS">
+               <id root="80031d23-4362-4540-916f-6faa990fbdec"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="43678-2" displayName="DOSAGE FORMS &amp; STRENGTHS SECTION"/>
+               <title>
+                  <content styleCode="bold">3.</content>
+		     
+	<content styleCode="bold">DOSAGE FORMS AND STRENGT</content>
+                  <content styleCode="bold">HS</content>
+               </title>
+               <text>
+                  <paragraph>Corlanor 5 mg: salmon-colored, oval-shaped, film-coated tablet, scored on both edges, debossed with “5” on one face and bisected on the other face. The tablet is scored and can be divided into equal halves to provide a 2.5 mg dose.</paragraph>
+                  <paragraph>Corlanor 7.5 mg: salmon-colored, triangular-shaped, film-coated tablet debossed with “7.5” on one face and plain on the other face.</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <paragraph>Tablets: 5 mg, 7.5 mg (<linkHtml href="#_3__DOSAGE_FORMS">3</linkHtml>)</paragraph>
+                     </text>
+                  </highlight>
+               </excerpt>
+            </section>
+         </component>
+         <component>
+            <section ID="_4__CONTRAINDICATIONS">
+               <id root="474db41d-4957-4dea-8b15-c301f5e1d0be"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34070-3" displayName="CONTRAINDICATIONS SECTION"/>
+               <title>
+                  <content styleCode="bold">4.</content>
+		     
+	<content styleCode="bold">CONTRAINDICATIONS</content>
+               </title>
+               <text>
+                  <paragraph>Corlanor is contraindicated in patients with:</paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Acute decompensated heart failure <br/>
+                     </item>
+                     <item>Blood pressure less than 90/50 mmHg <br/>
+                     </item>
+                     <item>Sick sinus syndrome, sinoatrial block, or 3<sup>rd</sup> degree AV block, unless a functioning demand pacemaker is present<br/>
+                     </item>
+                     <item>Resting heart rate less than 60 bpm prior to treatment <content styleCode="italics">[see Warnings and Precautions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <br/>
+                     </item>
+                     <item>Severe hepatic impairment <content styleCode="italics">[see </content>
+                        <content styleCode="italics">Use in Specific Populations </content>
+                        <content styleCode="italics">(</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_8_6_Hepatic_Impairment">8.6</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <br/>
+                     </item>
+                     <item>Pacemaker dependence (heart rate maintained exclusively by the pacemaker) <content styleCode="italics">[see Drug Interactions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_7_3_Pacemakers">7.3</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <br/>
+                     </item>
+                     <item>Concomitant use of strong cytochrome P450 3A4 (CYP3A4) inhibitors <content styleCode="italics">[see Drug Interactions</content>
+                        <content styleCode="italics"> </content>
+                        <content styleCode="italics">(</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_7_1_Cytochrome_P450_Based">7.1</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                     </item>
+                  </list>
+               </text>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <list listType="unordered" styleCode="Disc">
+                           <item>Acute decompensated heart failure (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)<br/>
+                           </item>
+                           <item>Blood pressure less than 90/50 mmHg (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)<br/>
+                           </item>
+                           <item>Sick sinus syndrome, sinoatrial block or 3rd degree AV block, unless a functioning demand pacemaker is present (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)<br/>
+                           </item>
+                           <item>Resting heart rate less than 60 bpm prior to treatment (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)<br/>
+                           </item>
+                           <item>Severe hepatic impairment (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)<br/>
+                           </item>
+                           <item>Pacemaker dependence (heart rate maintained  exclusively by the pacemaker) (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)<br/>
+                           </item>
+                           <item>In combination with strong cytochrome CYP3A4 inhibitors (<linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>)</item>
+                        </list>
+                     </text>
+                  </highlight>
+               </excerpt>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="688b7f55-1cbc-4401-a8db-5b9eeba40de0"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="43685-7" displayName="WARNINGS AND PRECAUTIONS SECTION"/>
+               <title>
+                  <content styleCode="bold">5.</content>
+		     
+	<content styleCode="bold">WARNINGS AND PRECAUTIONS</content>
+               </title>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <list listType="unordered" styleCode="Disc">
+                           <item>Fetal toxicity: Females should use effective contraception. (<linkHtml href="#_5_1_Fetal_Toxicity">5.1</linkHtml>)<br/>
+                           </item>
+                           <item>Monitor patients for atrial fibrillation. (<linkHtml href="#_5_2_Atrial_Fibrillation">5.2</linkHtml>) <br/>
+                           </item>
+                           <item>Monitor heart rate decreases and bradycardia symptoms during treatment. (<linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>) <br/>
+                           </item>
+                           <item>Not recommended in patients with 2<sup>nd</sup> degree AV block. (<linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>)</item>
+                        </list>
+                     </text>
+                  </highlight>
+               </excerpt>
+               <component>
+                  <section ID="_5_1_Fetal_Toxicity">
+                     <id root="55eb1239-8fe4-4c54-a756-fe4d9d7323b1"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>5.1
+		     
+	Fetal Toxicity</title>
+                     <text>
+                        <paragraph>Corlanor may cause fetal toxicity when administered to a pregnant woman based on findings in animal studies. Embryo-fetal toxicity and cardiac teratogenic effects were observed in fetuses of pregnant rats treated during organogenesis at exposures 1 to 3 times the human exposures (AUC<sub>0-24hr</sub>) at the maximum recommended human dose (MRHD) <content styleCode="italics">[see Use in Specific Populations (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_8_1_Pregnancy">8.1</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>. Advise females to use effective contraception when taking Corlanor <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Use in Specific Populations</content>
+                           <content styleCode="italics"> (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_8_3_Females_and">8.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_5_2_Atrial_Fibrillation">
+                     <id root="a676bf3f-9cca-41a8-bc1a-a393de69b42c"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>5.2
+		     
+	Atrial Fibrillation</title>
+                     <text>
+                        <paragraph>Corlanor increases the risk of atrial fibrillation. In SHIFT, the rate of atrial fibrillation was 5.0% per patient-year in patients treated with Corlanor and 3.9% per patient-year in patients treated with placebo <content styleCode="italics">[see Clinical Studies (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_14__CLINICAL_STUDIES">14</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>. Regularly monitor cardiac rhythm. Discontinue Corlanor if atrial fibrillation develops.  </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_5_3_Bradycardia_and">
+                     <id root="864c3527-23f3-40c6-baf0-43e1c30193ca"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>5.3
+		     
+	Bradycardia and Conduction Disturbances</title>
+                     <text>
+                        <paragraph>Bradycardia, sinus arrest, and heart block have occurred with Corlanor. The rate of bradycardia was 6.0% per patient-year in patients treated with Corlanor (2.7% symptomatic; 3.4% asymptomatic) and 1.3% per patient-year in patients treated with placebo. Risk factors for bradycardia include sinus node dysfunction, conduction defects (e.g., 1<sup>st</sup> or 2<sup>nd</sup> degree atrioventricular block, bundle branch block), ventricular dyssynchrony, and use of other negative chronotropes (e.g., digoxin, diltiazem, verapamil, amiodarone).  Bradycardia may increase the risk of QT prolongation which may lead to severe ventricular arrhythmias, including torsade de pointes, especially in patients with risk factors such as use of QTc prolonging drugs <content styleCode="italics">[see Adverse Reactions (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_6_2__Postmarketing">6.2</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.</paragraph>
+                        <paragraph>Concurrent use of verapamil or diltiazem will increase Corlanor exposure, may themselves contribute to heart rate lowering, and should be avoided <content styleCode="italics">[see Clinical Pharmacology (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_3_Pharmacokinetics">12.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>. Avoid use of Corlanor in patients with 2<sup>nd</sup> degree atrioventricular block, unless a functioning demand pacemaker is present <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Contraindications (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics"> and </content>
+                           <content styleCode="italics">Dosage and Administration (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_2__DOSAGE_AND">2</linkHtml>
+                           </content>
+                           <content styleCode="italics">)].</content> </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section ID="_6__ADVERSE_REACTIONS">
+               <id root="bde93d9b-8674-40f1-92ba-f9408e71f47a"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34084-4" displayName="ADVERSE REACTIONS SECTION"/>
+               <title>
+                  <content styleCode="bold">6.</content>
+		     
+	<content styleCode="bold">ADVERSE REACTIONS</content>
+               </title>
+               <text>
+                  <paragraph>Clinically significant adverse reactions that appear in other sections of the labeling include:</paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Fetal Toxicity <content styleCode="italics">[see Warnings and Precautions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_1_Fetal_Toxicity">5.1</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <br/>
+                     </item>
+                     <item>Atrial Fibrillation <content styleCode="italics">[see Warnings and Precautions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_2_Atrial_Fibrillation">5.2</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <br/>
+                     </item>
+                     <item>Bradycardia and Conduction Disturbances<content styleCode="italics"> [see Warnings and Precautions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                     </item>
+                  </list>
+               </text>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <paragraph>Most common adverse reactions occurring in ≥ 1% of patients are bradycardia, hypertension, atrial fibrillation and luminous phenomena (phosphenes). (<linkHtml href="#_6__ADVERSE_REACTIONS">6</linkHtml>)</paragraph>
+                        <paragraph>
+                           <content styleCode="bold">
+                              <br/>
+                              <br/>To report SUSPECTED ADVERSE REACTIONS, contact Amgen Medical Information at 1-800-772-6436 (1-800-77-AMGEN) or FDA at 1-800-FDA-1088 or www.fda.gov/medwatch.</content>
+                        </paragraph>
+                     </text>
+                  </highlight>
+               </excerpt>
+               <component>
+                  <section ID="_6_1_Clinical_Trials">
+                     <id root="2e1d1e9f-ef57-4fa0-aa8d-e47836e870fd"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>6.1
+		     
+	Clinical Trials Experience</title>
+                     <text>
+                        <paragraph>Because clinical trials are conducted under widely varying conditions, adverse reaction rates observed in the clinical trials of a drug cannot be directly compared to rates in the clinical trials of another drug and may not reflect the rates observed in practice.</paragraph>
+                        <paragraph>In the <content styleCode="underline">S</content>ystolic <content styleCode="underline">H</content>eart failure treatment with the <content styleCode="italics underline">I</content>
+                           <sub>f</sub> inhibitor ivabradine <content styleCode="underline">T</content>rial (SHIFT), safety was evaluated in 3260 patients treated with Corlanor and 3278 patients given placebo.  The median duration of Corlanor exposure was 21.5 months.</paragraph>
+                        <paragraph>The most common adverse drug reactions in the SHIFT trial are shown in Table 2 <content styleCode="italics">[see </content>
+                           <content styleCode="italics">also Warnings and Precautions (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_5_2_Atrial_Fibrillation">5.2</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics">,</content>
+                           <content styleCode="italics"> (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics">]</content>. </paragraph>
+                        <paragraph>
+                           <content styleCode="bold">Table </content>
+                           <content styleCode="bold">2</content>
+                           <content styleCode="bold">.</content>
+                           <content styleCode="bold"> Adverse Drug Reaction</content>
+                           <content styleCode="bold">s</content>
+                           <content styleCode="bold"> </content>
+                           <content styleCode="bold">with </content>
+                           <content styleCode="bold">R</content>
+                           <content styleCode="bold">ates ≥ 1.0% </content>
+                           <content styleCode="bold">H</content>
+                           <content styleCode="bold">igher on </content>
+                           <content styleCode="bold">I</content>
+                           <content styleCode="bold">vabradine than </content>
+                           <content styleCode="bold">P</content>
+                           <content styleCode="bold">lacebo</content>
+                           <content styleCode="bold"> </content>
+                           <content styleCode="bold">occurring in &gt; 1% on </content>
+                           <content styleCode="bold">I</content>
+                           <content styleCode="bold">vabradine in SHIFT </content>
+                        </paragraph>
+                        <table>
+                           <col width="449"/>
+                           <col width="89"/>
+                           <col width="79"/>
+                           <tbody>
+                              <tr>
+                                 <td styleCode="Toprule Lrule Rrule "/>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">
+                                    <content styleCode="bold">Ivabradine</content>
+                                    <br/>
+                                    <content styleCode="bold">N=3260</content>
+                                 </td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">
+                                    <content styleCode="bold">Placebo</content>
+                                    <br/>
+                                    <content styleCode="bold">N=3278</content>
+                                 </td>
+                              </tr>
+                              <tr>
+                                 <td styleCode="Toprule Lrule Rrule ">Bradycardia</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">10%</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">2.2%</td>
+                              </tr>
+                              <tr>
+                                 <td styleCode="Toprule Lrule Rrule ">Hypertension, blood pressure increased</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">8.9%</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">7.8%</td>
+                              </tr>
+                              <tr>
+                                 <td styleCode="Toprule Lrule Rrule ">Atrial fibrillation</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">8.3%</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">6.6%</td>
+                              </tr>
+                              <tr>
+                                 <td styleCode="Toprule Lrule Rrule ">Phosphenes, visual brightness</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">2.8%</td>
+                                 <td styleCode="Toprule Lrule Rrule " align="center">0.5%</td>
+                              </tr>
+                           </tbody>
+                        </table>
+                        <paragraph>
+                           <content styleCode="underline">Luminous </content>
+                           <content styleCode="underline">P</content>
+                           <content styleCode="underline">henomena </content>
+                           <content styleCode="underline">(Phosphenes)</content>
+                        </paragraph>
+                        <paragraph>Phosphenes are phenomena described as a transiently enhanced brightness in a limited area of the visual field, halos, image decomposition (stroboscopic or kaleidoscopic effects), colored bright lights, or multiple images (retinal persistency).  Phosphenes are usually triggered by sudden variations in light intensity.  Corlanor can cause phosphenes, thought to be mediated through Corlanor’s effects on retinal photoreceptors <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Clinical Ph</content>
+                           <content styleCode="italics">a</content>
+                           <content styleCode="italics">rmacology</content>
+                           <content styleCode="italics"> (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_1_Mechanism_of">12.1</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.  Onset is generally within the first 2 months of treatment, after which they may occur repeatedly.  Phosphenes were generally reported to be of mild to moderate intensity and led to treatment discontinuation in &lt; 1% of patients; most resolved during or after treatment.  </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_6_2__Postmarketing">
+                     <id root="57912f03-b85b-4f60-8c1e-892b8039798e"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>6.2 
+		     
+	Postmarketing Experience</title>
+                     <text>
+                        <paragraph>Because these reactions are reported voluntarily from a population of uncertain size, it is not always possible to estimate their frequency reliably or establish a causal relationship to drug exposure.</paragraph>
+                        <paragraph>The following adverse reactions have been identified during post-approval use of Corlanor: syncope, hypotension, torsade de pointes, ventricular fibrillation, ventricular tachycardia,<content styleCode="bold"> </content>angioedema, erythema, rash, pruritus, urticaria, vertigo, diplopia, and visual impairment.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="ecee69c5-8c96-4ae0-82be-376fad19b345"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34073-7" displayName="DRUG INTERACTIONS SECTION"/>
+               <title>
+                  <content styleCode="bold">7.</content>
+		     
+	<content styleCode="bold">DRUG INTERACTIONS</content>
+               </title>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <list listType="unordered" styleCode="Disc">
+                           <item>CYP3A4 inhibitors increase Corlanor plasma concentrations and CYP3A4 inducers decrease Corlanor plasma concentrations. (<linkHtml href="#_7_1_Cytochrome_P450_Based">7.1</linkHtml>)<br/>
+                           </item>
+                           <item>Negative chronotropes: Increased risk of bradycardia, monitor heart rate. (<linkHtml href="#_7_2_Negative_Chronotropes">7.2</linkHtml>)<br/>
+                           </item>
+                           <item>Pacemakers: Not recommended for use with demand pacemakers set to rates ≥ 60 beats per minute. (<linkHtml href="#_7_3_Pacemakers">7.3</linkHtml>)</item>
+                        </list>
+                     </text>
+                  </highlight>
+               </excerpt>
+               <component>
+                  <section ID="_7_1_Cytochrome_P450_Based">
+                     <id root="ff67c79b-5ab2-4e7d-9cd0-a156b407c0b8"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>7.1
+		     
+	Cytochrome P450-Based Interactions</title>
+                     <text>
+                        <paragraph>Corlanor is primarily metabolized by CYP3A4.  Concomitant use of CYP3A4 inhibitors increases ivabradine plasma concentrations, and use of CYP3A4 inducers decreases them.  Increased plasma concentrations may exacerbate bradycardia and conduction disturbances.</paragraph>
+                        <paragraph>The concomitant use of strong CYP3A4 inhibitors is contraindicated <content styleCode="italics">[</content>
+                           <content styleCode="italics">s</content>
+                           <content styleCode="italics">ee </content>
+                           <content styleCode="italics">Contraindications (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>
+                           </content>
+                           <content styleCode="italics">) and </content>
+                           <content styleCode="italics">Clinical Pharmacology </content>
+                           <content styleCode="italics">(</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_3_Pharmacokinetics">12.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.  Examples of strong CYP3A4 inhibitors include azole antifungals (e.g., itraconazole), macrolide antibiotics (e.g., clarithromycin, telithromycin), HIV protease inhibitors (e.g., nelfinavir), and nefazodone.</paragraph>
+                        <paragraph>Avoid concomitant use of moderate CYP3A4 inhibitors when using Corlanor.  Examples of moderate CYP3A4 inhibitors include diltiazem, verapamil, and grapefruit juice <content styleCode="italics">[</content>
+                           <content styleCode="italics">s</content>
+                           <content styleCode="italics">ee</content>
+                           <content styleCode="italics"> Warnings and Precautions</content>
+                           <content styleCode="italics"> (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics"> and </content>
+                           <content styleCode="italics">Clinical Pharmacology</content>
+                           <content styleCode="italics"> </content>
+                           <content styleCode="italics">(</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_3_Pharmacokinetics">12.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>. </paragraph>
+                        <paragraph>Avoid concomitant use of CYP3A4 inducers when using Corlanor.  Examples of CYP3A4 inducers include St. John’s wort, rifampicin, barbiturates, and phenytoin <content styleCode="italics">[</content>
+                           <content styleCode="italics">s</content>
+                           <content styleCode="italics">ee </content>
+                           <content styleCode="italics">Clinical Pharmacology</content>
+                           <content styleCode="italics"> </content>
+                           <content styleCode="italics">(</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_3_Pharmacokinetics">12.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_7_2_Negative_Chronotropes">
+                     <id root="abb25ce5-4213-4d1f-a626-e8fd9d216403"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>7.2
+		     
+	Negative Chronotropes</title>
+                     <text>
+                        <paragraph>Most patients receiving Corlanor will also be treated with a beta-blocker.  The risk of bradycardia increases with concomitant administration of drugs that slow heart rate (e.g., digoxin, amiodarone, beta-blockers).  Monitor heart rate in patients taking Corlanor with other negative chronotropes. </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_7_3_Pacemakers">
+                     <id root="555ecf4b-8d28-4e82-a636-9435790d2ef7"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>7.3
+		     
+	Pacemakers</title>
+                     <text>
+                        <paragraph>Corlanor dosing is based on heart rate reduction, targeting a heart rate of 50 to 60 beats per minute <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Dos</content>
+                           <content styleCode="italics">ag</content>
+                           <content styleCode="italics">e and Administration </content>
+                           <content styleCode="italics">(</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_2__DOSAGE_AND">2</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.  Patients with demand pacemakers set to a rate ≥ 60 beats per minute cannot achieve a target heart rate &lt; 60 beats per minute, and these patients were excluded from clinical trials <content styleCode="italics">[see Clinical Studies (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_14__CLINICAL_STUDIES">14</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.  The use of Corlanor is not recommended in patients with demand pacemakers set to rates ≥ 60 beats per minute. </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="dc7ab8f9-e58e-47ff-b580-4ca0aa9f8d99"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="43684-0" displayName="USE IN SPECIFIC POPULATIONS SECTION"/>
+               <title>
+                  <content styleCode="bold">8.</content>
+		     
+	<content styleCode="bold">USE IN SPECIFIC POPULATIONS</content>
+               </title>
+               <effectiveTime value="20170117"/>
+               <excerpt>
+                  <highlight>
+                     <text>
+                        <list listType="unordered" styleCode="Disc">
+                           <item>Lactation: Breastfeeding not recommended. (<linkHtml href="#_8_2_Lactation">8.2</linkHtml>)</item>
+                        </list>
+                     </text>
+                  </highlight>
+               </excerpt>
+               <component>
+                  <section ID="_8_1_Pregnancy">
+                     <id root="c5764852-441d-44a7-ad38-cf625bfdebe3"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42228-7" displayName="PREGNANCY SECTION"/>
+                     <title>8.1
+		     
+	Pregnancy</title>
+                     <text>
+                        <paragraph>
+                           <content styleCode="underline">Risk Summary</content>
+                        </paragraph>
+                        <paragraph>Based on findings in animals, Corlanor may cause fetal harm when administered to a pregnant woman.  There are no adequate and well-controlled studies of Corlanor in pregnant women to inform any drug-associated risks. In animal reproduction studies, oral administration of ivabradine to pregnant rats during organogenesis at a dosage providing 1 to 3 times the human exposure (AUC<sub>0-24hr</sub>) at the MRHD resulted in embryo-fetal toxicity and teratogenicity manifested as abnormal shape of the heart, interventricular septal defect, and complex anomalies of primary arteries. Increased postnatal mortality was associated with these teratogenic effects in rats. In pregnant rabbits, increased post-implantation loss was noted at an exposure (AUC<sub>0-24hr</sub>) 5 times the human exposure at the MRHD. Lower doses were not tested in rabbits.  The background risk of major birth defects for the indicated population is unknown. The estimated background risk of major birth defects in the U.S. general population is 2 to 4%, however, and the estimated risk of miscarriage is 15 to 20% in clinically recognized pregnancies. Advise a pregnant woman of the potential risk to the fetus.</paragraph>
+                        <paragraph>
+                           <content styleCode="underline">Clinical Considerations</content>
+                        </paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Disease-associated maternal and/or embryo/fetal risk</content>
+                        </paragraph>
+                        <paragraph>Stroke volume and heart rate increase during pregnancy, increasing cardiac output, especially during the first trimester. Pregnant patients with left ventricular ejection fraction less than 35% on maximally tolerated doses of beta-blockers may be particularly heart-rate dependent for augmenting cardiac output. Therefore, pregnant patients who are started on Corlanor, especially during the first trimester, should be followed closely for destabilization of their congestive heart failure that could result from heart rate slowing.</paragraph>
+                        <paragraph>Monitor pregnant women with chronic heart failure in 3<sup>rd</sup> trimester of pregnancy for preterm birth.</paragraph>
+                        <paragraph>
+                           <content styleCode="underline">Data</content>
+                        </paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Animal Data</content>
+                        </paragraph>
+                        <paragraph>In pregnant rats, oral administration of ivabradine during the period of organogenesis (gestation day 6-15) at doses of 2.3, 4.6, 9.3, or 19 mg/kg/day resulted in fetal toxicity and teratogenic effects. Increased intrauterine and post-natal mortality and cardiac malformations were observed at doses ≥ 2.3 mg/kg/day (equivalent to the human exposure at the MRHD based on AUC<sub>0-</sub>
+                           <sub>24</sub>
+                           <sub>hr</sub>). Teratogenic effects including interventricular septal defect and complex anomalies of major arteries were observed at doses ≥ 4.6 mg/kg/day (approximately 3 times the human exposure at the MRHD based on AUC<sub>0-</sub>
+                           <sub>24</sub>
+                           <sub>hr</sub>). </paragraph>
+                        <paragraph>In pregnant rabbits, oral administration of ivabradine during the period of organogenesis (gestation day 6-18) at doses of 7, 14, or 28 mg/kg/day resulted in fetal toxicity and teratogenicity. Treatment with all doses ≥ 7 mg/kg/day (equivalent to the human exposure at the MRHD based on AUC<sub>0-</sub>
+                           <sub>24</sub>
+                           <sub>hr</sub>) caused an increase in post-implantation loss. At the high dose of 28 mg/kg/day (approximately 15 times the human exposure at the MRHD based on AUC<sub>0-</sub>
+                           <sub>24</sub>
+                           <sub>hr</sub>), reduced fetal and placental weights were observed, and evidence of teratogenicity (ectrodactylia observed in 2 of 148 fetuses from 2 of 18 litters) was demonstrated. </paragraph>
+                        <paragraph>In the pre- and postnatal study, pregnant rats received oral administration of ivabradine at doses of 2.5, 7, or 20 mg/kg/day from gestation day 6 to lactation day 20. Increased postnatal mortality associated with cardiac teratogenic findings was observed in the F1 pups delivered by dams treated at the high dose (approximately 15 times the human exposure at the MRHD based on AUC<sub>0-</sub>
+                           <sub>24</sub>
+                           <sub>hr</sub>).</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_8_2_Lactation">
+                     <id root="10842435-85c2-4b23-94e6-d5da2356f8d7"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="77290-5" displayName="LACTATION SECTION"/>
+                     <title>8.2
+		     
+	Lactation</title>
+                     <text>
+                        <paragraph>
+                           <content styleCode="underline">Risk Summary</content>
+                        </paragraph>
+                        <paragraph>There is no information regarding the presence of ivabradine in human milk, the effects of ivabradine on the breastfed infant, or the effects of the drug on milk production. Animal studies have shown, however, that ivabradine is present in rat milk <content styleCode="italics">[</content>
+                           <content styleCode="italics">s</content>
+                           <content styleCode="italics">ee </content>
+                           <content styleCode="italics">Data</content>
+                           <content styleCode="italics">]</content>
+                           <content styleCode="italics">.</content> Because of the potential risk to breastfed infants from exposure to Corlanor, breastfeeding is not recommended.</paragraph>
+                        <paragraph>
+                           <content styleCode="underline">Data</content>
+                        </paragraph>
+                        <paragraph>Lactating rats received daily oral doses of [<sup>14</sup>C]-ivabradine (7 mg/kg) on post-parturition days 10 to 14; milk and maternal plasma were collected at 0.5 and 2.5 hours post-dose on day 14. The ratios of total radioactivity associated with [<sup>14</sup>C]-ivabradine or its metabolites in milk vs. plasma were 1.5 and 1.8, respectively, indicating that ivabradine is transferred to milk after oral administration.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_8_3_Females_and">
+                     <id root="b7ab2bc7-158f-4cf0-b505-6a91d2f7bc64"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="77291-3" displayName="FEMALES &amp; MALES OF REPRODUCTIVE POTENTIAL SECTION"/>
+                     <title>8.3
+		     
+	Females and Males of Reproductive Potential</title>
+                     <text>
+                        <paragraph>
+                           <content styleCode="underline">Contraception</content>
+                        </paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Females</content>
+                        </paragraph>
+                        <paragraph>Corlanor may cause fetal harm, based on animal data. Advise females of reproductive potential to use effective contraception during Corlanor treatment <content styleCode="italics">[</content>
+                           <content styleCode="italics">s</content>
+                           <content styleCode="italics">ee Use in </content>
+                           <content styleCode="italics">Specific</content>
+                           <content styleCode="italics"> Populations (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_8_1_Pregnancy">8.1</linkHtml>
+                           </content>
+                           <content styleCode="italics">)].</content>
+                        </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section>
+                     <id root="d5ea62c8-6df0-4499-b40a-ca2073fbdd55"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="34081-0" displayName="PEDIATRIC USE SECTION"/>
+                     <title>8.4
+		     
+	Pediatric Use</title>
+                     <text>
+                        <paragraph>Safety and effectiveness in pediatric patients have not been established.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_8_5_Geriatric_Use">
+                     <id root="e01d91f7-f0fb-43bb-94ff-ef5636ba09a5"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="34082-8" displayName="GERIATRIC USE SECTION"/>
+                     <title>8.5
+		     
+	Geriatric Use</title>
+                     <text>
+                        <paragraph>No pharmacokinetic differences have been observed in elderly (≥ 65 years) or very elderly (≥ 75 years) patients compared to the overall population.  However, Corlanor has only been studied in a limited number of patients ≥ 75 years of age.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_8_6_Hepatic_Impairment">
+                     <id root="d16d88d0-b5fa-4429-865c-62ba7b855fa8"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>8.6
+		     
+	Hepatic Impairment</title>
+                     <text>
+                        <paragraph>No dose adjustment is required in patients with mild or moderate hepatic impairment. Corlanor is contraindicated in patients with severe hepatic impairment (Child-Pugh C) as it has not been studied in this population and an increase in systemic exposure is anticipated <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Contraindications (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>
+                           </content>
+                           <content styleCode="italics">) and Clinical Pharmacology (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_3_Pharmacokinetics">12.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics">]</content>.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section>
+                     <id root="fc2e5cef-ae47-4225-a0cb-94e52047ac70"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="42229-5" displayName="SPL UNCLASSIFIED SECTION"/>
+                     <title>8.7
+		     
+	Renal Impairment </title>
+                     <text>
+                        <paragraph>No dosage adjustment is required for patients with creatinine clearance 15 to 60 mL/min. No data are available for patients with creatinine clearance below 15 mL/min <content styleCode="italics">[see Clinical Pharmacology (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_3_Pharmacokinetics">12.3</linkHtml>
+                           </content>
+                           <content styleCode="italics">)].</content>
+                        </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="d0ad8845-c9c2-4ccf-abe1-86a5b056177b"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34088-5" displayName="OVERDOSAGE SECTION"/>
+               <title>
+                  <content styleCode="bold">10.</content>
+		     
+	<content styleCode="bold">OVERDOSAGE</content>
+               </title>
+               <text>
+                  <paragraph>Overdose may lead to severe and prolonged bradycardia. In the event of bradycardia with poor hemodynamic tolerance, temporary cardiac pacing may be required. Supportive treatment, including intravenous (IV) fluids, atropine, and intravenous beta-stimulating agents such as isoproterenol, may be considered.</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="26ec4222-2a90-4f0e-8729-0c262f56b1f2"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34089-3" displayName="DESCRIPTION SECTION"/>
+               <title>
+                  <content styleCode="bold">11.</content>
+		     
+	<content styleCode="bold">DESCRIPTION</content>
+               </title>
+               <text>
+                  <paragraph>Corlanor (ivabradine) is a hyperpolarization-activated cyclic nucleotide-gated channel blocker that reduces the spontaneous pacemaker activity of the cardiac sinus node by selectively inhibiting the I<sub>f</sub>-current (<content styleCode="italics">I</content>
+                     <sub>f</sub>), resulting in heart rate reduction with no effect on ventricular repolarization and no effects on myocardial contractility.  </paragraph>
+                  <paragraph>The chemical name for ivabradine is 3-(3-{[((7<content styleCode="italics">S</content>)-3,4-Dimethoxybicyclo[4.2.0]octa-1,3,5-trien-7-yl)methyl] methyl amino} propyl)-1,3,4,5-tetrahydro-7,8-dimethoxy-2H-3-benzazepin-2-one, hydrochloride. The molecular formula is C<sub>27</sub>H<sub>36</sub>N<sub>2</sub>O<sub>5</sub>, HCl, and the molecular weight (free base + HCl) is 505.1 (468.6 + 36.5). The chemical structure of ivabradine is shown in Figure 1.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Figure</content>
+                     <content styleCode="bold"> 1</content>
+                     <content styleCode="bold">. </content>
+                     <content styleCode="bold">Chemical Structure of </content>
+                     <content styleCode="bold">Ivabradine</content>
+                  </paragraph>
+                  <paragraph>
+                     <renderMultiMedia referencedObject="MM03000001"/>
+                  </paragraph>
+                  <paragraph>Corlanor tablets are formulated as salmon-colored, film-coated tablets for oral administration in strengths of 5 mg and 7.5 mg of ivabradine as the free base equivalent.</paragraph>
+                  <paragraph>
+                     <content styleCode="underline">Inactive Ingredients</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="italics">Core</content>
+                  </paragraph>
+                  <paragraph>Lactose monohydrate, maize starch, maltodextrin, magnesium stearate, colloidal silicon dioxide</paragraph>
+                  <paragraph>
+                     <content styleCode="italics">Film</content>
+                     <content styleCode="italics"> C</content>
+                     <content styleCode="italics">oating</content>
+                  </paragraph>
+                  <paragraph>Hypromellose, titanium dioxide, glycerol, magnesium stearate, polyethylene glycol 6000, yellow iron oxide, red iron oxide</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <component>
+                  <observationMedia ID="MM03000001">
+                     <text>Figure 1. Chemical Structure of Ivabradine</text>
+                     <value xsi:type="ED" mediaType="image/jpeg">
+                        <reference value="corlanor-01.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="c71ab47c-56ae-4844-a9b8-77487220edb8"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34090-1" displayName="CLINICAL PHARMACOLOGY SECTION"/>
+               <title>
+                  <content styleCode="bold">12.</content>
+		     
+	<content styleCode="bold">CLINICAL PHARMACOLOGY</content>
+               </title>
+               <effectiveTime value="20170117"/>
+               <component>
+                  <observationMedia ID="MM03000002">
+                     <text>Figure 2. Impact of Coadministered Drugs on the Pharmacokinetics of Corlanor</text>
+                     <value xsi:type="ED" mediaType="image/jpeg">
+                        <reference value="corlanor-02.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+               <component>
+                  <section ID="_12_1_Mechanism_of">
+                     <id root="09f8c874-616d-4667-b9e3-1a38f7c7344f"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="43679-0" displayName="MECHANISM OF ACTION SECTION"/>
+                     <title>12.1
+		     
+	Mechanism of Action</title>
+                     <text>
+                        <paragraph>Corlanor blocks the hyperpolarization-activated cyclic nucleotide-gated (HCN) channel responsible for the cardiac pacemaker <content styleCode="italics">I</content>
+                           <sub>f</sub> current, which regulates heart rate. In clinical electrophysiology studies, the cardiac effects were most pronounced in the sinoatrial (SA) node, but prolongation of the AH interval has occurred on the surface ECG, as has PR interval prolongation. There was no effect on ventricular repolarization and no effects on myocardial contractility <content styleCode="italics">[see Clinical Pharmacology (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_12_2_Pharmacodynamics">12.2</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>
+                           <content styleCode="italics">.</content>
+                        </paragraph>
+                        <paragraph>Corlanor can also inhibit the retinal current <content styleCode="italics">I</content>
+                           <sub>h</sub>. <content styleCode="italics">I</content>
+                           <sub>h</sub>
+                           <sub> </sub>is involved in curtailing retinal responses to bright light stimuli. Under triggering circumstances (e.g., rapid changes in luminosity), partial inhibition of <content styleCode="italics">I</content>
+                           <sub>h</sub> by Corlanor may underlie the luminous phenomena experienced by patients. Luminous phenomena (phosphenes) are described as a transient enhanced brightness in a limited area of the visual field <content styleCode="italics">[see</content>
+                           <content styleCode="italics"> </content>
+                           <content styleCode="italics">A</content>
+                           <content styleCode="italics">dverse</content>
+                           <content styleCode="italics"> </content>
+                           <content styleCode="italics">R</content>
+                           <content styleCode="italics">eactions</content>
+                           <content styleCode="italics"> (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_6_1_Clinical_Trials">6.1</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_12_2_Pharmacodynamics">
+                     <id root="8023cc99-67a0-48c9-857f-5780cf4b24de"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="43681-6" displayName="PHARMACODYNAMICS SECTION"/>
+                     <title>12.2
+		     
+	Pharmacodynamics</title>
+                     <text>
+                        <paragraph>Corlanor causes a dose-dependent reduction in heart rate. The size of the effect is dependent on the baseline heart rate (i.e., greater heart rate reduction occurs in subjects with higher baseline heart rate). At recommended doses, heart rate reduction is approximately 10 bpm at rest and during exercise. Analysis of heart rate reduction vs. dose indicates a plateau effect at doses &gt; 20 mg twice daily. In a study of subjects with preexisting conduction system disease (first- or second-degree AV block or left or right bundle branch block) requiring electrophysiologic study, IV ivabradine (0.20 mg/kg) administration slowed the overall heart rate by approximately 15 bpm, increased the PR interval (29 msec), and increased the AH interval (27 msec).</paragraph>
+                        <paragraph>Corlanor does not have negative inotropic effects. Ivabradine increases the uncorrected QT interval with heart rate slowing but does not cause rate-corrected prolongation of QT.  </paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section ID="_12_3_Pharmacokinetics">
+                     <id root="82c7ebb0-0012-4217-9043-fcdc940732cb"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="43682-4" displayName="PHARMACOKINETICS SECTION"/>
+                     <title>12.3
+		     
+	Pharmacokinetics</title>
+                     <text>
+                        <paragraph>
+                           <content styleCode="underline">Absorption and </content>
+                           <content styleCode="underline">B</content>
+                           <content styleCode="underline">ioavailability</content>
+                        </paragraph>
+                        <paragraph>Following oral administration, peak plasma ivabradine concentrations are reached in approximately 1 hour under fasting conditions. The absolute oral bioavailability of ivabradine is approximately 40% because of first-pass elimination in the gut and liver. </paragraph>
+                        <paragraph>Food delays absorption by approximately 1 hour and increases plasma exposure by 20% to 40%.  Corlanor should be taken with meals <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Dosage and Administration </content>
+                           <content styleCode="italics">(</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_2__DOSAGE_AND">2</linkHtml>
+                           </content>
+                           <content styleCode="italics">)]</content>.</paragraph>
+                        <paragraph>Ivabradine is approximately 70% plasma protein bound, and the volume of distribution at steady state is approximately 100 L.</paragraph>
+                        <paragraph>
+                           <content styleCode="underline">Metabolism</content>
+                           <content styleCode="underline"> and Excretion</content>
+                        </paragraph>
+                        <paragraph>The pharmacokinetics of ivabradine are linear over an oral dose range of 0.5 mg to 24 mg. Ivabradine is extensively metabolized in the liver and intestines by CYP3A4-mediated oxidation. The major metabolite is the N-desmethylated derivative (S 18982), which is equipotent to ivabradine and circulates at concentrations approximately 40% that of ivabradine. The N-desmethylated derivative is also metabolized by CYP3A4. Ivabradine plasma levels decline with a distribution half-life of 2 hours and an effective half-life of approximately 6 hours.</paragraph>
+                        <paragraph>The total clearance of ivabradine is 24 L/h, and renal clearance is approximately 4.2 L/h, with ~ 4% of an oral dose excreted unchanged in urine. The excretion of metabolites occurs to a similar extent via feces and urine. </paragraph>
+                        <paragraph>
+                           <content styleCode="underline">Drug Interactions</content>
+                        </paragraph>
+                        <paragraph>The effects of coadministered drugs (CYP3A4 inhibitors, substrates, inducers, and other concomitantly administered drugs) on the pharmacokinetics of Corlanor were studied in several single- and multiple-dose studies. Pharmacokinetic measures indicating the magnitude of these interactions are presented in Figure 2.</paragraph>
+                        <paragraph>
+                           <content styleCode="bold">Figure 2</content>
+                           <content styleCode="bold">.</content>
+                           <content styleCode="bold"> Impact of Co</content>
+                           <content styleCode="bold">a</content>
+                           <content styleCode="bold">dministered Drugs on the Pharmacokinetics of </content>
+                           <content styleCode="bold">Corlanor</content>
+                        </paragraph>
+                        <paragraph>
+                           <renderMultiMedia referencedObject="MM03000002"/>
+                        </paragraph>
+                        <paragraph>Digoxin exposure did not change when concomitantly administered with ivabradine. No dose adjustment is required when ivabradine is concomitantly administered with digoxin.</paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Effect of Ivabradine on Metformin Pharmacokinetics</content>
+                        </paragraph>
+                        <paragraph>Ivabradine, dosed at 10 mg twice daily to steady state, did not affect the pharmacokinetics of metformin (an organic cation transporter [OCT2] sensitive substrate). The geometric mean (90% confidence interval [CI]) ratios of C<sub>max</sub> and AUC<sub>inf</sub> of metformin, with and without ivabradine were 0.98 [0.83–1.15] and 1.02 [0.86–1.22], respectively. No dose adjustment is required for metformin when administered with Corlanor.</paragraph>
+                        <paragraph>
+                           <content styleCode="underline">Specific </content>
+                           <content styleCode="underline">Populations</content>
+                        </paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Age </content>
+                        </paragraph>
+                        <paragraph>No pharmacokinetic differences (AUC or C<sub>max</sub>) have been observed between elderly (≥ 65 years) or very elderly (≥ 75 years) patients and the overall patient population <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Use in Specific Populations (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_8_5_Geriatric_Use">8.5</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics">]</content>
+                           <content styleCode="italics">.</content>
+                        </paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Hepatic Impairment</content>
+                        </paragraph>
+                        <paragraph>In patients with mild (Child-Pugh A) and moderate (Child-Pugh B) hepatic impairment, the pharmacokinetics of Corlanor were similar to that in patients with normal hepatic function. No data are available in patients with severe hepatic impairment (Child-Pugh C) <content styleCode="italics">[see </content>
+                           <content styleCode="italics">Contraindications</content>
+                           <content styleCode="italics"> (</content>
+                           <content styleCode="italics">
+                              <linkHtml href="#_4__CONTRAINDICATIONS">4</linkHtml>
+                           </content>
+                           <content styleCode="italics">)</content>
+                           <content styleCode="italics">]</content>.</paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Renal Impairment </content>
+                        </paragraph>
+                        <paragraph>Renal impairment (creatinine clearance from 15 to 60 mL/min) has minimal effect on the pharmacokinetics of Corlanor. No data are available for patients with creatinine clearance below 15 mL/min.</paragraph>
+                        <paragraph>
+                           <content styleCode="italics">Pediatrics</content>
+                        </paragraph>
+                        <paragraph>The pharmacokinetics of Corlanor have not been investigated in patients &lt; 18 years of age.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="6885c8f7-00f9-44e1-92f3-b3034985cb75"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="43680-8" displayName="NONCLINICAL TOXICOLOGY SECTION"/>
+               <title>
+                  <content styleCode="bold">13.</content>
+		     
+	<content styleCode="bold">NONCLINICAL TOXICOLOGY</content>
+               </title>
+               <effectiveTime value="20170117"/>
+               <component>
+                  <section>
+                     <id root="32cbb35d-db53-4c70-acc6-5a0c155f7070"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="34083-6" displayName="CARCINOGENESIS &amp; MUTAGENESIS &amp; IMPAIRMENT OF FERTILITY SECTION"/>
+                     <title>13.1
+		     
+	Carcinogenesis, Mutagenesis, Impairment of Fertility</title>
+                     <text>
+                        <paragraph>There was no evidence of carcinogenicity when mice and rats received ivabradine up to 104 weeks by dietary administration. High doses in these studies were associated with mean ivabradine exposures of at least 37 times higher than the human exposure (AUC<sub>0-24hr</sub>) at the MRHD.</paragraph>
+                        <paragraph>Ivabradine tested negative in the following assays: bacterial reverse mutation (Ames) assay, <content styleCode="italics">in vivo</content> bone marrow micronucleus assay in both mouse and rat, <content styleCode="italics">in vivo</content> chromosomal aberration assay in rats, and <content styleCode="italics">in vivo</content> unscheduled DNA synthesis assay in rats. Results of the <content styleCode="italics">in vitro</content> chromosomal aberration assay were equivocal at concentrations approximately 1,500 times the human C<sub>max</sub> at the MRHD. Ivabradine tested positive in the mouse lymphoma assays and <content styleCode="italics">in vitro</content> unscheduled DNA synthesis assay in rat hepatocytes at concentrations greater than 1,500 times the human C<sub>max</sub> at the MRHD.</paragraph>
+                        <paragraph>Reproduction toxicity studies in animals demonstrated that ivabradine did not affect fertility in male or female rats at exposures 46 to 133 times the human exposure (AUC<sub>0-24hr</sub>) at the MRHD.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+               <component>
+                  <section>
+                     <id root="400030b2-76cc-4a83-9fe9-2469b2ade4a2"/>
+                     <code codeSystem="2.16.840.1.113883.6.1" code="34091-9" displayName="ANIMAL PHARMACOLOGY &amp; OR TOXICOLOGY SECTION"/>
+                     <title>13.2
+		     
+	Animal Toxicology and/or Pharmacology</title>
+                     <text>
+                        <paragraph>Reversible changes in retinal function were observed in dogs administered oral ivabradine at total doses of 2, 7, or 24 mg/kg/day (approximately 0.6 to 50 times the human exposure at the MRHD based on AUC<sub>0-</sub>
+                           <sub>24</sub>
+                           <sub>hr</sub>) for 52 weeks. Retinal function assessed by electroretinography demonstrated reductions in cone system responses, which reversed within a week post-dosing, and were not associated with damage to ocular structures as evaluated by light microscopy. These data are consistent with the pharmacological effect of ivabradine related to its interaction with hyperpolarization-activated <content styleCode="italics">I</content>
+                           <sub>h</sub> currents in the retina, which share homology with the cardiac pacemaker <content styleCode="italics">I</content>
+                           <sub>f</sub> current.</paragraph>
+                     </text>
+                     <effectiveTime value="20170117"/>
+                  </section>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section ID="_14__CLINICAL_STUDIES">
+               <id root="c8943918-0d20-4433-88f8-561abdd29169"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34092-7" displayName="CLINICAL STUDIES SECTION"/>
+               <title>
+                  <content styleCode="bold">14.</content>
+		     
+	<content styleCode="bold">CLINICAL STUDIES</content>
+               </title>
+               <text>
+                  <paragraph>
+                     <content styleCode="underline">SHIFT</content>
+                  </paragraph>
+                  <paragraph>The <content styleCode="underline">S</content>ystolic <content styleCode="underline">H</content>eart failure treatment with the <content styleCode="italics underline">I</content>
+                     <sub>f</sub> inhibitor ivabradine <content styleCode="underline">T</content>rial (SHIFT) was a randomized, double-blind trial comparing Corlanor and placebo in 6558 adult patients with stable NYHA class II to IV heart failure, left ventricular ejection fraction ≤ 35%, and resting heart rate ≥ 70 bpm. Patients had to have been clinically stable for at least 4 weeks on an optimized and stable clinical regimen, which included maximally tolerated doses of beta-blockers and, in most cases, ACE inhibitors or ARBs, spironolactone, and diuretics, with fluid retention and symptoms of congestion minimized.  Patients had to have been hospitalized for heart failure within 12 months prior to study entry.</paragraph>
+                  <paragraph>The underlying cause of CHF was coronary artery disease in 68% of patients. At baseline, approximately 49% of randomized subjects were NYHA class II, 50% were NYHA class III, and 2% were NYHA class IV. The mean left ventricular ejection fraction was 29%. All subjects were initiated on Corlanor 5 mg (or matching placebo) twice daily and the dose was increased to 7.5 mg twice daily or decreased to 2.5 mg twice daily to maintain the resting heart rate between 50 and 60 bpm, as tolerated. The primary endpoint was a composite of the first occurrence of either hospitalization for worsening heart failure or cardiovascular death.</paragraph>
+                  <paragraph>Most patients (89%) were taking beta-blockers, with 26% on guideline-defined target daily doses. The main reasons for not receiving the target beta-blocker doses at baseline were hypotension (45% of patients not at target), fatigue (32%), dyspnea (14%), dizziness (12%), history of cardiac decompensation (9%), and bradycardia (6%). For the 11% of patients not receiving any beta-blocker at baseline, the main reasons were chronic obstructive pulmonary disease, hypotension, and asthma. Most patients were also taking ACE inhibitors and/or angiotensin II antagonists (91%), diuretics (83%), and anti-aldosterone agents (60%). Few patients had an implantable cardioverter-defibrillator (ICD) (3.2%) or a cardiac resynchronization therapy (CRT) device (1.1%). Median follow-up was 22.9 months. At 1 month, 63%, 26%, and 8% of Corlanor-treated patients were taking 7.5, 5, and 2.5 mg BID, whereas 3% had withdrawn from the drug, primarily for bradycardia.</paragraph>
+                  <paragraph>SHIFT demonstrated that Corlanor reduced the risk of the combined endpoint of hospitalization for worsening heart failure or cardiovascular death based on a time-to-event analysis (hazard ratio: 0.82, 95% confidence interval [CI]: 0.75, 0.90, p &lt; 0.0001) (Table 3). The treatment effect reflected only a reduction in the risk of hospitalization for worsening heart failure; there was no favorable effect on the mortality component of the primary endpoint. In the overall treatment population, Corlanor had no statistically significant benefit on cardiovascular death.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Table </content>
+                     <content styleCode="bold">3</content>
+                     <content styleCode="bold">. </content>
+                     <content styleCode="bold">SHIFT – </content>
+                     <content styleCode="bold">Incidence of the Primary Composite Endpoint and Components</content>
+                     <content styleCode="bold"> </content>
+                  </paragraph>
+                  <table>
+                     <col width="729"/>
+                     <col width="44"/>
+                     <col width="47"/>
+                     <col width="62"/>
+                     <col width="53"/>
+                     <col width="54"/>
+                     <col width="55"/>
+                     <col width="87"/>
+                     <col width="122"/>
+                     <col width="88"/>
+                     <tbody>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule "/>
+                           <td styleCode="Toprule Lrule Rrule " colspan="3" valign="bottom" align="center">
+                              <content styleCode="bold">Corlanor</content>
+                              <content styleCode="bold">
+                                 <br/>(N = 3241)</content>
+                           </td>
+                           <td styleCode="Toprule Lrule Rrule " colspan="3" valign="bottom" align="center">
+                              <content styleCode="bold">Placebo</content>
+                              <content styleCode="bold">
+                                 <br/>(N = 3264)</content>
+                           </td>
+                           <td styleCode="Toprule Lrule Rrule " colspan="3"/>
+                        </tr>
+                        <tr>
+                           <td styleCode="Lrule Rrule ">
+                              <content styleCode="bold">Endpoint</content>
+                           </td>
+                           <td styleCode="Lrule " valign="bottom" align="center">
+                              <content styleCode="bold">n</content>
+                           </td>
+                           <td valign="bottom" align="center">
+                              <content styleCode="bold">%</content>
+                           </td>
+                           <td styleCode="Rrule " valign="bottom" align="center">
+                              <content styleCode="bold">% PY</content>
+                           </td>
+                           <td styleCode="Lrule " valign="bottom" align="center">
+                              <content styleCode="bold">n</content>
+                           </td>
+                           <td valign="bottom" align="center">
+                              <content styleCode="bold">%</content>
+                           </td>
+                           <td styleCode="Rrule " valign="bottom" align="center">
+                              <content styleCode="bold">% PY</content>
+                           </td>
+                           <td styleCode="Lrule " valign="bottom" align="center">
+                              <content styleCode="bold">Hazard </content>
+                              <content styleCode="bold">
+                                 <br/>Ratio</content>
+                           </td>
+                           <td valign="bottom" align="center">
+                              <content styleCode="bold">[95% CI]</content>
+                           </td>
+                           <td styleCode="Rrule " valign="bottom" align="center">
+                              <content styleCode="bold">p-value</content>
+                           </td>
+                        </tr>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule ">Primary composite endpoint: Time to first hospitalization for worsening heart failure or cardiovascular death<sup>a</sup>
+                           </td>
+                           <td styleCode="Toprule Lrule " align="center">793</td>
+                           <td styleCode="Toprule " align="center">24.5</td>
+                           <td styleCode="Toprule Rrule " align="center">14.5</td>
+                           <td styleCode="Toprule Lrule " align="center">937</td>
+                           <td styleCode="Toprule " align="center">28.7</td>
+                           <td styleCode="Toprule Rrule " align="center">17.7</td>
+                           <td styleCode="Toprule Lrule " align="center">0.82</td>
+                           <td styleCode="Toprule " align="center">[0.75 , 0.90]</td>
+                           <td styleCode="Toprule Rrule " align="center">&lt; 0.0001</td>
+                        </tr>
+                        <tr>
+                           <td styleCode="Lrule Rrule ">      Hospitalization for worsening heart failure</td>
+                           <td styleCode="Lrule " align="center">505</td>
+                           <td align="center">15.6</td>
+                           <td styleCode="Rrule " align="center">9.2</td>
+                           <td styleCode="Lrule " align="center">660</td>
+                           <td align="center">20.2</td>
+                           <td styleCode="Rrule " align="center">12.5</td>
+                           <td styleCode="Lrule "/>
+                           <td/>
+                           <td styleCode="Rrule "/>
+                        </tr>
+                        <tr>
+                           <td styleCode="Lrule Rrule ">      Cardiovascular death as first event</td>
+                           <td styleCode="Lrule " align="center">288</td>
+                           <td align="center">8.9</td>
+                           <td styleCode="Rrule " align="center">4.8</td>
+                           <td styleCode="Lrule " align="center">277</td>
+                           <td align="center">8.5</td>
+                           <td styleCode="Rrule " align="center">4.7</td>
+                           <td styleCode="Lrule "/>
+                           <td/>
+                           <td styleCode="Rrule "/>
+                        </tr>
+                        <tr>
+                           <td styleCode="Toprule Lrule Rrule ">Subjects with events at any time</td>
+                           <td styleCode="Toprule Lrule "/>
+                           <td styleCode="Toprule "/>
+                           <td styleCode="Toprule Rrule "/>
+                           <td styleCode="Toprule Lrule "/>
+                           <td styleCode="Toprule "/>
+                           <td styleCode="Toprule Rrule "/>
+                           <td styleCode="Toprule Lrule "/>
+                           <td styleCode="Toprule "/>
+                           <td styleCode="Toprule Rrule "/>
+                        </tr>
+                        <tr>
+                           <td styleCode="Lrule Rrule ">      Hospitalization for worsening heart failure<sup>b</sup>
+                           </td>
+                           <td styleCode="Lrule " align="center">514</td>
+                           <td align="center">15.9</td>
+                           <td styleCode="Rrule " align="center">9.4</td>
+                           <td styleCode="Lrule " align="center">672</td>
+                           <td align="center">20.6</td>
+                           <td styleCode="Rrule " align="center">12.7</td>
+                           <td styleCode="Lrule " align="center">0.74 </td>
+                           <td align="center">[0.66 , 0.83]</td>
+                           <td styleCode="Rrule "/>
+                        </tr>
+                        <tr>
+                           <td styleCode="Lrule Rrule ">      Cardiovascular death<sup>b</sup>
+                           </td>
+                           <td styleCode="Lrule " align="center">449</td>
+                           <td align="center">13.9</td>
+                           <td styleCode="Rrule " align="center">7.5</td>
+                           <td styleCode="Lrule " align="center">491</td>
+                           <td align="center">15.0</td>
+                           <td styleCode="Rrule " align="center">8.3</td>
+                           <td styleCode="Lrule " align="center">0.91</td>
+                           <td align="center">[0.80 , 1.03]</td>
+                           <td styleCode="Rrule "/>
+                        </tr>
+                        <tr>
+                           <td styleCode="Toprule " colspan="10">
+                              <sup>a </sup>Subjects who died on the same calendar day as their first hospitalization for worsening heart failure are counted under cardiovascular death.<br/>   <br/>
+                              <sup>b</sup> Analyses of the components of the primary composite endpoint were not prospectively planned to be adjusted for multiplicity.<br/>   <br/>N: number of patients at risk; n: number of patients having experienced the endpoint; %: incidence rate = (n/N) x 100; % PY: annual incidence rate = (n/number of patient-years) x 100;  CI: confidence interval<br/>The hazard ratio between treatment groups (ivabradine/placebo) was estimated based on an adjusted Cox proportional hazards model with beta-blocker intake at randomization (yes/no) as a covariate; p-value: Wald test</td>
+                        </tr>
+                     </tbody>
+                  </table>
+                  <paragraph>The Kaplan-Meier curve (Figure 3) shows time to first occurrence of the primary composite endpoint of hospitalization for worsening heart failure or cardiovascular death in the overall study.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Figure 3. SHIFT: Time to First Event of Primary Composite Endpoint </content>
+                  </paragraph>
+                  <paragraph>
+                     <renderMultiMedia referencedObject="MM02000003"/>
+                  </paragraph>
+                  <paragraph>A wide range of demographic characteristics, baseline disease characteristics, and baseline concomitant medications were examined for their influence on outcomes. Many of these results are shown in Figure 4.  Such analyses must be interpreted cautiously, as differences can reflect the play of chance among a large number of analyses. </paragraph>
+                  <paragraph>Most of the results show effects consistent with the overall study result. Corlanor’s benefit on the primary endpoint in SHIFT appeared to decrease as the dose of beta-blockers increased, with little if any benefit demonstrated in patients taking guideline-defined target doses of beta-blockers.  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Figu</content>
+                     <content styleCode="bold">re</content>
+                     <content styleCode="bold"> </content>
+                     <content styleCode="bold">4</content>
+                     <content styleCode="bold">.</content>
+                     <content styleCode="bold"> Effect of </content>
+                     <content styleCode="bold">T</content>
+                     <content styleCode="bold">reatment on </content>
+                     <content styleCode="bold">Primary Composite E</content>
+                     <content styleCode="bold">ndpoint in </content>
+                     <content styleCode="bold">S</content>
+                     <content styleCode="bold">ubgroups</content>
+                  </paragraph>
+                  <paragraph>
+                     <renderMultiMedia referencedObject="MM03000004"/>
+                  </paragraph>
+                  <paragraph>Note: The figure above presents effects in various subgroups, all of which are baseline characteristics. The 95% confidence limits that are shown do not take into account the number of comparisons made, and may not reflect the effect of a particular factor after adjustment for all other factors. Apparent homogeneity or heterogeneity among groups should not be over-interpreted.</paragraph>
+                  <paragraph>
+                     <content styleCode="underline">BEAUTIFUL and SIGNIFY: No </content>
+                     <content styleCode="underline">benefit in stable coronary artery disease</content>
+                     <content styleCode="underline"> </content>
+                     <content styleCode="underline">with or </content>
+                     <content styleCode="underline">without </content>
+                     <content styleCode="underline">stable </content>
+                     <content styleCode="underline">heart failure</content>
+                  </paragraph>
+                  <paragraph>BEAUTIFUL was a randomized, double-blind, placebo-controlled trial in 10,917 adult patients with coronary artery disease, impaired left ventricular systolic function (ejection fraction &lt; 40%) and resting heart rate ≥ 60 bpm. Patients had stable symptoms of heart failure and/or angina for at least 3 months, and were receiving conventional cardiovascular medications at stable doses for at least 1 month. Beta-blocker therapy was not required, nor was there a protocol mandate to achieve any specific dosing targets for patients who were taking beta-blockers. Patients were randomized 1:1 to Corlanor or placebo at an initial dose of 5 mg twice daily with the dose increased to 7.5 mg twice daily depending on resting heart rate and tolerability. The primary endpoint was the composite of time to first cardiovascular death, hospitalization for acute myocardial infarction, or hospitalization for new-onset or worsening heart failure. Most patients were NYHA class II (61.4%) or class III (23.2%) - none were class IV.  Through a median follow-up of 19 months, Corlanor did not significantly affect the primary composite endpoint (HR 1.00, 95% CI = 0.91, 1.10).</paragraph>
+                  <paragraph>SIGNIFY was a randomized, double-blind trial administering Corlanor or placebo to 19,102 adult patients with stable coronary artery disease but without clinically evident heart failure (NYHA class I). Beta-blocker therapy was not required. Corlanor was initiated at a dose of 7.5 mg twice daily and the dose could be increased to as high as 10 mg twice daily or down-titrated to 5.0 mg twice daily to achieve a target heart rate of 55 to 60 bpm. The primary endpoint was a composite of the first occurrence of either cardiovascular death or myocardial infarction. Through a median follow-up of 24.1 months, Corlanor did not significantly affect the primary composite endpoint (HR 1.08, 95% CI = 0.96, 1.20).</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <component>
+                  <observationMedia ID="MM02000003">
+                     <text>Figure 3. SHIFT: Time to First Event of Primary Composite Endpoint </text>
+                     <value xsi:type="ED" mediaType="image/jpeg">
+                        <reference value="corlanor-03.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+               <component>
+                  <observationMedia ID="MM03000004">
+                     <text>Figure 4. Effect of Treatment on Primary Composite Endpoint in Subgroups</text>
+                     <value xsi:type="ED" mediaType="image/jpeg">
+                        <reference value="corlanor-04.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="a0151a8b-48e0-438f-a603-1a28e59d09bd"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34069-5" displayName="HOW SUPPLIED SECTION"/>
+               <title>
+                  <content styleCode="bold">16.</content>
+		     
+	<content styleCode="bold">HOW SUPPLIED/STORAGE AND HANDLING</content>
+               </title>
+               <text>
+                  <paragraph>Corlanor 5 mg tablets are formulated as salmon-colored, oval-shaped, film-coated tablets scored on both edges, marked with “5” on one face and bisected on the other face.  They are supplied as follows:</paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Bottles of 60 tablets (NDC 55513-800-60)<br/>
+                     </item>
+                     <item>Bottles of 180 tablets  (NDC 55513-800-80)</item>
+                  </list>
+                  <paragraph>Corlanor 7.5 mg tablets are formulated as salmon-colored, triangular-shaped, film-coated tablets debossed with “7.5” on one face and plain on the other face.  They are supplied as follows:</paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Bottles of 60 tablets (NDC 55513-810-60)<br/>
+                     </item>
+                     <item>Bottles of 180 tablets (NDC 55513-810-80)</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="underline">Storage</content>
+                  </paragraph>
+                  <paragraph>Store at 25ºC (77ºF); excursions permitted to 15º - 30ºC (59º - 86ºF) [see USP Controlled Room Temperature].</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="1328f3a0-9a1b-473d-b0fc-7c79fa1e387d"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="34076-0" displayName="INFORMATION FOR PATIENTS SECTION"/>
+               <title>
+                  <content styleCode="bold">17.</content>
+		     
+	<content styleCode="bold">PATIENT COUNSELING INFORMATION</content>
+               </title>
+               <text>
+                  <paragraph>Advise the patient to read the FDA-approved patient labeling (<linkHtml href="#MEDICATIONGUIDE">Medication Guide</linkHtml>). </paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>
+                        <content styleCode="underline">Fetal Toxicity</content>
+                        <br/>Advise pregnant women of the potential risks to a fetus.<br/>Advise females of reproductive potential to use effective contraception and to notify their healthcare provider with a known or suspected pregnancy <content styleCode="italics">[see Warnings and Precautions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_1_Fetal_Toxicity">5.1</linkHtml>
+                        </content>
+                        <content styleCode="italics">) and Use in Specific Populations (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_8_1_Pregnancy">8.1</linkHtml>
+                        </content>
+                        <content styleCode="italics">, </content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_8_3_Females_and">8.3</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>. <br/>
+                     </item>
+                     <item>
+                        <content styleCode="underline">Low Heart Rate</content>
+                        <br/>Advise patients to report significant decreases in heart rate or symptoms such as dizziness, fatigue, or hypotension <content styleCode="italics">[see </content>
+                        <content styleCode="italics">Warnings and Precautions </content>
+                        <content styleCode="italics">(</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_3_Bradycardia_and">5.3</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <content styleCode="italics">.</content>
+                        <br/>
+                     </item>
+                     <item>
+                        <content styleCode="underline">Atrial fibrillation </content>
+                        <br/>Advise patients to report symptoms of atrial fibrillation, such as heart palpitations or racing, chest pressure, or worsened shortness of breath <content styleCode="italics">[see Warnings and Precautions (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_5_2_Atrial_Fibrillation">5.2</linkHtml>
+                        </content>
+                        <content styleCode="italics">)].</content>
+                        <br/>
+                     </item>
+                     <item>
+                        <content styleCode="underline">Phosphenes</content>
+                        <br/>Advise patients about the possible occurrence of luminous phenomena (phosphenes).  Advise patients to use caution if they are driving or using machines in situations where sudden changes in light intensity may occur, especially when driving at night.  Advise patients that phosphenes may subside spontaneously during continued treatment with Corlanor <content styleCode="italics">[</content>
+                        <content styleCode="italics">see </content>
+                        <content styleCode="italics">Adverse Reactions</content>
+                        <content styleCode="italics"> (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_6_1_Clinical_Trials">6.1</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>.<br/>
+                     </item>
+                     <item>
+                        <content styleCode="underline">Drug Interactions</content>
+                        <br/>Advise patients to avoid ingestion of grapefruit juice and St. John’s wort <content styleCode="italics">[</content>
+                        <content styleCode="italics">see </content>
+                        <content styleCode="italics">Drug </content>
+                        <content styleCode="italics">I</content>
+                        <content styleCode="italics">nteractions</content>
+                        <content styleCode="italics"> (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_7_1_Cytochrome_P450_Based">7.1</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>
+                        <content styleCode="italics">.</content>
+                        <br/>
+                     </item>
+                     <item>
+                        <content styleCode="underline">Intake with Food</content>
+                        <br/>Advise patients to take Corlanor twice daily with meals <content styleCode="italics">[</content>
+                        <content styleCode="italics">see </content>
+                        <content styleCode="italics">Dosage and Administration</content>
+                        <content styleCode="italics"> (</content>
+                        <content styleCode="italics">
+                           <linkHtml href="#_2__DOSAGE_AND">2</linkHtml>
+                        </content>
+                        <content styleCode="italics">)]</content>.</item>
+                  </list>
+                  <paragraph>Corlanor<sup>®</sup> (ivabradine)<br/>
+                     <content styleCode="bold">Manufactured </content>
+                     <content styleCode="bold">for</content>
+                     <content styleCode="bold">:</content>
+                     <br/>Amgen Inc.<br/>One Amgen Center Drive<br/>Thousand Oaks, California 91320-1799</paragraph>
+                  <paragraph>Patent: <content styleCode="underline">http://pat.amgen.com/Corlanor/</content>
+                  </paragraph>
+                  <paragraph>© 2017 Amgen Inc.  All rights reserved.<br/>v2</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+            </section>
+         </component>
+         <component>
+            <section ID="MEDICATIONGUIDE">
+               <id root="83d0d16e-01aa-4233-9a4f-fa3c34c446c9"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="42231-1" displayName="SPL MEDGUIDE SECTION"/>
+               <title/>
+               <text>
+                  <paragraph>
+                     <content styleCode="bold">MEDICATION GUIDE</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Corlanor</content>
+                     <content styleCode="bold">
+                        <sup>®</sup>
+                     </content>
+                     <content styleCode="bold"> (core' lan ore)</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">(ivabradine)</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Tablets</content>
+                  </paragraph>
+                  <paragraph>Read this Medication Guide before you start taking Corlanor and each time you get a refill. There may be new information. This information does not take the place of talking with your doctor about your medical condition or your treatment.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">What is the most important information I should know about Corlanor?</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Corlanor may cause serious side effects, including:</content>
+                  </paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>
+                        <content styleCode="bold">Harm to your unborn baby. </content>You should not become pregnant while taking Corlanor. Women who are able to get pregnant must use birth control when taking Corlanor. If you become pregnant while taking Corlanor, tell your doctor right away.<br/>
+                     </item>
+                     <item>
+                        <content styleCode="bold">Increased risk of irregular or rapid heartbeat (atrial fibrillation or heart rhythm problems).</content>
+                        <content styleCode="bold"> </content>
+                        <content styleCode="bold"> </content>Tell your doctor if you have symptoms of an irregular or rapid heartbeat, such as feeling that your heart is pounding or racing (palpitations), chest pressure, worsened shortness of breath, near fainting or fainting.<br/>
+                     </item>
+                     <item>
+                        <content styleCode="bold">Low heart rate (bradycardia). </content>Tell your doctor if you have a slowing of your heart rate or if you have symptoms of a low heart rate such as dizziness, fatigue, lack of energy, or have low blood pressure. Low heart rate is a common side effect of Corlanor and can be serious.</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="bold">What is Corlanor?</content>
+                  </paragraph>
+                  <paragraph>Corlanor is a prescription medicine that is used to reduce the risk of hospitalization for worsening heart failure in people who have chronic heart failure.</paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>It is not known if Corlanor is safe and effective in children.</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="bold">Who should not take Corlanor?</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Do not take Corlanor if:</content>
+                  </paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>You have symptoms of heart failure that recently worsened.<br/>
+                     </item>
+                     <item>You have low blood pressure (less than 90/50 mmHg).<br/>
+                     </item>
+                     <item>You have a certain heart condition called sick sinus syndrome, sinoatrial block, or 3rd degree atrioventricular block. <br/>
+                     </item>
+                     <item>You have a slow resting heart rate (less than 60 beats per minute) before treatment with Corlanor.<br/>
+                     </item>
+                     <item>You are taking medicines that can change how much Corlanor gets into your body after it is swallowed.  Your doctor can advise you if you are taking a medicine that should not be used with Corlanor.</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="bold">What should I tell my doctor before taking Corlanor?</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Before you take Corlanor, tell your doctor about all of your medical conditions, including if you:</content>
+                  </paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Have any other heart problems, including heart rhythm problems, a slow heart rate, or a heart conduction problem.<br/>
+                     </item>
+                     <item>Are breastfeeding or plan to breastfeed. It is not known if Corlanor passes into your breast milk. You and your doctor should decide if you will take Corlanor or breastfeed. You should not do both.</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="bold">Tell your doctor about all the medicines you take,</content> including prescription and over-the-counter medicines, vitamins, and herbal supplements. Corlanor may affect the way other medicines work, and other medicines may affect how Corlanor works, and could cause serious side effects.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">How should I take Corlanor?</content>
+                  </paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Take Corlanor exactly as your doctor tells you to take it.<br/>
+                     </item>
+                     <item>Your doctor may change your dose of Corlanor during treatment. <br/>
+                     </item>
+                     <item>If you take too much Corlanor, call your doctor or go to the nearest emergency room right away.<br/>
+                     </item>
+                     <item>If you forget to take a dose of Corlanor, take the next dose at the usual time. Do not take a double dose to make up for the forgotten dose.</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="bold">What should I avoid while taking Corlanor?</content>
+                  </paragraph>
+                  <paragraph>Avoid drinking grapefruit juice and taking St. John’s wort during treatment with Corlanor.  These can affect the way Corlanor works and may cause serious side effects.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">What are the possible side effects of Corlanor?</content>
+                  </paragraph>
+                  <paragraph>See<content styleCode="bold"> “What is the most important information I should know about Corlanor?”</content>
+                  </paragraph>
+                  <paragraph>The most common side effects of Corlanor are:</paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Increased blood pressure.<br/>
+                     </item>
+                     <item>Temporary brightness in your field of vision, usually caused by sudden changes in light (luminous phenomena). This brightness usually happens within the first 2 months of treatment with Corlanor and usually goes away during or after treatment with Corlanor. Use caution when driving or operating machinery where sudden changes in light can happen, especially when driving at night.</item>
+                  </list>
+                  <paragraph>These are not all the side effects of Corlanor. Ask your doctor or pharmacist for more information.</paragraph>
+                  <paragraph>Call your doctor for medical advice about side effects. You may report side effects to FDA at 1-800-FDA-1088.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">How should I store Corlanor?</content>
+                  </paragraph>
+                  <list listType="unordered" styleCode="Disc">
+                     <item>Store Corlanor at room temperature between 68°F to 77°F (20°C to 25°C).<br/>
+                     </item>
+                     <item>Safely throw away medicine that is out of date or no longer needed.</item>
+                  </list>
+                  <paragraph>
+                     <content styleCode="bold">Keep Corlanor and all medicines out of the reach of children.</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">General information about the safe and effective use of Corlanor</content>
+                  </paragraph>
+                  <paragraph>Medicines are sometimes prescribed for purposes other than those listed in a Medication Guide. Do not use Corlanor for a condition for which it was not prescribed. Do not give Corlanor to other people, even if they have the same symptoms that you have. It may harm them. You can ask your doctor or pharmacist for information about Corlanor that is written for health professionals.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">What are the ingredients in Corlanor?</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Active ingredient:</content> ivabradine</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Inactive ingredients: </content>
+                  </paragraph>
+                  <paragraph>Core:<content styleCode="bold"> </content>Lactose monohydrate, maize starch, maltodextrin, magnesium stearate, colloidal silicon dioxide</paragraph>
+                  <paragraph>Film Coating: Hypromellose, titanium dioxide, glycerol, magnesium stearate, polyethylene glycol 6000, yellow iron oxide, red iron oxide</paragraph>
+                  <paragraph>Corlanor<sup>®</sup> (ivabradine)<br/>
+                     <content styleCode="bold">Manufactured for:</content>
+                     <br/>Amgen Inc.<br/>One Amgen Center Drive
+		     
+	<br/>Thousand Oaks, California 91320-1799</paragraph>
+                  <paragraph>Patent: http://pat.amgen.com/Corlanor/</paragraph>
+                  <paragraph>For more information, go to www.Corlanor.com or call 1-800-772-6436.<br/>Medication Guide has been approved by the U.S. Food and Drug Administration.<br/>Issued: 01/2017</paragraph>
+                  <paragraph>© 2017 Amgen Inc. All rights reserved.</paragraph>
+                  <paragraph>v2</paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="5a5db716-a578-4687-a33d-433a87486968"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="51945-4" displayName="PACKAGE LABEL.PRINCIPAL DISPLAY PANEL"/>
+               <title/>
+               <text>
+                  <paragraph>NDC 55513-800-80</paragraph>
+                  <paragraph>AMGEN<sup>®</sup>
+                  </paragraph>
+                  <paragraph>Corlanor<sup> ®</sup>
+                  </paragraph>
+                  <paragraph>(ivabradine) tablets</paragraph>
+                  <paragraph>5 mg</paragraph>
+                  <paragraph>Each tablet contains 5 mg ivabradine equivalent to 5.39 mg ivabradine as hydrochloride.</paragraph>
+                  <paragraph>Oral Use.</paragraph>
+                  <paragraph>Store at 25°C, excursions permitted to 15°C - 30°C.</paragraph>
+                  <paragraph>Keep out of the sight and reach of children.</paragraph>
+                  <paragraph>Rx Only</paragraph>
+                  <paragraph>180 Film-coated tablets</paragraph>
+                  <paragraph>Usual Dose: See package insert for dosage</paragraph>
+                  <paragraph>© 2015 Amgen Inc. All rights reserved.</paragraph>
+                  <paragraph>Patent: http://pat.amgen.com/corlanor/</paragraph>
+                  <paragraph>Manufactured for Amgen Inc.</paragraph>
+                  <paragraph>One Amgen Center Drive</paragraph>
+                  <paragraph>Thousand Oaks, CA 91320-1799</paragraph>
+                  <paragraph>Made in France</paragraph>
+                  <paragraph>
+                     <renderMultiMedia referencedObject="MM02000005"/>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <component>
+                  <observationMedia ID="MM02000005">
+                     <text>NDC 55513-800-80
+AMGEN®
+Corlanor ®
+(ivabradine) tablets
+5 mg
+Each tablet contains 5 mg ivabradine equivalent to 5.39 mg ivabradine as hydrochloride.
+Oral Use.
+Store at 25°C, excursions permitted to 15°C - 30°C.
+Keep out of the sight and reach of children.
+Rx Only
+180 Film-coated tablets
+Usual Dose: See package insert for dosage
+© 2015 Amgen Inc. All rights reserved.
+Pattent: http://pat.amgen.com/corlanor/
+Manufactured for Amgen Inc.
+One Amgen Center Drive
+Thousand Oaks, CA 91320-1799
+Made in France
+</text>
+                     <value xsi:type="ED" mediaType="image/jpeg">
+                        <reference value="corlanor-05.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section>
+               <id root="17caf41a-68d1-425c-8291-42ba79e2e32f"/>
+               <code codeSystem="2.16.840.1.113883.6.1" code="51945-4" displayName="PACKAGE LABEL.PRINCIPAL DISPLAY PANEL"/>
+               <title/>
+               <text>
+                  <paragraph>NDC 55513-810-80</paragraph>
+                  <paragraph>AMGEN<sup>®</sup>
+                  </paragraph>
+                  <paragraph>Corlanor<sup> </sup>
+                     <sup>®</sup>
+                  </paragraph>
+                  <paragraph>(ivabradine) tablets</paragraph>
+                  <paragraph>7.5 mg</paragraph>
+                  <paragraph>Each tablet contains 7.5 mg ivabradine equivalent to 8.085 mg ivabradine as hydrochloride.</paragraph>
+                  <paragraph>Oral Use.</paragraph>
+                  <paragraph>Store at 25°C, excursions permitted to 15°C - 30°C.</paragraph>
+                  <paragraph>Keep out of the sight and reach of children.</paragraph>
+                  <paragraph>Rx Only</paragraph>
+                  <paragraph>180 Film-coated tablets</paragraph>
+                  <paragraph>Usual Dose: See package insert for dosage</paragraph>
+                  <paragraph>© 2015 Amgen Inc. All rights reserved.</paragraph>
+                  <paragraph>Patent: http://pat.amgen.com/corlanor/</paragraph>
+                  <paragraph>Manufactured for Amgen Inc.</paragraph>
+                  <paragraph>One Amgen Center Drive</paragraph>
+                  <paragraph>Thousand Oaks, CA 91320-1799</paragraph>
+                  <paragraph>Made in France</paragraph>
+                  <paragraph>
+                     <renderMultiMedia referencedObject="MM02000006"/>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20170117"/>
+               <component>
+                  <observationMedia ID="MM02000006">
+                     <text>NDC 55513-810-80
+AMGEN®
+Corlanor ®
+(ivabradine) tablets
+7.5 mg
+Each tablet contains 7.5 mg ivabradine equivalent to 8.085 mg ivabradine as hydrochloride.
+Oral Use.
+Store at 25°C, excursions permitted to 15°C - 30°C.
+Keep out of the sight and reach of children.
+Rx Only
+180 Film-coated tablets
+Usual Dose: See package insert for dosage
+© 2015 Amgen Inc. All rights reserved.
+Pattent: http://pat.amgen.com/corlanor/
+Manufactured for Amgen Inc.
+One Amgen Center Drive
+Thousand Oaks, CA 91320-1799
+Made in France
+</text>
+                     <value xsi:type="ED" mediaType="image/jpeg">
+                        <reference value="corlanor-06.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+      </structuredBody>
+   </component>
+</document>
