@@ -1,22 +1,22 @@
 # PHAROS — individual case reports, on a reviewer's click. Fired by the case-intake Edge Function
 # (repository_dispatch 'case-read' when a case is opened or read again, 'case-e2b' when its E2B(R3) file is asked
-# for) with only {case_id}; everything else is read from the database by collectors/cases, so nothing from the
-# request is ever placed in a shell command. If this never fires, the "Cases" step of the next 4-hourly
+# for, 'case-code' when its codes are asked for again) with only {case_id}; everything else is read from the
+# database by collectors/cases, so nothing from the request is ever placed in a shell command. If this never fires, the "Cases" step of the next 4-hourly
 # collection does the same work.
 name: PHAROS case
 
 on:
   repository_dispatch:
-    types: [case-read, case-e2b]
+    types: [case-read, case-e2b, case-code]
   workflow_dispatch:
     inputs:
       case_id:
         description: The case's id (from the address of its page)
         required: true
       what:
-        description: Read the document, or make the E2B file
+        description: Read the document, make the E2B file, or suggest the codes again
         type: choice
-        options: [read, e2b]
+        options: [read, e2b, code]
         default: read
 
 permissions:
@@ -42,6 +42,7 @@ jobs:
           [[ "$CASE_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || { echo "not a case id"; exit 1; }
           case "$EVENT" in case-read|read) echo "flag=--case" >> "$GITHUB_OUTPUT" ;;
                            case-e2b|e2b)   echo "flag=--e2b" >> "$GITHUB_OUTPUT" ;;
+                           case-code|code) echo "flag=--code" >> "$GITHUB_OUTPUT" ;;
                            *) echo "unknown event"; exit 1 ;; esac
 
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0

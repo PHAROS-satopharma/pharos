@@ -42,7 +42,11 @@ import {
   type Evidence,
   type Product,
   type Reaction,
+  type CaseCoding,
+  type DrugSuggestion,
+  suggestionsFor,
 } from './caseForm';
+import { CodingSource, DrugCoding, MeshCoding } from './Coding';
 
 interface CaseRecord {
   id: string;
@@ -71,6 +75,10 @@ interface CaseRecord {
   e2b_at: string | null;
   updated_at: string;
   document: { url: string | null; title_orig: string | null } | null;
+  coding: CaseCoding | null;
+  coding_status: 'queued' | 'done' | 'failed' | null;
+  coding_error: string | null;
+  coded_at: string | null;
 }
 
 interface CaseEvent {
@@ -94,7 +102,9 @@ function useCase(id: string) {
       ),
     refetchInterval: (q) => {
       const c = q.state.data;
-      return c && (c.status === 'queued' || c.status === 'reading' || c.e2b_status === 'queued') ? 10000 : false;
+      return c && (c.status === 'queued' || c.status === 'reading' || c.e2b_status === 'queued' || c.coding_status === 'queued')
+        ? 10000
+        : false;
     },
   });
 }
@@ -269,12 +279,29 @@ export function CaseView() {
   const setReaction = (i: number, k: keyof Reaction, v: unknown) =>
     edit({ ...draft, reactions: reactions.map((r, j) => (j === i ? { ...r, [k]: v } : r)) });
 
+  const coding = record.coding;
+  const historyCodes = patient.history_codes ?? [];
+  const chooseDrug = (i: number, d: DrugSuggestion | null) =>
+    edit({
+      ...draft,
+      products: products.map((p, j) =>
+        j === i
+          ? {
+              ...p,
+              rxcui: d ? d.rxcui || null : null,
+              rxnorm_name: d ? d.name : null,
+              unii: d ? d.ingredients.map((x) => x.unii).filter(Boolean).join(', ') || null : null,
+            }
+          : p,
+      ),
+    });
+
   const rpc = (name: string, args: Record<string, unknown>, done: string) =>
     act.mutate(async () => {
       unwrap(await supabase.rpc(name, args));
       setMessage({ tone: 'ok', text: done });
     });
-  const ask = (action: 'read' | 'e2b', done: string) =>
+  const ask = (action: 'read' | 'e2b' | 'code', done: string) =>
     act.mutate(async () => {
       const r = await invoke<{ dispatched: boolean }>('case-intake', { action, case_id: record.id, seen });
       setMessage({
@@ -405,6 +432,39 @@ export function CaseView() {
           <Field label="Medical history">
             <Textarea value={patient.medical_history ?? ''} onChange={(e) => setPatient('medical_history', orNull(e.target.value))} disabled={!editable} rows={2} />
           </Field>
+          {historyCodes.map((h, k) => (
+            <MeshCoding
+              key={`${h.mesh_ui}-${k}`}
+              label={h.text ? `History: ${h.text}` : 'History'}
+              ui={h.mesh_ui}
+              term={h.mesh_term}
+              suggestions={[]}
+              editable={editable}
+              onChoose={(ui, name) =>
+                setPatient(
+                  'history_codes',
+                  ui
+                    ? historyCodes.map((x, j) => (j === k ? { ...x, mesh_ui: ui, mesh_term: name ?? '' } : x))
+                    : historyCodes.filter((_, j) => j !== k),
+                )
+              }
+            />
+          ))}
+          {(coding?.history ?? [])
+            .filter((w) => !historyCodes.some((h) => (h.text ?? '') === w.text))
+            .map((w) => (
+              <MeshCoding
+                key={w.norm}
+                label={`History: ${w.text}`}
+                ui={null}
+                term={null}
+                suggestions={w.suggestions}
+                editable={editable}
+                onChoose={(ui, name) =>
+                  ui ? setPatient('history_codes', [...historyCodes, { text: w.text, mesh_ui: ui, mesh_term: name ?? '' }]) : undefined
+                }
+              />
+            ))}
           <Quotes evidence={evidence} prefix="patient" />
         </Group>
 
@@ -441,6 +501,29 @@ export function CaseView() {
                 <Choice label="Action taken" value={p.action_taken} options={ACTION} onChange={(v) => setProduct(i, 'action_taken', v)} disabled={!editable} />
                 <TextField label="Batch" value={p.batch} onChange={(v) => setProduct(i, 'batch', orNull(v))} disabled={!editable} />
               </div>
+              <DrugCoding
+                rxcui={p.rxcui}
+                name={p.rxnorm_name}
+                unii={p.unii}
+                suggestions={suggestionsFor(coding?.products, `${p.name ?? ''} ${p.active_ingredient ?? ''}`)}
+                editable={editable}
+                onChoose={(d) => chooseDrug(i, d)}
+              />
+              {p.indication ? (
+                <MeshCoding
+                  label="Indication code"
+                  ui={p.indication_mesh_ui}
+                  term={p.indication_mesh_term}
+                  suggestions={suggestionsFor(coding?.items, p.indication)}
+                  editable={editable}
+                  onChoose={(ui, name) =>
+                    edit({
+                      ...draft,
+                      products: products.map((x, j) => (j === i ? { ...x, indication_mesh_ui: ui, indication_mesh_term: name } : x)),
+                    })
+                  }
+                />
+              ) : null}
               {editable ? (
                 <Button size="sm" variant="quiet" onClick={() => edit({ ...draft, products: products.filter((_, j) => j !== i) })}>
                   Remove this product
@@ -466,6 +549,16 @@ export function CaseView() {
                 <TextField label="Ended" value={r.end_date} onChange={(v) => setReaction(i, 'end_date', orNull(v))} disabled={!editable} />
                 <Choice label="Outcome" value={r.outcome} options={OUTCOME} onChange={(v) => setReaction(i, 'outcome', v)} disabled={!editable} />
               </div>
+              <MeshCoding
+                label="Reaction code"
+                ui={r.mesh_ui}
+                term={r.mesh_term}
+                suggestions={suggestionsFor(coding?.items, r.english || r.verbatim, r.verbatim)}
+                editable={editable}
+                onChoose={(ui, name) =>
+                  edit({ ...draft, reactions: reactions.map((x, j) => (j === i ? { ...x, mesh_ui: ui, mesh_term: name } : x)) })
+                }
+              />
               <div className="case-criteria-pick">
                 {CRITERIA.map((k) => (
                   <Toggle
@@ -487,6 +580,30 @@ export function CaseView() {
             </div>
           ))}
           <Quotes evidence={evidence} prefix="reactions" />
+          <div className="code-status">
+            <span className="code-sub">
+              {record.coding_status === 'queued'
+                ? 'PHAROS is suggesting the codes…'
+                : record.coding_status === 'failed'
+                  ? record.coding_error ?? 'The codes could not be suggested.'
+                  : coding
+                    ? `Codes suggested ${formatDateTime(coding.at)}${coding.reader ? '' : ' from MeSH’s closest names'}.`
+                    : 'The codes are suggested once the case is read.'}
+              {coding?.note ? ` ${coding.note}` : ''}
+            </span>
+            {editable && record.coding_status !== 'queued' ? (
+              <Button
+                size="sm"
+                busy={busy}
+                disabled={dirty}
+                title={dirty ? 'Save first: the codes are suggested from the saved form' : undefined}
+                onClick={() => ask('code', 'PHAROS is suggesting the codes again.')}
+              >
+                Suggest the codes again
+              </Button>
+            ) : null}
+          </div>
+          <CodingSource mesh={coding?.mesh} />
         </Group>
 
         <Group title="Narrative and assessment">

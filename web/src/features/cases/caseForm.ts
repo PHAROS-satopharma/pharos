@@ -31,6 +31,15 @@ export interface Patient {
   weight_kg?: number | null;
   pregnant?: boolean | null;
   medical_history?: string | null;
+  /** The medical history's conditions coded with MeSH (0061), chosen by a reviewer. */
+  history_codes?: MeshCode[] | null;
+}
+
+/** A MeSH descriptor chosen for some words (0061). */
+export interface MeshCode {
+  text?: string | null;
+  mesh_ui: string;
+  mesh_term: string;
 }
 
 export interface Reporter {
@@ -53,6 +62,12 @@ export interface Product {
   stop_date?: string | null;
   action_taken?: string | null;
   batch?: string | null;
+  /** RxNorm (ingredient level) and the ingredients' UNII, chosen by a reviewer (0061). */
+  rxcui?: string | null;
+  rxnorm_name?: string | null;
+  unii?: string | null;
+  indication_mesh_ui?: string | null;
+  indication_mesh_term?: string | null;
 }
 
 export interface Reaction {
@@ -61,6 +76,9 @@ export interface Reaction {
   english?: string | null;
   meddra_llt_code?: string | null;
   meddra_version?: string | null;
+  /** The MeSH descriptor chosen by a reviewer (0061). */
+  mesh_ui?: string | null;
+  mesh_term?: string | null;
   onset_date?: string | null;
   end_date?: string | null;
   outcome?: string | null;
@@ -80,6 +98,69 @@ export interface CaseForm {
   causality?: string | null;
   narrative?: string | null;
   notes?: string | null;
+}
+
+/** One suggested MeSH descriptor (safety_case.coding, collectors/coding/coder.py). */
+export interface MeshSuggestion {
+  ui: string;
+  name: string;
+  categories: string[];
+  from: 'memory' | 'reader' | 'search';
+  reason: string;
+}
+
+export interface DrugSuggestion {
+  rxcui: string;
+  name: string;
+  tty: string;
+  ingredients: { rxcui: string; name: string; unii: string | null }[];
+  from: 'memory' | 'watchlist' | 'rxnorm';
+  reason: string;
+  ingredient_id?: string;
+}
+
+export interface CodedWords<S> {
+  kind?: 'reaction' | 'indication' | 'history';
+  index?: number | null;
+  text: string;
+  norm: string;
+  suggestions: S[];
+}
+
+/** The coder's suggestions beside the form (safety_case.coding, migration 0061). */
+export interface CaseCoding {
+  at: string;
+  mesh: string | null;
+  reader: string | null;
+  note: string | null;
+  items: CodedWords<MeshSuggestion>[];
+  history: CodedWords<MeshSuggestion>[];
+  products: CodedWords<DrugSuggestion>[];
+}
+
+export const SUGGESTION_FROM: Record<MeshSuggestion['from'] | DrugSuggestion['from'], string> = {
+  memory: 'Chosen before',
+  reader: 'Suggested',
+  search: 'Closest name',
+  watchlist: 'On the watchlist',
+  rxnorm: 'RxNorm',
+};
+
+/**
+ * Words compared the way the coder and the database compare them (collectors/coding/norm.py, coding_norm()):
+ * ASCII lower case, every run of characters other than ASCII letters, digits and non-ASCII letters one space.
+ */
+export function codingNorm(text: string | null | undefined): string {
+  let low = '';
+  for (const ch of text ?? '') low += ch < '\x80' ? ch.toLowerCase() : ch;
+  return low.replace(/[^0-9a-z\u0080-\uffff]+/g, ' ').trim();
+}
+
+/** The suggestions made for these words, when the coder saw the same words. */
+export function suggestionsFor<S>(list: CodedWords<S>[] | undefined, ...words: (string | null | undefined)[]): S[] | null {
+  const wanted = new Set(words.map(codingNorm).filter(Boolean));
+  const hit = (list ?? []).find((w) => wanted.has(w.norm));
+  return hit ? hit.suggestions : null;
 }
 
 export interface Evidence {

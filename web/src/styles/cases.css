@@ -172,3 +172,85 @@
 .scr-open-case {
   margin-top: 8px;
 }
+
+/* coding (0061): the code chosen, the suggestions with their reasons, the MeSH search */
+.code-box {
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px dashed var(--rule);
+}
+.code-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.code-label {
+  font-weight: 600;
+}
+.code-chosen {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.code-sub {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.code-chosen .code-sub,
+.code-head > .code-sub {
+  display: inline;
+}
+.code-why {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+}
+.code-list {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.code-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.code-list .btn,
+.code-box > .btn,
+.code-head .btn,
+.code-status .btn {
+  min-height: 44px;
+  flex: none;
+}
+.code-search {
+  margin-top: 8px;
+}
+.code-search .input,
+.code-search input {
+  min-height: 44px;
+  width: 100%;
+}
+.code-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.code-source {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 80ch;
+}

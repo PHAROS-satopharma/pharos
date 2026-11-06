@@ -806,6 +806,39 @@ confirmation.
 
 **Actions minutes.** One reading is one short run of `case-read.yml` (about two minutes with the package cache).
 
+## Medical coding (MeSH and RxNorm)
+
+The company holds no MedDRA or WHODrug licence, so PHAROS codes cases against two free dictionaries of the U.S.
+National Library of Medicine (migration 0061). Both ask only that NLM is named as the source and never as
+endorsing PHAROS; the case page says so under the reactions.
+
+- **Reactions, indications, medical history: MeSH** (Medical Subject Headings), the disease tree (C) and mental
+  disorders (F03): about 5,200 descriptors and 60,000 names. *PHAROS dictionaries* (`dictionaries.yml`) checks on
+  the 2nd of every month and loads a new release when NLM publishes one (once a year). Run it by hand once after
+  the first deploy of 0061.
+- **Products: the watchlist, then RxNorm.** A product whose name or brand is a watched ingredient's is that
+  ingredient; anything else is looked up on RxNav (NLM's free RxNorm service), at the ingredient level, with each
+  ingredient's UNII (the FDA's substance code).
+
+**How a case is coded.** Right after a case is read, and on **Suggest the codes again** (after the words of the
+form changed and were saved), `collectors/coding/coder.py` suggests the codes. For each reaction, indication and
+medical-history condition, best first:
+
+1. *Chosen before*: the code a reviewer chose for the same words in a confirmed or sent case. Every
+   confirmation teaches the next suggestion.
+2. *Suggested*: the reader (Claude) names the condition in standard English from words in any language, PHAROS
+   looks those names up in MeSH, and the reader picks the most specific descriptor among what MeSH returned, with
+   one sentence of reason. It can only choose a descriptor PHAROS found; it never writes a code.
+3. *Closest name*: MeSH's names closest to the words themselves (all there is when the reader is not set up).
+
+The suggestions are kept beside the form (`safety_case.coding`), never in it: nothing is coded until a reviewer
+presses **Use**, and a page open on the case never goes stale because of them. A reviewer can also search MeSH on
+the case page. The chosen codes are saved and confirmed with the form, and kept in each `case_event` copy.
+
+**MedDRA.** The E2B(R3) file still needs each reaction's MedDRA LLT code and version (ICH E2B and the EDA take
+MedDRA only); the reviewer types them when the authority or a partner has coded the case. MeSH codes do not go
+into the E2B file.
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings

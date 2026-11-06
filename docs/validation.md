@@ -44,6 +44,7 @@ controls below focus on completeness (the screening log, source health and the w
 | 14 | Tests are meaningful | A regression test counts only if breaking the fix makes it fail; the code is then restored from a copy | Recorded in the pull request |
 | 15 | What users see is what was checked | The rendered output is checked by reading the deployed Pages site, never only the source code | Recorded in the pull request |
 | 16 | A case report is kept whole and confirmed by a person | An upload stores the original under its SHA-256 and a tampered original is never read; a reader cannot open a case; a case without a reporter and a reaction is refused at confirmation and says what is missing; a change made from an older view is refused; a confirmed non-serious case is due 90 days after day zero; every step is one append-only `case_event` row; the E2B file is refused without each reaction's MedDRA code and version | CI database checks (`supabase/tests/case_intake.sql`) + pytest (`tests/test_cases.py`) + Deno (`case-intake/sniff_test.ts`) |
+| 17 | A code is suggested, never decided | The reader chooses only among the descriptors MeSH returned (an invented code is dropped); the suggestions are kept beside the form and change neither the form nor its version; only confirmed cases teach the next suggestion; nobody in the app writes the dictionary; without the reader or without RxNav the coder still suggests | CI database checks (`supabase/tests/medical_coding.sql`) + pytest (`tests/test_coding.py`) + vitest (`caseForm.test.ts`) |
 
 Each pull request records the test evidence it touches. CI results are kept with every pull request in
 GitHub.
@@ -112,5 +113,8 @@ the regulators' own sites and re-run acceptance tests 2 to 11.
 - Cases: the reader fills the form from the document; a reviewer checks every field against the document and
   confirms. MedDRA coding is done by the reviewer. The E2B(R3) file has not yet been validated against the ICH
   schema or the Egyptian Drug Authority's gateway: until it has, it is a prepared draft, checked before sending.
+- Coding: reactions, indications and medical history are coded with MeSH and products with RxNorm and UNII, all
+  free from the U.S. National Library of Medicine and the FDA. MeSH is not MedDRA: signal counts and searches run
+  on MeSH, and the E2B file still needs the MedDRA code typed from the authority's or a partner's coding.
 - The free plans have limits (database 500 MB, Actions 2,000 minutes, R2 10 GB). The watchdog and the budget
   above keep PHAROS inside them.
