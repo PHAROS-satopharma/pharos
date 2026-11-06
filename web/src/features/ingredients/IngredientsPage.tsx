@@ -18,6 +18,7 @@ import { cx } from '../../ui/cx';
 import { PageHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { AddIngredient } from './AddIngredient';
+import { JapanCodeEdit } from './JapanCodeEdit';
 import { Readiness } from './Readiness';
 import { SearchProfile } from './SearchProfile';
 import { DRUG_CLASS_SELECT, classesOf, type DrugClass } from './drugClasses';
@@ -309,6 +310,7 @@ export function IngredientsPage() {
                             isAdmin={isAdmin}
                             languages={idx.languages}
                           />
+                          {isAdmin ? <JapanCodeEdit ingredientId={i.id} terms={i.ingredient_term} /> : null}
                           <h3 className="dc-section-head">
                             <span className="micro">Names looked for</span>
                           </h3>

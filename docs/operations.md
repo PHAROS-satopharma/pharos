@@ -316,9 +316,15 @@ preparation has got, and the weekly report repeats it in section 1 (migration 00
   the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
   `collectors/eurd.py`), whether EMA's literature monitoring covers it, and who receives its Telegram messages.
 - **Japan:** PMDA's search is a form that answers a POST only, so PHAROS cannot look a package insert up by
-  name. The term editor has a *Japan code* field: open the PMDA search (link in the editor), search the name,
-  open the product and copy the 7-digit code from its address (`…/GeneralList/<code>`). Without it the row says
-  *No Japan code yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
+  name. The term editor has a *Japan code* field when an ingredient is added, and an administrator finds the
+  same field on any ingredient already on the watchlist: open its row (the triangle beside the name), then
+  *Japan code*. Open the PMDA search (link beside the field), search the name, open the product and copy the
+  7-character code from its address (`…/GeneralList/<code>`; the 12-character YJ code is accepted and kept as the
+  7 characters it starts with), then **Save**. The row shows the code it has now with a link to its products on
+  PMDA; a new code replaces the old one and leaves every name alone (`set_japan_code()`, migration 0052; audited).
+  Japan's label watch uses it at its next weekly run. Like any new word it is due for the check of the past that
+  night (0034); the readiness line does not wait for that, since a code is not a name. Without a code the row says *No Japan code
+  yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
 
 ## The Ingredients screen: one ingredient across every source
 

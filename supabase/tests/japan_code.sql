@@ -1,4 +1,4 @@
--- PHAROS CI — the Japan code of an ingredient that already exists (0051): set_japan_code(). Runs on the database
+-- PHAROS CI — the Japan code of an ingredient that already exists (0052): set_japan_code(). Runs on the database
 -- ci.yml prepared: CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3) exist. Everything here happens in one
 -- transaction that is rolled back at the end, so nothing is left behind.
 --

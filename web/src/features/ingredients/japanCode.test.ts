@@ -11,7 +11,7 @@ const term = (over: Partial<{ kind: string; country_code: string | null; term: s
   ...over,
 });
 
-describe('the Japan code typed for an ingredient (set_japan_code, 0051)', () => {
+describe('the Japan code typed for an ingredient (set_japan_code, 0052)', () => {
   it('stores the 7-character code, from the code itself or from the 12-character YJ code', () => {
     expect(japanCodeOf('6241013')).toBe('6241013');
     expect(japanCodeOf(' 6241013 ')).toBe('6241013');
