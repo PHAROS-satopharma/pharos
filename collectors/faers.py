@@ -59,6 +59,7 @@ log = logging.getLogger("collectors.faers")
 API = "https://api.fda.gov/drug/event.json"
 REACTION = "patient.reaction.reactionmeddrapt.exact"
 REACTION_WORDS = "patient.reaction.reactionmeddrapt"      # the same, analysed: searched by its words
+DRUG = "patient.drug.openfda.generic_name.exact"          # the drugs a report names, by generic name
 NAME_FIELDS = (
     "patient.drug.openfda.generic_name.exact",
     "patient.drug.openfda.substance_name.exact",
@@ -243,6 +244,11 @@ class OpenFda:
         rows = body.get("results") or []
         return {str(r["term"]): int(r.get("count") or 0) for r in rows if r.get("term")}, len(rows) < self.limit
 
+    def drugs(self, search: str) -> dict[str, int]:
+        """Reports per generic name of the drugs they name: the 10 most frequent."""
+        body = self.ask(search=search, count=DRUG, limit="10") or {}
+        return {str(r["term"]): int(r.get("count") or 0) for r in body.get("results") or [] if r.get("term")}
+
     def total(self, search: str) -> int:
         body = self.ask(search=search, limit="1")
         return int((((body or {}).get("meta") or {}).get("results") or {}).get("total") or 0)
@@ -329,6 +335,32 @@ class Background:
         return counts.get(reaction, 0 if complete else None)
 
 
+def reaction_search(reaction: str) -> str:
+    """The reaction by its exact name; one with a character openFDA refuses even in quotes (FDA writes an apostrophe
+    as ^) by its words as a phrase, as Background._searched does."""
+    if re.fullmatch(r"[0-9A-Za-z ,()/.-]+", reaction):
+        return f"{REACTION}:{_quoted(reaction)}"
+    return f"{REACTION_WORDS}:{_quoted(' '.join(re.sub(r'[^0-9A-Za-z]+', ' ', reaction).split()))}"
+
+
+def co_drug(api: OpenFda, names: str, own: list[str], reaction: str, whole: str) -> tuple[str | None, int | None]:
+    """The other drug most often named in the reports of the ingredient with the reaction, and in how many: a drug
+    taken with the ingredient can be what the reaction is reported for (0076). The ingredient under any of its
+    names, its salts and the combinations that hold it are never the answer."""
+    mine = [re.compile(r"\b" + re.escape(n) + r"\b") for n in own]
+    try:
+        named = api.drugs(f"{names} AND {reaction_search(reaction)} AND {whole}")
+    except OpenFdaError as exc:
+        if exc.status != 400:
+            raise
+        return None, None                    # never lose the ingredient's counts over one reaction's lookup
+    others = [(n, t) for t, n in named.items() if not any(m.search(t.upper()) for m in mine)]
+    if not others:
+        return None, None
+    n, term = min(others, key=lambda nt: (-nt[0], nt[1]))          # the most, then by name
+    return term, n
+
+
 def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None = None) -> dict:
     """Everything kept for one ingredient: the reports per quarter, and its most frequent reactions with their
     quarters and their disproportion. ``us_name`` (RxNorm's) is searched too when it differs from the INN."""
@@ -354,7 +386,10 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
         all_r = max(bg.whole_count(reaction), a)     # never fewer than the ingredient's own (the lists can drift)
         b, c = n_drug - a, all_r - a
         stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
-        reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats)})
+        drug, with_it = (co_drug(api, names, searched_names(inn, us_name), reaction, bg.whole) if stats.flagged
+                         else (None, None))
+        reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats),
+                          "co_drug": drug, "co_reports": with_it})
     return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
             "quarters": quarters, "reactions": reactions, "counts": counts}
@@ -399,12 +434,12 @@ def store(db: Any, ingredient: str, got: dict) -> None:
         if got["reactions"]:
             db.execute(
                 """insert into faers_reaction (ingredient_id, reaction, reports, all_reports, prr, prr_low, prr_high,
-                                               ror, ror_low, ror_high, chi2, flagged)
+                                               ror, ror_low, ror_high, chi2, flagged, co_drug, co_reports)
                    select %(i)s::uuid, x.reaction, x.reports, x.all_reports, x.prr, x.prr_low, x.prr_high, x.ror,
-                          x.ror_low, x.ror_high, x.chi2, x.flagged
+                          x.ror_low, x.ror_high, x.chi2, x.flagged, x.co_drug, x.co_reports
                      from jsonb_to_recordset(%(r)s::jsonb) x(reaction text, reports int, all_reports int, prr float8,
                           prr_low float8, prr_high float8, ror float8, ror_low float8, ror_high float8, chi2 float8,
-                          flagged boolean)""",
+                          flagged boolean, co_drug text, co_reports int)""",
                 {"i": ingredient, "r": json.dumps(got["reactions"])})
         if got["counts"]:
             db.execute(

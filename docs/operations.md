@@ -953,6 +953,12 @@ count them; no report is downloaded, only numbers come back, and the log names n
 - **The period**: the last 8 complete calendar quarters openFDA holds, by the day FDA received each report (on 6 Nov
   2026: October 2024 to September 2026, 2.68 million reports). FAERS changes once a quarter, so an ingredient counted
   in the last 6 days is left; run the workflow by hand with *force* to count every ingredient again.
+- **The drug most reported with a flag** (migration 0076): one report names every drug the patient took, and the
+  count takes a report whatever role the ingredient had in it. For each flagged reaction the run asks openFDA which
+  other drugs those reports name (`openfda.generic_name`, the 10 most frequent) and keeps the first that is not the
+  ingredient, a salt of it or a combination holding it; section 06 shows it under the flag ("Most often with
+  RELUGOLIX (83%)"). Found on 6 Nov 2026: carvedilol's HOT FLUSH (PRR 4.1) came from reports naming the
+  prostate-cancer drug relugolix as the suspect in 199 of 239, with carvedilol only taken alongside.
 - **How an ingredient is found**: its INN in capitals, exactly, in three fields at once: `openfda.generic_name` and
   `openfda.substance_name` (filled only when FDA matched the product to a US label) and
   `activesubstance.activesubstancename` (the substance as FAERS coded it, also for products sold outside the US).
