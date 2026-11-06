@@ -34,7 +34,7 @@ function uuidOf(v: unknown, what: string): string {
   return s;
 }
 
-function decodeBase64(data: string): Uint8Array {
+function decodeBase64(data: string): Uint8Array<ArrayBuffer> {
   const clean = data.replace(/^data:[^,]*,/, "").replace(/\s+/g, "");
   if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean)) throw new HttpError(400, "The file did not arrive whole. Try again.");
   if (clean.length > Math.ceil(MAX_BYTES / 3) * 4 + 4) throw new HttpError(413, "A case document is at most 10 MB.");
@@ -44,13 +44,13 @@ function decodeBase64(data: string): Uint8Array {
   return out;
 }
 
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
+async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /** Stores the original under sha256/<2>/<sha256>; an object already there is the same bytes and is left alone. */
-async function archive(bytes: Uint8Array, sha: string, mime: string): Promise<void> {
+async function archive(bytes: Uint8Array<ArrayBuffer>, sha: string, mime: string): Promise<void> {
   const accountId = Deno.env.get("R2_ACCOUNT_ID");
   const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
   const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
