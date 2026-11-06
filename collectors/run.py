@@ -376,6 +376,10 @@ class Runner:
         gap = src.expected_max_gap_days
         last = prev.get("last_item_at")
         candidates = [d for d in (_utc_midnight(latest), last) if d is not None]
+        if not candidates and src.channel == "email" and prev.get("created_at"):
+            # A mail source that never received a notice waits from the day it was added; past its gap,
+            # the subscription is checked (the Sources screen says "Waiting for the first e-mail" until then).
+            candidates = [prev["created_at"]]
         if not gap or not candidates:
             return "ok"
         newest = max(candidates)

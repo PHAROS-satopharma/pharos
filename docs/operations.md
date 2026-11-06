@@ -734,7 +734,7 @@ packs and their files and cannot ask for one.
   357 for "levofloxacin", 233 and 475 for "fluoroquinolones", 187 and 491 for "nonsteroidal
   anti-inflammatory". The stored papers can differ from these counts: the watch reads by entry date, the
   counts are by publication date.
-- **Free full text (Unpaywall, migration 0068).** Once a day, after Coding, `python -m collectors.fulltext` looks
+- **Free full text (Unpaywall, migration 0070).** Once a day, after Coding, `python -m collectors.fulltext` looks
   up each literature paper of the last year at Unpaywall (`api.unpaywall.org/v2/{doi}`, no key, identified by
   pharos@satopharma.com; Unpaywall allows 100,000 calls a day, PHAROS makes at most 2,000 a run, about four a
   second, in at most 11 minutes). Before that it asks PubMed again, at most every 30 days, for the DOI of the

@@ -39,17 +39,30 @@ FORGED = (b"Authentication-Results: atlas7.mail.bf1.yahoo.com; dkim=none; "
 
 
 class FakeIMAP:
-    """Just enough of imaplib.IMAP4 for collect(). Records every command."""
+    """Just enough of imaplib.IMAP4 for collect(). Records every command. ``messages`` are the Inbox;
+    ``folders`` adds other folders by their LIST line (flags, name) → their messages (uids kept distinct)."""
 
-    def __init__(self, messages: dict[bytes, bytes]) -> None:
+    def __init__(self, messages: dict[bytes, bytes],
+                 folders: dict[tuple[str, str], dict[bytes, bytes]] | None = None) -> None:
+        self.boxes = {"INBOX": messages, **{name: msgs for (_, name), msgs in (folders or {}).items()}}
+        self.listing = [rb'(\HasNoChildren) "/" "Inbox"'] + [
+            f'({flags}) "/" "{name}"'.encode() for (flags, name) in (folders or {})]
         self.messages = messages
         self.seen: set[bytes] = set()
         self.commands: list[tuple] = []
         self.logged_out = False
 
+    def list(self):
+        self.commands.append(("LIST",))
+        return "OK", list(self.listing)
+
     def select(self, mailbox: str):
         self.commands.append(("SELECT", mailbox))
-        return "OK", [b"2"]
+        name = mailbox.strip('"')
+        if name not in self.boxes:
+            return "NO", [b"no such folder"]
+        self.messages = self.boxes[name]
+        return "OK", [str(len(self.messages)).encode()]
 
     def uid(self, command: str, *args):
         self.commands.append((command, *args))
@@ -128,6 +141,38 @@ def test_collect_reads_only_allowed_unseen_mail(tmp_path):
     store_at = next(k for k, c in enumerate(server.commands) if c[0] == "STORE")
     body_at = next(k for k, c in enumerate(server.commands) if c[0] == "FETCH" and "BODY.PEEK[]" in c[2])
     assert body_at < store_at
+
+
+def test_the_spam_folder_is_read_too_and_nothing_is_moved(tmp_path):
+    # Yahoo files newsletters under "Bulk", flagged \Junk; TGA's and Fimea's first mails may sit there.
+    server = FakeIMAP({b"8": OTHER}, folders={(r"\Junk \HasNoChildren", "Bulk"): {b"21": EML},
+                                              (r"\Sent", "Sent"): {b"31": EML}})
+    rows: list[dict] = []
+    counts = imap_inbox.collect(ctx_with_archive(tmp_path), ALLOW, connect=lambda: server,
+                                insert=rows.append, source_exists=lambda sid: True, authserv_domains=YAHOO)
+    assert counts == {"fimea-email": 1, "tga-email": 0}
+    assert [c[1] for c in server.commands if c[0] == "SELECT"] == ["INBOX", "Bulk"]   # never Sent
+    assert server.seen == {b"21"} and rows[0]["subject"] == "Lääketurvallisuustiedote: lornoksikaami"
+    assert {c[0] for c in server.commands} <= {"LIST", "SELECT", "SEARCH", "FETCH", "STORE"}  # no MOVE, no EXPUNGE
+
+
+def test_the_spam_folder_is_found_by_its_flag_else_by_name():
+    flagged = FakeIMAP({}, folders={(r"\HasNoChildren", "Spam"): {}, (r"\Junk", "Bulk Mail"): {}})
+    assert imap_inbox.junk_folders(flagged) == ["Bulk Mail"]
+    named = FakeIMAP({}, folders={(r"\HasNoChildren", "Bulk"): {}, (r"\Noselect", "Junk"): {},
+                                  (r"\Drafts", "Drafts"): {}})
+    assert imap_inbox.junk_folders(named) == ["Bulk"]
+    assert imap_inbox.junk_folders(FakeIMAP({})) == []
+    assert imap_inbox._quoted("Bulk Mail") == '"Bulk Mail"' and imap_inbox._quoted("Bulk") == "Bulk"
+
+
+def test_a_spam_folder_that_will_not_open_leaves_the_inbox_read(tmp_path):
+    server = FakeIMAP({b"7": EML})
+    server.listing.append(rb'(\Junk) "/" "Gone"')                  # listed, but SELECT says NO
+    counts = imap_inbox.collect(ctx_with_archive(tmp_path), ALLOW, connect=lambda: server,
+                                insert=lambda row: None, source_exists=lambda sid: True,
+                                authserv_domains=YAHOO)
+    assert counts["fimea-email"] == 1 and server.seen == {b"7"}
 
 
 def test_missing_source_row_leaves_mail_unread(tmp_path):
@@ -275,3 +320,33 @@ def test_a_verdict_the_sender_wrote_below_the_servers_entry_hop_is_not_the_serve
             b" Tue, 3 Nov 2026\r\n"
             b"From: x@fimea.fi\r\n\r\n")
     assert imap_inbox.sender_verified(real, ["fimea.fi"], YAHOO)
+
+
+def test_a_mail_source_with_nothing_received_is_flagged_once_after_its_gap(tmp_path):
+    # TGA's and Fimea's mail sources read as working for days with nothing in them (6 Nov 2026). A mail source
+    # waits from the day it was added; past its expected gap it turns to "check it", with one alert.
+    from datetime import timedelta
+
+    store = MemoryStore()
+    store.load_seed()
+    sync_catalogue(store)
+    _, sources, _ = load_catalogue()
+    tga, fimea = (next(s for s in sources if s.id == sid) for sid in ("tga-email", "fimea-email"))
+    now = datetime.now(timezone.utc)
+    store.source["tga-email"]["created_at"] = now - timedelta(days=tga.expected_max_gap_days + 1)
+    store.source["fimea-email"]["created_at"] = now - timedelta(days=1)
+    empty = types.SimpleNamespace(STRUCTURED_FIELDS=[], list_items=lambda ctx, src: [])
+    alerts: list[tuple] = []
+    notifier = types.SimpleNamespace(health_alert=lambda *a: alerts.append(a), issue_alert=lambda i: None)
+
+    def run():
+        ctx = types.SimpleNamespace(db=None, run_id=store.create_run("manual", None), first_status=None,
+                                    begin_source=lambda: None, archiver=Archive(tmp_path / "a"))
+        Runner(store, ctx, notifier, store.settings(), parser_loader=lambda name: empty).run([tga, fimea])
+
+    run()
+    assert store.source["tga-email"]["health"] == "degraded"
+    assert store.source["fimea-email"]["health"] == "ok"           # still within its gap: waiting
+    assert [a[:2] for a in alerts] == [("tga-email", "degraded")]
+    run()
+    assert len(alerts) == 1                                          # one alert, not one per run
