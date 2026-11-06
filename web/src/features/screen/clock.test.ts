@@ -32,6 +32,8 @@ const mention = (document_id: string, issue_id: string | null): Mention => ({
   doc_type: 'dhpc',
   terms: [],
   by_class: false,
+  relation: 'name',
+  class_name: null,
   is_backfill: false,
   sections: null,
   issue_id,

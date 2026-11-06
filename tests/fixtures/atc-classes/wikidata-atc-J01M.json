@@ -1,0 +1,288 @@
+{
+  "head" : {
+    "vars" : [ "item", "kind", "val" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "ar",
+        "type" : "literal",
+        "value" : "كوينولون"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "da",
+        "type" : "literal",
+        "value" : "Fluorquinolon"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Chinolonantibiotikum"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "quinolone antibiotic"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "es",
+        "type" : "literal",
+        "value" : "quinolona"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "fi",
+        "type" : "literal",
+        "value" : "Fluorokinolonit"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "fr",
+        "type" : "literal",
+        "value" : "quinolone"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "it",
+        "type" : "literal",
+        "value" : "Chinoloni"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "ja",
+        "type" : "literal",
+        "value" : "ニューキノロン"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "ko",
+        "type" : "literal",
+        "value" : "퀴놀론계 항생제"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "nb",
+        "type" : "literal",
+        "value" : "Quinoloner"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "nl",
+        "type" : "literal",
+        "value" : "fluorchinolon"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "pt",
+        "type" : "literal",
+        "value" : "Quinolona"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "sv",
+        "type" : "literal",
+        "value" : "Kinolon"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "label"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "de",
+        "type" : "literal",
+        "value" : "Chinolon-Antibiotika"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "girase inhibitors"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "quinolone antibacterial agent"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "quinolone antibacterial agents"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "quinolone antibiotics"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q13669486"
+      },
+      "val" : {
+        "xml:lang" : "ja",
+        "type" : "literal",
+        "value" : "フルオロキノロン"
+      },
+      "kind" : {
+        "type" : "literal",
+        "value" : "alt"
+      }
+    } ]
+  }
+}
