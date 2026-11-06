@@ -25,3 +25,24 @@ export function currentJapanCode(terms: { kind: string; country_code: string | n
     .sort();
   return codes[0] ?? null;
 }
+
+export interface LocalTerm {
+  term: string;
+  isCode: boolean;
+  /** The country's name. */
+  where: string;
+}
+
+/** The terms that apply in one country only, for the Ingredients list's "Local codes" column. Every other name is
+ *  looked for in every country that writes its language; today the only local term is the Japan code, so a column
+ *  headed "Country-specific names" that said "Japan" on every row read as if PHAROS watched Japan only (6 Nov 2026).
+ *  The column shows the code itself and what it is for. */
+export function localTerms(
+  terms: { kind: string; country_code: string | null; term: string }[],
+  nameOf: (code: string) => string,
+): LocalTerm[] {
+  return terms
+    .filter((t): t is { kind: string; country_code: string; term: string } => Boolean(t.country_code))
+    .map((t) => ({ term: t.term, isCode: t.kind === 'code', where: nameOf(t.country_code) }))
+    .sort((a, b) => a.where.localeCompare(b.where) || a.term.localeCompare(b.term));
+}

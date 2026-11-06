@@ -1314,6 +1314,12 @@ button.stat[aria-pressed='true'] {
   flex-wrap: wrap;
   gap: 4px;
 }
+.local-term {
+  display: block;
+}
+.local-term + .local-term {
+  margin-top: 8px;
+}
 .cell-sub {
   display: block;
   margin-top: 5px;
