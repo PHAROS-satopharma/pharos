@@ -54,11 +54,24 @@ describe('totalsBySource', () => {
     const t = totalsBySource([
       run('2026-11-05T19:20:00Z', "parse: no rows recognised at https://www.infarmed.pt/x (marker 'result-item' missing)", 'infarmed-circulares', 200),
       run('2026-11-05T16:20:00Z', '1 item(s) failed; first: infarmed:12659868: FetchError: HTTP 500', 'infarmed-circulares', 200),
-      run('2026-11-05T13:33:00Z', null, 'fda-enforcement', 500),
+      run('2026-11-05T13:33:00Z', 'FetchError: HTTP 500 at https://api.fda.gov/drug/enforcement.json', 'fda-enforcement', 500),
     ]);
     expect(t.get('infarmed-circulares')?.failed).toBe(1);
     expect(t.get('infarmed-circulares')?.lastError).toMatch(/^parse: /);
     expect(t.get('fda-enforcement')?.failed).toBe(1);
+  });
+
+  it('does not count an answer the collector accepted as a failed run (openFDA 404 is "no matches")', () => {
+    // openfda_enforcement.py asks with raise_for_status=False and reads a 404 as "No matches found": the run
+    // completes with no error and records the first answer's status. source_run_failed() reads only the
+    // error, so the Reports screen counted it clean while this page said the run failed.
+    const t = totalsBySource([
+      run('2026-11-06T10:00:00Z', null, 'fda-enforcement', 404),
+      run('2026-11-06T06:00:00Z', null, 'fda-enforcement', 200),
+    ]).get('fda-enforcement');
+    expect(t?.runs).toBe(2);
+    expect(t?.failed).toBe(0);
+    expect(t?.lastError).toBeNull();
   });
 });
 
