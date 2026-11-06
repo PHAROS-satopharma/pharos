@@ -20,6 +20,7 @@ import { answerText, countryAnswers, readsText, summaryLine, toCheckByHand, type
 import { DecisionButtons } from './DecisionButtons';
 import { ClinicalTrials } from './ClinicalTrials';
 import { CodedReactions } from './CodedReactions';
+import { FaersReports } from './FaersReports';
 import { LabelChanges } from './LabelChanges';
 import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
@@ -220,6 +221,8 @@ function Body({
       <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} findings={data.findings} queryKey={queryKey} />
 
       <CodedReactions ingredientId={data.ingredient.id} from={from} to={to} />
+
+      <FaersReports ingredientId={data.ingredient.id} />
 
       <ClinicalTrials ingredientId={data.ingredient.id} />
     </>
