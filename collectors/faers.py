@@ -367,7 +367,7 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
         b, c = n_drug - a, all_r - a
         stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
         reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats)})
-    for x, flag in zip(reactions, outliers(reactions)):
+    for x, flag in zip(reactions, outliers(reactions), strict=True):
         x["flagged"] = flag
     return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
