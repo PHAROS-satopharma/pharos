@@ -186,6 +186,7 @@ returns table (
   clock          text,
   decided_at     timestamptz,
   decided_by     text,
+  sent_id        uuid,
   sent_on        date,
   sent_reference text,
   sent_note      text,
@@ -213,7 +214,7 @@ language sql stable security definer set search_path = public as $$
                 then (b.decided_at at time zone 'Africa/Cairo')::date
                 else (coalesce(b.first_seen_at, b.issue_created_at) at time zone 'Africa/Cairo')::date
            end as day_zero,
-           ar.sent_on, ar.reference, ar.note, ar.person_id as sent_by_id
+           ar.id as sent_id, ar.sent_on, ar.reference, ar.note, ar.person_id as sent_by_id
       from base b
      cross join settings st
       left join lateral (
@@ -237,6 +238,7 @@ language sql stable security definer set search_path = public as $$
               else 'running' end,
          c.decided_at,
          pd.full_name,
+         c.sent_id,
          c.sent_on,
          c.reference,
          c.note,
@@ -268,7 +270,7 @@ begin
              'days_left', c.days_left,
              'clock', c.clock,
              'sent', case when c.sent_on is null then null
-                          else jsonb_build_object('on', c.sent_on, 'reference', c.sent_reference,
+                          else jsonb_build_object('id', c.sent_id, 'on', c.sent_on, 'reference', c.sent_reference,
                                                   'person', c.sent_by, 'note', c.sent_note) end))
       from eda_clock(p_issues) c), '{}'::jsonb);
 end $$;

@@ -136,6 +136,35 @@ export interface ScreenLiterature {
   first: Paper[];
 }
 
+/** A report of a finding to the Egyptian Drug Authority (authority_report, 0041). */
+export interface AuthoritySent {
+  id: string;
+  /** The day it was sent (YYYY-MM-DD). */
+  on: string;
+  reference: string | null;
+  /** The full name of the person who recorded it. */
+  person: string;
+  note: string | null;
+}
+
+export type Clock = 'running' | 'late' | 'sent' | 'off';
+
+/** The five-day clock of one notice, as finding_state() answers it (migration 0041). */
+export interface FindingState {
+  /** The Cairo day PHAROS first showed the notice (YYYY-MM-DD). */
+  day_zero: string;
+  /** Day zero plus the authority's days (5). */
+  due: string;
+  /** Days from today in Cairo to the due day; negative when late. */
+  days_left: number;
+  /** off: the latest decision is not Concerns us; sent: reported for that decision; late: past due; else running. */
+  clock: Clock;
+  sent: AuthoritySent | null;
+}
+
+/** The clocks of the notices on the screen, by notice id. */
+export type Findings = Record<string, FindingState>;
+
 export interface IngredientScreenData {
   ingredient: ScreenIngredient;
   from: string;
@@ -144,4 +173,6 @@ export interface IngredientScreenData {
   regulators: ScreenRegulator[];
   label_changes: Mention[];
   literature: ScreenLiterature;
+  /** The five-day clock of every notice on the screen (finding_state, 0041), fetched with the screen. */
+  findings: Findings;
 }
