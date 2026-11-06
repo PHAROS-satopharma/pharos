@@ -13,6 +13,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **literature** | 10:41 and 18:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
+| `trials.yml` | Wednesday 04:11 | Clinical trials of the watched ingredients from ClinicalTrials.gov (`collectors/trials.py`); only new or updated studies are fetched |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals and 10 report files (`reports/`, `reports/packs/`); checks the bucket lock |
@@ -877,6 +878,39 @@ the days chosen and the same number of days just before:
 Counting is not judging: the numbers and the label are shown side by side, and the team decides whether a term is
 a signal (Signals). *Not in our label* means no MeSH name was found in the text, which is a reason to read the
 label, not a finding that the reaction is unexpected.
+
+## Clinical trials (ClinicalTrials.gov)
+
+Section *07 Clinical trials* of the Ingredients screen lists the clinical trials whose interventions name the
+ingredient, from ClinicalTrials.gov, the registry of the U.S. National Library of Medicine (migration 0067). The API
+(v2) needs no key; NLM asks that it is named as the source and never as endorsing PHAROS, and the section says so.
+
+- **When.** *PHAROS clinical trials* (`trials.yml`) runs every Wednesday at 04:11 UTC and by hand. Run it by hand
+  once after the first deploy of 0067, and after adding an ingredient, so the section fills at once. A run takes a
+  few minutes; ClinicalTrials.gov asks for about 50 requests a minute at most, and the collector waits 1.3 seconds
+  between requests.
+- **What is searched.** For each active ingredient, one search of the interventions (`query.intr`) for its English
+  name and its other English names on the watchlist (brands and synonyms of four letters or more, codes left out),
+  each in quotes and joined by OR. ClinicalTrials.gov also matches its own synonyms of a drug name, so a search
+  finds trials that name a brand. The names searched are shown under the section.
+- **What is fetched.** The search lists each study's last update. Only a study that is new or was updated since the
+  last run is fetched again (100 at a time): title, phase, overall status, start and completion dates (a day or a
+  month, as published), lead sponsor, enrolment (actual or estimated), whether results are posted and when they
+  were first posted, and the adverse-event tables of the results. A study the search no longer returns is unlinked
+  from the ingredient, but only after a search that read every page; a study no ingredient links is removed.
+- **What is flagged.** *New results*: results first posted in the last 90 days. *Status changed*: the overall status
+  differs from the one PHAROS kept, dated the day the run saw it (the first time a study is kept is never a change,
+  so this flag starts with the second run). The section counts the trials flagged.
+- **Serious adverse events.** For the trials with results, each serious event term is summed over the trials: the
+  number of participants affected and at risk, over **every arm of each trial, comparators and placebo included**,
+  with each arm's own numbers kept in `trial_event.groups`. The 15 terms with the most participants affected are
+  shown. The terms are the sponsors' words as published (usually MedDRA terms, in the version the sponsor used):
+  PHAROS shows them as they are and never builds a MedDRA dictionary from them. A term that appears often is a
+  reason to open the trial and read its arms, not a finding.
+- **The log.** The run's log is public (the repository is public): it prints counts only ("12 ingredients
+  searched, 25 studies fetched, 310 unchanged"), never an ingredient, a sponsor or a request address. A run in
+  which every search failed ends red; one ingredient's failed search is counted ("1 to try again"), changes nothing
+  for that ingredient, and is tried again the next week.
 
 ## PRAC agendas
 

@@ -1,0 +1,30 @@
+{
+ "totalCount": 3,
+ "studies": [
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT02717507"
+    },
+    "statusModule": {
+     "lastUpdatePostDateStruct": {
+      "date": "2025-04-23"
+     }
+    }
+   }
+  },
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT00292162"
+    },
+    "statusModule": {
+     "lastUpdatePostDateStruct": {
+      "date": "2012-06-01"
+     }
+    }
+   }
+  }
+ ],
+ "nextPageToken": "ZVNj7o2Elu8o3lpyCMqxo7LumpOQJJxtYvih3f0ZkA"
+}
