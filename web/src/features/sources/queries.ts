@@ -60,7 +60,7 @@ export interface RunTotals {
  * this page counted six of them as failed runs on 5 Nov 2026 while the Reports screen did not.
  */
 export const RUN_NOTE =
-  /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |item cap reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text)/;
+  /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |item cap reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text|out of time: )/;
 
 /**
  * As source_run_failed(): a run failed when its error is not one of the notes above. http_status is only the

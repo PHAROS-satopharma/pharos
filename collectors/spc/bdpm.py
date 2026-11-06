@@ -33,7 +33,7 @@ import unicodedata
 from collectors.core.context import FetchError
 from collectors.parsers._html_util import block_text
 from collectors.parsers.base import soup
-from collectors.spc.common import Product, Snapshot, run_cache, terms_for
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, run_cache, terms_for
 from collectors.spc.sections import WATCHED_EU, split_numbered
 
 SOURCE_ID = "spc-bdpm"
@@ -128,9 +128,9 @@ def parse_rcp(html) -> dict[str, str]:
 
 def snapshot(ctx, product: dict) -> Snapshot | None:
     url = RCP_URL.format(cis=product["national_id"])
-    f = ctx.get(url)
+    f = fetch_label(ctx, url)
     if f.status != 200:
-        return None
+        raise SnapshotError(f"BDPM {product['national_id']} RCP: HTTP {f.status}")
     sections = parse_rcp(f)
     if not sections:
         return None

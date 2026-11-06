@@ -3,7 +3,10 @@
 For every active ingredient (or the ones given) and every enabled ``kind: spc`` source:
 
 1. **discover** the products authorised in that country (``spc_product``: upsert on
-   ``(source_id, ingredient_id, national_id)``; products no longer listed are marked inactive). A label
+   ``(source_id, ingredient_id, national_id)``; products no longer listed are marked inactive — only when the
+   list was read to its end: a ``Listing`` with gaps, or an empty answer where products were listed before,
+   switches nothing off and is noted as a partial list, and a discovery that failed still reads the products
+   already known). A label
    that holds several watched ingredients (a cold remedy with paracetamol, guaifenesin and phenylephrine)
    is one product per ingredient: until 0079 the first ingredient to list it kept it, and the others never
    saw it (Japan's paracetamol inserts sat under ivabradine, 6 Nov 2026);
@@ -193,6 +196,23 @@ def deactivate_missing(db, source_id: str, ingredient_id: str, keep: list[str]) 
             where source_id = %(s)s and ingredient_id = %(i)s and active
               and not (national_id = any(%(k)s))""",
         {"s": source_id, "i": ingredient_id, "k": keep})
+
+
+def known_products(db, source_id: str, ingredient_id: str) -> list[dict]:
+    """The ingredient's active products from earlier runs: read all the same when this run's list of them
+    failed or broke off, so a list that did not answer never leaves their labels unread for the week."""
+    rows = db.fetchall(
+        """select id, ingredient_id, source_id, country_code, national_id, product_name, mah, url, extra,
+                  is_reference, checked_at
+             from spc_product where source_id = %(s)s and ingredient_id = %(i)s and active""",
+        {"s": source_id, "i": ingredient_id})
+    out = []
+    for r in rows:
+        r = dict(r)
+        r["id"] = str(r["id"])
+        r["extra"] = r.get("extra") or {}
+        out.append(r)
+    return out
 
 
 def mark_checked(db, product_id: str) -> None:
@@ -424,14 +444,35 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
         except Exception as exc:  # noqa: BLE001 - one ingredient failing never stops the rest
             stats.errors.append(redact(f"discover {ing['inn_en']}: {type(exc).__name__}: {exc}"))
             log.warning("SPC %s discover %s: %s", source_id, ing["inn_en"], redact(exc))
+            # its products from earlier runs are still read: a list that failed is not a week without labels
+            known = known_products(db, source_id, ing["id"])
+            stats.products += len(known)
+            queue += [(row, ing) for row in known]
             continue
-        stats.discover_ok += 1
-        stats.products += len(found)
+        gaps = list(getattr(found, "gaps", None) or [])
+        known = known_products(db, source_id, ing["id"])
+        if not found and known:
+            # an empty answer where products were listed before is a list that did not answer, not every
+            # product withdrawn at once: nothing is switched off, and it is a failed discovery
+            gaps.append(f"listed no product; {len(known)} listed before kept")
+        if gaps:
+            stats.errors.append(redact(f"discover {ing['inn_en']}: partial list: {'; '.join(gaps)}"[:500]))
+            log.warning("SPC %s discover %s: partial list (%s); no product switched off", source_id,
+                        ing["inn_en"], redact("; ".join(gaps)))
+        if found or not known:
+            stats.discover_ok += 1
         with db.transaction():
+            ids = set()
             for p in found:
-                queue.append((upsert_product(db, source_id, ing["id"], p), ing))
-            if found:
+                row = upsert_product(db, source_id, ing["id"], p)
+                ids.add(row["id"])
+                queue.append((row, ing))
+            if found and not gaps:
                 deactivate_missing(db, source_id, ing["id"], [p.national_id for p in found])
+            elif gaps:
+                # the products the list did not reach stay active, and their labels are read as usual
+                queue += [(row, ing) for row in known if row["id"] not in ids]
+        stats.products += len(found) + (len([r for r in known if r["id"] not in ids]) if gaps else 0)
     queue.sort(key=lambda pair: _turn(pair[0]))      # stable: ingredient and listing order otherwise
     for n, (product, ing) in enumerate(queue):
         if deadline is not None and clock() >= deadline:

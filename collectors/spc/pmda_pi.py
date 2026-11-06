@@ -39,7 +39,7 @@ import unicodedata
 
 from collectors.parsers._html_util import absolute, local_date, node_text
 from collectors.parsers.base import soup
-from collectors.spc.common import Product, Snapshot, terms_for
+from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, terms_for
 from collectors.spc.sections import split_japanese
 
 log = logging.getLogger(__name__)
@@ -153,6 +153,7 @@ def parse_general_list(html, base_url: str) -> list[Product]:
 
 def discover(ctx, ingredient: dict) -> list[Product]:
     found: dict[str, Product] = {}
+    gaps: list[str] = []
     has_ja = bool(terms_for(ingredient, "ja", fallback_en=False))
     for code, trusted in code_sources(ctx, ingredient).items():
         if not trusted and not has_ja:
@@ -162,6 +163,8 @@ def discover(ctx, ingredient: dict) -> list[Product]:
             continue
         f = ctx.get(GENERAL.format(code=code))
         if f.status != 200:
+            # a code page that did not answer: its products are not withdrawn, the list is partial
+            gaps.append(f"code page {len(gaps) + 1}: HTTP {f.status}")
             continue
         if not trusted and not names_ingredient(general_name(f), ingredient):
             log.info("PMDA %s: a code from a revision notice skipped, its 一般名 names another substance",
@@ -169,7 +172,7 @@ def discover(ctx, ingredient: dict) -> list[Product]:
             continue
         for p in parse_general_list(f, f.final_url):
             found.setdefault(p.national_id, p)
-    return list(found.values())
+    return Listing(found.values(), gaps=gaps)
 
 
 def snapshot(ctx, product: dict) -> Snapshot | None:
@@ -177,9 +180,10 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     url = PDF.format(pid=extra["package_id"]) if extra.get("package_id") else product.get("url")
     if not url:
         return None
-    f = ctx.get(url, accept="application/pdf")
+    f = fetch_label(ctx, url, accept="application/pdf")
     if f.status != 200 or not f.is_pdf:
-        return None
+        raise SnapshotError(f"PMDA {product['national_id']} insert: HTTP {f.status}"
+                            f"{'' if f.status != 200 else ', not a PDF'}")
     from collectors.pdf import extract_text_by_columns
 
     text, _m, _w, by_columns = extract_text_by_columns(f.content, LANG)

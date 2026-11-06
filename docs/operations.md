@@ -509,6 +509,19 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   reference product every week. Before this, on 6 Nov 2026, paracetamol's products ran a hand-started watch to
   GitHub's two-hour timeout and the run was killed before it reached Japan; Monday's 90-minute run would have
   been killed the same way, for every ingredient.
+- **A list that breaks off never switches products off** (0084, 0085, 7 Nov 2026). A product is marked no
+  longer authorised only when the country's list for the ingredient was read to its end. When a page, a
+  Japanese code page or a UK search page did not answer, the run notes *partial list: …* and keeps every product
+  listed before, and their labels are read as usual. An empty answer where products were listed before is a
+  failed discovery (*listed no product; N listed before kept*), not every product withdrawn at once. A list that
+  failed outright still reads the labels already known. A label that does not answer (an HTTP error, a file that
+  is not a PDF) is an error on that product and is read first the next week; only a label that answered with no
+  section counts as *without label text*. A label two ingredients share is read in full for each of them. Spain
+  is searched by ATC code and by the Spanish name, so combinations are found; the UK search reads every page
+  (up to 40) of up to four English names, and a UK product without a PL number keeps its name as its id, so a
+  new SPC file is the same product. A run that only ran out of time shows as a note, not as Failed (0084). On
+  7 Nov 2026, 99 Japanese package inserts filed under ivabradine by codes it does not have (paracetamol's among
+  them) were switched off once (0085).
 
 The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
 took its place.
