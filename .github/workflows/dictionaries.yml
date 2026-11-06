@@ -1,7 +1,8 @@
 # PHAROS — the medical dictionaries (collectors/coding/mesh.py). MeSH, the National Library of Medicine's Medical
 # Subject Headings, publishes one release a year, late in the year before; this checks on the 2nd of every month
 # and loads a release only when it is new (same SHA-256: nothing to do). Run it by hand after the first deploy of
-# migration 0061, or with "force" to load the same release again.
+# migration 0061, or with "force" to load the same release again. After the load, the labels and the papers are
+# coded (0062): a new release codes every label again, and a run by hand fills the Ingredients screen at once.
 name: PHAROS dictionaries
 
 on:
@@ -42,3 +43,14 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           FORCE: ${{ inputs.force && '--force' || '' }}
         run: python -m collectors.coding --mesh $FORCE
+
+      # The same coding as the daily step of PHAROS collect; a failure warns and never fails the load.
+      - name: Labels and papers
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+        run: python -m collectors.coding --labels --papers || echo "::warning::Coding stopped with an error; the daily collection continues it."
