@@ -151,6 +151,29 @@ select pg_temp.sf_assert((select count(*) from signal_issue where issue_id = '00
     and (select stage from signal where id = :'sig1') = 'closed',
   'Concerns us again opens no second signal and reopens nothing by itself');
 
+-- ───────────── Reopen: a signal never validated goes back to validation (0057) ─────────────
+set role authenticated;
+select signal_take_step(:'sig1', 'reopened', 'closed', 'It is our salt after all') as sf_reopened \gset
+select finding_state(array['00000000-0000-0000-0000-00000042e001']::uuid[])
+         -> '00000000-0000-0000-0000-00000042e001' -> 'signal' as sf_reval \gset
+reset role;
+select pg_temp.sf_assert(:'sf_reopened' = 'validation'
+    and (select stage = 'validation' and priority is null and outcome is null and closed_at is null
+                and validation_due = :'today'::date + signal_due_days('validation') and assessment_due is null
+           from signal where id = :'sig1'),
+  'reopening a signal closed as not validated sends it back to validation, with no priority nobody chose');
+select pg_temp.sf_assert(:'sf_reval'::jsonb ->> 'next_step' = 'validated'
+    and (select to_stage = 'validation' and priority is null from signal_event
+          where signal_id = :'sig1' and step = 'reopened'),
+  'its next step is validation, and the record says where it went');
+set role authenticated;
+select signal_take_step(:'sig1', 'validated', 'validation', 'Plausible after all', 'low') as sf_reval_st \gset
+reset role;
+select pg_temp.sf_assert(:'sf_reval_st' = 'assessment'
+    and (select priority = 'low' and assessment_due = :'today'::date + signal_due_days('assessment', 'low')
+           from signal where id = :'sig1'),
+  'validated again, it takes the priority chosen then and that priority''s assessment clock');
+
 -- ───────────── a signal already validated is left alone by Doesn't concern us ─────────────
 set role authenticated;
 insert into review_event (issue_id, from_status, to_status, comment, person_id) values
@@ -173,6 +196,17 @@ select pg_temp.sf_assert(:'sf_kept'::jsonb ->> 'stage' = 'assessment'
     and :'sf_kept'::jsonb ->> 'next_step' = 'assessed'
     and (:'sf_kept'::jsonb ->> 'next_due')::date = :'today'::date + signal_due_days('assessment', 'high'),
   'finding_state shows the validated signal with its assessment due day');
+
+-- ───────────── Reopen: a signal closed after its assessment goes back to assessment, its priority kept ─────────────
+set role authenticated;
+select signal_take_step(:'sig2', 'assessed', 'assessment', 'Nothing to do', null, 'no_action') as sf_closed2 \gset
+select signal_take_step(:'sig2', 'reopened', 'closed', 'New data') as sf_reopened2 \gset
+reset role;
+select pg_temp.sf_assert(:'sf_closed2' = 'closed' and :'sf_reopened2' = 'assessment'
+    and (select stage = 'assessment' and priority = 'high' and outcome is null
+                and assessment_due = :'today'::date + signal_due_days('assessment', 'high')
+           from signal where id = :'sig2'),
+  'reopening an assessed signal sends it back to assessment with its own priority and clock');
 
 -- ───────────── a notice of two ingredients opens a signal with no ingredient ─────────────
 set role authenticated;
