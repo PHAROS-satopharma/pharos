@@ -3,18 +3,26 @@
 import type { IssueStatus } from '../../lib/types';
 import type { Decision, IngredientScreenData, Mention } from './types';
 
-export const DECISIONS: { to: Exclude<IssueStatus, 'new'>; label: string; hint: string }[] = [
-  { to: 'reviewed', label: 'Reviewed', hint: 'Read, decision still to come.' },
-  { to: 'relevant', label: 'Relevant', hint: 'It concerns our products and needs action or follow-up.' },
-  { to: 'not_relevant', label: 'Not relevant', hint: 'It does not concern our products. Say why.' },
+/** Her two decisions (6 Nov 2026): Concerns us, or Doesn't concern us with a reason. */
+export const DECISIONS: { to: 'relevant' | 'not_relevant'; label: string; hint: string }[] = [
+  { to: 'relevant', label: 'Concerns us', hint: 'It concerns our products and needs action or follow-up.' },
+  { to: 'not_relevant', label: "Doesn't concern us", hint: 'It does not concern our products. Say why.' },
 ];
 
-/** The decisions that can follow the notice's status: never back to New, never the same status again. */
+/** Each status in her words. Reviewed comes from the older screens and still waits for a decision. */
+export const DECISION_LABEL: Record<IssueStatus, string> = {
+  new: 'No decision yet',
+  reviewed: 'Reviewed, no decision yet',
+  relevant: 'Concerns us',
+  not_relevant: "Doesn't concern us",
+};
+
+/** The decisions that can follow the notice's status: never the one already taken. */
 export function choicesFor(status: IssueStatus): typeof DECISIONS {
   return DECISIONS.filter((d) => d.to !== status);
 }
 
-/** Not relevant needs a reason, as the database requires. */
+/** Doesn't concern us needs a reason, as the database requires. */
 export function needsReason(to: IssueStatus | null): boolean {
   return to === 'not_relevant';
 }

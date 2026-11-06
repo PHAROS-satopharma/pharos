@@ -16,6 +16,7 @@ import { listsItems, offReason, pageStatus, sourceLabels, type PageKind } from '
 import { useLiteratureSearch } from '../literature/useLiteratureSearch';
 import { answerText, countryAnswers, readsText, summaryLine, toCheckByHand, type CountryAnswer } from './answers';
 import { DecisionButtons } from './DecisionButtons';
+import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
 import { PRESETS, cairoDayOf, presetDays, rangeError, rangeFromSearch, rangeLabel, type DayRange } from './range';
 import { ReadEmail } from './ReadEmail';
@@ -317,10 +318,10 @@ function MentionItem({ m, showWhere, queryKey }: { m: Mention; showWhere: boolea
       {m.terms.length ? (
         <p className="scr-words">
           <span className="micro">Matched</span>
-          {m.terms.map((t) => (
-            <span key={`${t.text}|${t.lang ?? ''}`} className="scr-word">
-              <span lang={t.lang ?? undefined}>{t.text}</span>
-              {t.lang ? <span className="scr-word-lang">{languageName(t.lang)}</span> : null}
+          {distinctWords(m.terms).map((w) => (
+            <span key={w.text} className="scr-word" title={w.langs.map(languageName).join(', ') || undefined}>
+              <span lang={w.langs.length === 1 ? w.langs[0] : undefined}>{w.text}</span>
+              {w.langs.length === 1 ? <span className="scr-word-lang">{languageName(w.langs[0])}</span> : null}
             </span>
           ))}
         </p>
