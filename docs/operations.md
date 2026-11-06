@@ -454,6 +454,16 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   missing*, *Not compared: different language*, *Not compared yet*, or *No label of ours uploaded*.
 - **Days.** Section 03 and the report filter by the Cairo day the change was **detected**, not by the date printed
   on the label (a label dated 1 October found on 3 November appears in the week of 3 November).
+- **Time, and labels read in turn** (0063, 6 Nov 2026). The watch keeps to the run's time budget
+  (`PHAROS_TIME_BUDGET_MIN`: 78 minutes on the weekly run, 108 on a run started by hand). Each country gets an even
+  share of the time left, and a country that finishes early leaves its time to the next. Within a country the
+  labels are read in turn: **the reference product first**, then labels never read, then the one read longest
+  ago (`spc_product.checked_at`). What the time does not reach is read first the next week; the source's run
+  says *out of time: N label(s) left for the next run*, which is not a failure. An ingredient with hundreds of
+  products in one country (paracetamol: Spain, France, the US) is covered over two or three weeks; its
+  reference product every week. Before this, on 6 Nov 2026, paracetamol's products ran a hand-started watch to
+  GitHub's two-hour timeout and the run was killed before it reached Japan; Monday's 90-minute run would have
+  been killed the same way, for every ingredient.
 
 The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
 took its place.

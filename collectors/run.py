@@ -541,7 +541,8 @@ def main(argv: list[str] | None = None) -> int:
                 try:
                     from collectors.spc.run import run_spc
 
-                    created = run_spc(ctx, db, spc_ids, store=store, notifier=notifier)
+                    created = run_spc(ctx, db, spc_ids, store=store, notifier=notifier,
+                                      deadline=runner.deadline)
                 except Exception:  # noqa: BLE001 - SPC trouble is logged, the run continues
                     ok, created = False, []
                     log.error("SPC watch failed: %s", traceback.format_exc())

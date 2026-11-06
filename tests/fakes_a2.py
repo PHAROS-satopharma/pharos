@@ -181,6 +181,11 @@ class SpcDb:
             self.links.append((q.split()[2], p))
         elif q.startswith("insert into match"):
             self.matches.append(p)
+        elif q.startswith("update spc_product set checked_at = now()"):
+            self.clock_n = getattr(self, "clock_n", 0) + 1     # an ever-later "now"
+            for row in self.products.values():
+                if row["id"] == p["p"]:
+                    row["checked_at"] = self.clock_n
         elif q.startswith("update spc_product set active = false"):
             for (src, nid), row in self.products.items():
                 if src == p["s"] and row["ingredient_id"] == p["i"] and nid not in p["k"]:
