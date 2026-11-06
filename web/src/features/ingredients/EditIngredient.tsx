@@ -114,7 +114,7 @@ export function EditIngredient({
       </Field>
       <p className="small muted">
         Change a name, add one, or remove one. A new or changed name is looked for from now on, and within hours the notices
-        of the last 12 months are checked for it. The Japan code has its own field above.
+        of the last 12 months are checked for it. The Japan codes have their own field above.
       </p>
       <TermEditor
         terms={terms}
