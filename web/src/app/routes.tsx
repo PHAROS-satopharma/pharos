@@ -4,22 +4,16 @@ import { useAuth } from '../lib/auth';
 import { mustChoosePassword, supabaseConfigured } from '../lib/supabase';
 import { Layout } from './Layout';
 import { SignIn } from '../features/signin/SignIn';
-import { IssuesPage } from '../features/issues/IssuesPage';
-import { DetailPage } from '../features/detail/DetailPage';
 import { IngredientsPage } from '../features/ingredients/IngredientsPage';
 import { IngredientScreen } from '../features/screen/IngredientScreen';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { MePage, PasswordForm } from '../features/me/MePage';
 import { ReportsPage } from '../features/reports/ReportsPage';
-import { OurLabelsPage } from '../features/labels/OurLabelsPage';
-import { SignalsPage } from '../features/signals/SignalsPage';
-import { SignalPage } from '../features/signals/SignalPage';
-import { PsurPage } from '../features/psur/PsurPage';
-import { OversightPage } from '../features/oversight/OversightPage';
 import { Button } from '../ui/Button';
 import { Empty, Loading } from '../ui/States';
 import { PharosMark } from '../ui/PharosMark';
+import { HOME, REMOVED_PATHS } from './nav';
 
 function Bare({ children }: { children: ReactNode }) {
   return (
@@ -102,7 +96,7 @@ function ChoosePassword({ onDone }: { onDone: () => void }) {
 
 function NotFound() {
   return (
-    <Empty title="There is nothing at this address." action={<Link to="/">Back to the notifications</Link>}>
+    <Empty title="There is nothing at this address." action={<Link to="/">Back to Ingredients</Link>}>
       <p>The link may be old, or the page was moved.</p>
     </Empty>
   );
@@ -124,19 +118,17 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<IssuesPage />} />
-        <Route path="issue/:id" element={<DetailPage />} />
-        <Route path="signals" element={<SignalsPage />} />
-        <Route path="signals/:id" element={<SignalPage />} />
+        <Route index element={<Navigate to={HOME} replace />} />
         <Route path="ingredients" element={<IngredientsPage />} />
         <Route path="ingredients/:id" element={<IngredientScreen />} />
-        <Route path="labels" element={<OurLabelsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="psur" element={<PsurPage />} />
-        <Route path="oversight" element={<OversightPage />} />
         <Route path="people" element={isAdmin ? <PeoplePage /> : <Navigate to="/" replace />} />
         <Route path="me" element={<MePage />} />
+        {/* The screens removed in November 2026: an old link opens Ingredients, never an empty page. */}
+        {REMOVED_PATHS.map((p) => (
+          <Route key={p} path={p} element={<Navigate to="/" replace />} />
+        ))}
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

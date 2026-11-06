@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
@@ -107,9 +106,6 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
             {d.person}, {formatDateTime(d.at)}
           </span>
         ) : null}
-        <Link className="scr-open-notice" to={`/issue/${issueId}`}>
-          Open the notice
-        </Link>
       </div>
       {d?.comment ? <p className="scr-decision-why">{d.comment}</p> : null}
 

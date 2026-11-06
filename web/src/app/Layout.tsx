@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { NewCount } from '../features/sources/NewCount';
 import { useAuth } from '../lib/auth';
@@ -9,61 +8,29 @@ import { PharosMark } from '../ui/PharosMark';
 import { SatoCopyright, SatoCredit } from '../ui/SatoCredit';
 import { ThemeSwitch } from '../ui/ThemeSwitch';
 import { cx } from '../ui/cx';
-
-interface NavItem {
-  to: string;
-  label: string;
-  end?: boolean;
-}
+import { tabsFor } from './nav';
+import '../styles/tabbar.css';
 
 export function Layout() {
   const { person, isAdmin, signOut } = useAuth();
-  const nav: NavItem[] = [
-    { to: '/', label: 'Notifications', end: true },
-    { to: '/signals', label: 'Signals' },
-    { to: '/ingredients', label: 'Ingredients' },
-    { to: '/sources', label: 'Sources' },
-    { to: '/reports', label: 'Reports' },
-    { to: '/oversight', label: 'Oversight' },
-  ];
-  if (isAdmin) nav.push({ to: '/people', label: 'People' });
-
-  // On a phone the sections fold behind a Menu button; any move to another page folds them again.
+  const tabs = tabsFor(isAdmin);
   const { pathname } = useLocation();
-  const [openOn, setOpenOn] = useState<string | null>(null);
-  const menuOpen = openOn === pathname;
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenOn(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
 
   return (
     <div className="app">
       <a href="#main" className="skip">
         Skip to content
       </a>
-      <header className={cx('topbar', menuOpen && 'is-menu-open')}>
+      <header className="topbar">
         <div className="topbar-inner">
           <Link to="/" className="brand" aria-label="PHAROS, home">
             <PharosMark height={50} />
           </Link>
-          <nav id="main-nav" className="nav" aria-label="Main">
-            {nav.map((n, i) => (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                end={n.end}
-                className={({ isActive }) => cx('nav-link', isActive && 'is-active')}
-              >
-                <span className="nav-index" aria-hidden="true">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                {n.label}
-                {n.to === '/sources' ? <NewCount /> : null}
+          <nav className="nav" aria-label="Main">
+            {tabs.map((t) => (
+              <NavLink key={t.to} to={t.to} className={({ isActive }) => cx('nav-link', isActive && 'is-active')}>
+                {t.label}
+                {t.to === '/sources' ? <NewCount /> : null}
               </NavLink>
             ))}
           </nav>
@@ -82,16 +49,6 @@ export function Layout() {
             <ThemeSwitch className="bar-only" />
             <button type="button" className="bar-button bar-only" onClick={() => void signOut()}>
               Sign out
-            </button>
-            <button
-              type="button"
-              className="menu-button"
-              aria-expanded={menuOpen}
-              aria-controls="main-nav"
-              onClick={() => setOpenOn(menuOpen ? null : pathname)}
-            >
-              <span className="menu-icon" aria-hidden="true" />
-              {menuOpen ? 'Close' : 'Menu'}
             </button>
           </div>
         </div>
@@ -112,6 +69,15 @@ export function Layout() {
           <span className="micro">All times are Cairo local time</span>
         </div>
       </footer>
+      {/* On a phone the same tabs sit at the foot of the screen, in reach of the thumb (tabbar.css). */}
+      <nav className="tabbar" aria-label="Main">
+        {tabs.map((t) => (
+          <NavLink key={t.to} to={t.to} className={({ isActive }) => cx('tabbar-link', isActive && 'is-active')}>
+            <span className="tabbar-label">{t.label}</span>
+            {t.to === '/sources' ? <NewCount /> : null}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -145,22 +145,17 @@ export function IngredientsPage() {
         title="Ingredients"
         lede="Each ingredient is looked for under every name it carries, in each regulator’s own language."
         actions={
-          <>
-            <Link to="/labels" className="btn btn-secondary">
-              Our labels
-            </Link>
-            {isAdmin && !adding ? (
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setAdding(true);
-                  setSaved(false);
-                }}
-              >
-                Add ingredient
-              </Button>
-            ) : null}
-          </>
+          isAdmin && !adding ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setAdding(true);
+                setSaved(false);
+              }}
+            >
+              Add ingredient
+            </Button>
+          ) : null
         }
       />
 
