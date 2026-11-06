@@ -9,7 +9,9 @@ import {
   newSince,
   pageStatus,
   sinceFor,
+  offReason,
   sourceLabel,
+  sourceLabels,
   sourcePage,
   totalNew,
   type CardRegulator,
@@ -228,5 +230,37 @@ describe('sourceLabel', () => {
     expect(
       sourceLabel(src('fda-email', 'FDA', { channel: 'email', page_url: 'https://www.fda.gov/safety/medwatch' }), []),
     ).toBe('Safety notices by e-mail · fda.gov');
+  });
+});
+
+describe('sourceLabels', () => {
+  it('tells apart two sources of one card that would read the same', () => {
+    const alerts = src('tga-alerts', 'TGA', { url: 'https://www.tga.gov.au/news/safety-alerts' });
+    const updates = src('tga-updates', 'TGA', { url: 'https://www.tga.gov.au/news/safety-updates' });
+    const mail = src('tga-email', 'TGA', { channel: 'email', url: 'https://www.tga.gov.au/news/safety-alerts' });
+    const labels = sourceLabels([alerts, updates, mail], []);
+    expect(labels.get('tga-alerts')).toBe('Safety notices · tga.gov.au · safety alerts');
+    expect(labels.get('tga-updates')).toBe('Safety notices · tga.gov.au · safety updates');
+    expect(labels.get('tga-email')).toBe('Safety notices by e-mail · tga.gov.au');
+  });
+
+  it('leaves a label alone when no other source of the card shares it', () => {
+    const one = src('pmda-urgent', 'PMDA', { url: 'https://www.pmda.go.jp/safety/0001.html' });
+    expect(sourceLabels([one], []).get('pmda-urgent')).toBe('Safety notices · pmda.go.jp');
+  });
+});
+
+describe('offReason', () => {
+  const note = "Switched off on purpose: TGA's site refuses our servers.";
+  it('shows why a source is switched off, or why its site refuses it', () => {
+    expect(offReason({ enabled: false, health: 'blocked', notes: note })).toBe(note);
+    expect(offReason({ enabled: false, health: 'unknown', notes: note })).toBe(note);
+    expect(offReason({ enabled: true, health: 'blocked', notes: note })).toBe(note);
+  });
+
+  it('keeps the catalogue notes of a source that is read to Technical details', () => {
+    expect(offReason({ enabled: true, health: 'ok', notes: 'Read from the news API.' })).toBeNull();
+    expect(offReason({ enabled: false, health: 'blocked', notes: null })).toBeNull();
+    expect(offReason({ enabled: false, health: 'blocked', notes: '  ' })).toBeNull();
   });
 });
