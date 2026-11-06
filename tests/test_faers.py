@@ -73,6 +73,15 @@ def test_the_inn_is_searched_exactly_in_three_fields():
                  'patient.drug.activesubstance.activesubstancename.exact:"CARVEDILOL X")')
 
 
+def test_a_us_name_that_differs_from_the_inn_is_searched_with_it():
+    # FDA files paracetamol as ACETAMINOPHEN (RxNorm's ingredient name): searching the INN alone found 0 reports
+    s = faers.name_search("paracetamol", "Acetaminophen")
+    for field in faers.NAME_FIELDS:
+        assert f'{field}:"PARACETAMOL"' in s and f'{field}:"ACETAMINOPHEN"' in s
+    assert s.startswith("(") and s.endswith(")") and s.count(":") == 6
+    assert faers.name_search("carvedilol", "CARVEDILOL") == faers.name_search("carvedilol")     # the same name once
+
+
 # ───────────────────────────── a fake openFDA ─────────────────────────────
 QUARTER_DAYS = ["20241001", "20250110", "20250401", "20250701", "20251001", "20260101", "20260401", "20260930"]
 WHOLE = "receivedate:[20241001 TO 20260930]"
@@ -149,6 +158,33 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
     faers.count_ingredient(api, bg, "Codamine")
     assert api.requests == 13                                            # every drug's counts are asked once a run
     assert all(p["limit"] == "100" for p in fake.asked if p.get("count") == faers.REACTION)
+
+
+def test_a_reaction_openfda_cannot_search_is_counted_by_its_words():
+    # FDA writes an apostrophe as ^ ("WERNICKE^S ENCEPHALOPATHY") and openFDA's search refuses a ^ even in quotes
+    # (HTTP 400 "Search not supported", 6 Nov 2026), which failed lornoxicam's whole count. The phrase on the
+    # analysed field finds the reports (152 on 6 Nov), and their count by exact reaction gives this one's.
+    asked: list[dict] = []
+
+    def get(params):
+        asked.append(dict(params))
+        s, count = params.get("search", ""), params.get("count")
+        if count == "receivedate":
+            return 200, counted({d: 10000 for d in QUARTER_DAYS}, key="time")
+        if params.get("limit") == "1":
+            if "^" in s:
+                return 400, {"error": {"code": "BAD_REQUEST", "message": f"Search not supported: {s}"}}
+            return 200, {"meta": {"results": {"total": 6}}, "results": [{}]}
+        if count == faers.REACTION and s == WHOLE:
+            return 200, counted({f"FILLER {i:03}": 5000 - i for i in range(100)})
+        if count == faers.REACTION and s == f'patient.reaction.reactionmeddrapt:"WERNICKE S ENCEPHALOPATHY" AND {WHOLE}':
+            return 200, counted({"WERNICKE^S ENCEPHALOPATHY": 152, "CONFUSIONAL STATE": 40})
+        raise AssertionError(f"not expected: {params}")
+
+    bg = faers.Background(api_for(get), today=date(2026, 11, 6))
+    assert bg.whole_count("WERNICKE^S ENCEPHALOPATHY") == 152
+    assert bg.whole_count("RARE THING") == 6                         # every other reaction: searched exactly
+    assert bg.whole_count("WERNICKE^S ENCEPHALOPATHY") == 152 and len(asked) == 5     # asked once a run
 
 
 def test_no_report_is_a_zero_not_a_failure():
@@ -258,6 +294,47 @@ def test_a_run_stores_each_ingredient_and_never_names_one_in_the_log(caplog):
     assert "an ingredient failed (HTTP 400)" in caplog.text
     assert "rokenine" not in caplog.text.lower() and "codamine" not in words.lower()
     assert db.asked[0] == {"force": False, "fresh": 6, "one": None}
+
+
+def test_an_ingredient_is_counted_under_its_us_name_too():
+    # Codaminol is the INN; FDA files it as CODAMINE, RxNorm's name for its rxcui. Without the US name: 0 reports.
+    fda = FakeFda()
+
+    def get(params):
+        s = params.get("search", "")
+        if "generic_name" in s and "CODAMINE" not in s:
+            return 404, {"error": {"code": "NOT_FOUND", "message": "No matches found!"}}
+        return fda(params)
+
+    asked: list[str] = []
+
+    def us_name(rxcui: str) -> str | None:
+        asked.append(rxcui)
+        return {"161": "codamine", "200": "Samename"}.get(rxcui)
+
+    db = FakeDb([{"id": "00000000-0000-0000-0000-0000000000a3", "inn_en": "Codaminol", "rxcui": "161"},
+                 {"id": "00000000-0000-0000-0000-0000000000a4", "inn_en": "Samename", "rxcui": "200"},
+                 {"id": "00000000-0000-0000-0000-0000000000a5", "inn_en": "Uncodedine", "rxcui": None}])
+    api = api_for(get)
+    words = faers.count_reports(db, api, today=date(2026, 11, 6), us_name=us_name)
+    assert words.startswith("3 ingredients counted (2 with no report)")
+    rows = {p["i"][-2:]: p for _, p in db.done if "s" in p}
+    assert (rows["a3"]["s"], rows["a3"]["n"]) == ("CODAMINOL, CODAMINE", 200)
+    assert rows["a4"]["s"] == "SAMENAME" and rows["a5"]["s"] == "UNCODEDINE"
+    assert asked == ["161", "200"]                                    # no rxcui, no question to RxNorm
+    assert "i.rxcui" in faers.WAITING_SQL
+
+
+def test_rxnorm_not_answering_leaves_the_ingredient_for_the_next_run(caplog):
+    # counting the INN alone would replace a good count with a wrong 0: the ingredient keeps its last counts
+    def us_name(rxcui: str) -> str | None:
+        raise ConnectionError("RxNav down")
+
+    db = FakeDb([{"id": "00000000-0000-0000-0000-0000000000a3", "inn_en": "Codamine", "rxcui": "161"}])
+    with caplog.at_level(logging.WARNING):
+        words = faers.count_reports(db, api_for(FakeFda()), today=date(2026, 11, 6), us_name=us_name)
+    assert "0 ingredients counted" in words and "1 to try again" in words and db.done == []
+    assert "an ingredient failed (ConnectionError)" in caplog.text and "codamine" not in caplog.text.lower()
 
 
 def test_nothing_waiting_asks_openfda_nothing():
