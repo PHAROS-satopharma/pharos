@@ -66,6 +66,7 @@ class MemoryStore:
         # term id -> {"changed_at", "rematched_at"}; a term without an entry was already checked against the past
         self.term_state: dict[str, dict] = {}
         self.rematch_job: dict[str, dict] = {}
+        self.report_request: dict[str, dict] = {}         # id -> the row of 0048
 
     @contextmanager
     def transaction(self):
@@ -436,6 +437,48 @@ class MemoryStore:
             country = (self.regulator.get(src.get("regulator_id")) or {}).get("country_name")
             counts[country] = counts.get(country, 0) + 1
         return [{"country_name": c, "n": n} for c, n in sorted(counts.items(), key=lambda x: x[0] or "")]
+
+    # ───────────────────────────── packs on request (0048) ─────────────────────────────
+    REPORT_STALE = timedelta(hours=2)
+
+    def add_report_request(self, kind: str, from_day: date, to_day: date, requested_by: str, *,
+                           ingredient_id: str | None = None, requested_at: datetime | None = None) -> str:
+        """request_report() in memory, for tests: a queued request."""
+        rid = _id()
+        self.report_request[rid] = {"id": rid, "kind": kind, "ingredient_id": ingredient_id, "from_day": from_day,
+                                    "to_day": to_day, "requested_by": requested_by,
+                                    "requested_at": requested_at or _now(), "status": "queued", "error": None,
+                                    "attempts": 0, "started_at": None}
+        return rid
+
+    def _waiting(self) -> list[dict]:
+        stale = _now() - self.REPORT_STALE
+        return sorted((r for r in self.report_request.values()
+                       if r["status"] == "queued" or (r["status"] == "building" and r["started_at"]
+                                                      and r["started_at"] < stale)),
+                      key=lambda r: (r["requested_at"], r["id"]))
+
+    def report_requests_waiting(self) -> int:
+        return len(self._waiting())
+
+    def claim_report_request(self) -> dict | None:
+        waiting = self._waiting()
+        if not waiting:
+            return None
+        r = waiting[0]
+        r.update(status="building", attempts=r["attempts"] + 1, started_at=_now())
+        person = self.person.get(r["requested_by"]) or {}
+        ing = self.ingredient.get(r.get("ingredient_id") or "") or {}
+        return {**r, "requested_by_name": person.get("full_name"), "ingredient_name": ing.get("inn_en")}
+
+    def finish_report_request(self, request_id: str, **files: Any) -> None:
+        self.report_request[request_id].update(status="done", error=None, made_at=_now(), **files)
+
+    def fail_report_request(self, request_id: str, error: str) -> None:
+        self.report_request[request_id].update(status="failed", error=error[:1000])
+
+    def requeue_report_request(self, request_id: str, note: str) -> None:
+        self.report_request[request_id].update(status="queued", error=note[:1000])
 
     def insert_notification(self, **fields: Any) -> None:
         self.notification.append({**fields, "sent_at": _now()})

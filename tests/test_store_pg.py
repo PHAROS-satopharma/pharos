@@ -591,3 +591,111 @@ def test_issues_of_papers_are_never_merge_candidates(store, tag):
         store.add_issue_ingredients(issue, [ing])
     got = store.candidate_issues([ing], when - timedelta(days=1), when + timedelta(days=1))
     assert [i["doc_type"] for i in got] == ["dhpc"]
+
+
+# ───────────────────────────── packs on request (0048) ─────────────────────────────
+
+def _pack_request(store: Store, ing: str, person: str, *, asked: str = "2000-01-01T00:00:00Z") -> str:
+    """A request as request_report() writes it (the collectors' connection is the owner: a direct insert)."""
+    row = store.db.fetchone(
+        """insert into report_request (kind, ingredient_id, from_day, to_day, requested_by, requested_at)
+           values ('psur', %(i)s, '2025-01-01', '2025-12-31', %(p)s, %(a)s) returning id::text as id""",
+        {"i": ing, "p": person, "a": asked})
+    return row["id"]
+
+
+def _pack_row(store: Store, rid: str) -> dict:
+    return store.db.fetchone("select * from report_request where id = %(id)s::uuid", {"id": rid})
+
+
+def test_a_pack_request_is_claimed_once_requeued_and_finished(store, tag):
+    ing = _ingredient(store, tag)
+    who = _person(store, tag, "Asker")
+    rid = _pack_request(store, ing, who)
+    assert store.report_requests_waiting() >= 1
+    got = store.claim_report_request()
+    assert got["id"] == rid and got["kind"] == "psur" and got["attempts"] == 1
+    assert got["from_day"] == date(2025, 1, 1) and got["to_day"] == date(2025, 12, 31)
+    assert got["requested_by"] == who and got["requested_by_name"] == f"Asker {tag}"
+    assert got["ingredient_name"] == f"testamine-{tag}"
+    row = _pack_row(store, rid)
+    assert row["status"] == "building" and row["started_at"] is not None
+    # a second run in the meantime does not take it
+    again = store.claim_report_request()
+    assert again is None or again["id"] != rid
+    if again:
+        store.fail_report_request(again["id"], "not this test's")
+    # cut short by its budget: it waits again, with the note
+    store.requeue_report_request(rid, "Took longer than 15 minutes; the next collection run goes on with it.")
+    row = _pack_row(store, rid)
+    assert row["status"] == "queued" and row["error"].startswith("Took longer")
+    assert store.claim_report_request()["attempts"] == 2
+    # a run that died: taken again once its build is two hours old
+    store.db.execute("update report_request set started_at = now() - interval '3 hours' where id = %(id)s::uuid",
+                     {"id": rid})
+    assert store.claim_report_request()["attempts"] == 3
+    store.finish_report_request(rid, pdf_r2_key=f"reports/packs/psur/{rid}/x.pdf", pdf_sha256="4" * 64,
+                                xlsx_r2_key=f"reports/packs/psur/{rid}/x.xlsx", xlsx_sha256="5" * 64,
+                                git_sha="abc123", made_by_run="https://github.com/x/y/actions/runs/1")
+    row = _pack_row(store, rid)
+    assert row["status"] == "done" and row["error"] is None and row["made_at"] is not None
+    assert row["pdf_sha256"] == "4" * 64 and row["git_sha"] == "abc123"
+    fp = store.db.fetchone(
+        """select encode(sha256(convert_to(pdf_sha256 || ':' || xlsx_sha256, 'UTF8')), 'hex') as fp
+             from report_request where id = %(id)s::uuid""", {"id": rid})["fp"]
+    assert len(fp) == 64
+
+
+def test_a_pack_request_that_fails_keeps_its_reason(store, tag):
+    ing = _ingredient(store, tag)
+    who = _person(store, tag, "Asker")
+    rid = _pack_request(store, ing, who)
+    got = store.claim_report_request()
+    assert got["id"] == rid
+    store.fail_report_request(rid, "RuntimeError: canceling statement due to statement timeout")
+    row = _pack_row(store, rid)
+    assert row["status"] == "failed" and "statement timeout" in row["error"]
+    # a failed request never waits again: asking again makes a new one
+    assert rid not in {r["id"] for r in store.db.fetchall(
+        "select id::text as id from report_request where status in ('queued', 'building')")}
+
+
+class _RollBack(Exception):
+    """Raised to undo a test's rows that cannot be deleted (a signature, an audit row)."""
+
+
+def test_a_signed_signal_matches_in_the_inspection_pack(store, tag):
+    """The inspection pack's signatures read each record's fingerprint now on the collector's connection (no
+    session, so record_fingerprint() is null there): its SQL must compute a signal's exactly as 0048 does."""
+    from collectors import report_pack as rp
+
+    db = store.db
+    try:
+        with db.transaction():
+            who = _person(store, tag, "Signer", role="admin")
+            sig = db.fetchone(
+                """insert into signal (ref, title, opened_by, validation_due)
+                   values (%(r)s, %(t)s, %(p)s::uuid, current_date + 30) returning id::text as id""",
+                {"r": f"SIG-T-{tag}", "t": f"Test signal {tag}", "p": who})["id"]
+            db.execute("""insert into signal_event (signal_id, step, to_stage, person_id)
+                          values (%(s)s::uuid, 'opened', 'validation', %(p)s::uuid)""", {"s": sig, "p": who})
+            # the fingerprint a signer signs: record_fingerprint() in the CI Admin's session
+            db.execute("""select set_config('request.jwt.claims',
+                            '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true)""")
+            fp = db.fetchone("select record_fingerprint('signal', %(s)s::uuid) as fp", {"s": sig})["fp"]
+            db.execute("select set_config('request.jwt.claims', '', true)")
+            assert fp and len(fp) == 64
+            db.execute(
+                """insert into sign_off (record_kind, record_id, record_sha256, meaning, person_id, signed_name,
+                                         signed_role)
+                   values ('signal', %(s)s::uuid, %(fp)s, 'approved', %(p)s::uuid, 'Signer', 'admin')""",
+                {"s": sig, "fp": fp, "p": who})
+            now = datetime.now(timezone.utc)
+            rows = db.fetchall(rp.SIGNATURES_SQL, {"a": now - timedelta(hours=1), "b": now + timedelta(hours=1)})
+            mine = [r for r in rows if r["record_id"] == sig]
+            assert len(mine) == 1
+            assert mine[0]["signal_ref"] == f"SIG-T-{tag}"
+            assert mine[0]["fingerprint_now"] == fp, "a signal signed and unchanged must match its signature"
+            raise _RollBack
+    except _RollBack:
+        pass

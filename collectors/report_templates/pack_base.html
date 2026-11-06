@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} · {{ period.label }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&family=Noto+Sans+Arabic:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* The packs (report_pack.py) wear the identity of the weekly report (weekly.html): the same paper, navy, rules
+     and type. psur.html and inspection.html fill the blocks below. */
+  :root {
+    --ink: #02224C;   /* the logo's navy */
+    --paper: #F6F4EF;
+    --rule: {{ page.rule }};
+    --muted: {{ page.muted }};
+    --sea: #1F4E5F;
+    --beacon: #E3A336;   /* markers only, never text */
+    --sans: "IBM Plex Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans Arabic", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  @page { size: A4; margin: {{ page.top }} {{ page.side }} {{ page.bottom }} {{ page.side }}; }
+  * { box-sizing: border-box; border-radius: 0; box-shadow: none; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { font: 9pt/1.45 var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: var(--sea); text-decoration: underline; text-decoration-thickness: .5px; word-break: break-all; }
+
+  .masthead { display: flex; justify-content: space-between; align-items: flex-end;
+              border-bottom: 1px solid var(--ink); padding-bottom: 6mm; margin-bottom: 7mm; }
+  .logo { display: block; width: 45mm; height: auto; max-width: none; object-fit: contain; }
+  .meta { text-align: right; font: 400 8pt/1.5 var(--mono); color: var(--muted); }
+  .meta strong { display: block; font: 500 11pt/1.3 var(--sans); color: var(--ink); }
+
+  h1 { font: 600 15pt/1.2 var(--sans); margin: 0 0 2mm; }
+  h2 { font: 600 10.5pt/1.2 var(--sans); color: var(--sea); margin: 9mm 0 3mm;
+       padding-bottom: 2mm; border-bottom: 1px solid var(--rule); break-after: avoid; }
+  h2 .n { font: 500 8pt var(--mono); color: var(--muted); margin-right: 3mm; }
+  /* Every section after the summary opens a new page. */
+  section.part { break-before: page; }
+  section.part > h2:first-child { margin-top: 0; }
+  h3 { font: 600 9.5pt/1.25 var(--sans); margin: 6mm 0 2mm; break-after: avoid; }
+  h3 .sub { font: 400 8pt var(--sans); color: var(--muted); margin-left: 2mm; }
+  h4 { font: 500 6.5pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+       margin: 4mm 0 1.5mm; break-after: avoid; }
+  .micro { font: 500 6.5pt/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+           color: var(--muted); }
+  .lede { color: var(--muted); margin: 0 0 3mm; }
+
+  .figures { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink);
+             border-bottom: 1px solid var(--rule); }
+  .figure { padding: 3mm 3mm 3mm 0; border-right: 1px solid var(--rule); }
+  .figure:last-child { border-right: 0; }
+  .figure .v { font: 500 17pt/1.1 var(--mono); margin-top: 1.5mm; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font: 500 6.5pt/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+       color: var(--muted); border-bottom: 1px solid var(--ink); padding: 1.6mm 2mm 1.6mm 0; }
+  td { border-bottom: 1px solid var(--rule); padding: 1.6mm 2mm 1.6mm 0; vertical-align: top; }
+  tr { break-inside: avoid; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  td.code, .code { font: 400 7.5pt var(--mono); color: var(--muted); }
+  .title-orig { font-weight: 500; unicode-bidi: plaintext; }
+  .empty { color: var(--muted); padding: 3mm 0; border-bottom: 1px solid var(--rule); }
+  .comment { color: var(--muted); }
+  .tag { font: 500 6.5pt/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+         border: 1px solid var(--rule); padding: .5mm 1mm; margin-left: 1mm; white-space: nowrap; }
+
+  /* The answer for a country: a square marker, as on the Ingredients screen. */
+  .answer { white-space: nowrap; }
+  .dot { display: inline-block; width: 2mm; height: 2mm; margin-right: 1.5mm; vertical-align: 0;
+         border: 1px solid var(--ink); }
+  .dot.mentioned { background: var(--ink); }
+  .dot.fine { background: var(--sea); border-color: var(--sea); }
+  .dot.check { background: var(--beacon); border-color: var(--beacon); }
+  .ingredient { break-before: page; }
+  .ingredient:first-of-type { break-before: auto; }
+  .ingredient .summary { font: 400 8pt var(--mono); color: var(--muted); margin: 0 0 2mm; }
+  .mention td { padding-top: 1mm; }
+  .mention .what { font-size: 8pt; color: var(--muted); }
+  .decision strong { font-weight: 600; }
+
+  .sato { display: block; width: auto; }
+  .closing { margin-top: 12mm; padding-top: 4mm; border-top: 1px solid var(--ink); display: flex;
+             align-items: center; gap: 4mm; break-inside: avoid; }
+  .closing .sato { height: 7mm; }
+  .closing .rule { align-self: stretch; width: 1px; background: var(--rule); }
+  .closing .text { display: flex; flex-direction: column; gap: 1mm; }
+  .closing strong { font: 600 8.5pt/1.3 var(--sans); }
+  .steps { margin: 1mm 0 0; padding: 0; list-style: none; font-size: 8pt; color: var(--muted); }
+  .steps li { padding: .5mm 0; }
+  .sha { font: 400 6.5pt/1.3 var(--mono); color: var(--muted); word-break: break-all; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <img class="logo" src="{{ logo_src }}" alt="PHAROS — Pharmaceutical Alerts &amp; Regulatory Observation System">
+  <div class="meta"><strong>{{ period.name }}</strong>{{ period.label }}</div>
+</header>
+
+<h1>{{ title }}{% block subtitle %}{% endblock %}</h1>
+<p class="micro">{% block lede %}Cairo days, both included · every source read in its own language · titles exactly as published{% endblock %}</p>
+
+<div class="figures">
+  {% for k, v in data.figures %}
+  <div class="figure"><div class="micro">{{ k }}</div><div class="v">{{ v }}</div></div>
+  {% endfor %}
+</div>
+
+<h2><span class="n">01</span>Summary</h2>
+<table>
+  {% for k, v in data.summary %}{% if k != "Pack" %}
+  <tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
+  {% endif %}{% endfor %}
+</table>
+
+{% block sections %}{% endblock %}
+
+<section class="closing">
+  <img class="sato" src="{{ sato_src }}" alt="Sato Pharma">
+  <span class="rule"></span>
+  <div class="text"><strong>{{ credit }}</strong><span class="micro">{{ copyright }}</span></div>
+</section>
+</body>
+</html>

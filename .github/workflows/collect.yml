@@ -50,8 +50,9 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-24.04
-    # daily: 60, for the drug classes before the collection and the check of the past after it
-    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.client_payload.schedule == 'daily') && 60 || 40)) }}
+    # daily: 80, for the drug classes before the collection and the check of the past after it; every run but
+    # the weekly one keeps 20 minutes for a pack asked for on Reports (the last step), so 60 by default
+    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.client_payload.schedule == 'daily') && 80 || 60)) }}
     env:
       # The collectors stop starting new notices and sources this many minutes in, so the run ends
       # cleanly (screening log, alerts, digest) instead of being killed by the timeout above.
@@ -191,3 +192,55 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.mlm || echo "::warning::EMA's literature monitoring list could not be read; the last one is kept."
+
+      # Packs on request (collectors/report_pack.py, 0048): a PSUR pack or an inspection pack asked for on Reports
+      # is made by the next run, one request per run, in at most 15 minutes (a pack not finished waits for the next
+      # run; after three tries it is marked failed). Always the last step, after the collection whatever it did;
+      # never in the weekly run (its 90 minutes are the label watch's) nor the classes run. Chromium and the fonts
+      # are installed only when a request waits. A failure is recorded on the request and never fails the run.
+      # A dry run never makes a pack: it would take a real request, and the person who asked would not be told.
+      - name: Packs waiting?
+        id: packs
+        if: ${{ !cancelled() && steps.which.outputs.schedule != 'weekly' && steps.which.outputs.schedule != 'classes' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          n=$(python -m collectors.report_pack --waiting 2>/dev/null | tail -n 1 || echo 0)
+          [[ "$n" =~ ^[0-9]+$ ]] || n=0
+          echo "Packs waiting: $n"
+          if [ "$n" -gt 0 ]; then echo "waiting=true" >> "$GITHUB_OUTPUT"; else echo "waiting=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Fonts for packs (PDF)
+        if: ${{ !cancelled() && steps.packs.outputs.waiting == 'true' }}
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
+        with:
+          packages: fonts-noto-core fonts-noto-cjk fonts-noto-ui-core
+          version: "1"
+      - name: Playwright browser for packs (cached)
+        if: ${{ !cancelled() && steps.packs.outputs.waiting == 'true' && steps.which.outputs.browser != 'true' }}
+        id: pw-cache-packs
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('collectors/requirements.txt') }}
+      - name: Playwright install for packs
+        if: ${{ !cancelled() && steps.packs.outputs.waiting == 'true' && steps.which.outputs.browser != 'true' }}
+        env:
+          HIT: ${{ steps.pw-cache-packs.outputs.cache-hit }}
+        run: |
+          if [ "$HIT" != "true" ]; then python -m playwright install --with-deps chromium
+          else python -m playwright install-deps chromium; fi
+      - name: Packs on request
+        if: ${{ !cancelled() && steps.packs.outputs.waiting == 'true' && !inputs.dry_run }}
+        timeout-minutes: 20
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          DRY: ${{ inputs.dry_run && '1' || '' }}
+        run: |
+          args=()
+          [ -n "$DRY" ] && args+=(--dry-run)
+          python -m collectors.report_pack "${args[@]}" || echo "::warning::A pack could not be made; the reason is on the request in Reports."

@@ -1,0 +1,165 @@
+{% extends "pack_base.html" %}
+{# The inspection pack (collectors/report_pack.py, phase 15): the evidence an inspector asks for, for the days
+   asked for: what PHAROS reads and how often, every decision and signature, the reports to the authority, the
+   weekly reports with their SHA-256, the archive checks, the audit log and who holds which role. The Excel file
+   holds the same rows. #}
+{% block lede %}Cairo days, both included · read from PHAROS's own records · every file with its SHA-256{% endblock %}
+{% block sections %}
+{% from "pack_macros.html" import link %}
+<p class="lede">This pack covers {{ period.label }}{% if data.asked %}, asked for by {{ data.asked }}{% endif %}.</p>
+
+<section class="part">
+<h2><span class="n">02</span>Coverage</h2>
+<p class="lede">Every page of hers, by country, and whether PHAROS reads it. A page the app does not read is checked by hand.</p>
+{% if data.coverage %}
+<table>
+  <thead><tr><th>Country</th><th>Her page</th><th>Read by the app</th></tr></thead>
+  <tbody>
+  {% for c in data.coverage %}
+  <tr>
+    <td>{{ c.country }}</td>
+    <td>{{ c.label }}{% if c.kind %} <span class="comment">· {{ c.kind }}</span>{% endif %}<br>{{ link(c.url) }}</td>
+    <td>{{ c.status }}{% if c.read_by %}<br><span class="comment">{{ c.read_by }}</span>{% endif %}{% if c.note %}<br><span class="comment">{{ c.note }}</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No page of hers is recorded.</div>
+{% endif %}
+</section>
+
+<section class="part">
+<h2><span class="n">03</span>Screening log</h2>
+<p class="lede">Every source, and how often PHAROS read it in these days.</p>
+<table>
+  <thead><tr><th>Country</th><th>Source</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">Items read</th><th class="num">Matched</th><th>Last read</th></tr></thead>
+  <tbody>
+  {% for r in data.annex %}
+  <tr>
+    <td>{{ r.country }}</td>
+    <td>{{ r.authority }}<br><span class="comment">{{ r.source }} · {{ r.kind }}{% if not r.enabled %} · switched off{% endif %}</span>{% if r.why %}<br><span class="comment">{{ r.why }}</span>{% endif %}</td>
+    <td class="num">{{ r.runs }}</td><td class="num">{{ r.failed }}</td><td class="num">{{ r.seen }}</td><td class="num">{{ r.matched }}</td><td class="code">{{ r.last_run }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</section>
+
+<section class="part">
+<h2><span class="n">04</span>Decisions and signatures</h2>
+<h3>Decisions</h3>
+{% if data.decisions %}
+<table>
+  <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th></tr></thead>
+  <tbody>
+  {% for d in data.decisions %}
+  <tr><td class="code">{{ d.at }}</td><td class="title-orig">{{ d.title }}</td><td><strong>{{ d.decision }}</strong><br><span class="comment">was {{ d.before }}</span></td><td>{{ d.person }}</td><td class="comment">{{ d.reason }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No decision was taken in these days.</div>
+{% endif %}
+
+<h3>Signatures</h3>
+{% if data.signatures %}
+<table>
+  <thead><tr><th>When (Cairo)</th><th>Record</th><th>Signed</th><th>SHA-256 signed</th></tr></thead>
+  <tbody>
+  {% for s in data.signatures %}
+  <tr>
+    <td class="code">{{ s.at }}</td>
+    <td>{{ s.record }}{% if s.comment %}<br><span class="comment">{{ s.comment }}</span>{% endif %}</td>
+    <td><strong>{{ s.meaning }}</strong> by {{ s.name }}<br><span class="comment">{{ s.role }}</span></td>
+    <td><span class="sha">{{ s.sha }}</span><br>{{ s.state }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Nothing was signed in these days.</div>
+{% endif %}
+
+<h3>Reports to the authority</h3>
+{% if data.sent %}
+<table>
+  <thead><tr><th>Sent on</th><th>Notice</th><th>Authority</th><th>By</th></tr></thead>
+  <tbody>
+  {% for s in data.sent %}
+  <tr>
+    <td>{{ s.on }}</td>
+    <td class="title-orig">{{ s.title }}{% if s.note %}<br><span class="comment">{{ s.note }}</span>{% endif %}{% if s.withdrawn %}<br><span class="comment">{{ s.withdrawn }}</span>{% endif %}</td>
+    <td>{{ s.authority }}{% if s.reference %}<br><span class="comment">{{ s.reference }}</span>{% endif %}</td>
+    <td>{{ s.person }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Nothing was reported to the authority in these days.</div>
+{% endif %}
+</section>
+
+<section class="part">
+<h2><span class="n">05</span>Weekly reports</h2>
+<p class="lede">Every weekly screening report of these days, with the SHA-256 of its files and its signatures.</p>
+{% if data.weekly %}
+<table>
+  <thead><tr><th>Week</th><th>Files</th><th>Signatures</th></tr></thead>
+  <tbody>
+  {% for w in data.weekly %}
+  <tr>
+    <td>{{ w.week }}<br><span class="comment">Made {{ w.made }}</span></td>
+    <td><span class="micro">PDF</span> <span class="sha">{{ w.pdf_sha256 }}</span><br><span class="micro">Excel</span> <span class="sha">{{ w.xlsx_sha256 }}</span>{% if w.git_sha %}<br><span class="comment">Code {{ w.git_sha[:12] }}</span>{% endif %}</td>
+    <td>{% if w.signatures %}{% for g in w.signatures %}{{ g.meaning }} by {{ g.name }} ({{ g.role }}), {{ g.at }}<br><span class="comment">{{ g.state }}</span>{% if not loop.last %}<br>{% endif %}{% endfor %}{% else %}<span class="comment">Not signed</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No weekly report was made in these days.</div>
+{% endif %}
+
+<h3>Archive checks</h3>
+{% if data.checks %}
+<table>
+  <thead><tr><th>Checked (Cairo)</th><th class="num">Files sampled</th><th class="num">Not matching</th><th class="num">Missing</th><th>Result</th></tr></thead>
+  <tbody>
+  {% for c in data.checks %}
+  <tr><td class="code">{{ c.at }}</td><td class="num">{{ c.sampled }}</td><td class="num">{{ c.mismatched }}</td><td class="num">{{ c.missing }}</td><td>{{ c.result }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No archive check ran in these days.</div>
+{% endif %}
+</section>
+
+<section class="part">
+<h2><span class="n">06</span>Audit log and people</h2>
+<h3>Changes in the audit log</h3>
+{% if data.audit %}
+<table>
+  <thead><tr><th>Table</th><th>Change</th><th class="num">Rows</th></tr></thead>
+  <tbody>
+  {% for a in data.audit %}
+  <tr><td class="code">{{ a.table }}</td><td>{{ a.action }}</td><td class="num">{{ a.n }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">Nothing changed in these days.</div>
+{% endif %}
+
+<h3>People and roles</h3>
+<table>
+  <thead><tr><th>Name</th><th>Role</th><th>State</th><th>Telegram</th><th>Added</th></tr></thead>
+  <tbody>
+  {% for p in data.people %}
+  <tr><td>{{ p.name }}</td><td>{{ p.role }}</td><td>{{ p.active }}</td><td>{{ p.telegram }}</td><td>{{ p.added }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</section>
+{% endblock %}

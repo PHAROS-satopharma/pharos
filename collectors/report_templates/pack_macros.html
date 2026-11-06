@@ -1,0 +1,4 @@
+{# The small pieces psur.html and inspection.html share (imported inside their blocks). #}
+{% macro link(url, text=None) %}{% if url %}<a href="{{ url }}">{{ text or url }}</a>{% endif %}{% endmacro %}
+{% macro by_email(m) %}{% if not m.link and m.by_email %}<span class="comment">Arrived by e-mail; open it in PHAROS</span>{% endif %}{% endmacro %}
+{% macro answer_dot(a) %}<span class="dot {{ 'mentioned' if a == 'mentioned' else ('fine' if a == 'fine' else 'check') }}"></span>{% endmacro %}

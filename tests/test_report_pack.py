@@ -1,0 +1,586 @@
+"""Packs on request (the QPPV plan, phase 15): a PSUR pack for one ingredient, or an inspection pack, asked for on
+Reports (request_report(), 0048) and built by the next collection run from the weekly report's own functions, in
+chunks of at most 366 days, under a time budget, archived with its SHA-256 and told on Telegram (dry-run aware)."""
+import io
+import re
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+
+import pytest
+from openpyxl import load_workbook
+
+from collectors import report, report_pack as rp
+from collectors.alerts import Notifier
+from collectors.core.archive import Archive, sha256_hex
+from collectors.core.memstore import MemoryStore
+from collectors.report import render_footer
+from tests.test_report_weekly import LABEL_CHANGES, SIGNAL, _log, _mention, _page, _reg, _source
+
+ROOT = Path(__file__).resolve().parents[1]
+UTC = timezone.utc
+ING = "00000000-0000-4000-8000-000000000010"
+
+
+class RecordingTelegram:
+    """Must never be called: every test here is a dry run."""
+
+    def __init__(self):
+        self.calls = []
+
+    def send_message(self, *a, **k):
+        self.calls.append(("message", a, k))
+        raise AssertionError("a pack test sent a real Telegram message")
+
+    def send_document(self, *a, **k):
+        self.calls.append(("document", a, k))
+        raise AssertionError("a pack test sent a real Telegram document")
+
+
+# ───────────────────────────── the days ─────────────────────────────
+
+def test_the_days_are_read_in_chunks_of_at_most_366_days():
+    pieces = rp.chunks(date(2024, 12, 2), date(2026, 11, 6))
+    assert pieces[0][0] == date(2024, 12, 2) and pieces[-1][1] == date(2026, 11, 6)
+    for (_, b), (c, _) in zip(pieces, pieces[1:], strict=False):
+        assert c == b + timedelta(days=1)                   # no day skipped, none read twice
+    assert all((b - a).days <= 365 for a, b in pieces)       # what ingredient_screen() answers in one call
+    assert len(pieces) == 2
+    assert rp.chunks(date(2026, 1, 1), date(2026, 12, 31)) == [(date(2026, 1, 1), date(2026, 12, 31))]
+    assert len(rp.chunks(date(2021, 11, 7), date(2026, 11, 6))) == 5      # five years, the most a pack covers
+    with pytest.raises(ValueError):
+        rp.chunks(date(2026, 2, 1), date(2026, 1, 1))
+
+
+def test_the_eurd_interval_is_worked_out_as_on_the_web():
+    assert rp.frequency_months("7 years") == 84
+    assert rp.frequency_months("6 months") == 6
+    assert rp.frequency_months("1 year") == 12
+    assert rp.frequency_months("") is None and rp.frequency_months("see notes") is None
+    assert rp.interval_for("2026-12-01", "3 years") == (date(2023, 12, 2), date(2026, 12, 1))
+    assert rp.interval_for(date(2024, 2, 29), "1 year") == (date(2023, 3, 1), date(2024, 2, 29))
+    assert rp.interval_for(None, "3 years") is None
+
+
+def test_the_footer_fits_beside_the_credit():
+    longest_month = len(report.Month(date(2026, 9, 1)).footer)
+    psur = rp.Period("psur", date(2024, 12, 2), date(2026, 11, 6))
+    insp = rp.Period("inspection", date(2025, 9, 30), date(2026, 9, 30))
+    assert psur.footer == "PSUR pack · 2 Dec 2024 – 6 Nov 2026"
+    assert insp.footer == "Inspection · 30 Sep 2025 – 30 Sep 2026"
+    assert len(psur.footer) <= longest_month and len(insp.footer) <= longest_month
+    assert "PHAROS · PSUR pack · 2 Dec 2024 – 6 Nov 2026" in render_footer(psur)
+    a, b = insp.bounds_utc()
+    assert a == datetime(2025, 9, 29, 21, tzinfo=UTC) and b == datetime(2026, 9, 30, 21, tzinfo=UTC)
+
+
+def test_the_budget_runs_out():
+    now = [0.0]
+    budget = rp.Budget(lambda: now[0], seconds=10)
+    budget.check()
+    now[0] = 10.0
+    with pytest.raises(rp.OutOfTime):
+        budget.check()
+
+
+# ───────────────────────────── a PSUR pack, gathered in two chunks ─────────────────────────────
+
+PSUR_REQ = {"id": "11111111-1111-4111-8111-111111111111", "kind": "psur", "ingredient_id": ING,
+            "from_day": date(2025, 1, 1), "to_day": date(2026, 3, 1), "requested_by": "p-rev",
+            "requested_by_name": "Sama Hassan", "requested_at": datetime(2026, 11, 6, 8, tzinfo=UTC), "attempts": 1}
+CHUNK1 = (date(2025, 1, 1), date(2026, 1, 1))
+CHUNK2 = (date(2026, 1, 2), date(2026, 3, 1))
+
+DECIDED = {"to_status": "relevant", "person": "Sama Hassan", "at": "2025-06-05T10:12:00Z",
+           "comment": "Our product is named"}
+NOT_OURS = {"to_status": "not_relevant", "person": "Sama Hassan", "at": "2025-07-01T09:00:00Z",
+            "comment": "A veterinary product"}
+
+
+def _regulators(chunk):
+    if chunk == CHUNK1:
+        return [_reg("BfArM", "Germany", "DE", runs=3, pages=[_page("BfArM", ["bfarm-src"])],
+                     sources=[_source("bfarm-src", "BfArM")],
+                     mentions=[_mention("d-1", "BfArM", "2025-06-04", "2025-06-04T08:00:00Z", issue_id="i-1",
+                                        issue_status="relevant", decision=DECIDED)]),
+                _reg("AIFA", "Italy", "IT", runs=2, pages=[_page("AIFA", ["aifa-src"])],
+                     sources=[_source("aifa-src", "AIFA")],
+                     mentions=[_mention("d-nr", "AIFA", "2025-07-01", "2025-07-01T08:00:00Z", issue_id="i-nr",
+                                        issue_status="not_relevant", decision=NOT_OURS,
+                                        link="javascript:alert(1)")])]
+    return [_reg("BfArM", "Germany", "DE", runs=2, failed=1, pages=[_page("BfArM", ["bfarm-src"])],
+                 sources=[_source("bfarm-src", "BfArM")],
+                 mentions=[_mention("d-1", "BfArM", "2025-06-04", "2025-06-04T08:00:00Z", issue_id="i-1",
+                                    issue_status="relevant", decision=DECIDED),
+                           _mention("d-2", "BfArM", "2026-02-10", "2026-02-10T08:00:00Z")]),
+            _reg("AIFA", "Italy", "IT", runs=1, pages=[_page("AIFA", ["aifa-src"])],
+                 sources=[_source("aifa-src", "AIFA")])]
+
+
+PAPERS = {
+    CHUNK1: [{"document_id": "p-1", "title": "Tendon rupture after levofloxacin", "lang": "en", "journal": "Drug Saf",
+              "day": date(2025, 5, 4), "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000001/", "pmc_url": None,
+              "by_class": False, "is_backfill": False, "first_seen_at": datetime(2025, 5, 4, 6, tzinfo=UTC)},
+             {"document_id": "p-3", "title": "Levofloxacin in children", "lang": "en", "journal": "",
+              "day": date(2025, 8, 1), "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000003/", "pmc_url": None,
+              "by_class": False, "is_backfill": False, "first_seen_at": datetime(2025, 8, 1, 6, tzinfo=UTC)}],
+    CHUNK2: [{"document_id": "p-2", "title": "Aortic aneurysm after levofloxacin: a case report", "lang": "en",
+              "journal": "BMJ Case Rep", "day": date(2026, 1, 20),
+              "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000002/", "pmc_url": None, "by_class": False,
+              "is_backfill": False, "first_seen_at": datetime(2026, 1, 20, 6, tzinfo=UTC)}],
+}
+
+
+class PsurDb:
+    """Answers each query a PSUR pack makes, chunk by chunk, and keeps every statement."""
+
+    def __init__(self):
+        self.sql: list[tuple[str, dict]] = []
+        self.chunks: list[tuple] = []
+        self.finding_ids: list[list[str]] = []
+
+    def _chunk(self, params):
+        f, t = params["f"], params["t"]
+        assert (t - f).days <= 365, "never more than 366 days in one call"
+        assert (f, t) in (CHUNK1, CHUNK2)
+        return (f, t)
+
+    def fetchone(self, sql, params=None):
+        self.sql.append((sql, params))
+        if "from ingredient where id" in sql:
+            assert params == {"i": ING}
+            return {"id": ING, "inn_en": "levofloxacin", "atc_code": "J01MA12"}
+        if "finding_state(" in sql:
+            self.finding_ids.append(list(params["ids"]))
+            sig = {**SIGNAL, "stage": "assessment", "priority": "high", "next_due": "2026-03-20",
+                   "steps": SIGNAL["steps"] + [{"step": "validated", "from_stage": "validation",
+                                                "to_stage": "assessment", "priority": "high", "outcome": None,
+                                                "person": "Sama Hassan", "at": "2025-06-10T09:00:00Z",
+                                                "comment": "Two more cases in the literature"}]}
+            return {"f": {"i-1": {"clock": "sent", "due": "2025-06-09",
+                                  "sent": {"on": "2025-06-08", "reference": "EDA/2025/0007"}, "signal": sig},
+                          # the label change belongs to the same signal: it is listed once
+                          "i-2": {"clock": "late", "due": "2025-10-25", "sent": None, "signal": sig},
+                          "i-nr": {"clock": "off", "signal": None}}}
+        chunk = self._chunk(params)
+        assert params["i"] == ING
+        if "ingredient_screen(" in sql:
+            self.chunks.append(chunk)
+            return {"screen": {"regulators": _regulators(chunk),
+                               "literature": {"papers": len(PAPERS[chunk]), "by_name": len(PAPERS[chunk]),
+                                              "by_class": 0, "pubmed": len(PAPERS[chunk]), "pmc": 0,
+                                              "by_query": [{"query": "levofloxacin", "pubmed": len(PAPERS[chunk]),
+                                                            "pmc": 0}]}}}
+        if "label_changes(" in sql:
+            return {"changes": [LABEL_CHANGES[0]] if chunk == CHUNK1 else []}
+        raise AssertionError(f"unexpected query: {sql}")
+
+    def fetchall(self, sql, params=None):
+        self.sql.append((sql, params))
+        if "ingredient_papers(" in sql:
+            return PAPERS[self._chunk(params)]
+        if "screening_log(" in sql:
+            chunk = self._chunk(params)
+            runs = 3 if chunk == CHUNK1 else 2
+            return [_log("bfarm-src", "BfArM", "Germany", "safety", runs, failed=0 if chunk == CHUNK1 else 1,
+                         why=None if chunk == CHUNK1 else "HTTP 503 from bfarm.example.test"),
+                    _log("ncbi", "NCBI", "International", "literature", runs)]
+        if "paper_state(" in sql:
+            assert sorted(params["ids"]) == ["p-1", "p-2", "p-3"]
+            return [{"state": {
+                "p-1": {"issue_id": "i-p1", "issue_status": "not_relevant",
+                        "decision": {"to_status": "not_relevant", "person": "Sama Hassan",
+                                     "at": "2025-05-05T11:00:00Z", "comment": "Not our product"},
+                        "case_report": None},
+                "p-2": {"issue_id": "i-p2", "issue_status": "new", "decision": None,
+                        "case_report": {"reason": "title"}, "day_zero": "2026-01-20", "due_serious": "2026-02-04",
+                        "due_nonserious": "2026-04-20"},
+                "p-3": {"issue_id": None}}}]
+        if "mlm_monitored(" in sql:
+            return [{"monitored": False}]
+        if "from eurd_entry" in sql:
+            return [{"eurd_id": 1, "substance": "levofloxacin", "combination": False, "frequency": "3 years",
+                     "dlp": date(2026, 12, 1), "submission_date": date(2027, 2, 9), "next_dlp": date(2029, 12, 1),
+                     "next_submission_date": None, "generics_psur_required": False, "procedure": "PSUSA/00001860",
+                     "next_procedure": None, "lead_ms": "DE", "list_version": "EURD list 2026-10",
+                     "list_date": date(2026, 10, 1)}]
+        if "class_term" in sql:
+            return [{"query": "levofloxacin", "kind": "name"}]
+        raise AssertionError(f"unexpected query: {sql}")
+
+
+def _psur():
+    db = PsurDb()
+    data = rp.assemble_psur(rp.gather_psur(db, PSUR_REQ), made_at=datetime(2026, 11, 6, 10, tzinfo=UTC))
+    return db, data
+
+
+def test_a_psur_pack_reads_every_chunk_and_adds_them_up():
+    db, data = _psur()
+    assert db.chunks == [CHUNK1, CHUNK2]
+    germany = next(a for a in data["actions"] if a["country"] == "Germany")
+    assert [m["title"] for m in germany["mentions"]] == ["Notice d-2", "Notice d-1"]     # each notice once
+    assert [c["answer_text"] for c in data["countries"] if c["country"] == "Germany"] == ["Mentioned in 2 notices"]
+    log = {r["source"]: r for r in data["annex"]}
+    assert log["bfarm-src"]["runs"] == 5 and log["bfarm-src"]["failed"] == 1
+    assert log["bfarm-src"]["why"] == "HTTP 503 from bfarm.example.test"
+    # finding_state() is asked once for every finding of the pack
+    assert sorted(set(db.finding_ids[0])) == ["i-1", "i-2", "i-nr", "i-p1", "i-p2"]
+
+
+def test_a_psur_pack_answers_sections_3_4_11_and_15_16():
+    _, data = _psur()
+    m = next(m for a in data["actions"] for m in a["mentions"] if m["title"] == "Notice d-1")
+    assert m["decision"] == "Concerns us" and m["decided_by"] == "Sama Hassan"
+    assert m["sent_text"] == "Sent to the authority 8 Jun 2025 · EDA/2025/0007"
+    assert m["signal"].startswith("SIG-2026-001 · Assessment, high priority")
+    # §4: our label against the change
+    assert [x["gap_summary"] for x in data["labels"]] == ["Our label: 2 covered, 1 partly, 1 missing"]
+    # §11: the possible case report first
+    papers = data["literature"]["papers"]
+    assert [p["title"] for p in papers] == ["Aortic aneurysm after levofloxacin: a case report",
+                                            "Levofloxacin in children"]
+    assert papers[0]["case_report"] and papers[0]["day_zero"] == "20 Jan 2026"
+    # §15–16: the one signal, once, with every step and both findings
+    assert len(data["signals"]) == 1
+    s = data["signals"][0]
+    assert s["ref"] == "SIG-2026-001" and s["stage"] == "Assessment" and s["priority"] == "High"
+    assert [e["step"] for e in s["steps"]] == ["Opened the signal", "Validated"]
+    assert s["findings"] == ["Notice d-1", "Tavanic 500 mg — 4.4, 4.8"]
+    assert data["eurd"][0]["interval"] == "2 Dec 2023 – 1 Dec 2026"
+
+
+def test_findings_that_do_not_concern_us_are_counted_and_listed_apart():
+    _, data = _psur()
+    titles = [m["title"] for a in data["actions"] for m in a["mentions"]]
+    assert "Notice d-nr" not in titles
+    assert "Tendon rupture after levofloxacin" not in [p["title"] for p in data["literature"]["papers"]]
+    assert [(r["section"], r["title"]) for r in data["not_relevant"]] == [
+        ("§3 Regulatory actions", "Notice d-nr"), ("§11 Literature", "Tendon rupture after levofloxacin")]
+    assert data["not_relevant_counts"] == [("§3 Regulatory actions", 1), ("§4 Label changes", 0),
+                                           ("§11 Literature", 1)]
+    assert ("Findings that do not concern us", 2) in data["summary"]
+
+
+def test_the_psur_pdf_is_laid_out_by_psur_section():
+    _, data = _psur()
+    html = rp.render_pack_html(data)
+    heads = re.findall(r'<h2><span class="n">(\d\d)</span>([^<]+)</h2>', html)
+    assert heads == [("01", "Summary"), ("02", "§3 Regulatory actions"), ("03", "§4 Label changes"),
+                     ("04", "§11 Literature"), ("05", "§15–16 Signals"), ("06", "Screening annex")]
+    for words in ("PHAROS — PSUR pack · levofloxacin", "2 Dec 2023 – 1 Dec 2026", "Concerns us",
+                  "Sent to the authority 8 Jun 2025 · EDA/2025/0007", "Two more cases in the literature",
+                  "Our label: 2 covered, 1 partly, 1 missing", "Possible: its title says so",
+                  "Findings that do not concern us", "HTTP 503 from bfarm.example.test", "Sama Hassan"):
+        assert words in html, words
+    assert "Notice d-nr" not in html and "javascript:" not in html
+    assert report.CREDIT in html
+
+
+def test_the_psur_excel_file_has_its_sheets_and_the_findings_left_out():
+    _, data = _psur()
+    wb = load_workbook(io.BytesIO(rp.build_psur_xlsx(data)))
+    assert wb.sheetnames == list(rp.PSUR_SHEETS)
+    for ws in wb.worksheets:
+        assert "Sato Pharma" in (ws.oddFooter.left.text or ""), ws.title
+    rows = list(wb["Not relevant"].iter_rows(values_only=True))
+    assert [r[2] for r in rows[1:]] == ["Notice d-nr", "Tendon rupture after levofloxacin"]
+    assert rows[1][3] in (None, "")                                   # no javascript: link
+    assert rows[1][7] == "A veterinary product"
+    sig = list(wb["§15-16 Signals"].iter_rows(values_only=True))
+    assert sig[1][0] == "SIG-2026-001" and "Validated" in sig[1][11]
+
+
+# ───────────────────────────── an inspection pack ─────────────────────────────
+
+INSP_REQ = {"id": "22222222-2222-4222-8222-222222222222", "kind": "inspection", "ingredient_id": None,
+            "from_day": date(2025, 11, 7), "to_day": date(2026, 11, 6), "requested_by": "p-adm",
+            "requested_by_name": "Omar Gawish", "requested_at": datetime(2026, 11, 6, 8, tzinfo=UTC), "attempts": 1}
+GOOD = "a" * 64
+
+
+class InspectionDb:
+    def __init__(self):
+        self.sql: list[tuple[str, dict]] = []
+
+    def fetchone(self, sql, params=None):
+        self.sql.append((sql, params))
+        if "from run where" in sql:
+            return {"runs": 2190, "ok_runs": 2185}
+        raise AssertionError(f"unexpected query: {sql}")
+
+    def fetchall(self, sql, params=None):
+        self.sql.append((sql, params))
+        if "screening_log(" in sql:
+            assert (params["t"] - params["f"]).days <= 365
+            return [_log("bfarm-src", "BfArM", "Germany", "safety", 2190, failed=5, why="HTTP 503")]
+        if sql.strip().endswith("from regulator"):
+            return [{"id": "BfArM", "name": "BfArM", "country_name": "Germany", "country_code": "DE",
+                     "homepage": None},
+                    {"id": "AIFA", "name": "AIFA", "country_name": "Italy", "country_code": "IT", "homepage": None}]
+        if "from regulator_page" in sql:
+            return [_page("BfArM", ["bfarm-src"]), _page("AIFA", [], label="AIFA DHPC letters")]
+        if sql.strip().endswith("from source"):
+            return [_source("bfarm-src", "BfArM")]
+        if "from review_event re" in sql:
+            return [{"created_at": datetime(2026, 6, 5, 10, 12, tzinfo=UTC), "from_status": "new",
+                     "to_status": "relevant", "comment": "Our product is named", "person": "Sama Hassan",
+                     "title": "Rote-Hand-Brief", "issue_id": "i-1"}]
+        if "fingerprint_now" in sql:
+            return [{"signed_at": datetime(2026, 6, 8, 9, tzinfo=UTC), "record_kind": "weekly_report",
+                     "record_id": "w-1", "meaning": "approved", "signed_name": "Sama Hassan",
+                     "signed_role": "admin", "comment": None, "record_sha256": GOOD, "week_start": date(2026, 5, 31),
+                     "pack_kind": None, "from_day": None, "to_day": None, "month": None, "signal_ref": None,
+                     "fingerprint_now": GOOD},
+                    {"signed_at": datetime(2026, 7, 1, 9, tzinfo=UTC), "record_kind": "pack",
+                     "record_id": "rq-1", "meaning": "reviewed", "signed_name": "Mona Adel",
+                     "signed_role": "reviewer", "comment": "Read", "record_sha256": GOOD, "week_start": None,
+                     "pack_kind": "psur", "from_day": date(2024, 1, 1), "to_day": date(2025, 12, 31), "month": None,
+                     "signal_ref": None, "fingerprint_now": "b" * 64},
+                    # a signal reads its fingerprint now only when the SQL has a branch for signals
+                    {"signed_at": datetime(2026, 7, 2, 9, tzinfo=UTC), "record_kind": "signal",
+                     "record_id": "sg-1", "meaning": "approved", "signed_name": "Sama Hassan",
+                     "signed_role": "admin", "comment": None, "record_sha256": GOOD, "week_start": None,
+                     "pack_kind": None, "from_day": None, "to_day": None, "month": None,
+                     "signal_ref": "SIG-2026-001",
+                     "fingerprint_now": GOOD if "when 'signal' then" in sql else None}]
+        if "from authority_report ar" in sql:
+            assert "withdrawn_at is null" not in sql            # a withdrawn report is evidence too
+            return [{"sent_on": date(2026, 6, 8), "authority": "EDA", "reference": "EDA/2026/0042", "note": None,
+                     "person": "Sama Hassan", "title": "Rote-Hand-Brief", "withdrawn_at": None,
+                     "withdraw_reason": None, "withdrawn_by": None},
+                    {"sent_on": date(2026, 6, 9), "authority": "EDA", "reference": None, "note": None,
+                     "person": "Mona Adel", "title": "Rote-Hand-Brief", "withdrawn_at":
+                         datetime(2026, 6, 9, 12, tzinfo=UTC), "withdraw_reason": "Sent twice",
+                     "withdrawn_by": "Sama Hassan"}]
+        if "from weekly_report w" in sql:
+            return [{"id": "w-1", "week_start": date(2026, 5, 31), "week_end": date(2026, 6, 6), "pdf_sha256": "c" * 64,
+                     "xlsx_sha256": "d" * 64, "made_at": datetime(2026, 6, 7, 2, tzinfo=UTC), "git_sha": "abc1234",
+                     "made_by_run": "https://github.com/x/y/actions/runs/1", "fingerprint": GOOD,
+                     "signatures": [{"name": "Sama Hassan", "role": "admin", "meaning": "approved",
+                                     "at": "2026-06-08T09:00:00Z", "sha": GOOD}]}]
+        if "from archive_check" in sql:
+            return [{"checked_at": datetime(2026, 6, 1, 3, tzinfo=UTC), "sampled": 50, "mismatched": 0, "missing": 0,
+                     "git_sha": "abc"}]
+        if "from audit_log" in sql:
+            return [{"table_name": "review_event", "action": "INSERT", "n": 12}]
+        if "telegram_chat_id is not null as telegram" in sql:
+            return [{"full_name": "Sama Hassan", "role": "admin", "active": True, "telegram": True,
+                     "created_at": datetime(2026, 1, 1, tzinfo=UTC)},
+                    {"full_name": "Mona Adel", "role": "reviewer", "active": True, "telegram": False,
+                     "created_at": datetime(2026, 2, 1, tzinfo=UTC)}]
+        raise AssertionError(f"unexpected query: {sql}")
+
+
+def _inspection():
+    db = InspectionDb()
+    return db, rp.assemble_inspection(rp.gather_inspection(db, INSP_REQ), made_at=datetime(2026, 11, 6, tzinfo=UTC))
+
+
+def test_an_inspection_pack_holds_the_evidence_of_the_days():
+    db, data = _inspection()
+    assert [(c["country"], c["status"]) for c in data["coverage"]] == [
+        ("Germany", "Read by the app"), ("Italy", "Not read by the app — open it yourself")]
+    assert [s["state"] for s in data["signatures"]] == ["Matches the file", "File changed since signing",
+                                                       "Matches the file"]
+    assert data["signatures"][1]["record"] == "PSUR pack, 1 Jan 2024 – 31 Dec 2025"
+    assert data["signatures"][2]["record"] == "Signal SIG-2026-001"
+    assert data["sent"][1]["withdrawn"].startswith("Withdrawn 9 Jun 2026, 15:00 by Sama Hassan: Sent twice")
+    assert data["weekly"][0]["signed"] == ("Approved by Sama Hassan (Administrator), 8 Jun 2026, 12:00 — "
+                                           "Matches the file")
+    assert ("Reports to the authority", 1) in data["summary"]
+    assert ("Of them, not read: checked by hand", 1) in data["summary"]
+    assert data["people"][1]["role"] == "Reviewer"
+    # the screening log is read in chunks of at most 366 days
+    logs = [p for s, p in db.sql if "screening_log(" in s]
+    assert [(p["f"], p["t"]) for p in logs] == [(date(2025, 11, 7), date(2026, 11, 6))]
+
+
+def test_the_inspection_pdf_and_excel_file():
+    _, data = _inspection()
+    html = rp.render_pack_html(data)
+    heads = re.findall(r'<h2><span class="n">(\d\d)</span>([^<]+)</h2>', html)
+    assert heads == [("01", "Summary"), ("02", "Coverage"), ("03", "Screening log"),
+                     ("04", "Decisions and signatures"), ("05", "Weekly reports"), ("06", "Audit log and people")]
+    for words in ("PHAROS — Inspection pack", "File changed since signing", "c" * 64, "Sent twice",
+                  "Every file matched its SHA-256", "review_event", "Mona Adel"):
+        assert words in html, words
+    wb = load_workbook(io.BytesIO(rp.build_inspection_xlsx(data)))
+    assert wb.sheetnames == list(rp.INSPECTION_SHEETS)
+    weekly = list(wb["Weekly reports"].iter_rows(values_only=True))
+    assert weekly[1][2] == "c" * 64 and weekly[1][3] == "d" * 64
+
+
+# ───────────────────────────── built, archived and told ─────────────────────────────
+
+@pytest.fixture()
+def env(tmp_path, monkeypatch):
+    for k in ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("GIT_SHA", "abc123")
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "PHAROS-satopharma/safety")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42")
+    printed = []
+    monkeypatch.setattr(rp, "build_pdf", lambda html, footer: printed.append((html, footer)) or b"%PDF-1.7 pack")
+    store = MemoryStore()
+    store.person["p-rev"] = {"id": "p-rev", "full_name": "Sama Hassan", "telegram_chat_id": 111, "role": "reviewer",
+                             "active": True}
+    store.person["p-adm"] = {"id": "p-adm", "full_name": "Omar Gawish", "telegram_chat_id": 222, "role": "admin",
+                             "active": True}
+    store.person["p-read"] = {"id": "p-read", "full_name": "Reader", "telegram_chat_id": 333, "role": "reader",
+                              "active": True}
+    store.ingredient[ING] = {"inn_en": "levofloxacin", "atc_code": "J01MA12", "active": True}
+    telegram = RecordingTelegram()
+    archive = Archive(tmp_path / "archive")
+    notifier = Notifier(store, store.settings(), dry_run=True, archive=archive, telegram=telegram)
+    return {"store": store, "telegram": telegram, "archive": archive, "notifier": notifier, "printed": printed,
+            "dir": tmp_path / "archive"}
+
+
+def _ask(store, kind="psur", **extra):
+    if kind == "psur":
+        return store.add_report_request("psur", PSUR_REQ["from_day"], PSUR_REQ["to_day"], "p-rev",
+                                        ingredient_id=ING, **extra)
+    return store.add_report_request("inspection", INSP_REQ["from_day"], INSP_REQ["to_day"], "p-adm", **extra)
+
+
+def test_nothing_waiting_does_nothing(env):
+    assert rp.fulfil_requests(PsurDb(), env["store"], archive=env["archive"], notifier=env["notifier"]) is None
+    assert env["store"].notification == [] and env["telegram"].calls == []
+
+
+def test_a_pack_is_made_archived_and_told_to_who_asked_and_the_admins(env):
+    store = env["store"]
+    rid = _ask(store)
+    out = rp.fulfil_requests(PsurDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert out["status"] == "done"
+    row = store.report_request[rid]
+    assert row["status"] == "done" and row["attempts"] == 1 and row["error"] is None
+    stem = "PHAROS-PSUR-levofloxacin-2025-01-01-to-2026-03-01"
+    assert row["pdf_r2_key"] == f"reports/packs/psur/{rid}/{stem}.pdf"
+    assert row["xlsx_r2_key"] == f"reports/packs/psur/{rid}/{stem}.xlsx"
+    assert row["pdf_sha256"] == sha256_hex(b"%PDF-1.7 pack") and len(row["xlsx_sha256"]) == 64
+    assert row["git_sha"] == "abc123"
+    assert row["made_by_run"] == "https://github.com/PHAROS-satopharma/safety/actions/runs/42"
+    assert (env["dir"] / row["pdf_r2_key"]).read_bytes() == b"%PDF-1.7 pack"
+    assert "PHAROS · PSUR pack · 1 Jan 2025 – 1 Mar 2026" in env["printed"][0][1]
+    # the reviewer who asked and the administrator; never the reader; a dry run, never Telegram itself
+    told = [(n["person_id"], n["kind"], n["dry_run"]) for n in store.notification]
+    assert told == [("p-rev", "report", True), ("p-adm", "report", True)]
+    assert "pack ready" in store.notification[0]["summary"]
+    assert "PSUR pack, levofloxacin, 1 Jan 2025 – 1 Mar 2026" in store.notification[0]["summary"]
+    assert env["telegram"].calls == []
+
+
+def test_a_pack_made_again_never_overwrites_the_first(env):
+    store = env["store"]
+    first = _ask(store)
+    rp.fulfil_requests(PsurDb(), store, archive=env["archive"], notifier=env["notifier"])
+    # the same request id again (a build retried after it was archived): stored beside it
+    store.report_request[first].update(status="queued")
+    rp.fulfil_requests(PsurDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert store.report_request[first]["pdf_r2_key"].endswith("-r2.pdf")
+
+
+def test_an_inspection_pack_is_made(env):
+    store = env["store"]
+    rid = _ask(store, "inspection")
+    out = rp.fulfil_requests(InspectionDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert out["status"] == "done"
+    assert store.report_request[rid]["pdf_r2_key"] == (
+        f"reports/packs/inspection/{rid}/PHAROS-inspection-2025-11-07-to-2026-11-06.pdf")
+    # the administrator asked: told once
+    assert [n["person_id"] for n in store.notification] == ["p-adm"]
+
+
+def test_an_inspection_pack_is_told_to_administrators_only(env):
+    store = env["store"]
+    # asked for before the reviewer's right was taken away: the reviewer is not told
+    store.add_report_request("inspection", INSP_REQ["from_day"], INSP_REQ["to_day"], "p-rev")
+    out = rp.fulfil_requests(InspectionDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert out["status"] == "done"
+    assert [n["person_id"] for n in store.notification] == ["p-adm"]
+    assert "pack ready" in store.notification[0]["summary"]
+
+
+def test_a_pack_out_of_time_waits_for_the_next_run_then_fails_after_three(env):
+    store = env["store"]
+    rid = _ask(store)
+    ticks = iter(range(0, 10_000, 100))
+
+    def clock():
+        return float(next(ticks))
+
+    for attempt in (1, 2):
+        out = rp.fulfil_requests(PsurDb(), store, archive=env["archive"], notifier=env["notifier"], clock=clock,
+                                 budget_s=150)
+        assert out["status"] == "queued"
+        row = store.report_request[rid]
+        assert row["status"] == "queued" and row["attempts"] == attempt
+        assert row["error"] == "Took longer than 2 minutes; the next collection run goes on with it."
+    assert store.notification == []                         # nobody is told of a pack still on its way
+    out = rp.fulfil_requests(PsurDb(), store, archive=env["archive"], notifier=env["notifier"], clock=clock,
+                             budget_s=150)
+    assert out["status"] == "failed"
+    row = store.report_request[rid]
+    assert row["status"] == "failed" and row["attempts"] == 3 and "3 times" in row["error"]
+    assert "pack not made" in store.notification[0]["summary"]
+    assert not list(env["dir"].rglob("*.pdf"))              # nothing half made was archived
+
+
+def test_a_pack_that_cannot_be_made_is_recorded_never_raised(env):
+    store = env["store"]
+    rid = _ask(store)
+
+    class Broken(PsurDb):
+        def fetchone(self, sql, params=None):
+            if "ingredient_screen(" in sql:
+                raise RuntimeError("canceling statement due to statement timeout")
+            return super().fetchone(sql, params)
+
+    out = rp.fulfil_requests(Broken(), store, archive=env["archive"], notifier=env["notifier"])
+    assert out["status"] == "failed"
+    row = store.report_request[rid]
+    assert row["status"] == "failed" and "statement timeout" in row["error"]
+    assert [n["person_id"] for n in store.notification] == ["p-rev", "p-adm"]
+    assert "could not be made" in store.notification[0]["summary"]
+
+
+def test_one_request_per_run_the_oldest_first(env):
+    store = env["store"]
+    old = _ask(store, "inspection", requested_at=datetime(2026, 11, 6, 7, tzinfo=UTC))
+    new = _ask(store, requested_at=datetime(2026, 11, 6, 8, tzinfo=UTC))
+    assert store.report_requests_waiting() == 2
+    rp.fulfil_requests(InspectionDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert store.report_request[old]["status"] == "done" and store.report_request[new]["status"] == "queued"
+    assert store.report_requests_waiting() == 1
+
+
+def test_a_build_whose_run_died_is_taken_again_after_two_hours(env):
+    store = env["store"]
+    rid = _ask(store)
+    store.report_request[rid].update(status="building", attempts=1,
+                                     started_at=datetime.now(UTC) - timedelta(minutes=30))
+    assert store.report_requests_waiting() == 0                 # another run may still be on it
+    store.report_request[rid]["started_at"] = datetime.now(UTC) - timedelta(hours=3)
+    assert store.report_requests_waiting() == 1
+    rp.fulfil_requests(PsurDb(), store, archive=env["archive"], notifier=env["notifier"])
+    assert store.report_request[rid]["status"] == "done" and store.report_request[rid]["attempts"] == 2
+
+
+# ───────────────────────────── the workflow ─────────────────────────────
+
+def test_packs_are_built_last_in_every_collection_run_but_never_stop_it():
+    wf = (ROOT / ".github" / "workflows" / "collect.yml").read_text(encoding="utf-8")
+    assert "python -m collectors.report_pack --waiting" in wf
+    step = wf[wf.index("- name: Packs on request"):]
+    assert "if: ${{ !cancelled()" in step.split("run:")[0]
+    # a dry run never takes a real request: it would mark it done with nothing archived
+    assert "&& !inputs.dry_run" in step.split("run:")[0]
+    assert "timeout-minutes: 20" in step.split("run:")[0]
+    assert "python -m collectors.report_pack" in step
+    assert "::warning" in step                                  # a pack never fails the run
+    assert "--dry-run" in step
+    assert step.count("- name:") == 1, "the last step of the collection job"
+    gate = wf[wf.index("- name: Packs waiting?"):wf.index("- name: Fonts for packs")]
+    assert "!= 'weekly'" in gate and "!= 'classes'" in gate     # never in the label watch's 90 minutes

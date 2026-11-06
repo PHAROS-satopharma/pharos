@@ -16,6 +16,7 @@ import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
 import { SignOff } from '../signoff/SignOff';
 import { FileHash } from './FileHash';
+import { Packs } from './Packs';
 import {
   type WeeklyReport,
   lastCompleteWeek,
@@ -357,7 +358,7 @@ export function ReportsPage() {
       <PageHead
         eyebrow="Evidence"
         title="Reports"
-        lede="The weekly report and the screening log: what was checked, when, and what it found, Sunday to Saturday."
+        lede="The weekly report, the PSUR and inspection packs made on request, and the screening log: what was checked, when, and what it found."
       />
       <section className="section">
         <SectionHead index="01" title="Weekly reports" />
@@ -365,7 +366,11 @@ export function ReportsPage() {
         <MonthlyReports />
       </section>
       <section className="section">
-        <SectionHead index="02" title="Screening log" />
+        <SectionHead index="02" title="Packs" />
+        <Packs />
+      </section>
+      <section className="section">
+        <SectionHead index="03" title="Screening log" />
         <ScreeningLog />
       </section>
     </div>
