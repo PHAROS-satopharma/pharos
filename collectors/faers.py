@@ -73,6 +73,8 @@ NAME_FIELDS = (
 )
 QUARTERS = 8
 KEEP = 100                     # reactions kept per ingredient
+CO_LIST = 25                   # drugs asked for with a flagged reaction
+CO_MIN, CO_LIFT = 3, 2.0       # a drug shown with a flag: in 3 of its reports, and twice its usual share
 FRESH_DAYS = 6
 WAITS = (5, 15, 35)            # seconds before asking again after 429, a server error or a dropped connection
 RETRY = {0, 429, 500, 502, 503, 504}
@@ -258,12 +260,14 @@ class OpenFda:
         rows = body.get("results") or []
         return {str(r["term"]): int(r.get("count") or 0) for r in rows if r.get("term")}, len(rows) < self.limit
 
-    def drugs(self, search: str) -> dict[str, int]:
-        """Reports per active substance of the drugs they name: the 10 most frequent. FAERS joins the substances of
-        a combination with a backslash ("SACUBITRIL\\VALSARTAN"); they are given as "SACUBITRIL + VALSARTAN"."""
-        body = self.ask(search=search, count=DRUG, limit="10") or {}
-        return {" + ".join(p.strip() for p in str(r["term"]).split("\\") if p.strip()): int(r.get("count") or 0)
-                for r in body.get("results") or [] if r.get("term")}
+    def drugs(self, search: str, limit: int) -> tuple[dict[str, int], bool]:
+        """Reports per active substance of the drugs they name, the most frequent first, as FAERS writes them (a
+        combination's substances joined with a backslash, "SACUBITRIL\\VALSARTAN"), and whether the list holds every
+        drug (it is shorter than the limit, or than the 100 a refused key leaves)."""
+        body = self.ask(search=search, count=DRUG, limit=str(limit)) or {}
+        rows = body.get("results") or []
+        whole = len(rows) < min(limit, self.limit)
+        return {str(r["term"]): int(r.get("count") or 0) for r in rows if r.get("term")}, whole
 
     def total(self, search: str) -> int:
         body = self.ask(search=search, limit="1")
@@ -359,22 +363,50 @@ def reaction_search(reaction: str) -> str:
     return f"{REACTION_WORDS}:{_quoted(' '.join(re.sub(r'[^0-9A-Za-z]+', ' ', reaction).split()))}"
 
 
-def co_drug(api: OpenFda, names: str, own: list[str], reaction: str, whole: str) -> tuple[str | None, int | None]:
-    """The other drug most often named in the reports of the ingredient with the reaction, and in how many: a drug
-    taken with the ingredient can be what the reaction is reported for (0076). The ingredient under any of its
-    names, its salts and the combinations that hold it are never the answer."""
+class UsualDrugs:
+    """How many of an ingredient's reports over the whole period name each other drug: the base a drug's share of one
+    reaction's reports is weighed against. One list a run, asked only when a flagged reaction needs it; a drug
+    missing from a list too long to be whole is counted on its own."""
+
+    def __init__(self, api: OpenFda, names: str, whole: str) -> None:
+        self.api, self.names, self.whole = api, names, whole
+        self.listed: dict[str, int] | None = None
+        self.complete = True
+
+    def count(self, term: str) -> int | None:
+        if self.listed is None:
+            self.listed, self.complete = self.api.drugs(f"{self.names} AND {self.whole}", self.api.limit)
+        if term in self.listed:
+            return self.listed[term]
+        if self.complete or "\\" in term:          # a backslash cannot be searched exactly
+            return None
+        return self.api.total(f"{self.names} AND {DRUG}:{_quoted(term)} AND {self.whole}")
+
+
+def co_drug(api: OpenFda, names: str, own: list[str], reaction: str, whole: str, reports: int, n_drug: int,
+            usual: UsualDrugs) -> tuple[str | None, int | None, int | None]:
+    """The other drug over-represented in the reports of the ingredient with the reaction (0078): named in at least
+    CO_MIN of them, and in a share of them at least CO_LIFT times its share of all the ingredient's reports. The most
+    reported such drug, in how many of the reaction's reports, and in how many of all the ingredient's. A drug taken
+    with the ingredient can be what the reaction is reported for (0076); one often taken with it anyway (aspirin
+    with carvedilol) explains nothing. The ingredient under any of its names, its salts and the combinations that
+    hold it are never the answer."""
     mine = [re.compile(r"\b" + re.escape(n) + r"\b") for n in own]
     try:
-        named = api.drugs(f"{names} AND {reaction_search(reaction)} AND {whole}")
+        named, _ = api.drugs(f"{names} AND {reaction_search(reaction)} AND {whole}", CO_LIST)
     except OpenFdaError as exc:
         if exc.status != 400:
             raise
-        return None, None                    # never lose the ingredient's counts over one reaction's lookup
-    others = [(n, t) for t, n in named.items() if not any(m.search(t.upper()) for m in mine)]
-    if not others:
-        return None, None
-    n, term = min(others, key=lambda nt: (-nt[0], nt[1]))          # the most, then by name
-    return term, n
+        return None, None, None              # never lose the ingredient's counts over one reaction's lookup
+    others = sorted((-n, t) for t, n in named.items() if n >= CO_MIN and not any(m.search(t.upper()) for m in mine))
+    for minus_n, term in others:                                 # the most reported first, then by name
+        n, base = -minus_n, usual.count(term)
+        if not base or not reports or not n_drug:
+            continue
+        base = max(base, n)                  # never fewer than the reaction's own (the lists can drift)
+        if n * n_drug >= CO_LIFT * reports * base:
+            return " + ".join(p.strip() for p in term.split("\\") if p.strip()), n, base
+    return None, None, None
 
 
 def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None = None) -> dict:
@@ -403,11 +435,13 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
         b, c = n_drug - a, all_r - a
         stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
         reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats),
-                          "co_drug": None, "co_reports": None})
+                          "co_drug": None, "co_reports": None, "co_all_reports": None})
+    usual = UsualDrugs(api, names, bg.whole)
     for x, flag in zip(reactions, outliers(reactions), strict=True):
         x["flagged"] = flag
         if flag:
-            x["co_drug"], x["co_reports"] = co_drug(api, names, searched_names(inn, us_name), x["reaction"], bg.whole)
+            x["co_drug"], x["co_reports"], x["co_all_reports"] = co_drug(
+                api, names, searched_names(inn, us_name), x["reaction"], bg.whole, x["reports"], n_drug, usual)
     return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
             "quarters": quarters, "reactions": reactions, "counts": counts}
@@ -452,12 +486,14 @@ def store(db: Any, ingredient: str, got: dict) -> None:
         if got["reactions"]:
             db.execute(
                 """insert into faers_reaction (ingredient_id, reaction, reports, all_reports, prr, prr_low, prr_high,
-                                               ror, ror_low, ror_high, chi2, flagged, co_drug, co_reports)
+                                               ror, ror_low, ror_high, chi2, flagged, co_drug, co_reports,
+                                               co_all_reports)
                    select %(i)s::uuid, x.reaction, x.reports, x.all_reports, x.prr, x.prr_low, x.prr_high, x.ror,
-                          x.ror_low, x.ror_high, x.chi2, x.flagged, x.co_drug, x.co_reports
+                          x.ror_low, x.ror_high, x.chi2, x.flagged, x.co_drug, x.co_reports,
+                          x.co_all_reports
                      from jsonb_to_recordset(%(r)s::jsonb) x(reaction text, reports int, all_reports int, prr float8,
                           prr_low float8, prr_high float8, ror float8, ror_low float8, ror_high float8, chi2 float8,
-                          flagged boolean, co_drug text, co_reports int)""",
+                          flagged boolean, co_drug text, co_reports int, co_all_reports int)""",
                 {"i": ingredient, "r": json.dumps(got["reactions"])})
         if got["counts"]:
             db.execute(
