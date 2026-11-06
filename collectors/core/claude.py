@@ -65,3 +65,16 @@ def client() -> Any:
         service_account_id=os.environ["ANTHROPIC_SERVICE_ACCOUNT_ID"],
         workspace_id=os.environ.get("ANTHROPIC_WORKSPACE_ID") or None,
     ))
+
+
+def check() -> str:
+    """One harmless call (the model list) that proves this run can sign in; says which way it signed in."""
+    way = "key" if os.environ.get("ANTHROPIC_API_KEY") else "federation"
+    if not configured():
+        raise SystemExit(MISSING)
+    model = next(iter(client().models.list(limit=1)), None)
+    return f"Claude sign-in works ({way}): {getattr(model, 'id', 'no model listed')}"
+
+
+if __name__ == "__main__":
+    print(check())

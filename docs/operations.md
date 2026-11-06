@@ -736,7 +736,7 @@ packs and their files and cannot ask for one.
   357 for "levofloxacin", 233 and 475 for "fluoroquinolones", 187 and 491 for "nonsteroidal
   anti-inflammatory". The stored papers can differ from these counts: the watch reads by entry date, the
   counts are by publication date.
-- **Free full text (Unpaywall, migration 0068).** Once a day, after Coding, `python -m collectors.fulltext` looks
+- **Free full text (Unpaywall, migration 0070).** Once a day, after Coding, `python -m collectors.fulltext` looks
   up each literature paper of the last year at Unpaywall (`api.unpaywall.org/v2/{doi}`, no key, identified by
   pharos@satopharma.com; Unpaywall allows 100,000 calls a day, PHAROS makes at most 2,000 a run, about four a
   second, in at most 11 minutes). Before that it asks PubMed again, at most every 30 days, for the DOI of the
@@ -902,6 +902,40 @@ the days chosen and the same number of days just before:
 Counting is not judging: the numbers and the label are shown side by side, and the team decides whether a term is
 a signal (Signals). *Not in our label* means no MeSH name was found in the text, which is a reason to read the
 label, not a finding that the reaction is unexpected.
+
+## FDA adverse event reports (FAERS)
+
+Section *06 FDA adverse event reports* of the Ingredients screen counts the reports to the FDA Adverse Event
+Reporting System (FAERS) that name the ingredient (migration 0071). The weekly workflow *PHAROS FAERS counts*
+(`faers.yml`, Wednesday 04:13 Cairo; `python -m collectors.faers`) asks openFDA (`api.fda.gov/drug/event.json`) to
+count them; no report is downloaded, only numbers come back, and the log names no ingredient.
+
+- **The period**: the last 8 complete calendar quarters openFDA holds, by the day FDA received each report (on 6 Nov
+  2026: October 2024 to September 2026, 2.68 million reports). FAERS changes once a quarter, so an ingredient counted
+  in the last 6 days is left; run the workflow by hand with *force* to count every ingredient again.
+- **How an ingredient is found**: its INN in capitals, exactly, in three fields at once: `openfda.generic_name` and
+  `openfda.substance_name` (filled only when FDA matched the product to a US label) and
+  `activesubstance.activesubstancename` (the substance as FAERS coded it, also for products sold outside the US).
+  Checked on the live API on 6 Nov 2026: carvedilol 136,140 reports in each US field and 142,304 in the three
+  together; lornoxicam, not sold in the US, none in the US fields and 396 as the active substance. An exact search
+  takes the whole value only: a salt written with the name ("CARVEDILOL PHOSPHATE") or a US name that differs from
+  the INN (acetaminophen for paracetamol) is not counted.
+- **What is kept**: the reports per quarter, and the 100 most reported reactions of the whole period with their
+  reports in each quarter. A reaction is kept by its name exactly as FDA publishes it (a MedDRA preferred term in
+  capitals); PHAROS holds no MedDRA licence and stores no MedDRA code.
+- **PRR, ROR and the flag**: each reaction's reports are compared with every drug's in a 2×2 table: PRR and ROR with
+  their 95% confidence intervals and chi-squared with Yates' correction (`faers.disproportion`). *Disproportionate*
+  means Evans' criteria: at least 3 reports, PRR at least 2 and chi-squared at least 4. It is a reason to look, not a
+  signal: stimulated reporting, an indication's own symptoms and duplicates all raise a PRR.
+- **The label tag**: the reaction's name is matched to MeSH by its exact name (`coding_norm`), and the label tag is the
+  one of section 05. A name MeSH does not have (OFF LABEL USE, for one) has no tag.
+- **The key**: `OPENFDA_API_KEY` (a repository secret, optional) allows 240 requests a minute and lists up to 1,000
+  reactions per request; without it openFDA allows 40 a minute and 100 reactions, so the run takes longer and a
+  quarter's rarer reactions show "–". A run starts no ingredient after 45 minutes; the rest wait for the next run.
+  openFDA's 404 "No matches found" is a zero; a 429 or a server error is asked again after 5, 15 and 35 seconds.
+
+The screen says under the table that the data are FDA's, that a report is not proof the drug caused the reaction,
+that the counts are not how often it happens, and that FDA does not endorse PHAROS.
 
 ## Clinical trials (ClinicalTrials.gov)
 
