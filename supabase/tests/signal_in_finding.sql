@@ -3,6 +3,8 @@
 -- keep their guards. Runs on the database ci.yml prepared: CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3)
 -- exist. Everything here happens in one transaction that is rolled back at the end (review_event and
 -- signal_event cannot be deleted).
+-- One transaction means one now(): every signal_event shares its created_at, so the step lists below put
+-- 'opened' first by name instead of trusting the clock.
 
 begin;
 
@@ -126,7 +128,7 @@ reset role;
 select pg_temp.sf_assert((select stage = 'closed' and outcome = 'not_validated' and closed_at is not null
                             from signal where id = :'sig1'),
   'Doesn''t concern us closes a signal still in validation as not validated');
-select pg_temp.sf_assert((select array_agg(step::text order by created_at, id) from signal_event where signal_id = :'sig1')
+select pg_temp.sf_assert((select array_agg(step::text order by step <> 'opened', created_at, id) from signal_event where signal_id = :'sig1')
     = array['opened', 'not_validated']
     and (select comment = 'Decision changed: Not our salt' and person_id = :'reviewer_id'
                 and from_stage = 'validation' and to_stage = 'closed' and outcome = 'not_validated'
@@ -163,7 +165,7 @@ select finding_state(array['00000000-0000-0000-0000-00000042e002']::uuid[])
 reset role;
 select pg_temp.sf_assert(:'sf_st' = 'assessment' and (select stage = 'assessment' and priority = 'high' from signal where id = :'sig2'),
   'a reviewer validates the auto-opened signal through signal_take_step as before');
-select pg_temp.sf_assert((select array_agg(step::text order by created_at, id) from signal_event where signal_id = :'sig2')
+select pg_temp.sf_assert((select array_agg(step::text order by step <> 'opened', created_at, id) from signal_event where signal_id = :'sig2')
     = array['opened', 'validated'],
   'Doesn''t concern us leaves a signal that was validated as it is');
 select pg_temp.sf_assert(:'sf_kept'::jsonb ->> 'stage' = 'assessment'
