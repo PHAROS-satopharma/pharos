@@ -26,33 +26,52 @@ def test_prr_ror_and_chi_squared_worked_by_hand():
     assert got.ror == pytest.approx(10.8889, abs=1e-4)
     assert (got.ror_low, got.ror_high) == (pytest.approx(5.5034, abs=1e-4), pytest.approx(21.5444, abs=1e-4))
     assert got.chi2 == pytest.approx(65.514, abs=1e-3)
-    assert got.flagged
 
 
-def test_evans_criteria_each_hold_back_the_flag():
-    # PRR = 0.03 / (150/9900) = 1.98: just under 2
-    assert disproportion(3, 97, 150, 9750).prr == pytest.approx(1.98) and not disproportion(3, 97, 150, 9750).flagged
-    # PRR 198 and chi2 73, but only 2 reports
-    two = disproportion(2, 8, 1, 989)
-    assert two.prr == pytest.approx(198) and two.chi2 > 4 and not two.flagged
-    # 3 reports and PRR = 0.3 / (10/990) = 29.7, but Yates' chi2 = 1000 * (|3*980 - 7*10| - 500)^2 / (10*990*13*987)
-    # = 1000 * 2370^2 / 127,026,900 = 44.2: flagged
-    assert disproportion(3, 7, 10, 980).chi2 == pytest.approx(44.218, abs=1e-3)
-    assert disproportion(3, 7, 10, 980).flagged
-    assert not disproportion(3, 997, 2, 998).flagged          # PRR = 0.003 / 0.002 = 1.5
+def test_yates_chi_squared_with_few_reports():
+    # 3 reports and PRR = 0.3 / (10/990) = 29.7; Yates' chi2 = 1000 * (|3*980 - 7*10| - 500)^2 / (10*990*13*987)
+    # = 1000 * 2370^2 / 127,026,900 = 44.2
+    got = disproportion(3, 7, 10, 980)
+    assert got.prr == pytest.approx(29.7) and got.chi2 == pytest.approx(44.218, abs=1e-3)
+    assert disproportion(3, 97, 150, 9750).prr == pytest.approx(1.98)
+
+
+def r(reports: int, prr: float | None, low: float | None) -> dict:
+    return {"reports": reports, "prr": prr, "prr_low": low}
+
+
+def test_the_flag_is_an_outlier_in_the_ingredients_own_profile():
+    # Evans' criteria (3 reports, PRR 2, chi-squared 4) flagged 88 of paracetamol's 100 most reported reactions on
+    # 6 Nov 2026: its reports name more reactions than FDA's average report, so fatigue, nausea and headache all
+    # passed. The flag now asks how far a reaction stands out from the ingredient's own reactions.
+    rows = [r(7370, 2.0, 1.95), r(6906, 2.1, 2.05), r(6509, 2.2, 2.1), r(5000, 2.4, 2.3), r(4000, 2.5, 2.4),
+            r(10, 6.0, 4.0),       # median PRR 2.5: twice is 5; 6.0 with its interval above 2 stands out
+            r(3, 9.0, 1.5),        # high, but its interval reaches below 2
+            r(2, 30.0, 8.0),       # 2 reports only
+            r(4, None, None)]      # no other drug has it: counted as the highest PRR, and it stands out
+    assert faers.outliers(rows) == [False, False, False, False, False, True, False, False, True]
+    assert faers.outliers([]) == []
+
+
+def test_the_outlier_bar_is_twice_the_median_inclusive():
+    # median 2.0: a PRR of exactly 4.0 is flagged, 3.99 is not; a lower bound of exactly 2 is enough
+    assert faers.outliers([r(9, 2.0, 1.0), r(9, 2.0, 1.0), r(3, 4.0, 2.0)]) == [False, False, True]
+    assert faers.outliers([r(9, 2.0, 1.0), r(9, 2.0, 1.0), r(3, 3.99, 2.5)]) == [False, False, False]
+    # an even number of reactions: the median is the mean of the middle two (2 and 4 -> 3, the bar 6)
+    assert faers.outliers([r(9, 1.0, 0.5), r(9, 2.0, 1.0), r(9, 4.0, 3.0), r(9, 6.0, 5.0)]) == [False] * 3 + [True]
 
 
 def test_zero_cells_give_none_never_a_division_by_zero():
     none = disproportion(0, 100, 50, 9850)           # the ingredient never has the reaction
     assert none.prr == 0 and none.ror == 0 and none.prr_low is None and none.ror_low is None
-    assert none.chi2 == 0 and not none.flagged       # |0 - 5000| - 10000/2 = 0
+    assert none.chi2 == 0                            # |0 - 5000| - 10000/2 = 0
     only = disproportion(4, 96, 0, 9900)             # no other drug has it: PRR and ROR are infinite
-    assert only.prr is None and only.ror is None and only.chi2 > 4 and only.flagged
+    assert only.prr is None and only.ror is None and only.chi2 > 4
     every = disproportion(5, 0, 20, 975)             # every report of the ingredient has it: ROR divides by b = 0
     assert every.prr == pytest.approx(49.75) and every.ror is None and every.prr_low is not None
     nothing = disproportion(0, 0, 0, 0)
     assert asdict(nothing) == {"prr": None, "prr_low": None, "prr_high": None, "ror": None, "ror_low": None,
-                               "ror_high": None, "chi2": None, "flagged": False}
+                               "ror_high": None, "chi2": None}
     with pytest.raises(ValueError):
         disproportion(-1, 1, 1, 1)
 
@@ -146,8 +165,10 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
     assert list(by) == ["HEPATITIS", "NAUSEA", "RARE THING"]              # most reported first
     # hepatitis: a=30, b=200-30, c=300-30, d=80000-200-270
     assert by["HEPATITIS"] == {"reaction": "HEPATITIS", "reports": 30, "all_reports": 300,
-                               **asdict(disproportion(30, 170, 270, 79530))}
-    assert by["HEPATITIS"]["flagged"] and not by["NAUSEA"]["flagged"]
+                               **asdict(disproportion(30, 170, 270, 79530)), "flagged": False}
+    # PRRs: hepatitis 44.3, nausea 1.2, rare thing 399 (3 of its 200 reports, 3 more among every other drug's
+    # 79,800): the median is 44.3, so only the rare thing is at least twice it
+    assert by["RARE THING"]["flagged"] and not by["HEPATITIS"]["flagged"] and not by["NAUSEA"]["flagged"]
     assert by["RARE THING"]["all_reports"] == 6                           # searched alone: not in every drug's 100
     assert sorted((c["quarter"], c["reaction"], c["reports"], c["all_reports"]) for c in got["counts"]) == [
         ("2025-01-01", "HEPATITIS", 10, 40), ("2025-01-01", "RARE THING", 3, 0),
