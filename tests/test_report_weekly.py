@@ -409,7 +409,9 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
                              "Decided (Cairo)", "Reason")
     assert papers[1][2].startswith("Fluoroquinolones") and papers[1][8:12] == (
         "yes, its title says so", "5 Nov 2026", "20 Nov 2026", "3 Feb 2027")
-    assert papers[2][8:] == ("", "", "", "", "Doesn't concern us", "Sama Hassan", "5 Nov 2026, 13:00", "Not our product")
+    # an empty cell reads back as None
+    assert tuple(x or "" for x in papers[2][8:]) == (
+        "", "", "", "", "Doesn't concern us", "Sama Hassan", "5 Nov 2026, 13:00", "Not our product")
     new = list(wb["Everything new"].iter_rows(values_only=True))
     austria = next(r for r in new if r[1] == "Austria")
     assert austria[4] == '=HYPERLINK("x")' and not austria[6]       # a title is text; no javascript: link
