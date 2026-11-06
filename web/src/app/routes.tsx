@@ -7,6 +7,7 @@ import { SignIn } from '../features/signin/SignIn';
 import { IssuesPage } from '../features/issues/IssuesPage';
 import { DetailPage } from '../features/detail/DetailPage';
 import { IngredientsPage } from '../features/ingredients/IngredientsPage';
+import { IngredientScreen } from '../features/screen/IngredientScreen';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { MePage, PasswordForm } from '../features/me/MePage';
@@ -128,6 +129,7 @@ export function AppRoutes() {
         <Route path="signals" element={<SignalsPage />} />
         <Route path="signals/:id" element={<SignalPage />} />
         <Route path="ingredients" element={<IngredientsPage />} />
+        <Route path="ingredients/:id" element={<IngredientScreen />} />
         <Route path="labels" element={<OurLabelsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />

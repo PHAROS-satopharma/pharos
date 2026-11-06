@@ -1,0 +1,482 @@
+/* ───────── Ingredients: one ingredient across every source ─────────
+   The vertical pass (Dr Sama's review, 6 Nov 2026): per country, was the ingredient mentioned in the days she
+   chose, was nothing found, or must she check it by hand. Flat colour, square corners, 1px rules; the beacon
+   marks only a mention. Phone first: everything stacks below 760px and every control is a large target. */
+
+/* The name on the Ingredients list opens this screen; the triangle beside it still shows every name. */
+.ingredients .ingredient-toggle {
+  width: 28px;
+  min-height: 32px;
+  vertical-align: middle;
+}
+.ingredients .col-ingredient .cell-sub {
+  margin-left: 28px;
+}
+.ingredient-link {
+  color: var(--text);
+  text-decoration: none;
+  vertical-align: middle;
+}
+.ingredient-link:hover,
+.ingredient-link:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* ───────── the days ───────── */
+.scr-range {
+  position: sticky;
+  top: calc(var(--band) + var(--bar-h) + 1px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  margin: 0 0 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.scr-presets {
+  display: flex;
+  flex-wrap: wrap;
+}
+.scr-preset {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+.scr-preset + .scr-preset {
+  margin-left: -1px;
+}
+.scr-preset:hover {
+  background: var(--surface-2);
+}
+.scr-preset.is-on {
+  position: relative;
+  z-index: 1;
+  border-color: var(--text);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+.scr-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.scr-custom .btn {
+  min-height: 44px;
+}
+.scr-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.scr-day .field {
+  min-height: 44px;
+}
+.scr-custom.is-on .scr-day .field {
+  border-color: var(--text);
+}
+.scr-range-label {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.scr-range-label strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.scr-range-problem {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* ───────── the answers ───────── */
+.scr-summary {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.35;
+}
+.scr-section {
+  margin-top: 36px;
+}
+.scr-quiet {
+  color: var(--muted);
+  font-size: 13px;
+}
+.scr-countries {
+  border-top: 1px solid var(--rule);
+}
+.scr-country {
+  padding: 16px 0 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.scr-country.is-mentioned {
+  padding-left: 14px;
+  border-left: 3px solid var(--beacon);
+}
+.scr-country-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.scr-country-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+}
+.scr-answer {
+  margin: 0;
+  font-weight: 600;
+}
+.scr-country.is-mentioned .scr-answer {
+  color: var(--beacon-deep);
+}
+.scr-country.is-not_read .scr-answer,
+.scr-country.is-failed .scr-answer,
+.scr-country.is-unread_page .scr-answer {
+  color: var(--danger);
+}
+.scr-country.is-fine .scr-answer {
+  color: var(--muted);
+  font-weight: 400;
+}
+.scr-reads {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ───────── mentions ───────── */
+.scr-mentions,
+.scr-papers {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.scr-mention,
+.scr-paper {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.scr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.scr-date {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+.scr-title {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.scr-title a {
+  color: var(--text);
+}
+.scr-mention.is-history .scr-title,
+.scr-paper.is-history .scr-title {
+  color: var(--muted);
+}
+.scr-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+.scr-word {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.scr-word > span:first-child {
+  padding: 0 3px;
+  background: var(--mark-bg);
+  color: var(--mark-text);
+}
+.scr-word-lang {
+  color: var(--muted);
+  font-size: 12px;
+}
+.scr-sections {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+.scr-paper-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+/* ───────── her pages and what the app reads ───────── */
+.scr-more {
+  margin-top: 12px;
+}
+.scr-more > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--sea);
+  font-size: 14px;
+  cursor: pointer;
+}
+.scr-more > summary:hover {
+  color: var(--sea-hover);
+}
+.scr-pages,
+.scr-sources {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.scr-page,
+.scr-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+.scr-page-kind,
+.scr-page-read {
+  color: var(--muted);
+  font-size: 12px;
+}
+.scr-page.is-unread .scr-page-read,
+.scr-source.is-off .scr-page-read {
+  color: var(--danger);
+}
+.scr-note {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ───────── decisions ───────── */
+.scr-decision {
+  margin-top: 10px;
+}
+.scr-decision-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  font-size: 13px;
+}
+.scr-decision-who {
+  color: var(--muted);
+}
+.scr-open-notice {
+  color: var(--sea);
+}
+.scr-decision-why {
+  margin: 4px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 13px;
+}
+.scr-decide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.scr-choices {
+  display: flex;
+  flex-wrap: wrap;
+}
+.scr-choice {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+.scr-choice + .scr-choice {
+  margin-left: -1px;
+}
+.scr-choice:hover {
+  background: var(--surface-2);
+}
+.scr-choice.is-selected {
+  position: relative;
+  z-index: 1;
+  border-color: var(--text);
+  background: var(--sea-tint);
+  font-weight: 600;
+}
+.scr-choice-not_relevant.is-selected {
+  border-color: var(--danger);
+  background: var(--danger-tint);
+}
+.scr-decide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.scr-decide-actions .btn,
+.scr-change {
+  min-height: 44px;
+}
+
+/* ───────── e-mail ───────── */
+.scr-mail {
+  margin-top: 8px;
+}
+.scr-mail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.scr-mail-actions .btn {
+  min-height: 44px;
+}
+.scr-mail-body {
+  max-height: 420px;
+  margin-top: 8px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── literature ───────── */
+.scr-lit-line {
+  margin: 0 0 12px;
+}
+.scr-queries {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 0 16px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.scr-queries caption {
+  padding-bottom: 6px;
+  text-align: left;
+}
+.scr-queries th,
+.scr-queries td {
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  font-weight: 400;
+}
+.scr-queries thead th {
+  color: var(--muted);
+  font-size: 12px;
+}
+.scr-queries td {
+  font-family: var(--font-mono);
+}
+.scr-live {
+  margin: 0 0 16px;
+}
+.scr-live .btn {
+  min-height: 44px;
+}
+.scr-live-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.scr-live-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+.scr-live-query {
+  min-width: 160px;
+  font-weight: 600;
+}
+.scr-live-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.scr-show-more {
+  min-height: 44px;
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  /* Stacked, the bar is too tall to stay on a phone screen: it scrolls away with the page. */
+  .scr-range {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scr-presets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .scr-preset {
+    padding: 0 8px;
+  }
+  .scr-custom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .scr-custom .btn,
+  .scr-range-problem {
+    grid-column: 1 / -1;
+  }
+  .scr-country-head {
+    flex-direction: column;
+  }
+  .scr-choices {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .scr-choice + .scr-choice {
+    margin-top: -1px;
+    margin-left: 0;
+  }
+  .scr-decide-actions .btn,
+  .scr-show-more,
+  .scr-live .btn {
+    width: 100%;
+  }
+}

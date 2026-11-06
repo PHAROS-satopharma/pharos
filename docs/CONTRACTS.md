@@ -262,6 +262,39 @@ confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the call
   `set_issue_names_ingredient`; for classes `ingredients_for_classes`, `drug_class_id`, `create_drug_class`,
   `link_ingredient_class`.
 
+## The Ingredients screen (0039)
+
+```sql
+document_link(d document, s source, r regulator) returns text   -- immutable; the page a person opens:
+  -- 'email:%' -> null (email_id / email_r2_key open it); api.fda.gov -> FDA's Enforcement Report
+  -- (?Event=<structured.event_id>); a feed or API address, or an empty address -> the source's page_url,
+  -- else the authority's homepage; otherwise the document's url. new_items() links with it.
+-- RPCs for a member of the team (security definer with my_role(); 42501 for anyone else; 22023 when p_to is
+-- before p_from or the range is over 366 days; P0002 for an unknown ingredient). Days are Cairo days, both
+-- included; a notice's day is published_date, else first_seen_at in Cairo.
+ingredient_screen(p_ingredient uuid, p_from date, p_to date) returns jsonb
+  -- {ingredient:{id, inn_en, atc_code, active, classes:[{id, code, name_en, origin}], names, name_languages,
+  --   class_words, class_languages}, from, to,
+  --  regulators:[{id, name, country_name, country_code, homepage, hers, runs, ok, failed, unread_page,
+  --   pages:[regulator_page], sources:[{id, regulator_id, kind, channel, url, page_url, enabled, health, notes}],
+  --   mentions:[mention]}],          -- every authority with pages of hers or a source not spc/literature;
+  --                                  -- hers first, then country and name; runs of safety and recall
+  --                                  -- sources, failures by source_run_failed(), never by run.trigger
+  --  label_changes:[mention],        -- notices of spc sources
+  --  literature:{papers, by_name, by_class, pubmed, pmc, by_query:[{query, kind, pubmed, pmc}], first:[paper]}}
+  -- mention: {document_id, source_id, regulator_id, regulator_name, country_name, country_code, title, lang,
+  --   link (document_link), email_id, email_r2_key, date, published_date, first_seen_at, doc_type,
+  --   terms:[{text, lang}], by_class, is_backfill (the document's or its notice's), sections (spc only),
+  --   issue_id (a link not 'suggested', its anchor first), issue_status, decision:{to_status, person, at, comment}}
+ingredient_papers(p_ingredient uuid, p_from date, p_to date) returns table (document_id, title, lang, journal,
+  day, pubmed_url, pmc_url, by_class, is_backfill, first_seen_at)
+  -- papers of literature sources naming the ingredient or one of its classes; the name's papers first,
+  -- newest first. The screen pages it 50 at a time.
+```
+
+Web: `web/src/features/screen/` (route `/ingredients/:id?from=&to=`); decisions are `review_event` inserts as on
+the notice page. SQL test: `supabase/tests/ingredient_screen.sql`.
+
 ## Environment / secrets
 
 | Secret | Used by |

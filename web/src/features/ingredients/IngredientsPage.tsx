@@ -223,12 +223,19 @@ export function IngredientsPage() {
                           type="button"
                           className="ingredient-toggle"
                           aria-expanded={isOpen}
+                          aria-label={isOpen ? `Hide the names of ${i.inn_en}` : `Show every name of ${i.inn_en}`}
                           title={isOpen ? 'Hide the names' : 'Show every name'}
                           onClick={() => setOpen(isOpen ? null : i.id)}
                         >
                           <span className="disclosure" aria-hidden="true" />
-                          <span className="ingredient-name">{i.inn_en}</span>
                         </button>
+                        <Link
+                          to={`/ingredients/${i.id}`}
+                          className="ingredient-name ingredient-link"
+                          title="Every source, for the days you choose"
+                        >
+                          {i.inn_en}
+                        </Link>
                         <span className="cell-sub">
                           {i.atc_code ? (
                             <>
