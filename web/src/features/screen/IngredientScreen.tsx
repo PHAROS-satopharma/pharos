@@ -19,6 +19,7 @@ import { useLiteratureSearch } from '../literature/useLiteratureSearch';
 import { answerText, countryAnswers, readsText, summaryLine, toCheckByHand, type CountryAnswer } from './answers';
 import { DecisionButtons } from './DecisionButtons';
 import { CodedReactions } from './CodedReactions';
+import { FaersReports } from './FaersReports';
 import { LabelChanges } from './LabelChanges';
 import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
@@ -219,6 +220,8 @@ function Body({
       <Literature ing={data.ingredient} lit={data.literature} from={from} to={to} findings={data.findings} queryKey={queryKey} />
 
       <CodedReactions ingredientId={data.ingredient.id} from={from} to={to} />
+
+      <FaersReports ingredientId={data.ingredient.id} />
     </>
   );
 }
