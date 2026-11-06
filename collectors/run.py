@@ -264,6 +264,7 @@ class Runner:
         try:
             module = self.load_parser(src.parser)
             self.ctx.held_back = 0      # new items a parser found but did not read, over max_new_items
+            self.ctx.list_errors = []   # parts of the list a parser could not read (an MHRA roundup)
             items = module.list_items(self.ctx, src)
             stats.seen = len(items)
             known = self.store.known_external_ids(src.id)
@@ -312,8 +313,10 @@ class Runner:
             # Notes on a completed run; source_run_failed() (migration 0018) knows each of their
             # beginnings, so a new kind of note is added there too.
             notes = [self.imap_note[src.id]] if src.id in self.imap_note else []
-            if item_errors:
-                notes.append(f"{len(item_errors)} item(s) failed; first: {item_errors[0]}"[:500])
+            # a part of the list not read is a note like a bad notice: the rest is stored, the part tried again
+            missed = [redact(e) for e in getattr(self.ctx, "list_errors", None) or []] + item_errors
+            if missed:
+                notes.append(f"{len(missed)} item(s) failed; first: {missed[0]}"[:500])
             if waiting:
                 notes.append(f"time budget reached: {waiting} new item(s) wait for the next run")
                 log.warning("%s: time budget reached, %d new item(s) wait", src.id, waiting)

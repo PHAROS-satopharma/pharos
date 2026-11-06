@@ -219,6 +219,38 @@ def test_one_bad_notice_never_blocks_the_rest(tmp_path, monkeypatch):
     ctx.close()
 
 
+
+def test_a_part_of_the_list_not_read_is_a_note_not_a_failure(tmp_path, monkeypatch):
+    # A parser that reads extra pages for its list (MHRA's monthly roundups) notes the one it could not read
+    # in ctx.list_errors and returns the rest; the run stores the rest and completes with a note.
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    real = runner.load_parser
+
+    def load(name):
+        module = real(name)
+
+        class Wrapped:
+            def __getattr__(self, attr):
+                return getattr(module, attr)
+
+            @staticmethod
+            def list_items(c, src):
+                items = module.list_items(c, src)
+                c.list_errors.append("/drug-device-alerts/mhra-safety-roundup-october-2026: "
+                                     "ParseError: GOV.UK content API returned non-JSON")
+                return items
+
+        return Wrapped()
+
+    monkeypatch.setattr(runner, "load_parser", load)
+    stats = runner.run_source(SRC)
+    assert not stats.failed and stats.new == 9
+    assert stats.error.startswith("1 item(s) failed; first: /drug-device-alerts/mhra-safety-roundup")
+    assert store.source["ema-psusa"]["consecutive_failures"] == 0
+    assert last_source_run(store)["error"] == stats.error
+    ctx.close()
+
 def test_time_budget_cuts_a_source_cleanly_and_seeding_continues(tmp_path):
     from collectors.run import SOURCE_BUDGET_S
 
