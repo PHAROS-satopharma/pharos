@@ -10,7 +10,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
 | `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then up to 15 minutes of the check of the past |
-| `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
+| `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch, then EMA's literature monitoring list (`collectors/mlm.py`) |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
@@ -186,9 +186,11 @@ the report:
   (`/notifications`, `/issues`, `/issue/<id>`, `/signals`, `/signals/<id>`, `/oversight`, `/psur`, `/labels`)
   opens Ingredients, never an empty page. A notice's title on the Ingredients and Sources screens opens the
   authority's own page for it. Decisions on a notice are recorded on the Ingredients screen.
-- **Collection steps.** The daily EURD list (`collectors/eurd.py`), the morning escalation of late items
-  (`collectors/escalate.py`) and the weekly EMA literature monitoring list (`collectors/mlm.py`) no longer
-  run. Their data stays as it was last written: `eurd_entry` and `mlm_entry` keep the last list read.
+- **Collection steps.** The daily EURD list (`collectors/eurd.py`) and the morning escalation of late items
+  (`collectors/escalate.py`) no longer run; `eurd_entry` keeps the last list read. The weekly reading of EMA's
+  literature monitoring list (`collectors/mlm.py`) was removed with them and put back on 6 November 2026: the
+  Ingredients screen and the weekly report say whether EMA reads the literature for each ingredient (see *Case
+  reports in the literature*).
 - **Kept running.** Every source, the label (SPC) watch (its changes show on the Ingredients screen), NCBI
   literature, the check of the past, the PRAC agendas and minutes (`ema-prac`), the Telegram messages (new
   notices, the daily digests, source health) and the watchdog.
@@ -318,7 +320,9 @@ vertical pass; the Sources screen is the horizontal one.
 - **Label changes** of products with the ingredient are listed apart, with the sections that changed.
 - **Literature**: the papers the daily NCBI watch stored for those days, by database and by search, the
   ingredient's own papers first, 50 at a time (**Show more**), each with its PubMed and PubMed Central links.
-  Papers have no decision buttons. **Count on PubMed and PubMed Central now** asks NCBI live
+  A paper that looks like a case report is listed first, tagged **Possible case report**, with *day zero · 15
+  days · 90 days* and the decision buttons of its notice (see *Case reports in the literature*). **Count on
+  PubMed and PubMed Central now** asks NCBI live
   (`literature-search`); those counts are by publication date.
 
 The screen reads everything with one call, `ingredient_screen()` (migration 0039), and more papers with
@@ -392,11 +396,15 @@ Removed in November 2026 (see *What was removed* above). For the record of what 
   by entry date, every page of results, and stores each paper once: under its PMID with both links when it is in
   both databases, under its PMC id when it is not in PubMed yet. A paper found only by a class word is
   class-only.
-- **Never on Telegram.** A paper is never an immediate alert and never a line in the daily class digest, found
+- **Never an alert.** A paper is never an immediate alert and never a class-wide line in the daily digest, found
   by the name or by a class word: papers are read on the Ingredients screen and in the weekly report, so the
   authority notices are not buried (levofloxacin alone: 89 PubMed and 357 PubMed Central papers published in
   October 2026). The runner skips a document of the literature source or type, the alert step skips an issue of
-  type literature, and the digest query leaves them out.
+  type literature, and the digest query leaves them out. The one exception is a paper that looks like a case
+  report naming the ingredient: it is a block of the daily message (below).
+- **Publication types.** PubMed's publication types ("Case Reports", "Review" …) are in a paper's PubMed record
+  only. For the papers PubMed Central alone found, the run reads their PubMed records too, by the PMID the PMC
+  record carries, in the same batches of 200; a paper not in PubMed yet has no type.
 - **Look-back.** A search word never searched before (a new ingredient, a new class word, or one not searched
   for 90 days) first reads the last 12 months. What it finds is stored as history.
   After that each run reads from the last complete run minus 3 days. `literature_search` (migration 0035) holds
@@ -420,14 +428,40 @@ Removed in November 2026 (see *What was removed* above). For the record of what 
   anti-inflammatory". The stored papers can differ from these counts: the watch reads by entry date, the
   counts are by publication date.
 
-## Literature case reports and PRAC agendas
+## Case reports in the literature
 
-- **Case reports.** The database still flags a literature notice "Possible case report" when PubMed lists it as
-  Case Reports or its title says "case report", "case series" or "a case of" (`v_case_report`), with day zero
-  (the Cairo day PHAROS found the paper). The notice page and Oversight that showed the flag were removed in
-  November 2026.
-- **EMA's literature monitoring.** The weekly reading of EMA's medical literature monitoring list
-  (`collectors/mlm.py`) was removed in November 2026; `mlm_entry` keeps the last list read.
+A paper reporting a case with one of our products starts a clock the day PHAROS finds it (her decision, 6
+November 2026): a valid serious case reaches the Egyptian Drug Authority within 15 days, a non-serious one within
+90. Day zero is the Cairo day the paper was first seen, never its publication date.
+
+- **The flag.** The collector marks each paper as it is stored (`document.structured.case_report`,
+  `collectors/parsers/pubmed.py`): PubMed lists it as *Case Reports*, or its title says "case report", "case
+  series" or "a case of" (the words of `v_case_report`, 0031). Migration 0044 flagged the papers stored before
+  it with the same words. A paper found only by a class word is flagged too but, like a class-wide notice, is
+  not in the daily message.
+- **The daily message.** The papers naming an ingredient that look like case reports and were found since the
+  last message are a block, *Possible case reports (N)*, at the end of the daily class digest (`class_digest`
+  subscribers, `collectors/alerts.py`): title, journal, day zero with the 15-day date, and a link to the
+  ingredient's screen. When there is no class-wide notice the message is headed *possible case reports*. Each
+  paper is sent once; a class-only paper, history and a paper that is no case report never.
+- **The Ingredients screen.** Section 04 lists the possible case reports first, each tagged *Possible case
+  report* with why (PubMed, or its title), *day zero · 15 days · 90 days*, and the decision buttons of its
+  notice: **Concerns us**, **Doesn't concern us** (a reason is required), **Change**. The decision shows at once
+  on every paper of the same notice. At the top of the section: *Monitored by EMA (MLM)* or *Not monitored by
+  EMA: cases in the literature are ours to report*. The screen reads this with `paper_state()` (50 papers a
+  call) and `mlm_monitored()` (migration 0044); `ingredient_papers()` is unchanged.
+- **The weekly report.** Section 04 lists the possible case reports first with day zero, the two dates and the
+  decision, says whether EMA monitors the ingredient, and the summary counts *Possible case reports in the
+  literature* and *Case reports with no decision yet*. The Excel sheet *NCBI papers* carries the same columns.
+- **EMA's literature monitoring.** `python -m collectors.mlm` (weekly, after the label watch) reads EMA's
+  medical literature monitoring list and keeps in `mlm_entry` the group of each watched ingredient EMA monitors
+  (a group named after it, or one where it stands alone; a combination does not count). An ingredient with no
+  row is *Not monitored by EMA*: its literature cases are ours to report. On the list valid from 1 June 2020,
+  ibuprofen, diclofenac and meloxicam are monitored; lornoxicam and levofloxacin are not. An unchanged list
+  (same SHA-256) is not read again; a failure warns and keeps the last list.
+
+## PRAC agendas
+
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings
   (`/en/committees/prac/prac-agendas-minutes-highlights`). An agenda names each substance PRAC will discuss,
   weeks before a recommendation, so a watched ingredient on it becomes a notice (Safety update, "Agenda of the
