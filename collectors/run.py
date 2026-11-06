@@ -443,6 +443,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    trigger = _trigger(args)    # before args.backfill turns into True/False below (False "is not None" too)
     backfill_months = args.backfill
     args.backfill = backfill_months is not None
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
@@ -477,7 +478,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sync_catalogue(store)
     slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
-    run_id = store.create_run(_trigger(args),
+    run_id = store.create_run(trigger,
                               os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"), slot)
     archive = Archive()
     t_start = time.monotonic()
