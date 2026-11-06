@@ -1,6 +1,6 @@
 // archive-url — a 10-minute link to one archived original in R2.
 // {r2_key} → {url}. Only for a signed-in person, and only for a key that a row they can read points to
-// (document, attachment, SPC snapshot, inbound mail, monthly report). Database backups are never served.
+// (document, attachment, SPC snapshot, inbound mail, weekly or monthly report). Database backups are never served.
 import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
 import { presignR2Get } from "./sigv4.ts";
@@ -25,6 +25,8 @@ serve(async (req) => {
     db.from("inbound_email").select("id", { count: "exact", head: true }).eq("r2_key", r2Key),
     db.from("monthly_report").select("id", { count: "exact", head: true }).eq("xlsx_r2_key", r2Key),
     db.from("monthly_report").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
+    db.from("weekly_report").select("id", { count: "exact", head: true }).eq("xlsx_r2_key", r2Key),
+    db.from("weekly_report").select("id", { count: "exact", head: true }).eq("pdf_r2_key", r2Key),
   ]);
   const known = checks.some((c) => !c.error && (c.count ?? 0) > 0);
   if (!known) throw new HttpError(404, "That file is not in the archive.");

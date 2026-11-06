@@ -1,11 +1,17 @@
-"""PHAROS monthly screening report for the previous month (Cairo calendar).
+"""PHAROS screening reports: weekly (Sunday to Saturday, Cairo), and monthly for re-making an old one.
 
-    python -m collectors.report [--month YYYY-MM] [--dry-run]
+    python -m collectors.report [--week YYYY-MM-DD | --month YYYY-MM] [--dry-run]
 
-Builds ``PHAROS-screening-YYYY-MM.xlsx`` (sheets: Summary, Sources screened, Issues found, Review log)
-and ``PHAROS-screening-YYYY-MM.pdf`` (report_templates/monthly.html printed by Playwright, A4),
-archives both, records them in ``monthly_report`` with their hashes, and sends the PDF to the admins
-on Telegram (dry-run aware). Times are shown in Cairo local time.
+Weekly (the default; ``--week`` is the Sunday, default the last complete week): ``PHAROS-weekly-<Sunday>.xlsx``
+and ``.pdf`` (report_templates/weekly.html), built in ``collectors/report_weekly.py`` from the Ingredients
+screen's own functions, recorded in ``weekly_report``.
+
+Monthly (``--month``, for the months reported before November 2026): ``PHAROS-screening-YYYY-MM.xlsx`` (sheets:
+Summary, Sources screened, Issues found, Review log) and ``.pdf`` (report_templates/monthly.html), recorded in
+``monthly_report``.
+
+Both are printed by Playwright (A4), archived with their hashes, and the PDF goes to the admins on Telegram
+(dry-run aware). Times are shown in Cairo local time.
 """
 
 from __future__ import annotations
@@ -50,10 +56,16 @@ PAGE = {"top": "18mm", "side": "16mm", "bottom": "20mm", "rule": "#D9D5CC", "mut
 @dataclass
 class Month:
     first: date
+    name = "Monthly screening report"
 
     @property
     def label(self) -> str:
         return f"{self.first:%B %Y}"
+
+    @property
+    def footer(self) -> str:
+        """The report and its period in the running foot of every PDF page (one line, never cut)."""
+        return f"{self.name} · {self.label}"
 
     @property
     def slug(self) -> str:
@@ -153,50 +165,78 @@ def summary_rows(data: dict, month: Month) -> list[tuple[str, Any]]:
 
 # ───────────────────────────── XLSX ─────────────────────────────
 
-def build_xlsx(data: dict, month: Month) -> bytes:
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-    from openpyxl.utils import get_column_letter
+XLSX_INK, XLSX_RULE = "02224C", "D9D5CC"   # the navy of the logo, the hairline
 
-    # Navy of the logo; the wide logo heads the Summary sheet (openpyxl images need Pillow).
-    ink, rule = "02224C", "D9D5CC"
-    head_font = Font(name="IBM Plex Sans", bold=True, color="FFFFFF")
-    head_fill = PatternFill("solid", fgColor="1F4E5F")
-    thin = Border(bottom=Side(style="thin", color=rule))
-    body_font = Font(name="IBM Plex Sans", color=ink)
+
+def xlsx_workbook(title: str):
+    """A workbook made by Sato Pharma for the Pharmacovigilance Department; its first sheet is the Summary."""
+    from openpyxl import Workbook
 
     wb = Workbook()
     wb.properties.creator = "Sato Pharma"
-    wb.properties.title = f"{TITLE}, {month.label}"
+    wb.properties.title = title
     wb.properties.subject = "Pharmacovigilance Department"
+    wb.active.title = "Summary"
+    return wb
 
-    def sheet(title: str, header: list[str], rows: list[list[Any]], widths: list[int]):
-        ws = wb.create_sheet(title)
-        ws.append(header)
-        for c in ws[1]:
-            c.font, c.fill, c.alignment = head_font, head_fill, Alignment(vertical="center")
-        for r in rows:
-            ws.append(r)
-        for row in ws.iter_rows(min_row=2):
-            for c in row:
-                c.font, c.border = body_font, thin
-                c.alignment = Alignment(wrap_text=True, vertical="top")
-        for k, w in enumerate(widths, start=1):
-            ws.column_dimensions[get_column_letter(k)].width = w
-        ws.freeze_panes = "A2"
-        ws.auto_filter.ref = ws.dimensions
-        print_credit(ws)
-        return ws
 
-    def print_credit(ws):
-        # every printed page carries the credit and its page number
-        ws.oddFooter.left.text = f"{copyright_line()} Pharmacovigilance Department."
-        ws.oddFooter.left.size = 8
-        ws.oddFooter.right.text = "Page &P of &N"
-        ws.oddFooter.right.size = 8
+def xlsx_print_credit(ws) -> None:
+    """Every printed page carries the credit and its page number."""
+    ws.oddFooter.left.text = f"{copyright_line()} Pharmacovigilance Department."
+    ws.oddFooter.left.size = 8
+    ws.oddFooter.right.text = "Page &P of &N"
+    ws.oddFooter.right.size = 8
 
-    ws = wb.active
-    ws.title = "Summary"
+
+def xlsx_text(cell, value: Any) -> None:
+    """A value as it was published: characters Excel cannot hold are dropped, and a text starting with "=" stays
+    text (a scraped title is never a formula)."""
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+
+    if isinstance(value, str):
+        cell.value = ILLEGAL_CHARACTERS_RE.sub("", value)
+        if cell.value.startswith("="):
+            cell.data_type = "s"
+    else:
+        cell.value = value
+
+
+def xlsx_sheet(wb, title: str, header: list[str], rows: list[list[Any]], widths: list[int], *,
+               links: bool = False):
+    """One table: a navy header row, wrapped body rows under a hairline, frozen and filterable. With ``links``,
+    every cell holding a web address opens it."""
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    head_font = Font(name="IBM Plex Sans", bold=True, color="FFFFFF")
+    head_fill = PatternFill("solid", fgColor="1F4E5F")
+    thin = Border(bottom=Side(style="thin", color=XLSX_RULE))
+    body_font = Font(name="IBM Plex Sans", color=XLSX_INK)
+    ws = wb.create_sheet(title)
+    ws.append(header)
+    for c in ws[1]:
+        c.font, c.fill, c.alignment = head_font, head_fill, Alignment(vertical="center")
+    for r, values in enumerate(rows, start=2):
+        for k, v in enumerate(values, start=1):
+            c = ws.cell(row=r, column=k)
+            xlsx_text(c, v)
+            c.font, c.border = body_font, thin
+            c.alignment = Alignment(wrap_text=True, vertical="top")
+            if links and isinstance(v, str) and v.startswith(("https://", "http://")):
+                c.hyperlink = v
+    for k, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(k)].width = w
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    xlsx_print_credit(ws)
+    return ws
+
+
+def xlsx_summary(ws, rows: list[tuple[str, Any]]) -> None:
+    """The Summary sheet: the wide PHAROS logo, the figures, then the maker's credit (a hairline, the small Sato
+    Pharma logo, the credit and the copyright)."""
+    from openpyxl.styles import Border, Font, Side
+
     first = 1
     if LOGO_WIDE.exists():
         from openpyxl.drawing.image import Image as XLImage
@@ -209,16 +249,16 @@ def build_xlsx(data: dict, month: Month) -> bytes:
         ws.append([])
         ws.append([])
         first = 3
-    for k, v in summary_rows(data, month):
-        ws.append([k, v])
+    for k, v in rows:
+        ws.append([k, None])
+        xlsx_text(ws.cell(row=ws.max_row, column=2), v)
     ws.column_dimensions["A"].width = 34
     ws.column_dimensions["B"].width = 48
-    ws[f"A{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=ink)
-    ws[f"B{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=ink)
-    # The maker's credit closes the Summary: a hairline, the small Sato Pharma logo, the credit and the copyright.
+    ws[f"A{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=XLSX_INK)
+    ws[f"B{first}"].font = Font(name="IBM Plex Sans", bold=True, size=13, color=XLSX_INK)
     gap = ws.max_row + 2
     for col in ("A", "B"):
-        ws[f"{col}{gap}"].border = Border(top=Side(style="thin", color=rule))
+        ws[f"{col}{gap}"].border = Border(top=Side(style="thin", color=XLSX_RULE))
     credit_row = gap + 1
     if SATO_LOGO.exists():
         from openpyxl.drawing.image import Image as XLImage
@@ -230,10 +270,18 @@ def build_xlsx(data: dict, month: Month) -> bytes:
         ws.row_dimensions[credit_row].height = 24
         credit_row += 1
     ws[f"A{credit_row}"] = CREDIT
-    ws[f"A{credit_row}"].font = Font(name="IBM Plex Sans", bold=True, size=9, color=ink)
+    ws[f"A{credit_row}"].font = Font(name="IBM Plex Sans", bold=True, size=9, color=XLSX_INK)
     ws[f"A{credit_row + 1}"] = copyright_line()
     ws[f"A{credit_row + 1}"].font = Font(name="IBM Plex Sans", size=8, color="5B6670")
-    print_credit(ws)
+    xlsx_print_credit(ws)
+
+
+def build_xlsx(data: dict, month: Month) -> bytes:
+    wb = xlsx_workbook(f"{TITLE}, {month.label}")
+    xlsx_summary(wb.active, summary_rows(data, month))
+
+    def sheet(title: str, header: list[str], rows: list[list[Any]], widths: list[int]):
+        return xlsx_sheet(wb, title, header, rows, widths)
 
     sheet("Sources screened",
           ["Country", "Regulator", "Source", "Kind", "Channel", "Runs", "Successes", "Failures",
@@ -280,10 +328,11 @@ def _env():
     return Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html"]))
 
 
-def render_footer(month: Month) -> str:
-    """The running foot Chromium prints on every page: the month, the Sato Pharma credit and the page number."""
+def render_footer(period: Any) -> str:
+    """The running foot Chromium prints on every page: the report and its period (a Month or a Week), the Sato
+    Pharma credit and the page number."""
     return _env().get_template("footer.html").render(
-        month=month, page=PAGE, sato_src=logo_data_uri(SATO_LOGO), copyright=copyright_line())
+        period=period, page=PAGE, sato_src=logo_data_uri(SATO_LOGO), copyright=copyright_line())
 
 
 def render_html(data: dict, month: Month) -> str:
@@ -355,9 +404,23 @@ def make_report(db: Any, store: Any, month: Month, *, dry_run: bool = False) -> 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m collectors.report")
-    ap.add_argument("--month", help="YYYY-MM (default: the previous month, Cairo calendar)")
+    which = ap.add_mutually_exclusive_group()
+    which.add_argument("--week", help="YYYY-MM-DD, the Sunday that starts the week (default: the last complete "
+                                      "Sunday to Saturday week, Cairo calendar)")
+    which.add_argument("--month", help="YYYY-MM: make a monthly report again (the format before November 2026)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
+    from collectors import report_weekly
+
+    # A wrong day is refused before anything connects.
+    week = None
+    try:
+        if args.week:
+            week = report_weekly.week_starting(date.fromisoformat(args.week))
+        elif not args.month:
+            week = report_weekly.last_complete_week()
+    except ValueError as e:
+        ap.error(str(e))
     logging.basicConfig(level="INFO")
     from collectors.core.context import install_log_redaction
 
@@ -365,9 +428,12 @@ def main(argv: list[str] | None = None) -> int:
     from collectors.core.db import Db
     from collectors.core.store import Store
 
-    month = Month(date.fromisoformat(args.month + "-01")) if args.month else previous_month()
     db = Db()
-    result = make_report(db, Store(db), month, dry_run=args.dry_run)
+    if week is not None:
+        result = report_weekly.make_weekly_report(db, Store(db), week, dry_run=args.dry_run)
+    else:
+        month = Month(date.fromisoformat(args.month + "-01"))
+        result = make_report(db, Store(db), month, dry_run=args.dry_run)
     print(result)
     return 0
 

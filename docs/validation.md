@@ -39,7 +39,7 @@ controls below focus on completeness (the screening log, source health and the w
 | 9 | Missed runs are noticed | With no run for 6 h, the admin is alerted (logged only in dry run), at most once every 6 h | CI database checks + pg_cron |
 | 10 | Access is controlled | "Not relevant" without a comment is refused; a reader cannot change status or queue a probe; the public key reads nothing and cannot call the functions | CI database checks |
 | 11 | Telegram linking is safe | A deep link connects the chat; the code is stored only as its hash and works once; a reused or expired code is refused; an unlinked chat gets nothing | CI database checks + live dry run |
-| 12 | The monthly report is complete and fixed | The XLSX and the PDF cover every source screened, with run and error counts, issues and decisions, and are stored with their SHA-256 | Live run (report.yml) |
+| 12 | The weekly report is complete and fixed | The XLSX and the PDF of a Sunday-to-Saturday Cairo week cover every source read, with run and failure counts, each watched ingredient by country as its Ingredients screen answers, the NCBI literature, everything new and what to check by hand, with the decisions, and are stored with their SHA-256 | Live run (report.yml) |
 | 13 | It stays inside the free plans | Under 300 Actions minutes a week, the database under 150 MB after backfill, $0 a month | docs/operations.md budget + watchdog |
 | 14 | Tests are meaningful | A regression test counts only if breaking the fix makes it fail; the code is then restored from a copy | Recorded in the pull request |
 | 15 | What users see is what was checked | The rendered output is checked by reading the deployed Pages site, never only the source code | Recorded in the pull request |
@@ -96,7 +96,7 @@ Times are stored in UTC and shown in Cairo time. People are named; nobody acts a
 
 ## 7. Periodic review
 
-Monthly, using the monthly report: check source health (any `blocked`, `down` or long-`degraded` source),
+Monthly, using the weekly reports: check source health (any `blocked`, `down` or long-`degraded` source),
 the archive checks, the Actions minutes and the database size. Once a year, confirm the source list against
 the regulators' own sites and re-run acceptance tests 2 to 11.
 

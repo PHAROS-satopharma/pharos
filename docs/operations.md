@@ -12,7 +12,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then up to 15 minutes of the check of the past |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
-| `report.yml` | the 1st, 05:00 Cairo | Monthly report (XLSX + PDF) for the previous month |
+| `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals; checks the bucket lock |
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
@@ -23,7 +23,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 `collect.yml`, `backfill.yml` and `rematch.yml` share one concurrency group, so two of them never run at once.
 A run that starts while another is running waits. If a third run arrives while one is already waiting,
 GitHub drops the waiting one; the next schedule picks up its sources. `report.yml` has its own group, so a
-collection can never drop the monthly report. GitHub can start scheduled runs late at busy times (hours, on
+collection can never drop the weekly report. GitHub can start scheduled runs late at busy times (hours, on
 a new repository). The minutes are chosen off the hour to reduce this.
 
 Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under the job's timeout), and in a
@@ -44,16 +44,16 @@ GitHub rounds each job up to a whole minute.
 | collect daily (with NCBI literature) | 30 | 7 | 210 |
 | collect weekly (SPC) | 4.35 | 10 | 44 |
 | collect monthly | 1 | 4 | 4 |
-| report (one real run, one run that skips) | 2 | 6 + 1 | 7 |
+| report (weekly: one real run, one run that skips) | 4.35 × 2 | 6 + 1 | 30 |
 | backup | 30 | 2 | 60 |
 | verify-archive | 4.35 | 2 | 9 |
 | probe | about 10 | 3 | 30 |
 | CI (only the changed parts are checked) | about 40 | 3 | 120 |
 | deploy Supabase | about 10 | 3 | 30 |
 | deploy web | about 10 | 2 | 20 |
-| **Total** | | | **about 1,134** |
+| **Total** | | | **about 1,157** |
 
-That is about 261 minutes a week, inside acceptance test 13's limit of 300, but a little above the aim of 1,100 a
+That is about 266 minutes a week, inside acceptance test 13's limit of 300, but a little above the aim of 1,100 a
 month (the cut is below). While a new ingredient's or class word's literature look-back is filling (see NCBI
 literature), the daily run takes up to about 18 minutes: up to about 360 more minutes in that month. The check
 of the past adds up to 15 minutes to a daily run only while one is open (a few days after an ingredient or
@@ -72,6 +72,33 @@ the first thing to cut is the 4h schedule, to every 6 h.
 | `degraded` | The page loaded but changed shape (the parser could not read it), or the source has been quiet for longer than `expected_max_gap_days` | Check the page. If the layout changed, the parser needs a fix (a PR) |
 | `down` | The source failed 3 runs in a row (timeouts, HTTP errors) | Usually the regulator's site is down. It recovers by itself |
 | `blocked` | The site showed a bot check (for example Cloudflare). PHAROS never bypasses one | Use the newsletter by email (Fimea already does). This is not "down" |
+
+## The weekly report
+
+Dr Sama's review (6 Nov 2026): some findings must reach the Egyptian Drug Authority within 5 days, so the
+report covers one week, Sunday to Saturday in Cairo, and replaces the monthly one. It goes into her SOP and the
+pharmacovigilance system master file.
+
+- **When.** `report.yml`, every Sunday at 05:00 Cairo, for the week that ended at midnight. By hand: *Actions →
+  PHAROS weekly report → Run workflow*, with the week's Sunday (`2026-11-01`), or nothing for the last week. A
+  day that is not a Sunday is refused before anything is read. `month` makes a month again in the old monthly
+  format (never both at once).
+- **What it reads.** The Ingredients screen's own functions, so the report and the screen never give two
+  answers: `ingredient_screen()` and `ingredient_papers()` for each watched ingredient, `screening_log()` for the
+  reads of every source, `new_items()` and the country looks for what was new. It connects directly to the
+  database (`SUPABASE_DB_URL`); `screen_reader()` (0040) lets that connection read the screen. A read is never
+  filtered by what started it.
+- **Six sections**, in the PDF and as sheets of the Excel file: 1 Summary and the decisions taken (her words:
+  Concerns us, Doesn't concern us, No decision yet, Reviewed, no decision yet); 2 Authorities read, hers first;
+  3 Our ingredients by country, with every notice, its link, the words matched and the decision; 4 NCBI
+  literature, each search with its counts and every paper with its PubMed and PubMed Central links; 5 Everything
+  new per authority, and who looked at the country; 6 To check by hand: her pages the app does not read, the
+  sources whose reads failed (with the last failure) and the sources not read that week.
+- **Where it goes.** `reports/weekly/<Sunday>/PHAROS-weekly-<Sunday>.xlsx` and `.pdf` in R2, locked; a week made
+  again is stored beside it as `-r2`, `-r3` … and the `weekly_report` row points at the latest (the audit log
+  keeps the earlier ones), with the SHA-256 of each file, the code that made it and the Actions run. The PDF goes
+  to every administrator with Telegram linked (dry-run aware). The Reports page lists the weeks, newest first,
+  with the monthly reports made before November 2026 folded below.
 
 ## Telegram admin alerts
 
@@ -345,8 +372,9 @@ Removed in November 2026 (see *What was removed* above). For the record of what 
 
 ## Electronic sign-off
 
-- **Who signs what.** An administrator approves each monthly report (Reports, the "Sign-off" column). Signals
-  were signed on their own page until the Signals screen was removed; those signatures stay in `sign_off`.
+- **Who signs what.** Nothing is signed in the app now. The weekly report is not signed in the app: it goes
+  into the SOP and the pharmacovigilance system master file. The monthly reports signed before November 2026
+  and the signals signed until the Signals screen was removed keep their signatures in `sign_off`.
 - **How.** The signer chooses what the signature means, types their password and may add a comment. The page
   signs in again with that password; `sign_record()` accepts the signature only when the token shows a password
   sign-in in the last five minutes, and stores the name and role at that moment, the meaning, the database
@@ -355,7 +383,6 @@ Removed in November 2026 (see *What was removed* above). For the record of what 
 - **Never changed.** `sign_off` is append-only (a trigger refuses any update or delete, even by the database
   owner). When a record changes after it was signed — a report made again, a signal reopened — the page marks
   the signature "The record changed after this signature" and the record can be signed again.
-- The inspection pack lists every signature of the period (sheet "Sign-offs").
 
 ## NCBI literature (PubMed and PubMed Central)
 

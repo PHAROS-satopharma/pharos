@@ -300,6 +300,29 @@ Web routes (`web/src/app/routes.tsx`, tabs in `web/src/app/nav.ts`): `/ingredien
 `/sources`, `/reports`, `/people` (administrators), `/me`; `/` opens `/ingredients`. The addresses of the removed
 screens (`REMOVED_PATHS`: notifications, issues, issue, signals, oversight, psur, labels) open `/`.
 
+## The weekly report (0040)
+
+```sql
+screen_reader() returns boolean   -- security definer, revoked from public, anon and authenticated:
+  -- my_role() is not null, or a direct database connection (no request.jwt.claims and no
+  -- request.jwt.claim.sub). ingredient_screen_check() asks it, so ingredient_screen() and ingredient_papers()
+  -- answer the report (SUPABASE_DB_URL) as they answer the screen; the service key and anyone signed in but
+  -- not on the team are still refused (42501).
+screening_log(p_from date, p_to date) returns table (source_id, regulator_id, regulator, country, country_code,
+  source_kind, enabled, runs, ok_runs, failed_runs, items_seen, items_new, items_matched, last_run, last_failure)
+  -- every source and its reads in those Cairo days, both included, at most 366 (22023 otherwise; 42501 for a
+  -- non-reader); failures by source_run_failed(), never filtered by run.trigger. For a whole month it equals
+  -- monthly_screening_log(), which stays for the monthly reports already made.
+weekly_report (id, week_start date unique -- a Sunday, week_end = week_start + 6, xlsx_r2_key, xlsx_sha256,
+  pdf_r2_key, pdf_sha256, made_at, git_sha, made_by_run)
+  -- written only by the collector (upsert on week_start); read by a member of the team; audited.
+```
+
+Collector: `python -m collectors.report [--week YYYY-MM-DD | --month YYYY-MM] [--dry-run]`
+(`collectors/report_weekly.py`, template `report_templates/weekly.html`; the default is the last complete week).
+Web: Reports (`web/src/features/reports/`, `weeks.ts`). `archive-url` serves a key a `weekly_report` row points
+at. SQL test: `supabase/tests/weekly_report.sql`; Python: `tests/test_report_weekly.py`.
+
 ## Environment / secrets
 
 | Secret | Used by |
