@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentJapanCode, japanCodeOf, pmdaGeneralListUrl } from './japanCode';
+import { currentJapanCode, japanCodeOf, localTerms, pmdaGeneralListUrl } from './japanCode';
 
 // Levofloxacin hydrate's PMDA 一般名 code is 6241013: https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/6241013
 // lists Cravit and its generics. Never fetched here.
@@ -39,5 +39,25 @@ describe('the Japan code typed for an ingredient (set_japan_code, 0052)', () => 
 
   it('opens the PMDA page that lists the products under the code', () => {
     expect(pmdaGeneralListUrl('6241013')).toBe('https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/6241013');
+  });
+});
+
+describe('the Local codes column (localTerms)', () => {
+  const nameOf = (c: string) => ({ JP: 'Japan', KR: 'South Korea' })[c] ?? c;
+
+  it('shows the Japan code as a code, with its country, and leaves out names used in every country', () => {
+    expect(localTerms([term({}), term({ kind: 'code', country_code: 'JP', term: '6241013' })], nameOf)).toEqual([
+      { term: '6241013', isCode: true, where: 'Japan' },
+    ]);
+  });
+
+  it('keeps a name that is used in one country only as a name', () => {
+    expect(localTerms([term({ kind: 'brand', country_code: 'KR', term: '크라비트' })], nameOf)).toEqual([
+      { term: '크라비트', isCode: false, where: 'South Korea' },
+    ]);
+  });
+
+  it('is empty when every name is looked for everywhere', () => {
+    expect(localTerms([term({}), term({ lang: 'fr', term: 'lévofloxacine' })], nameOf)).toEqual([]);
   });
 });
