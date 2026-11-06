@@ -300,6 +300,10 @@ class Matcher:
     def _fuzzy(self, c: _Compiled, nt: NormText, text: str, field: str,
                attachment_index: int | None) -> list[Hit]:
         out: list[Hit] = []
+        # A number is never a misspelling of another: ivabradine's Japan code 2190039 "possibly" found 21900 in
+        # an Austrian newsletter (6 Nov 2026). Codes and words with digits are found exactly or not at all.
+        if c.term.kind == "code" or any(ch.isdigit() for ch in c.nterm):
+            return out
         if c.latin and " " not in c.nterm and len(c.nterm) >= 6:
             for m in re.finditer(rf"{_W}+", nt.text):
                 tok = m.group(0)
