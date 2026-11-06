@@ -120,21 +120,21 @@ begin
              where sp.ingredient_id = p_ingredient and sp.source_id = s.id and sp.active) as products,
            exists (select 1 from source_run sr
                     where sr.source_id = s.id and sr.started_at >= v_ing.created_at
-                      and not source_run_failed(sr.error)) as read
+                      and not source_run_failed(sr.error)) as is_read
       from source s join regulator r on r.id = s.regulator_id
      where s.kind = 'spc' and s.enabled
   ), country as (
-    select country_name, sum(products) as products, bool_and(read) as read from src group by country_name
+    select country_name, sum(products) as products, bool_and(is_read) as is_read from src group by country_name
   )
   select jsonb_build_object(
            'products',  coalesce((select sum(products) from src), 0),
            'by_source', coalesce((select jsonb_object_agg(id, jsonb_build_object(
                                      'country', country_name, 'regulator', regulator_name,
-                                     'products', products, 'read', read)) from src), '{}'::jsonb),
+                                     'products', products, 'read', is_read)) from src), '{}'::jsonb),
            'waiting',   coalesce((select jsonb_agg(country_name order by country_name) from country
-                                   where not read), '[]'::jsonb),
+                                   where not is_read), '[]'::jsonb),
            'empty',     coalesce((select jsonb_agg(country_name order by country_name) from country
-                                   where read and products = 0), '[]'::jsonb),
+                                   where is_read and products = 0), '[]'::jsonb),
            'first_snapshot', exists (select 1 from spc_snapshot ss join spc_product sp on sp.id = ss.spc_product_id
                                       where sp.ingredient_id = p_ingredient and sp.active),
            'japan_code', exists (select 1 from ingredient_term t
