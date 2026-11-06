@@ -222,6 +222,59 @@ def test_a_paused_ingredient_is_not_checked_until_it_is_watched_again():
     assert out.nothing_due and s.rematch_job == {}
 
 
+def checked(s: MemoryStore, *term_ids: str) -> None:
+    for tid in term_ids:
+        s.term_state[tid] = {"changed_at": NOW - timedelta(days=2), "rematched_at": NOW - timedelta(days=2)}
+
+
+def test_an_ingredient_linked_to_a_class_later_joins_the_class_only_issues_its_words_found():
+    s, a = world()
+    did = add_doc(s, a, "mpa-news", "Fluorokinoloner: begränsad användning", lang="sv", kept="Fluorokinoloner")
+    add_levofloxacin(s, with_class=True)
+    rematch.run(s, a, s.settings(), fields=lambda _p: [])
+    iid = issue_of(s, did)["id"]
+    assert {g for i, g in s.issue_ingredient if i == iid} == {LEVO}
+    matches = len(s.match)
+    moxi = "ing-moxifloxacin"
+    s.ingredient[moxi] = {"inn_en": "moxifloxacin", "atc_code": "J01MA14", "active": True}
+
+    s.link_ingredient_class(moxi, FQ)
+    assert s.rematch_due_terms() == ([], ["ct-fq-sv"])     # the class's word is due again (0055)
+    out = rematch.run(s, a, s.settings(), fields=lambda _p: [])
+
+    assert out.finished and out.matched == 1 and out.issues_created == 0
+    assert {g for i, g in s.issue_ingredient if i == iid} == {LEVO, moxi}
+    assert len(s.issue) == 1 and len(s.match) == matches   # the word is not matched to the notice twice
+    assert s.notification == []
+    assert rematch.run(s, a, s.settings(), fields=lambda _p: []).nothing_due
+
+
+def test_a_class_word_is_looked_for_again_when_its_paused_ingredient_is_watched_again():
+    s, a = world()
+    add_levofloxacin(s, with_class=True)
+    checked(s, "t-levo-en", "t-levo-fr", "t-levo-sv", "ct-fq-sv")
+    s.ingredient[LEVO]["active"] = False     # paused: no one searched the class while the notice arrived
+    did = add_doc(s, a, "mpa-news", "Fluorokinoloner: begränsad användning", lang="sv", kept="Fluorokinoloner")
+    assert rematch.run(s, a, s.settings(), fields=lambda _p: []).nothing_due
+
+    s.watch_again(LEVO)
+    out = rematch.run(s, a, s.settings(), fields=lambda _p: [])
+
+    iss = issue_of(s, did)
+    assert out.matched == 1 and iss is not None and iss["class_only"] is True and iss["is_backfill"] is True
+    assert (iss["id"], LEVO) in s.issue_ingredient
+
+
+def test_a_link_switched_off_or_to_a_paused_ingredient_makes_nothing_due():
+    s, a = world()
+    add_levofloxacin(s, with_class=True)
+    checked(s, "t-levo-en", "t-levo-fr", "t-levo-sv", "ct-fq-sv")
+    s.ingredient["ing-paused"] = {"inn_en": "ofloxacin", "atc_code": "J01MA01", "active": False}
+    s.link_ingredient_class("ing-paused", FQ)
+    s.link_ingredient_class(LORNO, FQ, relation="parent", enabled=False)
+    assert s.rematch_due_terms() == ([], [])
+
+
 @pytest.mark.parametrize("months,expected_matches", [(12, 1), (24, 2)])
 def test_months_sets_how_far_back_a_new_job_checks(months, expected_matches):
     s, a = world()

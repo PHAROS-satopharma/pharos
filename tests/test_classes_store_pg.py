@@ -122,6 +122,7 @@ def test_the_check_of_the_past_walks_the_notices_and_marks_the_words(store, tag)
     issue = store.create_issue(doc_type="dhpc", title="t", anchor_document_id=docs[0], first_date=date.today(),
                                class_only=True, is_backfill=False)
     store.link_document(issue, docs[0], link="anchor", method="auto", score=None)
+    store.add_issue_ingredients(issue, [ing])
     store.insert_match({"document_id": docs[0], "attachment_id": None, "ingredient_id": ing, "class_id": None,
                         "term_id": t_new, "class_term_id": None, "field": "body", "start_offset": 0, "end_offset": 3,
                         "matched_text": "tes", "snippet": "", "confidence": "high"})
@@ -143,7 +144,7 @@ def test_the_check_of_the_past_walks_the_notices_and_marks_the_words(store, tag)
     by_id = {d["id"]: d for d in seen}
     first, second = by_id[docs[0]], by_id[docs[1]]
     assert first["texts"] == [{"attachment_id": None, "text": f"testoxacin{tag} kept"}]
-    assert first["matched_terms"] == {t_new} and first["issue"] == {"id": issue, "class_only": True}
+    assert first["matched_terms"] == {t_new} and first["issue"] == {"id": issue, "class_only": True, "ingredients": {ing}}
     assert first["country_code"] == "SE" and first["parser"] == "generic_html" and first["shared_original"] is True
     assert second["texts"] == [] and second["issue"] is None
     assert [(a["id"], a["r2_key"], a["extraction"]) for a in second["attachments"]] == [(att, f"att/{tag}", "text")]
