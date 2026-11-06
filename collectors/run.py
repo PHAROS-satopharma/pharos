@@ -115,8 +115,6 @@ class Runner:
         self.settings = settings
         self.backfill = backfill
         self.matcher = matcher if matcher is not None else Matcher(store.load_terms())
-        # A keyword filter never drops a notice that names a watched ingredient (parsers/base.py).
-        parser_base.WATCHED = lambda text: any(h.term.ingredient_id for h in self.matcher.match_text(text, "title"))
         self.class_ingredients = store.class_ingredients()
         self.load_parser = parser_loader
         self.backfill_start = bf.cutoff(settings)
@@ -272,8 +270,14 @@ class Runner:
         return self._countries[regulator_id]
 
     # ───────────────────────────── one source ─────────────────────────────
+    def _watched(self, text: str) -> bool:
+        return any(h.term.ingredient_id for h in self.matcher.match_text(text, "title"))
+
     def run_source(self, src: SourceConfig) -> SourceStats:
         stats = SourceStats()
+        # A keyword filter never drops a notice that names a watched ingredient (parsers/base.py); the
+        # filters' state is this source's only: set here, emptied when the source is done.
+        parser_base.WATCHED = self._watched
         # a copy: set_source_state below must not change what "the previous health" was
         prev = dict(self.store.get_source(src.id) or {})
         sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
@@ -385,6 +389,8 @@ class Runner:
             if failures == DOWN_AFTER:
                 self.notifier.health_alert(src.id, "down", stats.error)
         finally:
+            parser_base.WATCHED = None
+            parser_base.DROPPED.clear()
             self.store.finish_source_run(
                 sr_id, http_status=self.ctx.first_status, items_seen=stats.seen,
                 items_new=stats.new, items_matched=stats.matched, error=stats.error,

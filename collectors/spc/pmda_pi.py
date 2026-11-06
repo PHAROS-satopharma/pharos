@@ -156,15 +156,16 @@ def discover(ctx, ingredient: dict) -> list[Product]:
     has_ja = bool(terms_for(ingredient, "ja", fallback_en=False))
     for code, trusted in code_sources(ctx, ingredient).items():
         if not trusted and not has_ja:
-            log.info("PMDA %s: code %s from a revision notice skipped, no Japanese name to check it",
-                     ingredient.get("inn_en"), code)
+            # the run logs are public: the ingredient by its id, never its name or its code
+            log.info("PMDA %s: a code from a revision notice skipped, no Japanese name to check it",
+                     ingredient.get("id"))
             continue
         f = ctx.get(GENERAL.format(code=code))
         if f.status != 200:
             continue
         if not trusted and not names_ingredient(general_name(f), ingredient):
-            log.info("PMDA %s: code %s from a revision notice skipped, its 一般名 is %r",
-                     ingredient.get("inn_en"), code, general_name(f))
+            log.info("PMDA %s: a code from a revision notice skipped, its 一般名 names another substance",
+                     ingredient.get("id"))
             continue
         for p in parse_general_list(f, f.final_url):
             found.setdefault(p.national_id, p)

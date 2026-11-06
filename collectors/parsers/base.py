@@ -176,8 +176,9 @@ def attachment_links(html_or_soup, base_url: str, *, selector: str | None = None
 
 
 # What the keyword and category filters drop (6 Nov 2026: a dropped notice was recorded nowhere). The runner
-# sets WATCHED to the watchlist's matcher and empties DROPPED before each source: a notice that names a watched
-# ingredient is never dropped by a keyword filter, and every drop is kept (collectors/run.py, filtered_item).
+# sets WATCHED to the watchlist's matcher for one source (Runner.run_source) and empties both when that source
+# is done: a notice that names a watched ingredient is never dropped by a keyword filter, and every drop is kept
+# (collectors/run.py, filtered_item).
 WATCHED: Callable[[str], bool] | None = None
 DROPPED: list[tuple[str, str]] = []          # (the first line of the dropped text, why)
 

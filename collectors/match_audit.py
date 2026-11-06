@@ -56,7 +56,8 @@ def flag_names(rows: list[dict], rxnav: Any) -> tuple[dict[str, list[dict]], dic
                     if c.get("tty") in (None, "IN"):
                         found[c["rxcui"]] = c["name"]
         except Exception as exc:
-            log.warning("%s: RxNorm could not check %r: %s", r["ingredient_id"], r["term"], exc)
+            # the run logs are public: the name by its id, and no error text (it can carry the name)
+            log.warning("%s: RxNorm could not check name %s (%s)", r["ingredient_id"], r["id"], type(exc).__name__)
             unchecked[r["ingredient_id"]] = unchecked.get(r["ingredient_id"], 0) + 1
             continue
         if found and str(r["rxcui"]) not in found:
