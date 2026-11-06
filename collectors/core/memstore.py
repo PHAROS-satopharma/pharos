@@ -76,6 +76,9 @@ class MemoryStore:
     def transaction(self):
         yield self
 
+    def lock_issue_merge(self) -> None:
+        self.merge_locks = getattr(self, "merge_locks", 0) + 1   # one process: nothing to wait for
+
     # ───────────────────────────── seed ─────────────────────────────
     def load_seed(self, path: str | Path = SEED_SQL) -> tuple[str, str]:
         """Load the watchlist seed migration (lornoxicam + NSAID) so ``--no-db`` runs and tests use
@@ -526,8 +529,8 @@ class MemoryStore:
     def requeue_report_request(self, request_id: str, note: str) -> None:
         self.report_request[request_id].update(status="queued", error=note[:1000])
 
-    def insert_notification(self, **fields: Any) -> None:
-        self.notification.append({**fields, "sent_at": _now()})
+    def insert_notification(self, *, sent_at: datetime | None = None, **fields: Any) -> None:
+        self.notification.append({**fields, "sent_at": sent_at or _now()})
 
     def last_notification_at(self, kind: str, *, delivered_only: bool = False,
                              before: datetime | None = None, dry_run: bool = False) -> datetime | None:
