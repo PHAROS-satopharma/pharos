@@ -48,9 +48,12 @@ select pg_temp.sh_assert(not exists (select 1 from regulator_page
                                       where kind <> 'database' and read_by = '{}'
                                         and coalesce(note, '') not like 'Not read:%'),
   'every safety and DHPC page of hers is read, or its note says why not');
-select pg_temp.sh_assert((select string_agg(regulator_id, ',' order by regulator_id) from regulator_page
-                           where kind <> 'database' and read_by = '{}') = 'HC',
-  'only Health Canada''s InfoWatch is not read');
+select pg_temp.sh_assert(not exists (select 1 from regulator_page where kind <> 'database' and read_by = '{}'),
+  'every safety and DHPC page of hers is read (0077: Health Canada''s InfoWatch by e-mail)');
+select pg_temp.sh_assert(exists (select 1 from regulator_page
+                                  where regulator_id = 'HC' and kind = 'safety' and read_by = '{hc-email}'
+                                    and note like 'By e-mail subscription%'),
+  'Health Canada''s InfoWatch is read from the MedEffect e-Notice mails by hc-email (0077)');
 select pg_temp.sh_assert(exists (select 1 from regulator_page
                                   where regulator_id = 'FDA' and kind = 'safety' and url = 'https://www.fda.gov/'
                                     and read_by = '{fda-press-gd,fda-druginfo-gd,fda-medwatch-gd}'

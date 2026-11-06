@@ -228,7 +228,7 @@ def test_runner_notes_imap_not_configured(tmp_path):
     sync_catalogue(store)
     _, sources, _ = load_catalogue()
     mail_sources = [s for s in sources if s.parser == "email_inbox"]
-    mail_ids = {"fimea-email", "tga-email", "fda-email", "famhp-email"}
+    mail_ids = {"fimea-email", "tga-email", "fda-email", "famhp-email", "hc-email"}
     assert {s.id for s in mail_sources} == mail_ids
     empty = types.SimpleNamespace(STRUCTURED_FIELDS=[], list_items=lambda ctx, src: [])
     ctx = types.SimpleNamespace(db=None, run_id=store.create_run("manual", None), first_status=None,
@@ -251,6 +251,7 @@ def test_fda_and_famhp_mail_reach_their_own_sources():
     assert owner("info.fda.gov") == {"fda-email"}
     assert owner("afmps.be") == {"famhp-email"} and owner("fagg-afmps.be") == {"famhp-email"}
     assert owner("health.gov.au") == {"tga-email"} and owner("fimea.fi") == {"fimea-email"}
+    assert owner("canada.ca") == {"hc-email"} and owner("hc-sc.gc.ca") == {"hc-email"}   # MedEffect e-Notice
 
 
 def test_held_mail_log_names_the_servers_verdicts_without_addresses():

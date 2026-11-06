@@ -591,6 +591,22 @@ sources:
       old_detail: matched_only
       max_new_items: 3000
 
+  - id: hc-email
+    regulator: HC
+    kind: safety
+    channel: email
+    url: https://www.canada.ca/en/health-canada/services/drugs-health-products/medeffect-canada/health-product-infowatch.html
+    page: https://www.canada.ca/en/health-canada/services/drugs-health-products/medeffect-canada/health-product-infowatch.html
+    parser: email_inbox
+    languages: [en, fr]
+    schedule: 4h
+    expected_max_gap_days: 45
+    notes: >-
+      canada.ca does not answer GitHub's servers (every request timed out, 6 Nov 2026), so Health Product
+      InfoWatch and the advisories are read from the MedEffect e-Notice mails ("Outside of Canada", Drugs),
+      subscribed for the PV mailbox on 6 Nov 2026.
+    options: {from_domains: [hc-sc.gc.ca, canada.ca], web_domain: canada.ca}
+
   # ───────────── HTML lists (parsers by A2) ─────────────
   - id: ansm-securite
     regulator: ANSM
