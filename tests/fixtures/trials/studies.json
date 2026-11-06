@@ -1,0 +1,265 @@
+{
+ "studies": [
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT02717507",
+     "briefTitle": "Carvedilol in Preventing Heart Failure in Childhood Cancer Survivors"
+    },
+    "statusModule": {
+     "overallStatus": "COMPLETED",
+     "startDateStruct": {
+      "date": "2016-04-04"
+     },
+     "completionDateStruct": {
+      "date": "2025-03-31"
+     },
+     "resultsFirstPostDateStruct": {
+      "date": "2023-09-29"
+     },
+     "lastUpdatePostDateStruct": {
+      "date": "2025-04-23"
+     }
+    },
+    "sponsorCollaboratorsModule": {
+     "leadSponsor": {
+      "name": "Children's Oncology Group"
+     }
+    },
+    "designModule": {
+     "phases": [
+      "PHASE2"
+     ],
+     "enrollmentInfo": {
+      "count": 196,
+      "type": "ACTUAL"
+     }
+    }
+   },
+   "resultsSection": {
+    "adverseEventsModule": {
+     "frequencyThreshold": "0",
+     "timeFrame": "Up to 24 months after first dose of drug",
+     "eventGroups": [
+      {
+       "id": "EG000",
+       "title": "Arm I (Carvedilol)",
+       "description": "Patients receive low-dose carvedilol orally (PO) once daily (QD) or twice daily ",
+       "deathsNumAffected": 0,
+       "deathsNumAtRisk": 89,
+       "seriousNumAffected": 0,
+       "seriousNumAtRisk": 89,
+       "otherNumAffected": 2,
+       "otherNumAtRisk": 89
+      },
+      {
+       "id": "EG001",
+       "title": "Arm II (Placebo)",
+       "description": "Patients receive placebo PO QD or BID for 24 months.",
+       "deathsNumAffected": 0,
+       "deathsNumAtRisk": 93,
+       "seriousNumAffected": 0,
+       "seriousNumAtRisk": 93,
+       "otherNumAffected": 0,
+       "otherNumAtRisk": 93
+      }
+     ],
+     "otherEvents": [
+      {
+       "term": "Dyspnea",
+       "organSystem": "Respiratory, thoracic and mediastinal disorders",
+       "assessmentType": "SYSTEMATIC_ASSESSMENT",
+       "stats": [
+        {
+         "groupId": "EG000",
+         "numAffected": 1,
+         "numAtRisk": 89
+        },
+        {
+         "groupId": "EG001",
+         "numAffected": 0,
+         "numAtRisk": 93
+        }
+       ]
+      },
+      {
+       "term": "Arthralgia",
+       "organSystem": "Musculoskeletal and connective tissue disorders",
+       "assessmentType": "SYSTEMATIC_ASSESSMENT",
+       "stats": [
+        {
+         "groupId": "EG000",
+         "numAffected": 1,
+         "numAtRisk": 89
+        },
+        {
+         "groupId": "EG001",
+         "numAffected": 0,
+         "numAtRisk": 93
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "hasResults": true
+  },
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT00292162",
+     "briefTitle": "Curing Atrial Fibrillation in Heart Failure"
+    },
+    "statusModule": {
+     "overallStatus": "COMPLETED",
+     "startDateStruct": {
+      "date": "2007-01"
+     },
+     "completionDateStruct": {
+      "date": "2009-07"
+     },
+     "resultsFirstPostDateStruct": {
+      "date": "2012-06-01"
+     },
+     "lastUpdatePostDateStruct": {
+      "date": "2012-06-01"
+     }
+    },
+    "sponsorCollaboratorsModule": {
+     "leadSponsor": {
+      "name": "NHS Greater Glasgow and Clyde"
+     }
+    },
+    "designModule": {
+     "phases": [
+      "NA"
+     ],
+     "enrollmentInfo": {
+      "count": 41,
+      "type": "ACTUAL"
+     }
+    }
+   },
+   "resultsSection": {
+    "adverseEventsModule": {
+     "frequencyThreshold": "0",
+     "eventGroups": [
+      {
+       "id": "EG000",
+       "title": "Medical Therapy",
+       "description": "This consisted of standard treatment of heart failure as per international guide",
+       "seriousNumAffected": 0,
+       "seriousNumAtRisk": 19,
+       "otherNumAffected": 0,
+       "otherNumAtRisk": 19
+      },
+      {
+       "id": "EG001",
+       "title": "Radiofrequency Ablation",
+       "description": "Patients underwent isolation of the pulmonary veins with radiofrequency ablation",
+       "seriousNumAffected": 4,
+       "seriousNumAtRisk": 22,
+       "otherNumAffected": 0,
+       "otherNumAtRisk": 22
+      }
+     ],
+     "seriousEvents": [
+      {
+       "term": "Stroke",
+       "organSystem": "Nervous system disorders",
+       "assessmentType": "NON_SYSTEMATIC_ASSESSMENT",
+       "stats": [
+        {
+         "groupId": "EG000",
+         "numEvents": 0,
+         "numAffected": 0,
+         "numAtRisk": 19
+        },
+        {
+         "groupId": "EG001",
+         "numEvents": 1,
+         "numAffected": 1,
+         "numAtRisk": 22
+        }
+       ]
+      },
+      {
+       "term": "Cardiac tamponade",
+       "organSystem": "Cardiac disorders",
+       "assessmentType": "NON_SYSTEMATIC_ASSESSMENT",
+       "stats": [
+        {
+         "groupId": "EG000",
+         "numEvents": 0,
+         "numAffected": 0,
+         "numAtRisk": 19
+        },
+        {
+         "groupId": "EG001",
+         "numEvents": 2,
+         "numAffected": 2,
+         "numAtRisk": 22
+        }
+       ]
+      },
+      {
+       "term": "heart failure hospitalisation",
+       "organSystem": "Cardiac disorders",
+       "notes": "within 1 week of the procedure",
+       "stats": [
+        {
+         "groupId": "EG000",
+         "numEvents": 0,
+         "numAffected": 0,
+         "numAtRisk": 19
+        },
+        {
+         "groupId": "EG001",
+         "numEvents": 1,
+         "numAffected": 1,
+         "numAtRisk": 22
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "hasResults": true
+  },
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT06078436",
+     "briefTitle": "Pulmonary Artery Catheterization and Carvedilol Early Initiation in Cardiogenic SHOCK Due to HFrEF"
+    },
+    "statusModule": {
+     "overallStatus": "RECRUITING",
+     "startDateStruct": {
+      "date": "2024-01"
+     },
+     "completionDateStruct": {
+      "date": "2028-03"
+     },
+     "lastUpdatePostDateStruct": {
+      "date": "2024-01-05"
+     }
+    },
+    "sponsorCollaboratorsModule": {
+     "leadSponsor": {
+      "name": "A sponsor-investigator"
+     }
+    },
+    "designModule": {
+     "phases": [
+      "NA"
+     ],
+     "enrollmentInfo": {
+      "count": 160,
+      "type": "ESTIMATED"
+     }
+    }
+   },
+   "hasResults": false
+  }
+ ]
+}

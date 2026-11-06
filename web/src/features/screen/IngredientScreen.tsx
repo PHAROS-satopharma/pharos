@@ -18,6 +18,7 @@ import { listsItems, offReason, pageStatus, sourceLabels, type PageKind } from '
 import { useLiteratureSearch } from '../literature/useLiteratureSearch';
 import { answerText, countryAnswers, readsText, summaryLine, toCheckByHand, type CountryAnswer } from './answers';
 import { DecisionButtons } from './DecisionButtons';
+import { ClinicalTrials } from './ClinicalTrials';
 import { CodedReactions } from './CodedReactions';
 import { FaersReports } from './FaersReports';
 import { LabelChanges } from './LabelChanges';
@@ -222,6 +223,8 @@ function Body({
       <CodedReactions ingredientId={data.ingredient.id} from={from} to={to} />
 
       <FaersReports ingredientId={data.ingredient.id} />
+
+      <ClinicalTrials ingredientId={data.ingredient.id} />
     </>
   );
 }
