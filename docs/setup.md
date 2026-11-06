@@ -94,9 +94,11 @@ Work through the steps in this order.
    *Settings → Workload identity → Connect workload → GitHub Actions* and let the wizard make:
    - the issuer `https://token.actions.githubusercontent.com` (discovery);
    - the service account `pharos`, role **Developer**, in the workspace the reader bills to;
-   - the rule `pharos-main`: subject `repo:PHAROS-satopharma/pharos:ref:refs/heads/main`, audience
-     `https://api.anthropic.com`, claim `repository_owner` = `PHAROS-satopharma`; under *Advanced rule options*
-     the scope **`workspace:inference`** (Claude calls only).
+   - the rule `pharos-main`: organisation `PHAROS-satopharma`, repository `pharos`, branch `refs/heads/main`,
+     allowed events **Any event** (the runs come from the schedule and the app, never from a push; the branch
+     still keeps pull requests out), organisation numeric id `352618690`, workspace **Default**, scope
+     `workspace:developer` (the Console offers nothing narrower), token lifetime 10 minutes. Audience stays blank
+     (Anthropic's default, `https://api.anthropic.com`).
 3. In GitHub *Settings → Secrets and variables → Actions → **Variables***, add `ANTHROPIC_FEDERATION_RULE_ID`
    (`fdrl_…`), `ANTHROPIC_SERVICE_ACCOUNT_ID` (`svac_…`) and `ANTHROPIC_ORGANIZATION_ID` (the UUID on
    *Settings → Organization*). They are identifiers, not secrets. Without them the Cases screen still opens cases;
