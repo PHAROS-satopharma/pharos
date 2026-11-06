@@ -24,6 +24,9 @@ interface FaersReaction {
   flagged: boolean;
   mesh_ui: string | null;
   listed: Listed;
+  /** The other drug most often named in this reaction's reports (flagged reactions only, 0076). */
+  co_drug: string | null;
+  co_reports: number | null;
 }
 
 interface FaersFetch {
@@ -117,10 +120,11 @@ const LISTED: Record<Exclude<Listed, null>, { label: string; tone: 'success' | '
 };
 
 /**
- * Section 06 of the Ingredients screen: FDA adverse event reports (ingredient_faers, 0071). The reports to the FDA
- * Adverse Event Reporting System that name the ingredient, counted by openFDA for the last 8 complete quarters
- * (collectors/faers.py, weekly): the most reported reactions, the newest quarter and the whole period, how much more
- * often each is reported with this ingredient than with every other drug (PRR), and whether our label lists it.
+ * Section 06 of the Ingredients screen: FDA adverse event reports (ingredient_faers, 0071 and 0076). The reports to
+ * the FDA Adverse Event Reporting System that name the ingredient, counted by openFDA for the last 8 complete
+ * quarters (collectors/faers.py, weekly): the most reported reactions, the newest quarter and the whole period, how
+ * much more often each is reported with this ingredient than with every other drug (PRR), and whether our label
+ * lists it.
  * A report is not proof, and a count is not a rate: the team decides.
  */
 export function FaersReports({ ingredientId }: { ingredientId: string }) {
@@ -204,6 +208,18 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
                             Disproportionate
                           </Tag>
                         ) : null}
+                        {r.flagged && r.co_drug && r.co_reports && r.reports ? (
+                          <div
+                            className="scr-quiet"
+                            title={
+                              `${formatNumber(r.co_reports)} of the ${formatNumber(r.reports)} reports of ${r.reaction} ` +
+                              `naming ${f.searched} also name ${r.co_drug}. A drug taken with it can be what the ` +
+                              'reaction is reported for.'
+                            }
+                          >
+                            Most often with {r.co_drug} ({Math.round((100 * r.co_reports) / r.reports)}%)
+                          </div>
+                        ) : null}
                       </td>
                       <td>
                         {r.listed ? (
@@ -222,8 +238,9 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
             The reports are FDA’s, from the FDA Adverse Event Reporting System (FAERS), counted through openFDA; the
             reactions are named as FDA publishes them. A report is not proof that the drug caused the reaction, and the
             counts are not how often it happens: most reactions are never reported, and one report can name several
-            drugs. The reactions are matched to MeSH by name for the label; a blank label means MeSH does not have the
-            name or no label is read yet. The U.S. Food and Drug Administration does not endorse PHAROS.
+            drugs, so under each flag is the other drug its reports name most often. The reactions are matched
+            to MeSH by name for the label; a blank label means MeSH does not have the name or no label is read yet. The
+            U.S. Food and Drug Administration does not endorse PHAROS.
           </p>
         </>
       )}

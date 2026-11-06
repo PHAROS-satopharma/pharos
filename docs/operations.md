@@ -7,7 +7,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 
 | Workflow | When (UTC) | What it does |
 |---|---|---|
-| `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
+| `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA, FDA, famhp and Health Canada mails) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
 | `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and literature monitoring list (`collectors/mlm.py`), up to 15 minutes of the check of the past, and the papers' free full texts from Unpaywall (`collectors/fulltext.py`) |
 | `collect.yml`, schedule **literature** | 10:41 and 18:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
@@ -301,7 +301,7 @@ Each new source below was read from GitHub's runners before it was added.
 | Infarmed circulars | `infarmed-circulares`, which now keeps every circular of the medicines circulars page (`circulares_all`), not only the alert series |
 | HPRA newsletters | `hpra-notices`: her address no longer opens; each Drug Safety Newsletter is posted as a safety notice |
 | MFDS safety letters (health.kr) | `mfds-letters`: health.kr republishes MFDS's letters, all of which are on MFDS's own board |
-| Health Canada InfoWatch | Not read. canada.ca timed out every request from the runners (6 Nov 2026), with a browser's and with PHAROS's own user agent. Health Canada sends each issue by e-mail (MedEffect e-Notice) |
+| Health Canada InfoWatch | `hc-email`, by e-mail subscription (0077): the MedEffect e-Notice mails ("Outside of Canada", Drugs), subscribed for the PV mailbox on 6 Nov 2026, from `hc-sc.gc.ca` or `canada.ca`. canada.ca itself timed out every request from the runners (6 Nov 2026), with a browser's and with PHAROS's own user agent |
 | FDA press announcements | Not read. fda.gov answers the runners with its abuse-detection page. To have them read: subscribe the PHAROS mailbox to *FDA Press Releases* (the sign-up box at the bottom of fda.gov's press announcements page). `fda-email` already reads every message from `public.govdelivery.com`; then set the page's `read_by` to `{fda-email}` with a note starting "By e-mail subscription" |
 
 ## Turning real Telegram messages on
@@ -953,6 +953,12 @@ count them; no report is downloaded, only numbers come back, and the log names n
 - **The period**: the last 8 complete calendar quarters openFDA holds, by the day FDA received each report (on 6 Nov
   2026: October 2024 to September 2026, 2.68 million reports). FAERS changes once a quarter, so an ingredient counted
   in the last 6 days is left; run the workflow by hand with *force* to count every ingredient again.
+- **The drug most reported with a flag** (migration 0076): one report names every drug the patient took, and the
+  count takes a report whatever role the ingredient had in it. For each flagged reaction the run asks openFDA which
+  other drugs those reports name (`openfda.generic_name`, the 10 most frequent) and keeps the first that is not the
+  ingredient, a salt of it or a combination holding it; section 06 shows it under the flag ("Most often with
+  RELUGOLIX (83%)"). Found on 6 Nov 2026: carvedilol's HOT FLUSH (PRR 4.1) came from reports naming the
+  prostate-cancer drug relugolix as the suspect in 199 of 239, with carvedilol only taken alongside.
 - **How an ingredient is found**: its INN in capitals, exactly, in three fields at once: `openfda.generic_name` and
   `openfda.substance_name` (filled only when FDA matched the product to a US label) and
   `activesubstance.activesubstancename` (the substance as FAERS coded it, also for products sold outside the US).
