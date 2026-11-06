@@ -211,12 +211,15 @@ def test_the_drug_reported_with_a_reaction_is_never_the_ingredient_under_its_us_
     def get(params):
         if "^" in params["search"]:
             return 400, {"error": {"code": "BAD_REQUEST", "message": "Search not supported"}}
-        return 200, counted({"ACETAMINOPHEN": 50, "ACETAMINOPHEN AND HYDROCODONE": 30, "IBUPROFEN": 10})
+        # FAERS joins a combination's substances with a backslash
+        return 200, counted({"ACETAMINOPHEN": 50, "ACETAMINOPHEN\\HYDROCODONE BITARTRATE": 30,
+                             "FAMOTIDINE\\IBUPROFEN": 12, "IBUPROFEN": 10})
 
     api = api_for(get)
     own = faers.searched_names("Paracetamol", "Acetaminophen")
     names = faers.name_search("Paracetamol", "Acetaminophen")
-    assert faers.co_drug(api, names, own, "HEPATITIS", WHOLE) == ("IBUPROFEN", 10)
+    assert faers.co_drug(api, names, own, "HEPATITIS", WHOLE) == ("FAMOTIDINE + IBUPROFEN", 12)
+    assert faers.DRUG == "patient.drug.activesubstance.activesubstancename.exact"     # coded for every product
     assert faers.reaction_search("WERNICKE^S ENCEPHALOPATHY") == (
         'patient.reaction.reactionmeddrapt:"WERNICKE S ENCEPHALOPATHY"')
     assert faers.reaction_search("HEPATITIS") == 'patient.reaction.reactionmeddrapt.exact:"HEPATITIS"'
