@@ -73,8 +73,8 @@ function InvitePanel({ onDone }: { onDone: () => void }) {
         </div>
       </form>
       <p className="small muted">
-        Readers see everything. Reviewers also record decisions and confirm or split copies. Administrators also manage
-        the watchlist, the sources and people.
+        Readers see everything. Reviewers also record decisions: Concerns us, Doesn't concern us. Administrators also
+        manage the watchlist, the drug classes, the sources and people.
       </p>
       {invite.isError ? <Notice tone="error">Not invited: {errorMessage(invite.error)}</Notice> : null}
       {sent ? <Notice tone="ok">An invitation is on its way to {sent}.</Notice> : null}
