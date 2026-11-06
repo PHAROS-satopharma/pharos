@@ -560,7 +560,9 @@ decision and keeps it inside the finding (migration 0042), so nothing is filled 
   chain *Validate → Assess → Action → Closed* with the current stage lit, and the day the stage is due ("Validate
   by Sun 6 Dec", marked **late** when past). A reviewer or administrator takes the next step there: *It is a
   signal* (priority and why) or *Not a signal* (why); *Record the assessment* (outcome, and the day the action is
-  due when the outcome is a label update, an RMP update, a DHPC or a PSUR input); *Action done*; *Reopen*. Every
+  due when the outcome is a label update, an RMP update, a DHPC or a PSUR input); *Action done*; *Reopen* (a
+  signal closed as not a signal goes back to validation, with no priority until it is validated; one closed
+  after its assessment goes back to assessment with its own priority, 0057). Every
   step needs words for the record; the history under the chain lists who took each step, when, and what they
   wrote. Two people on one signal: the second step is refused and the screen reloads. Readers see the chain and
   the history, no buttons.
