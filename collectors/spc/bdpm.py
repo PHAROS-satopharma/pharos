@@ -15,7 +15,9 @@ Source ``spc-bdpm``; country FR; French.
     titulaire(s) | surveillance renforcée.
 
   A product is kept when one of its SA/FT substances contains the ingredient's French INN
-  (``ingredient_term`` lang ``fr``, e.g. "LORNOXICAM") and its AMM status is active. Centrally
+  (``ingredient_term`` lang ``fr``, e.g. "LORNOXICAM", else the English INN) and its AMM status
+  is active. Both sides are compared without accents or case, so "carvedilol" finds "CARVÉDILOL".
+  The files are ISO-8859-1/Windows-1252 with no charset header; they are decoded as such. Centrally
   authorised products (an EU number) are left to ``spc-ema-epar`` unless ``include_central``.
 * Snapshot: the RCP page (``RCP_URL``, overridable by the ``SPC_BDPM_RCP_URL`` environment
   variable) split by QRD section number. The new BDPM front end is script-driven, so the classic
@@ -26,6 +28,7 @@ Source ``spc-bdpm``; country FR; French.
 from __future__ import annotations
 
 import os
+import unicodedata
 
 from collectors.core.context import FetchError
 from collectors.parsers._html_util import block_text
@@ -40,6 +43,20 @@ HOST = "https://base-donnees-publique.medicaments.gouv.fr"
 COMPO_URL = HOST + "/download/file/CIS_COMPO_bdpm.txt"
 CIS_URL = HOST + "/download/file/CIS_bdpm.txt"
 RCP_URL = os.environ.get("SPC_BDPM_RCP_URL", HOST + "/affichageDoc.php?specid={cis}&typedoc=R")
+
+def _decode(content: bytes) -> str:
+    """The files are Windows-1252 (É is byte 0xC9); UTF-8 is accepted should the server switch."""
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError:
+        return content.decode("cp1252", errors="replace")
+
+
+def fold(text: str) -> str:
+    """Case and accents dropped: "CARVÉDILOL" and "carvedilol" both read "carvedilol"."""
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
+
 
 def _rows(ctx, url: str) -> list[list[str]]:
     """The rows of one bulk file, read once per run. A file that does not answer 200 is a failure
@@ -57,7 +74,7 @@ def _rows(ctx, url: str) -> list[list[str]]:
 
 
 def match_cis(compo_rows: list[list[str]], terms: list[str]) -> set[str]:
-    needles = [t.casefold() for t in terms if t]
+    needles = [n for n in (fold(t) for t in terms) if n]
     out: set[str] = set()
     for r in compo_rows:
         if len(r) < 7:
@@ -65,7 +82,7 @@ def match_cis(compo_rows: list[list[str]], terms: list[str]) -> set[str]:
         nature = r[6].strip().upper()
         if nature not in ("SA", "FT"):
             continue
-        name = r[3].casefold()
+        name = fold(r[3])
         if any(n in name for n in needles):
             out.add(r[0].strip())
     return out
