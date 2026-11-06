@@ -27,6 +27,24 @@ class ExplodingTelegram:
     send_document = send_message
 
 
+class RecordingTelegram:
+    """A Telegram that takes every message, or refuses the chats in ``refuse`` (a person who blocked the bot)."""
+
+    def __init__(self, refuse: set[int] | None = None) -> None:
+        self.messages: list[tuple[int, str]] = []
+        self.refuse = set(refuse or ())
+
+    def send_message(self, chat_id: int, text: str) -> int:
+        from collectors.alerts import TelegramError
+
+        if chat_id in self.refuse:
+            raise TelegramError("Forbidden: bot was blocked by the user")
+        self.messages.append((chat_id, text))
+        return 1000 + len(self.messages)
+
+    send_document = send_message
+
+
 @pytest.fixture(autouse=True)
 def no_real_token(monkeypatch):
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
@@ -59,13 +77,17 @@ def store_with_findings() -> MemoryStore:
                                           ("p5", "Gone Admin", 555, "admin", False)):
         s.person[pid] = {"id": pid, "full_name": name, "telegram_chat_id": chat, "role": role, "active": active}
 
-    def finding(key: str, title: str, first_seen: date, *, decisions: list[str], sent: bool = False) -> str:
+    def finding(key: str, title: str, first_seen: date, *, decisions: list[str], sent: bool = False,
+                created: date | None = None) -> str:
+        """A notice PHAROS first showed on ``first_seen`` (its creation day; the anchor document was first seen
+        the same day unless ``created`` says otherwise)."""
         did = s.insert_document({"source_id": "bfarm-rhb", "external_id": key, "lang": "de", "doc_type": "dhpc",
                                  "url": f"https://www.bfarm.de/{key}.html", "title_orig": title,
                                  "published_date": first_seen, "structured": None, "is_backfill": False})
         s.document[did]["first_seen_at"] = seen(first_seen)
         iid = s.create_issue(doc_type="dhpc", title=title, anchor_document_id=did, first_date=first_seen,
                              class_only=False, is_backfill=False)
+        s.issue[iid]["created_at"] = seen(created or first_seen)
         s.link_document(iid, did, link="anchor", method="auto", score=None)
         s.add_issue_ingredients(iid, ["ing-1"])
         for n, to in enumerate(decisions):
@@ -86,11 +108,20 @@ def store_with_findings() -> MemoryStore:
     finding("g", "Nicht unser Produkt", date(2026, 10, 20), decisions=["not_relevant"])            # clock off
     finding("h", "Doch nicht", date(2026, 10, 20), decisions=["relevant", "not_relevant"])         # reversed: off
     finding("i", "Niemand hat entschieden", date(2026, 10, 1), decisions=[])                       # no decision: off
+    s.finding = finding  # type: ignore[attr-defined]  - for the tests that add one more
     return s
 
 
 def notifier_for(store: MemoryStore, **kw) -> Notifier:
     return Notifier(store, store.settings(), telegram=ExplodingTelegram(), **kw)
+
+
+def real_notifier(store: MemoryStore, monkeypatch, telegram: RecordingTelegram) -> Notifier:
+    """A notifier that really sends (to the recording fake): the setting off, a token in the environment."""
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token-not-real")
+    n = Notifier(store, {**store.settings(), "telegram_dry_run": False}, telegram=telegram)
+    assert not n.dry_run
+    return n
 
 
 # ───────────────────────────── what is due ─────────────────────────────
@@ -106,6 +137,44 @@ def test_the_store_lists_late_and_due_within_two_days_most_late_first():
     assert all(r["ingredient"] == "levofloxacin" and r["ingredient_id"] == "ing-1" and r["country"] == "Germany"
                for r in rows)
     assert rows[0]["due"] == date(2026, 11, 3) and rows[0]["day_zero"] == date(2026, 10, 29)
+
+
+def test_day_zero_stays_when_the_anchor_moves_to_a_later_document():
+    """collectors/merge.py moves a notice's anchor to an EMA document that arrives later; the day PHAROS first
+    showed the notice does not move, so the due day does not move either (0050)."""
+    s = store_with_findings()
+    iid = next(i for i, r in s.issue.items() if r["title"] == "Rote-Hand-Brief <Levofloxacin>")   # shown 2 Nov
+    ema = s.insert_document({"source_id": "bfarm-rhb", "external_id": "ema-a", "lang": "en", "doc_type": "dhpc",
+                             "url": "https://www.ema.europa.eu/a", "title_orig": "DHPC: Levofloxacin",
+                             "published_date": date(2026, 11, 5), "structured": None, "is_backfill": False})
+    s.document[ema]["first_seen_at"] = seen(date(2026, 11, 5))
+    s.link_document(iid, ema, link="anchor", method="auto", score=90)
+    s.set_issue_anchor(iid, ema, title="DHPC: Levofloxacin", doc_type="dhpc", first_date=date(2026, 11, 5),
+                       is_backfill=False)
+    row = next(r for r in s.eda_reminders(TODAY, within_days=2) if r["issue_id"] == iid)
+    assert row["title"] == "DHPC: Levofloxacin"
+    assert (row["day_zero"], row["due"], row["days_left"]) == (date(2026, 11, 2), date(2026, 11, 7), 1)
+
+
+def test_a_notice_created_today_for_an_old_document_is_due_in_five_days_not_late():
+    """A re-match creates a notice for a document first seen 175 days ago: PHAROS first showed it today."""
+    s = store_with_findings()
+    iid = s.finding("old", "Levofloxacin: alte Meldung", date(2026, 5, 15), decisions=["relevant"], created=TODAY)
+    assert iid not in {r["issue_id"] for r in s.eda_reminders(TODAY, within_days=2)}, "due in 5 days: not yet"
+    row = next(r for r in s.eda_reminders(TODAY, within_days=5) if r["issue_id"] == iid)
+    assert (row["day_zero"], row["due"], row["days_left"], row["clock"]) == (TODAY, date(2026, 11, 11), 5, "running")
+
+
+def test_a_report_sent_to_the_authority_is_never_forgotten():
+    """Concerns us, Doesn't concern us, Concerns us again: the report sent under the first decision still
+    counts, so the reminder does not ask for a second one (0050)."""
+    s = store_with_findings()
+    iid = s.finding("again", "Levofloxacin: doch wieder", date(2026, 10, 25),
+                    decisions=["relevant", "not_relevant", "relevant"])
+    s.authority_report.append({"id": "again-s", "issue_id": iid, "decision_id": "again-d0", "sent_on": TODAY,
+                               "reference": "EDA/2", "note": None, "person_id": "p1", "withdrawn_at": None,
+                               "created_at": cairo(TODAY, 6, 30).astimezone(timezone.utc)})
+    assert iid not in {r["issue_id"] for r in s.eda_reminders(TODAY, within_days=2)}
 
 
 def test_the_people_told_are_active_reviewers_and_administrators_with_telegram():
@@ -160,6 +229,33 @@ def test_once_a_cairo_day_and_again_the_next_day():
     assert reminders.remind_if_due(s, notifier_for(s), now=tomorrow) == 2
     assert len(s.notification) == 4
     assert "2 late, 3 due within 2 days" in s.notification[-1]["summary"]  # a day later: C is late, E is in reach
+
+
+def test_a_dry_run_does_not_cancel_the_day_s_real_reminder(monkeypatch):
+    """A dry run after 07:00 (by hand, say) writes its rows; the real reminder of the day still goes once."""
+    s = store_with_findings()
+    assert reminders.remind_if_due(s, notifier_for(s, dry_run=True), now=at(7, 30)) == 2
+    tg = RecordingTelegram()
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(8, 17)) == 2
+    assert sorted(chat for chat, _ in tg.messages) == [111, 222]
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(12, 17)) == 0, "once a day"
+    assert len(tg.messages) == 2
+    assert [(r["dry_run"], r["error"]) for r in s.notification] == [(True, None), (True, None), (False, None), (False, None)]
+
+
+def test_a_refused_message_is_tried_again_and_the_others_are_not_told_twice(monkeypatch):
+    """Telegram refuses one chat at 08:17 (the bot blocked, a network error): the next run tells that person,
+    and only that person."""
+    s = store_with_findings()
+    tg = RecordingTelegram(refuse={111})
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(8, 17)) == 2
+    assert [chat for chat, _ in tg.messages] == [222]
+    assert [(r["person_id"], r["error"] is not None) for r in s.notification] == [("p1", True), ("p2", False)]
+    tg.refuse.clear()
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(12, 17)) == 1
+    assert [chat for chat, _ in tg.messages] == [222, 111]
+    assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(16, 17)) == 0
+    assert len(s.notification) == 3
 
 
 def test_waits_for_seven_in_cairo():

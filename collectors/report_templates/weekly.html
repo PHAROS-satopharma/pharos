@@ -244,10 +244,13 @@ an authority and was never alerted.</p>
 <section class="part">
 <h2><span class="n">04</span>NCBI literature</h2>
 <p class="lede">PubMed and PubMed Central, searched for each ingredient's name and the English words of its class.
-Every paper first seen this week.</p>
+Every paper first seen this week. A paper that looks like a case report (PubMed lists it as one, or its title says
+so) is listed first with day zero, the day PHAROS found it, and the dates to report a valid case: 15 days if
+serious, 90 if not.</p>
 {% for i in data.ingredients %}
 {% set l = i.literature %}
-<h3>{{ i.name }}<span class="sub">{{ l.papers }} {{ "paper" if l.papers == 1 else "papers" }} · {{ l.by_name }} by name · {{ l.by_class }} by class</span></h3>
+<h3>{{ i.name }}<span class="sub">{{ l.papers }} {{ "paper" if l.papers == 1 else "papers" }} · {{ l.by_name }} by name · {{ l.by_class }} by class · {{ l.case_reports }} possible case {{ "report" if l.case_reports == 1 else "reports" }}</span></h3>
+{% if l.mlm %}<p class="comment">{{ l.mlm }}</p>{% endif %}
 <h4>Searches</h4>
 <table>
   <thead><tr><th>Search</th><th>Searched as</th><th class="num">PubMed</th><th class="num">PubMed Central</th></tr></thead>
@@ -265,8 +268,10 @@ Every paper first seen this week.</p>
   {% for p in l.list %}
   <tr>
     <td class="code">{{ p.day }}</td>
-    <td><span class="title-orig" dir="auto">{{ p.title }}</span>{% if p.by_class %}<span class="tag">by class</span>{% endif %}{% if p.history %}<span class="tag">history</span>{% endif %}
-      {% if p.journal %}<br><span class="comment">{{ p.journal }}</span>{% endif %}</td>
+    <td><span class="title-orig" dir="auto">{{ p.title }}</span>{% if p.case_report %}<span class="tag">Possible case report</span>{% endif %}{% if p.by_class %}<span class="tag">by class</span>{% endif %}{% if p.history %}<span class="tag">history</span>{% endif %}
+      {% if p.journal %}<br><span class="comment">{{ p.journal }}</span>{% endif %}
+      {% if p.case_report %}<br><span class="decision">Possible case report: {{ p.case_reason }}. Day zero {{ p.day_zero }} · 15 days {{ p.due_serious }} · 90 days {{ p.due_nonserious }}</span>{% endif %}
+      <br><span class="decision"><strong>{{ p.decision }}</strong>{% if p.decided_by %} · {{ p.decided_by }}, {{ p.decided_at }}{% endif %}{% if p.reason %} · <span class="comment">{{ p.reason }}</span>{% endif %}</span></td>
     <td class="code">{{ link(p.pubmed, p.pubmed_id) }}</td>
     <td class="code">{{ link(p.pmc, p.pmc_id) }}</td>
   </tr>

@@ -4,6 +4,7 @@ import {
   clockLine,
   daysUntil,
   dueLabel,
+  earliestSentDay,
   isClockRefusal,
   issueIdsOf,
   runningClock,
@@ -32,6 +33,8 @@ const mention = (document_id: string, issue_id: string | null): Mention => ({
   doc_type: 'dhpc',
   terms: [],
   by_class: false,
+  relation: 'name',
+  class_name: null,
   is_backfill: false,
   sections: null,
   issue_id,
@@ -131,6 +134,19 @@ describe('the screen after a change', () => {
     expect(on.findings.n3).toMatchObject({ clock: 'running', days_left: 0, due: '2026-11-06' });
     const late = withClockDecision(DATA, 'n3', 'relevant', '2026-11-09');
     expect(late.findings.n3).toMatchObject({ clock: 'late', days_left: -3 });
+  });
+
+  it('never forgets a report sent to the authority: off keeps it, Concerns us again finds the notice sent', () => {
+    const sentData = withSent(DATA, 'n1', sent);
+    const off = withClockDecision(sentData, 'n1', 'not_relevant', '2026-11-06');
+    expect(off.findings.n1).toMatchObject({ clock: 'off', sent });
+    const again = withClockDecision(off, 'n1', 'relevant', '2026-11-09');
+    expect(again.findings.n1).toMatchObject({ clock: 'sent', sent, due: '2026-11-08' });
+  });
+
+  it('dates a report no earlier than the day PHAROS first showed the notice, and no later than today', () => {
+    expect(earliestSentDay(running)).toBe('2026-11-03');
+    expect(earliestSentDay(undefined)).toBeUndefined();
   });
 
   it('starts the clock again when a wrong report is withdrawn', () => {

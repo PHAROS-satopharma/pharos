@@ -3,16 +3,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { cairoToday, formatDateTime } from '../../lib/format';
+import { cairoToday, formatDate, formatDateTime } from '../../lib/format';
 import type { IssueStatus } from '../../lib/types';
 import { Button } from '../../ui/Button';
 import { Field, Input, Textarea } from '../../ui/Input';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
-import { canSend, clockLine, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
+import { canSend, clockLine, earliestSentDay, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
-import { useScreenData } from './queries';
-import type { AuthoritySent, FindingState, IngredientScreenData, Mention } from './types';
+import type { AuthoritySent, Decided, Decision, FindingState, IngredientScreenData } from './types';
 import '../../styles/clock.css';
 
 class StaleDecisionError extends Error {
@@ -44,10 +43,25 @@ interface SentRow {
 
 /**
  * The notice a mention is filed under: its status and latest decision, and for a reviewer or administrator the
- * decisions that can follow. A decision shows at once on every mention of the same notice on the screen. Under
- * the decision, the five-day clock to the Egyptian Drug Authority (0041) and "Sent to the authority".
+ * decisions that can follow. A decision shows at once on every mention of the same notice on the screen; a
+ * paper's buttons pass it on through onDecision, so the papers under the same notice show it too. Under
+ * the decision, the five-day clock to the Egyptian Drug Authority (0041, 0050) and "Sent to the authority".
+ *
+ * `finding` is the notice's clock as the screen's data holds it (finding_state); the screen passes it down. The
+ * cache is written here under `queryKey`, never read through a second observer: a second useQuery on the same
+ * key with no queryFn would take over the query's options and break the reload after a refusal.
  */
-export function DecisionButtons({ mention, queryKey }: { mention: Mention; queryKey: readonly unknown[] }) {
+export function DecisionButtons({
+  mention,
+  queryKey,
+  finding,
+  onDecision,
+}: {
+  mention: Decided;
+  queryKey: readonly unknown[];
+  finding: FindingState | null;
+  onDecision?: (issueId: string, d: Decision) => void;
+}) {
   const { canReview, person } = useAuth();
   const qc = useQueryClient();
   const [changing, setChanging] = useState(false);
@@ -56,7 +70,6 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
   const [done, setDone] = useState<string | null>(null);
   const issueId = mention.issue_id;
   const status = mention.issue_status;
-  const finding = useScreenData(queryKey)?.findings[issueId ?? ''];
 
   const save = useMutation({
     mutationFn: async (to: IssueStatus) => {
@@ -80,21 +93,16 @@ export function DecisionButtons({ mention, queryKey }: { mention: Mention; query
       if (!issueId) return;
       // Other ranges and screens read again when next opened; this one shows the decision now.
       void qc.invalidateQueries({ queryKey: ['ingredient-screen'], refetchType: 'none' });
+      const decision: Decision = {
+        to_status: row.to_status,
+        person: person?.full_name ?? 'You',
+        at: row.created_at,
+        comment: row.comment,
+      };
       qc.setQueryData<IngredientScreenData>(queryKey, (old) =>
-        old
-          ? withClockDecision(
-              withDecision(old, issueId, {
-                to_status: row.to_status,
-                person: person?.full_name ?? 'You',
-                at: row.created_at,
-                comment: row.comment,
-              }),
-              issueId,
-              row.to_status,
-              cairoToday(),
-            )
-          : old,
+        old ? withClockDecision(withDecision(old, issueId, decision), issueId, row.to_status, cairoToday()) : old,
       );
+      onDecision?.(issueId, decision);
       void qc.invalidateQueries({ queryKey: ['issues'] });
       void qc.invalidateQueries({ queryKey: ['issue', issueId] });
       void qc.invalidateQueries({ queryKey: ['issue-reviews', issueId] });
@@ -316,7 +324,9 @@ function AuthorityActions({
     },
   });
 
-  const dateBad = !/^\d{4}-\d{2}-\d{2}$/.test(sentOn) || sentOn > today;
+  // Between the day PHAROS first showed the notice and today: the database refuses anything else (22023).
+  const earliest = earliestSentDay(finding);
+  const dateBad = !/^\d{4}-\d{2}-\d{2}$/.test(sentOn) || sentOn > today || (earliest !== undefined && sentOn < earliest);
 
   if (mode === 'sent') {
     return (
@@ -328,8 +338,19 @@ function AuthorityActions({
         }}
       >
         <p className="clock-form-what">Sent to the Egyptian Drug Authority</p>
-        <Field label="Day sent" hint="Today or earlier.">
-          <Input type="date" value={sentOn} max={today} onChange={(e) => setSentOn(e.target.value)} required aria-invalid={dateBad || undefined} />
+        <Field
+          label="Day sent"
+          hint={earliest ? `From ${formatDate(earliest)}, the day PHAROS first showed the notice, to today.` : 'Today or earlier.'}
+        >
+          <Input
+            type="date"
+            value={sentOn}
+            min={earliest}
+            max={today}
+            onChange={(e) => setSentOn(e.target.value)}
+            required
+            aria-invalid={dateBad || undefined}
+          />
         </Field>
         <Field label="Reference (optional)" hint="The authority's or our file number.">
           <Input value={reference} onChange={(e) => setReference(e.target.value)} maxLength={200} />

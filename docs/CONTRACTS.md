@@ -262,6 +262,41 @@ confirm_drug_class(p_class uuid) returns timestamptz  -- confirmed_by = the call
   `set_issue_names_ingredient`; for classes `ingredients_for_classes`, `drug_class_id`, `create_drug_class`,
   `link_ingredient_class`.
 
+## The search profile: groups, the class above, groups by hand (0049)
+
+```sql
+-- ingredient_class: + relation text not null default 'group' ('group' = its ATC level-4 group | 'parent' = the
+--   level-3 class above it | 'manual' = a group given by hand), enabled boolean not null default true,
+--   changed_at; audited. On 0049 every link of a class with origin 'hand' became 'manual'; everything else
+--   'group', enabled. A link inserted by hand to a class with origin 'hand' is 'manual' (trigger).
+-- Switching a link from off to on sets changed_at on every word of the class (trigger
+-- class_search_enabled_again): the check of the past and the literature look-back run for it.
+-- Everything that searches reads ENABLED links only: Store.load_terms, class_ingredients, class_words,
+-- rematch_due_terms; literature-search; report_weekly SEARCHES_SQL; ingredient_screen's class_words,
+-- class_languages and literature searches. A link that is off still shows on the Ingredients page and screen.
+-- RPCs, administrators only (security definer; 42501 for anyone else):
+set_class_search(p_ingredient uuid, p_class uuid, p_enabled boolean) returns void   -- P0002 when not linked
+add_search_group(p_ingredient uuid, p_name_en text) returns uuid
+  -- trimmed, 2 to 120 characters; 22023 when the name looks like an ATC code (groups by hand are named in
+  -- words); reuses a class with the same name (case-insensitive) else inserts origin 'hand' with a code made
+  -- from the name; links it 'manual' (an existing link of any relation is switched on, never downgraded)
+unlink_search_group(p_ingredient uuid, p_class uuid) returns void
+  -- 'manual' links only: 22023 for a link from the ATC code (switch it off instead), P0002 when not linked
+-- Not callable by the app:
+ingredient_match_relation(p_ingredient uuid, p_document uuid) returns text
+  -- how a document was found for an ingredient: 'name' (its own names) > 'group' > 'manual' > 'parent';
+  -- null when nothing matched. 'parent' is a class-level signal to assess, not a group match.
+```
+
+- The search mode on the Ingredients page is DERIVED, never stored: no class on (or none) = *Ingredient only*;
+  every class on = *Ingredient + groups*; some = *Custom* (`web/src/features/ingredients/searchProfile.ts`:
+  `profileMode`, `profileWords`, `switchesFor`; reusable by any screen).
+- `collectors/classes.py` links the level-4 group ON and the level-3 class above it OFF (`relation 'parent'`);
+  it never changes a class or a link that exists, so a switch set by hand stays. Manual run: *Actions ->
+  PHAROS collect -> Run workflow -> classes* runs only this step.
+- Store: `link_ingredient_class(ingredient_id, class_id, *, relation='group', enabled=True)` (on conflict
+  nothing); `memstore.set_class_search(ingredient_id, class_id, enabled)`.
+
 ## The Ingredients screen (0039)
 
 ```sql
@@ -273,8 +308,8 @@ document_link(d document, s source, r regulator) returns text   -- immutable; th
 -- before p_from or the range is over 366 days; P0002 for an unknown ingredient). Days are Cairo days, both
 -- included; a notice's day is published_date, else first_seen_at in Cairo.
 ingredient_screen(p_ingredient uuid, p_from date, p_to date) returns jsonb
-  -- {ingredient:{id, inn_en, atc_code, active, classes:[{id, code, name_en, origin}], names, name_languages,
-  --   class_words, class_languages}, from, to,
+  -- {ingredient:{id, inn_en, atc_code, active, classes:[{id, code, name_en, origin, relation, enabled}], names,
+  --   name_languages, class_words, class_languages (enabled classes only, 0049)}, from, to,
   --  regulators:[{id, name, country_name, country_code, homepage, hers, runs, ok, failed, unread_page,
   --   pages:[regulator_page], sources:[{id, regulator_id, kind, channel, url, page_url, enabled, health, notes}],
   --   mentions:[mention]}],          -- every authority with pages of hers or a source not spc/literature;
@@ -284,7 +319,8 @@ ingredient_screen(p_ingredient uuid, p_from date, p_to date) returns jsonb
   --  literature:{papers, by_name, by_class, pubmed, pmc, by_query:[{query, kind, pubmed, pmc}], first:[paper]}}
   -- mention: {document_id, source_id, regulator_id, regulator_name, country_name, country_code, title, lang,
   --   link (document_link), email_id, email_r2_key, date, published_date, first_seen_at, doc_type,
-  --   terms:[{text, lang}], by_class, is_backfill (the document's or its notice's), sections (spc only),
+  --   terms:[{text, lang}], by_class, relation ('name' | 'group' | 'manual' | 'parent', 0049), class_name (the
+  --   class that found it, null for 'name'), is_backfill (the document's or its notice's), sections (spc only),
   --   issue_id (a link not 'suggested', its anchor first), issue_status, decision:{to_status, person, at, comment}}
 ingredient_papers(p_ingredient uuid, p_from date, p_to date) returns table (document_id, title, lang, journal,
   day, pubmed_url, pmc_url, by_class, is_backfill, first_seen_at)
@@ -323,28 +359,34 @@ Collector: `python -m collectors.report [--week YYYY-MM-DD | --month YYYY-MM] [-
 Web: Reports (`web/src/features/reports/`, `weeks.ts`). `archive-url` serves a key a `weekly_report` row points
 at. SQL test: `supabase/tests/weekly_report.sql`; Python: `tests/test_report_weekly.py`.
 
-## The five-day clock (0041)
+## The five-day clock (0041, 0050)
 
 ```sql
 app_setting eda_days = '5', eda_day_zero = '"first_seen"'   -- jsonb; or '"decision"'
 authority_report (id, issue_id, authority 'EDA', sent_on date, reference, note, person_id, decision_id -> review_event,
   created_at, withdrawn_at, withdrawn_by, withdraw_reason)
-  -- append-only: the team reads; a reviewer or administrator inserts their own row (sent_on never after
-  -- today in Cairo, 22023); the trigger refuses 'PH409' 'NO_CONCERN …' when the notice's latest decision is
-  -- not relevant and 'PH409' 'ALREADY_SENT …' when that decision was reported already, and names the decision
-  -- (decision_id). Update and delete are refused ('… append-only'); only withdraw_authority_report() writes.
+  -- append-only: the team reads (never service_role, 0050); a reviewer or administrator inserts their own row
+  -- (sent_on never after today in Cairo and never before day zero, 22023); the trigger refuses 'PH409'
+  -- 'NO_CONCERN …' when the notice's latest decision is not relevant and 'PH409' 'ALREADY_SENT …' when that
+  -- decision was reported already, and names the decision (decision_id). Update and delete are refused
+  -- ('… append-only'); only withdraw_authority_report() writes.
 withdraw_authority_report(p_id uuid, p_reason text) returns void
   -- security definer; a reviewer or administrator; reason required (22023); P0002 when unknown or withdrawn.
 eda_clock(p_issues uuid[]) returns table (issue_id, ingredient_id, ingredient, title, country, regulator,
   day_zero, due, days_left, clock, decided_at, decided_by, sent_id, sent_on, sent_reference, sent_note, sent_by)
-  -- the collector's (null = every notice whose status and latest decision are relevant); not for authenticated.
+  -- the collector's (null = every notice whose status and latest decision are relevant); not for authenticated
+  -- nor service_role (0050).
 finding_state(p_issues uuid[]) returns jsonb
   -- the screen's: {"<issue_id>": {day_zero, due, days_left, clock, sent}} with clock running | late | sent | off
   -- and sent {id, on, reference, person, note} or null; {} for nothing or unknown ids; screen_reader() or 42501.
-  -- day_zero = Cairo day of the notice's earliest first_seen_at; due = day_zero + eda_days; days_left counts
-  -- from signal_cairo_today(), negative when late. off when the latest decision is not relevant.
+  -- day_zero = Cairo day of issue.created_at, the day PHAROS first showed the notice (0050; or of the decision
+  -- when eda_day_zero = decision); due = day_zero + eda_days; days_left counts from signal_cairo_today(),
+  -- negative when late. off when the latest decision is not relevant. sent = the latest authority_report not
+  -- withdrawn for the notice, whatever decision it was recorded under (never forgotten, 0050), even while off;
+  -- clock = sent whenever one exists and the latest decision is relevant.
 v_eda_clock  -- eda_clock(null) where clock in ('running', 'late'); the collector's reminder reads it on the
-  -- direct connection; revoked from public, anon and authenticated.
+  -- direct connection; revoked from public, anon, authenticated and service_role (0050).
+latest_decision(p_issue uuid) returns review_event   -- the guard's and eda_clock's own; nobody else (0050).
 ```
 
 Collector: `collectors/reminders.py` (`remind_if_due`, kind `escalation`, from 07:00 Cairo, once a day, findings
@@ -386,6 +428,26 @@ reads `label_changes()` per ingredient; `gap_summary()` words the gap. Web: `web
 `['label-changes', id, from, to]`; its `label_changes` Mentions carry `document_id = change_id` so
 `DecisionButtons` works unchanged), `web/src/lib/pdfText.ts`, `styles/labels.css`. SQL test:
 `supabase/tests/label_changes.sql`; Python: `tests/test_label_gap.py`, `tests/test_label_recompute.py`.
+
+## Case reports in the literature (0044)
+
+```sql
+paper_state(p_documents uuid[]) returns jsonb   -- security definer, screen_reader() (42501 otherwise); at most
+  -- 1,000 ids (22023); {} for none. Keyed by document id (an unknown id has no entry):
+  -- {issue_id, issue_status, decision:{to_status, person, at, comment},   -- as a mention's in ingredient_screen()
+  --  case_report: {reason: 'pubtype' | 'title'} | null,   -- structured.case_report, else judged on the fly
+  --  day_zero, due_serious, due_nonserious}                -- Cairo day of first_seen_at, +15, +90
+mlm_monitored(p_ingredient uuid) returns boolean   -- a row in mlm_entry; same reader check
+-- 0044 also sets structured.case_report on every literature document stored before it. ingredient_screen()
+-- reads ingredient_papers() by column position: never widen that function; add a function instead.
+```
+
+Collector: `structured.case_report` is set by `collectors/parsers/pubmed.py` (`case_report(pubtype, title)`);
+`Store.case_report_papers_since(since)` feeds the daily message's block (`collectors/alerts.py`,
+`Notifier.digest_if_due`); `collectors/mlm.py` fills `mlm_entry` weekly. Web: `web/src/features/screen/papers.ts`
+(pure), `paperState.ts` (hooks), `styles/papers.css`. SQL test: `supabase/tests/case_reports_screen.sql`; Python:
+`tests/test_pubmed_ncbi.py`, `tests/test_alerts.py`, `tests/test_store_pg.py`, `tests/test_report_weekly.py`,
+`tests/test_mlm.py`.
 
 ## Environment / secrets
 

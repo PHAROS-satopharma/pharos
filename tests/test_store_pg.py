@@ -270,6 +270,41 @@ def test_a_class_paper_is_never_in_the_digest_nor_an_alert(store, tag):
     assert store.issue_for_alert(notice)["source_kind"] == "safety"
 
 
+def test_possible_case_reports_for_the_daily_message(store, tag):
+    # A paper naming the ingredient that PubMed types Case Reports, or whose title says so, is listed for the
+    # daily message; a class-only paper, history, a paper that is no case report, and one found earlier are not.
+    src = _source(store, tag)
+    lit = SourceConfig(id=f"t-{tag}-lit", regulator_id=src.regulator_id, kind="literature", channel="api",
+                       url=f"https://example.test/{tag}/esearch", parser="pubmed", languages=["en"],
+                       schedule="daily", enabled=True, options={}, expected_max_gap_days=30)
+    store.upsert_catalogue_source(lit, "papers")
+    ing = _ingredient(store, tag)
+    since = store.db.fetchone("select now() as t")["t"]
+
+    def paper(ext: str, title: str, structured: dict, *, class_only: bool = False, backfill: bool = False) -> str:
+        doc = store.insert_document(_doc(lit.id, ext, doc_type="literature", lang="en", title_orig=title,
+                                         structured=structured))
+        issue = store.create_issue(doc_type="literature", title=title, anchor_document_id=doc, first_date=None,
+                                   class_only=class_only, is_backfill=backfill)
+        store.add_issue_ingredients(issue, [ing])
+        return issue
+
+    typed = paper("c1", f"Hepatitis after testamine {tag}",
+                  {"pmid": "1", "journal": "Drug Saf", "pubtype": ["Journal Article", "Case Reports"],
+                   "case_report": {"reason": "pubtype"}})
+    titled = paper("c2", f"Testamine {tag}: a case series", {"pmid": "2", "pubtype": ["Journal Article"]})
+    paper("c3", f"A cohort study of testamine {tag}", {"pmid": "3", "pubtype": ["Journal Article"]})
+    paper("c4", f"Class paper {tag}: a case report", {"pmid": "4"}, class_only=True)
+    paper("c5", f"History {tag}: a case report", {"pmid": "5"}, backfill=True)
+    got = {r["id"]: r for r in store.case_report_papers_since(since)}
+    assert set(got) == {typed, titled}
+    assert got[typed]["journal"] == "Drug Saf" and got[typed]["ingredients"] == [f"testamine-{tag}"]
+    assert got[typed]["ingredient_ids"] == [ing] and got[typed]["title_orig"].startswith("Hepatitis")
+    assert got[typed]["day_zero"] == store.db.fetchone(
+        "select (now() at time zone 'Africa/Cairo')::date as d")["d"]
+    assert store.case_report_papers_since(datetime.now(timezone.utc) + timedelta(hours=1)) == []
+
+
 # ───────────────────────────── alerts ─────────────────────────────
 
 
@@ -312,6 +347,26 @@ def test_notified_since_counts_what_reached_the_person(store, tag):
     assert store.notified_since(p, "new_items_digest", since)
     assert not store.notified_since(p, "digest", since)
     assert not store.notified_since(p, "new_items_digest", datetime.now(timezone.utc) + timedelta(hours=1))
+
+
+def test_told_since_names_the_people_a_message_really_reached(store, tag):
+    """The morning reminder's gate (collectors/reminders.py): a person counts as told when a delivered row of
+    the kind exists since ``since``; a refused row never counts; a dry-run row counts only for a dry run."""
+    p1 = _person(store, tag, "Told One")
+    p2 = _person(store, tag, "Told Two")
+    p3 = _person(store, tag, "Told Three")
+    since = datetime.now(timezone.utc) - timedelta(minutes=5)
+    assert store.told_since("escalation", since) == set()
+    store.insert_notification(person_id=p1, issue_id=None, kind="escalation", dry_run=False,
+                              tg_message_id=4242, error=None, summary=f"reminder ok {tag}")
+    store.insert_notification(person_id=p2, issue_id=None, kind="escalation", dry_run=False,
+                              tg_message_id=None, error="Forbidden", summary=f"reminder refused {tag}")
+    store.insert_notification(person_id=p3, issue_id=None, kind="escalation", dry_run=True,
+                              tg_message_id=None, error=None, summary=f"reminder dry {tag}")
+    assert store.told_since("escalation", since) == {p1}
+    assert store.told_since("escalation", since, dry_run=True) == {p1, p3}
+    assert store.told_since("new_items_digest", since) == set()
+    assert store.told_since("escalation", datetime.now(timezone.utc) + timedelta(hours=1)) == set()
 
 
 def test_new_item_counts_are_new_items_per_country(store, tag):

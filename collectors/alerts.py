@@ -33,6 +33,7 @@ MAX_DIGEST_ITEMS = 60          # newest first; the rest are named as a count wit
 MAX_MESSAGE_CHARS = 4000       # Telegram refuses a message over 4096 characters
 BRAND = "PHAROS"
 SOURCES_URL = "https://pharos-satopharma.pages.dev/sources"
+INGREDIENTS_URL = "https://pharos-satopharma.pages.dev/ingredients"
 
 DOC_TYPE_LABEL = {
     "dhpc": "Direct healthcare professional communication",
@@ -127,7 +128,8 @@ class Telegram:
 
 
 def is_paper(issue: dict) -> bool:
-    """An NCBI paper: never an immediate alert, never in the class digest."""
+    """An NCBI paper: never an immediate alert, never a class-wide notice in the digest. A paper that looks
+    like a case report reaches the daily message in its own block (digest_if_due)."""
     return issue.get("doc_type") == "literature" or issue.get("source_kind") == "literature"
 
 
@@ -264,8 +266,23 @@ class Notifier:
         parts.append((current, ids))
         return parts
 
+    @staticmethod
+    def case_report_entry(paper: dict) -> str:
+        """One entry of the "Possible case reports" block: title, journal, day zero (the Cairo day PHAROS
+        found it) with the 15-day date for a serious case, and the way to the ingredient's screen."""
+        day_zero = paper.get("day_zero")
+        due = (f"day zero {fmt_date(day_zero)} · 15 days: {fmt_date(day_zero + timedelta(days=15))}"
+               if day_zero else "")
+        ing_id = (paper.get("ingredient_ids") or [None])[0]
+        link = (f'  <a href="{html.escape(f"{INGREDIENTS_URL}/{ing_id}", quote=True)}">Open the ingredient</a>'
+                if ing_id else f"  {INGREDIENTS_URL}")
+        meta = " · ".join(x for x in (esc(paper.get("journal")), esc(due)) if x)
+        return f"• {esc_cut(paper.get('title_orig'), 2000)}\n" + (f"  {meta}\n" if meta else "") + link
+
     def digest_if_due(self) -> int:
-        """One daily digest of class-only issues to class_digest subscribers."""
+        """One daily message to class_digest subscribers: the class-only notices, then a block of the papers
+        that look like case reports (her decision, 6 Nov 2026: the clock starts the day PHAROS finds the
+        paper, so she hears of it that morning). Each notice and each paper goes out once."""
         if not self.digest_due():
             return 0
         # since the last digest of an earlier day: a retry today covers what today's first try did
@@ -273,24 +290,31 @@ class Notifier:
                                                before=self._digest_due_at())
         since = last or (self.now() - timedelta(days=1))
         all_ids = self.store.class_only_issues_since(since)           # newest first
-        if not all_ids:
+        papers = self.store.case_report_papers_since(since)           # newest first
+        if not all_ids and not papers:
             return 0
         issue_ids = all_ids[:MAX_DIGEST_ITEMS]
         issues = [i for i in (self.store.issue_for_alert(x) for x in issue_ids) if i]
-        header = f"<b>{BRAND}</b> · class-wide notices · {esc(fmt_date(self.now()))}"
+        subject = "class-wide notices" if issues else "possible case reports"
+        header = f"<b>{BRAND}</b> · {subject} · {esc(fmt_date(self.now()))}"
         entries = {iss["id"]: f"• {esc(iss.get('country_name'))} · {esc(iss.get('regulator_name'))} · "
                    f"{esc(fmt_date(iss.get('first_date')))}\n  {esc_cut(iss.get('title_orig'), 2000)}\n"
                    f'  <a href="{html.escape(iss.get("url") or "", quote=True)}">Open</a>'
                    for iss in issues}
+        entries.update({p["id"]: self.case_report_entry(p) for p in papers})
         sent = 0
         for person in self.store.subscribers("class_digest"):
             # a retry after someone else's refusal: only what this person does not have yet
             mine = [iss for iss in issues
                     if not self.store.notified(person["person_id"], iss["id"], "digest")]
-            if not mine:
+            my_papers = [p for p in papers if not self.store.notified(person["person_id"], p["id"], "digest")]
+            if not mine and not my_papers:
                 continue
-            parts = self.digest_parts(header, [(iss["id"], entries[iss["id"]]) for iss in mine],
-                                      len(all_ids) - len(issue_ids))
+            listed = [(iss["id"], entries[iss["id"]]) for iss in mine]
+            if my_papers:
+                listed.append((None, f"<b>Possible case reports ({len(my_papers)})</b>"))
+                listed += [(p["id"], entries[p["id"]]) for p in my_papers]
+            parts = self.digest_parts(header, listed, len(all_ids) - len(issue_ids))
             # each issue is recorded against the part that carried it: when part 2 is refused, part 1's
             # issues count as delivered and only the rest wait for the retry
             failed = None

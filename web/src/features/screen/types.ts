@@ -4,11 +4,17 @@
 import type { DocType, IssueStatus, SourceChannel, SourceHealth, SourceKind } from '../../lib/types';
 import type { RegulatorPage } from '../sources/horizontal';
 
+/** What a class is to the ingredient (migration 0049): its group, the class above it, or a group added by hand. */
+export type ScreenRelation = 'group' | 'parent' | 'manual';
+
 export interface ScreenClass {
   id: string;
   code: string;
   name_en: string;
   origin: 'atc' | 'hand';
+  relation: ScreenRelation;
+  /** Whether its words are looked for. */
+  enabled: boolean;
 }
 
 export interface ScreenIngredient {
@@ -75,6 +81,10 @@ export interface Mention {
   terms: MatchedWord[];
   /** Only words of a drug class matched, not the ingredient's own names. */
   by_class: boolean;
+  /** How it was found: 'name' (its own names), else the nearest class whose word matched. */
+  relation: 'name' | ScreenRelation;
+  /** The class that found it; null when its own name did. */
+  class_name: string | null;
   /** History: found by a backfill or by the check of the past, never alerted. */
   is_backfill: boolean;
   /** Label changes only: the sections that changed. */
@@ -117,6 +127,28 @@ export interface Paper {
   first_seen_at: string;
 }
 
+/** Why a paper looks like a case report: PubMed lists it as one, or its title says so. */
+export interface CaseReport {
+  reason: 'pubtype' | 'title';
+}
+
+/** What a mention or a paper carries of its notice: enough for the decision buttons. */
+export type Decided = Pick<Mention, 'issue_id' | 'issue_status' | 'decision'>;
+
+/**
+ * What paper_state() (migration 0044) says of one paper: its notice and decision, whether it looks like a
+ * case report, and the clock: day zero is the Cairo day PHAROS found it, the dates are +15 and +90 days.
+ */
+export interface PaperState extends Decided {
+  case_report: CaseReport | null;
+  day_zero: string;
+  due_serious: string;
+  due_nonserious: string;
+}
+
+/** The states of the papers on screen, by document id. A paper not yet answered has no entry. */
+export type PaperStates = Record<string, PaperState>;
+
 /** One search the daily literature watch runs for this ingredient, and how many of the papers it found. */
 export interface PaperQuery {
   query: string;
@@ -149,16 +181,17 @@ export interface AuthoritySent {
 
 export type Clock = 'running' | 'late' | 'sent' | 'off';
 
-/** The five-day clock of one notice, as finding_state() answers it (migration 0041). */
+/** The five-day clock of one notice, as finding_state() answers it (migrations 0041 and 0050). */
 export interface FindingState {
-  /** The Cairo day PHAROS first showed the notice (YYYY-MM-DD). */
+  /** The Cairo day PHAROS first showed the notice — the day it was created in PHAROS (YYYY-MM-DD). */
   day_zero: string;
   /** Day zero plus the authority's days (5). */
   due: string;
   /** Days from today in Cairo to the due day; negative when late. */
   days_left: number;
-  /** off: the latest decision is not Concerns us; sent: reported for that decision; late: past due; else running. */
+  /** off: the latest decision is not Concerns us; sent: a report to the authority exists; late: past due; else running. */
   clock: Clock;
+  /** The latest report to the authority not withdrawn, under whatever decision — never forgotten, even while off. */
   sent: AuthoritySent | null;
 }
 

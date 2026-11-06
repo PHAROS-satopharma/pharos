@@ -5,29 +5,56 @@ import { errorMessage, unwrap } from '../../lib/api';
 import { formatCairoDate } from '../../lib/format';
 import { MODE_LABEL, languageName } from '../../lib/labels';
 import { Button } from '../../ui/Button';
-import { Input } from '../../ui/Input';
+import { Input, Toggle } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { Notice } from '../../ui/States';
 import { Tag } from '../../ui/Tag';
 import { cx } from '../../ui/cx';
-import { ORIGIN_LABEL, className, isDue, wordsByLanguage, wordsSummary, type ClassTerm, type DrugClass } from './drugClasses';
+import {
+  ORIGIN_LABEL,
+  RELATION_LABEL,
+  className,
+  isDue,
+  wordsByLanguage,
+  wordsSummary,
+  type ClassLink,
+  type ClassTerm,
+  type DrugClass,
+} from './drugClasses';
 import '../../styles/drug-classes.css';
 
 type HitState = { busy: boolean; count?: number; error?: string };
 
 /**
- * One drug class of an ingredient: "Fluoroquinolones (J01MA) · 17 words in 12 languages · from the ATC code",
- * then Confirm. Opening it lists the class words by language; each can be tested against the archive, and an
- * administrator adds or removes words. Class words are looked for only in notices in their own language, and a
- * notice that names only the class reaches the daily digest, never an immediate message.
+ * One drug class of an ingredient: "Fluoroquinolones (J01MA) · 17 words in 12 languages · from the ATC code ·
+ * its group", its switch (Searched / Not searched) and Confirm. Opening it lists the class words by language; each
+ * can be tested against the archive, and an administrator adds or removes words. A class word is looked for only
+ * in notices in its own language, and a notice that names only the class reaches the daily digest, never an
+ * immediate message. The class above the group starts switched off: its words are read first. A group added by
+ * hand can be removed from the ingredient; a class from the ATC code is switched off instead.
  */
-export function ClassLine({ cls, isAdmin, languages }: { cls: DrugClass; isAdmin: boolean; languages: string[] }) {
+export function ClassLine({
+  cls,
+  link,
+  ingredientId,
+  ingredientName,
+  isAdmin,
+  languages,
+}: {
+  cls: DrugClass;
+  link: ClassLink;
+  ingredientId: string;
+  ingredientName: string;
+  isAdmin: boolean;
+  languages: string[];
+}) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [hits, setHits] = useState<Record<string, HitState>>({});
   const [lang, setLang] = useState('');
   const [word, setWord] = useState('');
   const [removing, setRemoving] = useState<string | null>(null);
+  const [unlinking, setUnlinking] = useState(false);
   const refresh = () => qc.invalidateQueries({ queryKey: ['drug-classes'] });
 
   // The database records who confirmed and when, from the signed-in administrator and its own clock.
@@ -36,6 +63,22 @@ export function ClassLine({ cls, isAdmin, languages }: { cls: DrugClass; isAdmin
       unwrap(await supabase.rpc('confirm_drug_class', { p_class: cls.id }));
     },
     onSuccess: refresh,
+  });
+  // On or off: switching on makes the words due for the check of the past and the literature look-back.
+  const setSearch = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      unwrap(await supabase.rpc('set_class_search', { p_ingredient: ingredientId, p_class: cls.id, p_enabled: enabled }));
+    },
+    onSuccess: refresh,
+  });
+  const unlink = useMutation({
+    mutationFn: async () => {
+      unwrap(await supabase.rpc('unlink_search_group', { p_ingredient: ingredientId, p_class: cls.id }));
+    },
+    onSuccess: async () => {
+      setUnlinking(false);
+      await refresh();
+    },
   });
   const add = useMutation({
     mutationFn: async () => {
@@ -66,14 +109,14 @@ export function ClassLine({ cls, isAdmin, languages }: { cls: DrugClass; isAdmin
   }
 
   const groups = wordsByLanguage(cls.class_term);
-  const due = cls.class_term.some(isDue);
+  const due = link.enabled && cls.class_term.some(isDue);
   const langOptions = [...new Set([...languages, ...cls.class_term.map((t) => t.lang)])]
     .sort((a, b) => languageName(a).localeCompare(languageName(b)))
     .map((l) => ({ value: l, label: languageName(l) }));
   const panelId = `dc-words-${cls.id}`;
 
   return (
-    <div className={cx('dc', open && 'is-open')}>
+    <div className={cx('dc', open && 'is-open', !link.enabled && 'is-off')}>
       <div className="dc-line">
         <button
           type="button"
@@ -86,7 +129,19 @@ export function ClassLine({ cls, isAdmin, languages }: { cls: DrugClass; isAdmin
           <span className="dc-name">{className(cls)}</span>
         </button>
         <span className="dc-meta">
-          {wordsSummary(cls.class_term)} · {ORIGIN_LABEL[cls.origin]}
+          {wordsSummary(cls.class_term)} · {ORIGIN_LABEL[cls.origin]} · {RELATION_LABEL[link.relation]}
+        </span>
+        <span className="dc-switch">
+          {isAdmin ? (
+            <Toggle
+              checked={link.enabled}
+              disabled={setSearch.isPending}
+              onChange={(v) => setSearch.mutate(v)}
+              label={link.enabled ? 'Searched' : 'Not searched'}
+            />
+          ) : (
+            <Tag tone="quiet">{link.enabled ? 'Searched' : 'Not searched'}</Tag>
+          )}
         </span>
         <span className="dc-confirm">
           {cls.confirmed_at ? (
@@ -108,12 +163,21 @@ export function ClassLine({ cls, isAdmin, languages }: { cls: DrugClass; isAdmin
           )}
         </span>
       </div>
-      {due ? (
+      {!link.enabled ? (
+        <p className="dc-note small muted">
+          {link.relation === 'parent'
+            ? 'The class above its group. Its words are not looked for until an administrator has read them and ' +
+              'switched it on: a wide class brings noise, and each English word is a 12-month look-back on PubMed ' +
+              'and PubMed Central.'
+            : 'Not searched: its words are not looked for in notices or in the literature.'}
+        </p>
+      ) : due ? (
         <p className="dc-note small muted">
           New words: the daily run is checking the stored notices of the last 12 months with them.
         </p>
       ) : null}
       {confirm.isError ? <Notice tone="error">Not confirmed: {errorMessage(confirm.error)}</Notice> : null}
+      {setSearch.isError ? <Notice tone="error">Not changed: {errorMessage(setSearch.error)}</Notice> : null}
 
       {open ? (
         <div className="dc-words" id={panelId}>
@@ -222,6 +286,31 @@ export function ClassLine({ cls, isAdmin, languages }: { cls: DrugClass; isAdmin
             </form>
           ) : null}
           {add.isError ? <Notice tone="error">Not added: {errorMessage(add.error)}</Notice> : null}
+
+          {isAdmin && link.relation === 'manual' ? (
+            <div className="dc-remove">
+              {unlinking ? (
+                <>
+                  <Button size="sm" variant="danger" busy={unlink.isPending} onClick={() => unlink.mutate()}>
+                    Remove {cls.name_en} from {ingredientName}
+                  </Button>
+                  <Button size="sm" variant="quiet" onClick={() => setUnlinking(false)}>
+                    Keep
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="quiet"
+                  onClick={() => setUnlinking(true)}
+                  title="The group and its words stay; they are no longer looked for with this ingredient."
+                >
+                  Remove this group from {ingredientName}
+                </Button>
+              )}
+            </div>
+          ) : null}
+          {unlink.isError ? <Notice tone="error">Not removed: {errorMessage(unlink.error)}</Notice> : null}
         </div>
       ) : null}
     </div>

@@ -225,7 +225,7 @@ class Store:
                  from class_term ct
                 where exists (select 1 from ingredient_class ic join ingredient i
                                 on i.id = ic.ingredient_id
-                               where ic.class_id = ct.class_id and i.active)""")
+                               where ic.class_id = ct.class_id and ic.enabled and i.active)""")
         terms += [Term(id=str(r["id"]), term=r["term"], lang=r["lang"], mode=r["mode"],
                        exclusions=tuple(r["exclusions"] or ()), class_id=str(r["class_id"]),
                        kind="class") for r in rows]
@@ -234,7 +234,7 @@ class Store:
     def class_ingredients(self) -> dict[str, list[str]]:
         rows = self.db.fetchall(
             """select ic.class_id, ic.ingredient_id from ingredient_class ic
-                 join ingredient i on i.id = ic.ingredient_id where i.active""")
+                 join ingredient i on i.id = ic.ingredient_id where ic.enabled and i.active""")
         out: dict[str, list[str]] = {}
         for r in rows:
             out.setdefault(str(r["class_id"]), []).append(str(r["ingredient_id"]))
@@ -245,11 +245,12 @@ class Store:
             "select id, inn_en, atc_code from ingredient where active order by inn_en")
 
     def class_words(self, lang: str = "en") -> dict[str, list[str]]:
-        """Each active ingredient's drug-class words in ``lang``, by its English INN."""
+        """Each active ingredient's words of the drug classes it searches (enabled links) in ``lang``, by its
+        English INN."""
         rows = self.db.fetchall(
             """select i.inn_en, ct.term
                  from ingredient i
-                 join ingredient_class ic on ic.ingredient_id = i.id
+                 join ingredient_class ic on ic.ingredient_id = i.id and ic.enabled
                  join class_term ct on ct.class_id = ic.class_id and ct.lang = %(l)s
                 where i.active
                 order by i.inn_en, ct.term""", {"l": lang})
@@ -441,6 +442,18 @@ class Store:
                  and (error is null or tg_message_id is not null) limit 1""",
             {"p": person_id, "k": kind, "s": since}) is not None
 
+    def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
+        """The people a ``kind`` message (with no notice) really reached since ``since``: delivered, not a dry
+        run, never a refused one — the morning reminder's once-a-day gate. With ``dry_run`` the dry-run rows
+        count too, so a dry run is once a day like the real thing."""
+        rows = self.db.fetchall(
+            """select distinct person_id::text as person_id from notification
+                where kind = %(k)s and issue_id is null and person_id is not null and sent_at >= %(s)s
+                  and (error is null or tg_message_id is not null)
+                  and (not dry_run or %(d)s)""",
+            {"k": kind, "s": since, "d": dry_run})
+        return {r["person_id"] for r in rows}
+
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
         """Per country, how many items the authorities published in [since, until) — new_items() in
         0032_sources_horizontal.sql, the very list the Sources screen shows."""
@@ -512,6 +525,34 @@ class Store:
                 order by coalesce(i.current_since, i.created_at) desc""", {"s": since})
         return [str(r["id"]) for r in rows]
 
+    def case_report_papers_since(self, since: datetime) -> list[dict]:
+        """Papers naming one of our ingredients that look like case reports, found since ``since``, newest
+        first: for the daily message (collectors/alerts.py). The flag is ``structured.case_report`` as the
+        parser stores it; a paper stored before the flag existed counts when PubMed types it Case Reports or
+        its title says so (the words of v_case_report). Class-only papers and history never."""
+        rows = self.db.fetchall(
+            """select i.id, d.title_orig, d.structured ->> 'journal' as journal,
+                      (d.first_seen_at at time zone 'Africa/Cairo')::date as day_zero,
+                      coalesce((select array_agg(ii.ingredient_id::text order by g.inn_en) from issue_ingredient ii
+                                  join ingredient g on g.id = ii.ingredient_id where ii.issue_id = i.id),
+                               '{}') as ingredient_ids,
+                      coalesce((select array_agg(g.inn_en order by g.inn_en) from issue_ingredient ii
+                                  join ingredient g on g.id = ii.ingredient_id where ii.issue_id = i.id),
+                               '{}') as ingredients
+                 from issue i
+                 join document d on d.id = i.anchor_document_id
+                 join source s on s.id = d.source_id
+                where (i.doc_type = 'literature' or s.kind = 'literature')
+                  and not i.class_only and not i.is_backfill
+                  and (i.created_at > %(s)s or i.current_since > %(s)s)
+                  and (d.structured -> 'case_report' is not null and d.structured -> 'case_report' <> 'null'::jsonb
+                       or d.structured -> 'case_report' is null
+                          and (coalesce(d.structured -> 'pubtype', '[]'::jsonb) ? 'Case Reports'
+                               or d.title_orig ~* '\\m(case report|case reports|case series|a case of)\\M'))
+                order by coalesce(i.current_since, i.created_at) desc""", {"s": since})
+        return [{**r, "id": str(r["id"]), "ingredient_ids": list(r["ingredient_ids"] or []),
+                 "ingredients": list(r["ingredients"] or [])} for r in rows]
+
     # ───────────────────────────── drug classes (collectors/classes.py) ─────────────────────────────
     def ingredients_for_classes(self) -> list[dict]:
         """Active ingredients with an ATC code, and the codes of the classes they belong to."""
@@ -548,10 +589,14 @@ class Store:
                     {"c": class_id, "l": t["lang"], "t": t["term"], "m": t["mode"], "s": t["source"]})
             return class_id
 
-    def link_ingredient_class(self, ingredient_id: str, class_id: str) -> None:
+    def link_ingredient_class(self, ingredient_id: str, class_id: str, *, relation: str = "group",
+                              enabled: bool = True) -> None:
+        """Links the ingredient to the class as its 'group' (searched), its 'parent' (shown, not searched until
+        an administrator switches it on) or a 'manual' group. A link that exists is never changed."""
         self.db.execute(
-            """insert into ingredient_class (ingredient_id, class_id) values (%(i)s, %(c)s)
-               on conflict do nothing""", {"i": ingredient_id, "c": class_id})
+            """insert into ingredient_class (ingredient_id, class_id, relation, enabled)
+               values (%(i)s, %(c)s, %(r)s, %(e)s)
+               on conflict do nothing""", {"i": ingredient_id, "c": class_id, "r": relation, "e": enabled})
 
     # ───────────────────────────── the check of the past (collectors/rematch.py) ─────────────────────────────
     def rematch_open_job(self) -> dict | None:
@@ -560,7 +605,7 @@ class Store:
 
     def rematch_due_terms(self) -> tuple[list[str], list[str]]:
         """Words added or changed since they were last checked against the past (rematched_at older than
-        changed_at, or never), of watched ingredients and of the classes those belong to."""
+        changed_at, or never), of watched ingredients and of the classes those search (enabled links)."""
         ing = self.db.fetchall(
             """select t.id from ingredient_term t join ingredient i on i.id = t.ingredient_id
                 where i.active and (t.rematched_at is null or t.rematched_at < t.changed_at)
@@ -569,7 +614,7 @@ class Store:
             """select ct.id from class_term ct
                 where (ct.rematched_at is null or ct.rematched_at < ct.changed_at)
                   and exists (select 1 from ingredient_class ic join ingredient i on i.id = ic.ingredient_id
-                               where ic.class_id = ct.class_id and i.active)
+                               where ic.class_id = ct.class_id and ic.enabled and i.active)
                 order by ct.id""")
         return [str(r["id"]) for r in ing], [str(r["id"]) for r in cls]
 

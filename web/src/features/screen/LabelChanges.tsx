@@ -14,7 +14,7 @@ import { cx } from '../../ui/cx';
 import { DecisionButtons } from './DecisionButtons';
 import { OurLabel } from './OurLabel';
 import { labelChangesKey, useLabelChanges } from './queries';
-import type { DiffSection, GapSection, GapStatus, LabelChange, Mention } from './types';
+import type { DiffSection, Findings, GapSection, GapStatus, LabelChange, Mention } from './types';
 import '../../styles/labels.css';
 
 const STATUS: Record<GapStatus, { label: string; tone: 'success' | 'warning' | 'danger'; title: string }> = {
@@ -38,6 +38,7 @@ export function LabelChanges({ ingredientId, from, to }: { ingredientId: string;
   const key = labelChangesKey(ingredientId, from, to);
   const changes = q.data?.changes ?? [];
   const mentions = new Map((q.data?.label_changes ?? []).map((m) => [m.document_id, m]));
+  const findings = q.data?.findings ?? {};
   return (
     <section className="scr-section" aria-label="Label changes">
       <SectionHead index="03" title="Label changes" aside={q.data ? `${changes.length}` : undefined} />
@@ -49,7 +50,7 @@ export function LabelChanges({ ingredientId, from, to }: { ingredientId: string;
       ) : changes.length ? (
         <ol className="scr-mentions">
           {changes.map((c) => (
-            <ChangeItem key={c.change_id} c={c} mention={mentions.get(c.change_id)} queryKey={key} />
+            <ChangeItem key={c.change_id} c={c} mention={mentions.get(c.change_id)} findings={findings} queryKey={key} />
           ))}
         </ol>
       ) : (
@@ -59,7 +60,18 @@ export function LabelChanges({ ingredientId, from, to }: { ingredientId: string;
   );
 }
 
-function ChangeItem({ c, mention, queryKey }: { c: LabelChange; mention: Mention | undefined; queryKey: readonly unknown[] }) {
+/** One change; its notice's clock comes from the section's own data (`findings`), as on the screen's mentions. */
+function ChangeItem({
+  c,
+  mention,
+  findings,
+  queryKey,
+}: {
+  c: LabelChange;
+  mention: Mention | undefined;
+  findings: Findings;
+  queryKey: readonly unknown[];
+}) {
   const { canReview } = useAuth();
   const qc = useQueryClient();
   const mark = useMutation({
@@ -130,7 +142,13 @@ function ChangeItem({ c, mention, queryKey }: { c: LabelChange; mention: Mention
       ) : null}
       {mark.isError ? <Notice tone="error">Not changed: {errorMessage(mark.error)}</Notice> : null}
 
-      {mention ? <DecisionButtons mention={mention} queryKey={queryKey} /> : null}
+      {mention ? (
+        <DecisionButtons
+          mention={mention}
+          queryKey={queryKey}
+          finding={mention.issue_id ? (findings[mention.issue_id] ?? null) : null}
+        />
+      ) : null}
     </li>
   );
 }

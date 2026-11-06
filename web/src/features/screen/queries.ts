@@ -1,4 +1,4 @@
-import { skipToken, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { unwrap } from '../../lib/api';
 import { issueIdsOf } from './clock';
@@ -82,12 +82,6 @@ export function useIngredientScreen(ingredientId: string | undefined, from: stri
       return { ...screen, findings };
     },
   });
-}
-
-/** The screen's data as the cache holds it now, for a part of the screen that is given only the key. Never
- *  fetches: the screen itself does. */
-export function useScreenData(queryKey: readonly unknown[]): IngredientScreenData | undefined {
-  return useQuery<IngredientScreenData>({ queryKey, queryFn: skipToken }).data;
 }
 
 /** The papers after the first 50, in the screen's order, once she asks for more. */
