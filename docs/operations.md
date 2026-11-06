@@ -20,13 +20,22 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals and 10 report files (`reports/`, `reports/packs/`); checks the bucket lock |
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
-| `backfill.yml` | by hand | N months back from every source, flagged as backfill, no alerts |
+| `backfill.yml` | by hand | N months back from every source but the PV mailbox, flagged as backfill, no alerts |
+| pg_cron `pharos-kick-4h`, `-12h`, `-weekly`, `-monthly` | about 50 min after each slot | Asks GitHub for that slot's collection when no run of it started (0007) |
+| pg_cron `pharos-kick-readiness` | every hour at :29 | Asks GitHub again for the latest daily or literature slot (02:31, 10:41, 18:41 UTC) until one of its runs starts (0084) |
 | `rematch.yml` | by hand | The check of the past for up to 45 minutes at once (after adding an ingredient) |
 
-`collect.yml`, `backfill.yml` and `rematch.yml` share one concurrency group, so two of them never run at once.
-A run that starts while another is running waits. If a third run arrives while one is already waiting,
-GitHub drops the waiting one; the next schedule picks up its sources. `report.yml` has its own group, so a
-collection can never drop the weekly report. GitHub can start scheduled runs late at busy times (hours, on
+`collect.yml`, `rematch.yml` and `audit.yml` share one concurrency group (`collectors`), so two of them never
+run at once. A run that starts while another is running waits. If a third run arrives while one is already
+waiting, GitHub cancels the waiting one; the next schedule picks up its sources. The readiness slots (daily and
+literature: the drug classes, the NCBI and Europe PMC look-backs, the check of the past) are not left to the next
+schedule: the database asks GitHub for the latest one every hour until one of its runs starts
+(`pharos-kick-readiness`, 0084; on 6 Nov 2026 both literature slots were lost this way and the ingredients stayed
+"Still preparing" for hours). Each new request takes the place of whatever waits, so a run started by hand may
+need asking for again. `backfill.yml` has its own group and runs beside a collection: it can no longer hold the
+queue for its 285 minutes. A notice is stored once whichever run finds it, a backfill leaves the literature
+searches and the mailbox alone and sends no alert, and two runs together ask one site at most once a second.
+`report.yml` has its own group, so a collection can never drop the weekly report. GitHub can start scheduled runs late at busy times (hours, on
 a new repository). The minutes are chosen off the hour to reduce this.
 
 Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under the job's timeout), and in a

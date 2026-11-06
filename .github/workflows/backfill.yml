@@ -1,5 +1,5 @@
-# PHAROS — backfill (milestone M6). Started by hand. Reads N months back from every enabled source (or one
-# source), flags everything as backfill, sends no alerts, and ends with one summary to the admin
+# PHAROS — backfill (milestone M6). Started by hand. Reads N months back from every enabled source but the PV
+# mailbox (or one source), flags everything as backfill, sends no alerts, and ends with one summary to the admin
 # (itself dry-run while app_setting.telegram_dry_run is true).
 name: PHAROS backfill
 
@@ -18,8 +18,17 @@ on:
 permissions:
   contents: read
 
+# Its own group, never the "collectors" one (6 Nov 2026): a 285-minute backfill held that group and the readiness
+# runs (literature look-backs, the check of the past) waited behind it for hours, and every new run queued behind
+# it cancelled the one already waiting. It runs safely beside a collection:
+# - a notice is stored once: insert_document skips a row another run stored meanwhile;
+# - it leaves the literature searches (literature_search) alone, runs no label watch and no label comparison,
+#   sends no alert, digest or reminder, and never reads the PV mailbox (select_sources);
+# - every process waits 2 s between requests to one site and waits out a 429 or 503, so two runs together ask
+#   a site at most once a second (NCBI allows 10 a second with our key).
+# One backfill at a time: a second one dispatched waits here, and a third replaces the waiting one.
 concurrency:
-  group: collectors
+  group: backfill
   cancel-in-progress: false
 
 jobs:

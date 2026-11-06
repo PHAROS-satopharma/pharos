@@ -170,6 +170,9 @@ def merge_document(store: Any, d: DocFacts, ingredient_ids: Iterable[str] | None
         # A paper merges with nothing (compatible()): its own issue, without reading the ingredient's
         # other issues (thousands of papers a year from PubMed Central).
         return MergeResult(_new_issue(store, d, ingredients), True, "anchor", "auto", None)
+    # held until the caller's transaction ends (run.py, rematch.py): another run's anchor or copy is either
+    # committed and seen here, or waits for this one
+    store.lock_issue_merge()
     mah_list = list(mahs if mahs is not None else store.mah_names(ingredients))
     when = d.published or date.today()
     if d.is_anchor:

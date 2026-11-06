@@ -45,6 +45,12 @@ class Store:
     def transaction(self):
         return self.db.transaction()
 
+    def lock_issue_merge(self) -> None:
+        """Until this transaction ends, no other run places a document among the issues (merge.merge_document): a
+        backfill runs beside a collection (backfill.yml), and two runs each reading the other's anchor or copy
+        before it was committed would give one event two issues."""
+        self.db.execute("select pg_advisory_xact_lock(hashtext('pharos.merge_document'))")
+
     # ───────────────────────────── settings ─────────────────────────────
     def settings(self) -> dict[str, Any]:
         out = dict(DEFAULT_SETTINGS)
@@ -591,13 +597,13 @@ class Store:
 
     def insert_notification(self, *, person_id: str | None, issue_id: str | None, kind: str,
                             dry_run: bool, tg_message_id: int | None, error: str | None,
-                            summary: str) -> None:
+                            summary: str, sent_at: datetime | None = None) -> None:
         self.db.execute(
             """insert into notification (person_id, issue_id, kind, dry_run, tg_message_id, error,
-                 summary)
-               values (%(p)s, %(i)s, %(k)s, %(d)s, %(m)s, %(e)s, %(s)s)""",
+                 summary, sent_at)
+               values (%(p)s, %(i)s, %(k)s, %(d)s, %(m)s, %(e)s, %(s)s, coalesce(%(t)s, now()))""",
             {"p": person_id, "i": issue_id, "k": kind, "d": dry_run, "m": tg_message_id,
-             "e": error, "s": summary})
+             "e": error, "s": summary, "t": sent_at})
 
     def last_notification_at(self, kind: str, *, delivered_only: bool = False,
                              before: datetime | None = None, dry_run: bool = False) -> datetime | None:
