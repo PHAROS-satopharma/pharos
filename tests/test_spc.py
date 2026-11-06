@@ -635,6 +635,22 @@ def test_dailymed_snapshot_of_a_real_label():
     assert "Hepatotoxicity" in snap.sections["us:warnings_and_precautions"]
 
 
+def test_dailymed_snapshot_asks_as_dailymed_answers():
+    # DailyMed refuses "Accept: application/xml" alone with HTTP 406 (6 Nov 2026), as this fake does
+    setid = "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
+
+    class DailyMedCtx(FakeCtx):
+        def get(self, url, *, accept=None, **kwargs):
+            if accept == "application/xml":
+                self.requests.append(("GET", url, None))
+                return Fetched(406, url, b"", "application/json")
+            return super().get(url, accept=accept, **kwargs)
+
+    ctx = DailyMedCtx({f"{dailymed.API}/spls/{setid}.xml": "spc-dailymed/spl_445d7cbf.xml"})
+    snap = dailymed.snapshot(ctx, {"national_id": setid})
+    assert snap is not None and "us:boxed_warning" in snap.sections
+
+
 EMA_SLICE = "spc-ema-epar/medicines_json_slice.json"
 
 
