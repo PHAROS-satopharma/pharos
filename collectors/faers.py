@@ -59,7 +59,9 @@ log = logging.getLogger("collectors.faers")
 API = "https://api.fda.gov/drug/event.json"
 REACTION = "patient.reaction.reactionmeddrapt.exact"
 REACTION_WORDS = "patient.reaction.reactionmeddrapt"      # the same, analysed: searched by its words
-DRUG = "patient.drug.openfda.generic_name.exact"          # the drugs a report names, by generic name
+# the drugs a report names, by the substance FAERS coded: openfda.generic_name is filled only when FDA matched the
+# product to a US label, and never named relugolix (Orgovyx) in carvedilol's 239 HOT FLUSH reports; this names it in 201 (6 Nov)
+DRUG = "patient.drug.activesubstance.activesubstancename.exact"
 NAME_FIELDS = (
     "patient.drug.openfda.generic_name.exact",
     "patient.drug.openfda.substance_name.exact",
@@ -245,9 +247,11 @@ class OpenFda:
         return {str(r["term"]): int(r.get("count") or 0) for r in rows if r.get("term")}, len(rows) < self.limit
 
     def drugs(self, search: str) -> dict[str, int]:
-        """Reports per generic name of the drugs they name: the 10 most frequent."""
+        """Reports per active substance of the drugs they name: the 10 most frequent. FAERS joins the substances of
+        a combination with a backslash ("SACUBITRIL\\VALSARTAN"); they are given as "SACUBITRIL + VALSARTAN"."""
         body = self.ask(search=search, count=DRUG, limit="10") or {}
-        return {str(r["term"]): int(r.get("count") or 0) for r in body.get("results") or [] if r.get("term")}
+        return {" + ".join(p.strip() for p in str(r["term"]).split("\\") if p.strip()): int(r.get("count") or 0)
+                for r in body.get("results") or [] if r.get("term")}
 
     def total(self, search: str) -> int:
         body = self.ask(search=search, limit="1")

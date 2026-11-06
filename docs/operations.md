@@ -955,7 +955,8 @@ count them; no report is downloaded, only numbers come back, and the log names n
   in the last 6 days is left; run the workflow by hand with *force* to count every ingredient again.
 - **The drug most reported with a flag** (migration 0076): one report names every drug the patient took, and the
   count takes a report whatever role the ingredient had in it. For each flagged reaction the run asks openFDA which
-  other drugs those reports name (`openfda.generic_name`, the 10 most frequent) and keeps the first that is not the
+  other drugs those reports name (`activesubstance.activesubstancename`, the substance FAERS coded, the 10 most
+  frequent; `openfda.generic_name` missed relugolix in every one of those reports) and keeps the first that is not the
   ingredient, a salt of it or a combination holding it; section 06 shows it under the flag ("Most often with
   RELUGOLIX (83%)"). Found on 6 Nov 2026: carvedilol's HOT FLUSH (PRR 4.1) came from reports naming the
   prostate-cancer drug relugolix as the suspect in 199 of 239, with carvedilol only taken alongside.
