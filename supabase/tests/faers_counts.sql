@@ -1,4 +1,4 @@
--- PHAROS CI — FDA adverse-event report counts (0071, 0076): ingredient_faers() with its quarters and the label tag, and who
+-- PHAROS CI — FDA adverse-event report counts (0071, 0076, 0078): ingredient_faers() with its quarters and the label tag, and who
 -- may read and write them. Runs after every migration and the acceptance checks in ci.yml, on the same database: the
 -- people CI Admin (…a1), CI Reader (…b2) and CI Reviewer (…c3) exist. Everything here is rolled back.
 begin;
@@ -65,7 +65,7 @@ insert into faers_count (ingredient_id, quarter, reaction, reports, all_reports)
   ('00000000-0000-0000-0000-00000065a001', '2026-07-01', 'RASH', 3, null),
   ('00000000-0000-0000-0000-00000065a002', '2026-07-01', 'NAUSEA', 2, 20000);
 
-update faers_reaction set co_drug = 'PARTNERINE', co_reports = 8
+update faers_reaction set co_drug = 'PARTNERINE', co_reports = 8, co_all_reports = 20
  where ingredient_id = '00000000-0000-0000-0000-00000065a001' and reaction = 'HEPATITIS';
 
 -- Read as CI Reader; the temp table that keeps the answer is made by the owner.
@@ -86,9 +86,11 @@ select pg_temp.ci_assert((select quarters = '{9,NULL}'::int[] and last_quarter i
 select pg_temp.ci_assert((select quarters from f where reaction = 'RASH') = '{2,3}', 'the quarters, oldest first');
 select pg_temp.ci_assert((select (prr, prr_low, prr_high, flagged, all_reports) = (200.0, 110.0, 360.0, true, 900)
                             from f where reaction = 'HEPATITIS'), 'the disproportion is given as the collector kept it');
-select pg_temp.ci_assert((select (co_drug, co_reports) = ('PARTNERINE', 8) from f where reaction = 'HEPATITIS')
-                         and (select co_drug is null and co_reports is null from f where reaction = 'NAUSEA'),
-                         'the drug most reported with a flagged reaction is given as the collector kept it (0076)');
+select pg_temp.ci_assert((select (co_drug, co_reports, co_all_reports) = ('PARTNERINE', 8, 20)
+                            from f where reaction = 'HEPATITIS')
+                         and (select co_drug is null and co_reports is null and co_all_reports is null
+                                from f where reaction = 'NAUSEA'),
+                         'the drug over-represented with a flagged reaction is given as the collector kept it (0078)');
 select pg_temp.ci_assert((select (mesh_ui, listed) = ('D006505', 'our_label') from f where reaction = 'HEPATITIS'),
                          'HEPATITIS is MeSH Hepatitis, under the liver heading our label names');
 select pg_temp.ci_assert((select (mesh_ui, listed) = ('D005076', 'reference') from f where reaction = 'RASH'),

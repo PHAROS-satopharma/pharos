@@ -126,12 +126,14 @@ class FakeFda:
             return 400, {"error": {"code": "BAD_REQUEST", "message": "Syntax error"}}
         if "NOTHINGINE" in s:
             return 404, {"error": {"code": "NOT_FOUND", "message": "No matches found!"}}
-        if count == faers.DRUG:     # the drugs named with a reaction: itself and its salt, then the others
-            if '"HEPATITIS"' in s:
-                return 200, counted({"CODAMINE": 30, "CODAMINE HYDROCHLORIDE": 25, "PARTNERINE": 21, "OTHERAMINE": 4})
-            if '"RARE THING"' in s:
-                return 200, counted({"CODAMINE": 3, "CODAMINE HYDROCHLORIDE": 3, "PARTNERINE": 2})
-            return 200, counted({"CODAMINE": 3})
+        if count == faers.DRUG:
+            if '"RARE THING"' in s:     # the drugs named with a reaction: itself and its salt, then the others
+                return 200, counted({"CODAMINE": 3, "CODAMINE HYDROCHLORIDE": 3, "BACKGROUNDOL": 3, "PARTNERINE": 3,
+                                     "OTHERAMINE": 2})
+            # the drugs named in all its reports: a full list of 100
+            rows = {f"FILLDRUG {i:03}": 5 for i in range(96)}
+            return 200, counted({"CODAMINE": 200, "CODAMINE HYDROCHLORIDE": 50, "BACKGROUNDOL": 120, "PARTNERINE": 6,
+                                 **rows})
         drug = "CODAMINE" in s
         if count == "receivedate":
             return 200, counted({"20250110": 80, "20260815": 120} if drug else {d: 10000 for d in QUARTER_DAYS},
@@ -172,7 +174,7 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
     # hepatitis: a=30, b=200-30, c=300-30, d=80000-200-270
     assert by["HEPATITIS"] == {"reaction": "HEPATITIS", "reports": 30, "all_reports": 300,
                                **asdict(disproportion(30, 170, 270, 79530)), "flagged": False,
-                               "co_drug": None, "co_reports": None}
+                               "co_drug": None, "co_reports": None, "co_all_reports": None}
     # PRRs: hepatitis 44.3, nausea 1.2, rare thing 399 (3 of its 200 reports, 3 more among every other drug's
     # 79,800): the median is 44.3, so only the rare thing is at least twice it
     assert by["RARE THING"]["flagged"] and not by["HEPATITIS"]["flagged"] and not by["NAUSEA"]["flagged"]
@@ -181,10 +183,11 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
         ("2025-01-01", "HEPATITIS", 10, 40), ("2025-01-01", "RARE THING", 3, 0),
         ("2026-07-01", "HEPATITIS", 20, 40), ("2026-07-01", "NAUSEA", 12, 250)]
     # 1 for every drug's days; the ingredient's days, whole period and its 2 quarters with reports; every drug's
-    # whole period and those 2 quarters; 1 reaction alone; the drugs named with the 1 flagged reaction
-    assert api.requests == 10
+    # whole period and those 2 quarters; 1 reaction alone; the drugs named with the 1 flagged reaction, and in all
+    # the ingredient's reports
+    assert api.requests == 11
     faers.count_ingredient(api, bg, "Codamine")
-    assert api.requests == 15                                            # every drug's counts are asked once a run
+    assert api.requests == 17                                            # every drug's counts are asked once a run
     assert all(p["limit"] == "100" for p in fake.asked if p.get("count") == faers.REACTION)
 
 
@@ -220,34 +223,64 @@ def test_a_flagged_reaction_names_the_drug_most_reported_with_it():
     api = api_for(fake)
     got = faers.count_ingredient(api, faers.Background(api, today=date(2026, 11, 6)), "Codamine")
     by = {r["reaction"]: r for r in got["reactions"]}
-    # its salt is reported as often, but it is the ingredient itself
-    assert by["RARE THING"]["flagged"] and (by["RARE THING"]["co_drug"], by["RARE THING"]["co_reports"]) == (
-        "PARTNERINE", 2)
+    # its salt is reported as often, but it is the ingredient itself; BACKGROUNDOL too, but it is in 120 of
+    # Codamine's 200 reports: in all 3 of these is less than twice that share. PARTNERINE is in 6 of the 200.
+    assert by["RARE THING"]["flagged"] and (
+        by["RARE THING"]["co_drug"], by["RARE THING"]["co_reports"], by["RARE THING"]["co_all_reports"]) == (
+        "PARTNERINE", 3, 6)
     # not flagged: no drug is looked up for it
     for name in ("HEPATITIS", "NAUSEA"):
-        assert not by[name]["flagged"] and by[name]["co_drug"] is None and by[name]["co_reports"] is None
+        r = by[name]
+        assert not r["flagged"] and r["co_drug"] is None and r["co_reports"] is None and r["co_all_reports"] is None
     asked = [p for p in fake.asked if p.get("count") == faers.DRUG]
-    assert len(asked) == 1 and all(p["limit"] == "10" and WHOLE in p["search"] for p in asked)
-    assert 'patient.reaction.reactionmeddrapt.exact:"RARE THING"' in asked[0]["search"]
-    assert faers.name_search("Codamine") in asked[0]["search"]
+    assert len(asked) == 2 and all(WHOLE in p["search"] and faers.name_search("Codamine") in p["search"] for p in asked)
+    assert 'patient.reaction.reactionmeddrapt.exact:"RARE THING"' in asked[0]["search"] and asked[0]["limit"] == "25"
+    assert "reactionmeddrapt" not in asked[1]["search"] and asked[1]["limit"] == "100"
 
 
-def test_the_drug_reported_with_a_reaction_is_never_the_ingredient_under_its_us_name():
+def test_the_drug_shown_with_a_reaction_is_over_represented_and_never_the_ingredient():
+    asked: list[dict] = []
+
     def get(params):
-        if "^" in params["search"]:
+        asked.append(dict(params))
+        s = params["search"]
+        if "WERNICKE" in s:
             return 400, {"error": {"code": "BAD_REQUEST", "message": "Search not supported"}}
-        # FAERS joins a combination's substances with a backslash
-        return 200, counted({"ACETAMINOPHEN": 50, "ACETAMINOPHEN\\HYDROCODONE BITARTRATE": 30,
-                             "FAMOTIDINE\\IBUPROFEN": 12, "IBUPROFEN": 10})
+        if params.get("limit") == "1":                   # a drug missing from the full list, counted alone
+            assert 'activesubstance.activesubstancename.exact:"OMEPRAZOLE"' in s and WHOLE in s
+            return 200, {"meta": {"results": {"total": 10}}, "results": [{}]}
+        if '"HEPATITIS"' in s:       # FAERS joins a combination's substances with a backslash
+            return 200, counted({"ACETAMINOPHEN": 20, "ACETAMINOPHEN\\HYDROCODONE BITARTRATE": 15, "ASPIRIN": 15,
+                                 "FAMOTIDINE\\IBUPROFEN": 12, "IBUPROFEN": 2})
+        if '"NAUSEA"' in s:
+            return 200, counted({"ACETAMINOPHEN": 20, "ASPIRIN": 15})
+        if '"RASH"' in s:
+            return 200, counted({"LOSARTAN\\HYDROCHLOROTHIAZIDE": 8, "OMEPRAZOLE": 5})
+        assert "reactionmeddrapt" not in s                # the drugs of all its 1,000 reports: a full list of 100
+        return 200, counted({"ACETAMINOPHEN": 1000, "ASPIRIN": 600, "FAMOTIDINE\\IBUPROFEN": 24,
+                             **{f"FILLDRUG {i:03}": 50 for i in range(97)}})
 
     api = api_for(get)
     own = faers.searched_names("Paracetamol", "Acetaminophen")
     names = faers.name_search("Paracetamol", "Acetaminophen")
-    assert faers.co_drug(api, names, own, "HEPATITIS", WHOLE) == ("FAMOTIDINE + IBUPROFEN", 12)
+    usual = faers.UsualDrugs(api, names, WHOLE)
+
+    def co(reaction):
+        return faers.co_drug(api, names, own, reaction, WHOLE, 20, 1000, usual)
+
+    # aspirin is in 15 of the 20 reports, but in 600 of the 1,000; the combination in 12 of 20 and 24 of 1,000
+    assert co("HEPATITIS") == ("FAMOTIDINE + IBUPROFEN", 12, 24)
+    assert co("NAUSEA") == (None, None, None)                   # only aspirin: a usual companion explains nothing
+    # missing from the full list: the combination cannot be searched exactly, omeprazole is counted alone
+    assert co("RASH") == ("OMEPRAZOLE", 5, 10)
+    assert co("WERNICKE^S ENCEPHALOPATHY") == (None, None, None)     # a refused lookup loses nothing else
+    assert len([p for p in asked if p.get("count") == faers.DRUG and "reactionmeddrapt" not in p["search"]]) == 1
+    assert len([p for p in asked if p.get("limit") == "1"]) == 1
     assert faers.DRUG == "patient.drug.activesubstance.activesubstancename.exact"     # coded for every product
     assert faers.reaction_search("WERNICKE^S ENCEPHALOPATHY") == (
         'patient.reaction.reactionmeddrapt:"WERNICKE S ENCEPHALOPATHY"')
     assert faers.reaction_search("HEPATITIS") == 'patient.reaction.reactionmeddrapt.exact:"HEPATITIS"'
+
 
 def test_no_report_is_a_zero_not_a_failure():
     api = api_for(FakeFda())

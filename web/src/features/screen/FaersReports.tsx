@@ -24,9 +24,11 @@ interface FaersReaction {
   flagged: boolean;
   mesh_ui: string | null;
   listed: Listed;
-  /** The other drug most often named in this reaction's reports (flagged reactions only, 0076). */
+  /** The other drug over-represented in this reaction's reports (flagged reactions only, 0076, 0078): named in
+   *  co_reports of them and in co_all_reports of all the ingredient's reports. */
   co_drug: string | null;
   co_reports: number | null;
+  co_all_reports: number | null;
 }
 
 interface FaersFetch {
@@ -103,6 +105,12 @@ function quarterStarts(first: string, count: number): string[] {
 function ratio(n: number | null): string {
   if (n == null) return '–';
   return n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
+}
+
+/** A part of a whole as a percentage: under 1% is never rounded to 0%. */
+function share(part: number, whole: number): string {
+  const p = (100 * part) / whole;
+  return p < 1 ? '<1%' : `${Math.round(p)}%`;
 }
 
 const LISTED: Record<Exclude<Listed, null>, { label: string; tone: 'success' | 'blue' | 'danger'; title: string }> = {
@@ -208,16 +216,19 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
                             Disproportionate
                           </Tag>
                         ) : null}
-                        {r.flagged && r.co_drug && r.co_reports && r.reports ? (
+                        {r.flagged && r.co_drug && r.co_reports && r.co_all_reports && r.reports && f.reports ? (
                           <div
                             className="scr-quiet"
                             title={
                               `${formatNumber(r.co_reports)} of the ${formatNumber(r.reports)} reports of ${r.reaction} ` +
-                              `naming ${f.searched} also name ${r.co_drug}. A drug taken with it can be what the ` +
-                              'reaction is reported for.'
+                              `naming ${f.searched} also name ${r.co_drug}, against ${formatNumber(r.co_all_reports)} ` +
+                              `of all its ${formatNumber(f.reports)} reports. A drug shown here is in at least 3 of ` +
+                              'the reaction’s reports and in at least twice its usual share of them: it can be what ' +
+                              'the reaction is reported for.'
                             }
                           >
-                            Most often with {r.co_drug} ({Math.round((100 * r.co_reports) / r.reports)}%)
+                            Most often with {r.co_drug} ({share(r.co_reports, r.reports)} of these reports,{' '}
+                            {share(r.co_all_reports, f.reports)} of all {f.searched} reports)
                           </div>
                         ) : null}
                       </td>
