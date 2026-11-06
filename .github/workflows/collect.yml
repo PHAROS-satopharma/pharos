@@ -149,6 +149,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_BOT_USERNAME: ${{ secrets.TELEGRAM_BOT_USERNAME }}
           NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+          OPENFDA_API_KEY: ${{ secrets.OPENFDA_API_KEY }}
           PHAROS_IMAP_HOST: ${{ secrets.PHAROS_IMAP_HOST }}
           PHAROS_IMAP_PORT: ${{ secrets.PHAROS_IMAP_PORT }}
           PHAROS_IMAP_USER: ${{ secrets.PHAROS_IMAP_USER }}
