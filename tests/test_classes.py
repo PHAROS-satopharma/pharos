@@ -255,13 +255,14 @@ def test_a_source_that_does_not_answer_makes_nothing_and_is_tried_again():
     assert out.failed == ["levofloxacin (J01MA)", "levofloxacin (J01M)"] and out.created == [] and out.linked == []
     assert s.drug_class == {} and s.ingredient_class == []
     out = c.run(s, SavedWeb())
-    assert out.created == ["J01MA Fluoroquinolones"]
+    assert out.created == ["J01MA Fluoroquinolones", "J01M Quinolone antibacterials"]
 
 
 def test_dry_run_writes_nothing():
     s = store_with(("levo", "levofloxacin", "J01MA12"))
     out = c.run(s, SavedWeb(), dry_run=True)
-    assert out.created == ["J01MA Fluoroquinolones"] and out.linked == ["levofloxacin → J01MA"]
+    assert out.created == ["J01MA Fluoroquinolones", "J01M Quinolone antibacterials"]
+    assert out.linked == ["levofloxacin → J01MA", "levofloxacin → J01M (off)"]
     assert s.drug_class == {} and s.ingredient_class == [] and s.terms == []
 
 
