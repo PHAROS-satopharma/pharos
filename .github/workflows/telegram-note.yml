@@ -1,0 +1,58 @@
+# PHAROS — send one PHAROS person a written message from the PHAROS bot on Telegram. Run by hand only.
+# Without "send" ticked it only prints the message. The address must be an active PHAROS person whose
+# Telegram is connected (collectors/telegram_note.py refuses anyone else). The text goes as written.
+name: PHAROS Telegram message
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: The PHAROS person's email address
+        type: string
+        required: true
+      message:
+        description: The message, as it should read
+        type: string
+        required: true
+      send:
+        description: Send it (unticked = preview only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telegram-note
+  cancel-in-progress: false
+
+jobs:
+  note:
+    # Main only, like the deploy workflows: a run started on a branch would send a real message from the
+    # PHAROS bot with the production database, using that branch's unreviewed script.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - run: pip install -r collectors/requirements.txt
+
+      - name: Send the message
+        env:
+          # Inputs go through the environment, never into the command line.
+          EMAIL: ${{ inputs.email }}
+          MESSAGE: ${{ inputs.message }}
+          SEND: ${{ inputs.send }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          args=(--email "$EMAIL")
+          [ "$SEND" = "true" ] && args+=(--send)
+          python -m collectors.telegram_note "${args[@]}"
