@@ -755,3 +755,7 @@ November 2026): a valid serious case reaches the Egyptian Drug Authority within 
   weeks before a recommendation, so a watched ingredient on it becomes a notice (Safety update, "Agenda of the
   PRAC meeting …") with the page where it is named. If that page stops listing documents, the run warns and the
   signal recommendations are still read.
+- **A revised agenda is read again.** EMA publishes an agenda as a draft and replaces it under the same address,
+  marking it "Last updated". The revised agenda is a new notice ("… (updated 9 September 2026)", dated that
+  day) whose PDF is screened again, so a substance added to it is not missed. An agenda never revised keeps
+  its address as its identity.
