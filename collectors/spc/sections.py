@@ -23,6 +23,19 @@ Section keys are language-neutral where the label format is:
   ``"ja:precautions"``, which is watched; the other 【】 headings (【組成・性状】【効能・効果】
   【用法・用量】【薬物動態】 …) end the section before them and are not watched.
 
+* Korea (nedrug XML, ``collectors/spc/nedrug.py``): ``"kr:…"`` from the heading's words, never its number (the
+  old format numbers 투여하지 말 것 1, the new one 2, after 1. 경고): ``kr_key``. ``"kr:indications"`` and
+  ``"kr:dosage"`` are the 효능효과 and 용법용량 documents; every precautions heading is watched except storage
+  (``kr:storage``), and a heading not known is ``"kr:other"``, watched.
+
+* Canada (Health Canada product monograph, ``collectors/spc/hc_dpd.py``): ``"ca:…"`` by the heading's words.
+  The 2020 template numbers its headings 1–17 (1 Indications, 2 Contraindications, 3 Serious Warnings and
+  Precautions Box, 4 Dosage and Administration, 5 Overdosage, 7 Warnings and Precautions, 8 Adverse Reactions,
+  9 Drug Interactions …) and opens with "Recent Major Label Changes"; a heading counts only with its own number,
+  in rising order. The older template's headings are unnumbered capitals (INDICATIONS AND CLINICAL USE,
+  CONTRAINDICATIONS, WARNINGS AND PRECAUTIONS …), each its first whole-line appearance. The contents list (dot
+  leaders), the page numbers and everything from "Patient Medication Information" / PART III on are left out.
+
 ``WATCHED`` lists the sections whose change raises a label-change issue; ``RECORD_ONLY`` (section 10
 "date of revision of the text", 改訂年月) is stored and diffed but never alerts.
 """
@@ -39,7 +52,58 @@ WATCHED_US = {"us:boxed_warning", "us:recent_major_changes", "us:contraindicatio
               "us:drug_interactions", "us:specific_populations", "us:overdosage"}
 # "ja:precautions" is the old-format 【使用上の注意】 block, which holds 副作用 and 相互作用.
 WATCHED_JA = {"ja:1", "ja:2", "ja:8", "ja:9", "ja:10", "ja:11", "ja:13", "ja:precautions"}
-WATCHED = WATCHED_EU | WATCHED_US | WATCHED_JA
+# Korea: the 사용상의주의사항 headings, matched on their words in this order (과량 투여 before 투여하지 말 것, an OTC
+# label's "복용을 즉각 중지하고 … 상의할 것" is stop use).
+KR_HEADINGS = (
+    (("과량",), "kr:overdose"),
+    (("투여하지 말", "복용하지 말", "사용하지 말", "투여 금기", "금기"), "kr:contraindications"),
+    (("신중히",), "kr:careful_use"),
+    (("중지",), "kr:stop_use"),
+    (("상의할 것",), "kr:consult"),
+    (("이상반응", "부작용"), "kr:adverse_reactions"),
+    (("일반적 주의", "일반적주의"), "kr:general_precautions"),
+    (("상호작용",), "kr:interactions"),
+    (("임부", "수유부", "임신", "가임"), "kr:pregnancy"),
+    (("소아", "어린이", "신생아"), "kr:paediatric"),
+    (("고령자", "노인"), "kr:elderly"),
+    (("운전",), "kr:driving"),
+    (("임상검사",), "kr:lab_tests"),
+    (("적용상",), "kr:application"),
+    (("보관", "취급"), "kr:storage"),
+    (("경고",), "kr:warning"),
+)
+WATCHED_KR = {key for _, key in KR_HEADINGS if key != "kr:storage"} | {"kr:other", "kr:indications",
+                                                                       "kr:dosage"}
+# Canada: the 2020 template's numbered headings (number, words it starts with, key) and the older capitals.
+CA_NEW = (
+    (1, "indications", "ca:indications"), (2, "contraindications", "ca:contraindications"),
+    (3, "serious warnings", "ca:serious_warnings"), (4, "dosage and administration", "ca:dosage"),
+    (5, "overdos", "ca:overdose"), (6, "dosage forms", "ca:forms"),
+    (7, "warnings and precautions", "ca:warnings_and_precautions"), (8, "adverse reactions", "ca:adverse_reactions"),
+    (9, "drug interactions", "ca:drug_interactions"), (10, "clinical pharmacology", "ca:pharmacology"),
+    (11, "storage", "ca:storage"), (12, "special handling", "ca:handling"),
+    (13, "pharmaceutical information", "ca:pharmaceutical"), (14, "clinical trials", "ca:clinical_trials"),
+    (15, "microbiology", "ca:microbiology"), (16, "non-clinical toxicology", "ca:toxicology"),
+    (17, "supporting product monographs", "ca:supporting"),
+)
+CA_OLD = {
+    "SUMMARY PRODUCT INFORMATION": "ca:summary", "INDICATIONS AND CLINICAL USE": "ca:indications",
+    "INDICATIONS": "ca:indications", "CONTRAINDICATIONS": "ca:contraindications",
+    "SERIOUS WARNINGS AND PRECAUTIONS": "ca:serious_warnings",
+    "WARNINGS AND PRECAUTIONS": "ca:warnings_and_precautions", "WARNINGS": "ca:warnings",
+    "PRECAUTIONS": "ca:precautions", "ADVERSE REACTIONS": "ca:adverse_reactions",
+    "DRUG INTERACTIONS": "ca:drug_interactions", "DOSAGE AND ADMINISTRATION": "ca:dosage",
+    "OVERDOSAGE": "ca:overdose", "SYMPTOMS AND TREATMENT OF OVERDOSAGE": "ca:overdose",
+    "ACTION AND CLINICAL PHARMACOLOGY": "ca:pharmacology", "ACTIONS": "ca:pharmacology",
+    "STORAGE AND STABILITY": "ca:storage", "SPECIAL HANDLING INSTRUCTIONS": "ca:handling",
+    "DOSAGE FORMS, COMPOSITION AND PACKAGING": "ca:forms", "PHARMACEUTICAL INFORMATION": "ca:pharmaceutical",
+    "CLINICAL TRIALS": "ca:clinical_trials", "DETAILED PHARMACOLOGY": "ca:detailed_pharmacology",
+    "TOXICOLOGY": "ca:toxicology", "REFERENCES": "ca:references",
+}
+WATCHED_CA = {"ca:recent_major_changes", "ca:indications", "ca:contraindications", "ca:serious_warnings",
+              "ca:dosage", "ca:overdose", "ca:warnings_and_precautions", "ca:warnings", "ca:precautions",
+              "ca:adverse_reactions", "ca:drug_interactions"}
+WATCHED = WATCHED_EU | WATCHED_US | WATCHED_JA | WATCHED_KR | WATCHED_CA
 RECORD_ONLY = {"10", "ja:revision"}
 
 # Valid QRD numbers: 1–10, 2.x, 4.1–4.9, 5.1–5.3, 6.1–6.6 (and third-level 4.2.1, 4.6.1 …).
@@ -99,6 +163,77 @@ JA_OLD_HEADINGS = {
 }
 _JA_OLD = re.compile(r"【\s*(" + _alternation(JA_OLD_HEADINGS) + r")[^】\n]*】")
 _JA_REV = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*改訂")
+
+
+def kr_key(title: str) -> str:
+    """The section key of a Korean precautions heading ("3. 이상반응" → ``kr:adverse_reactions``)."""
+    words = re.sub(r"^\s*\d{1,2}\s*[.)]\s*", "", title or "")
+    for needles, key in KR_HEADINGS:
+        if any(n in words for n in needles):
+            return key
+    return "kr:other"
+
+
+_CA_TOC = re.compile(r"\.{5,}|…{3,}")
+_CA_PAGE = re.compile(r"\bPage\s+\d+\s+of\s+\d+\b", re.I)
+_CA_END = re.compile(r"^\s*(?:PART\s+III\b|PATIENT MEDICATION INFORMATION\s*$|CONSUMER INFORMATION\s*$)", re.I)
+_CA_NUM = re.compile(r"^\s*(\d{1,2})\.?\s+(\S.*?)\s*$")
+
+
+def _ca_lines(text: str) -> list[str]:
+    out = []
+    for line in text.splitlines():
+        if _CA_END.match(line):
+            break
+        if _CA_TOC.search(line):
+            continue
+        out.append(_CA_PAGE.sub("", line))
+    return out
+
+
+def _ca_new_head(line: str, last: int) -> tuple[int, str] | None:
+    m = _CA_NUM.match(line)
+    if not m:
+        return None
+    num, words = int(m.group(1)), m.group(2).casefold()
+    for n, start, key in CA_NEW:
+        if (n == num and n > last and words.startswith(start) and len(words) <= len(start) + 60
+                and not words.endswith((")", ").", ","))):
+            return n, key
+    return None
+
+
+def split_ca_monograph(text: str) -> dict[str, str]:
+    """A Health Canada product monograph's text as ``{"ca:contraindications": text, …}`` (see the module notes)."""
+    lines = _ca_lines(text)
+    new = any(_ca_new_head(l, 0) for l in lines)
+    out: dict[str, list[str]] = {}
+    key, last = None, 0
+    for line in lines:
+        bare = line.strip()
+        head = None
+        if new:
+            hit = _ca_new_head(line, last)
+            if hit:
+                last, head = hit
+            elif (bare.casefold() == "recent major label changes" and last == 0
+                  and "ca:recent_major_changes" not in out):
+                head = "ca:recent_major_changes"
+            elif key == "ca:recent_major_changes" and bare.casefold() == "table of contents":
+                key = None
+                continue
+        else:
+            up = re.sub(r"\s+", " ", bare).rstrip(":")
+            if up in CA_OLD and up == up.upper() and CA_OLD[up] not in out:
+                head = CA_OLD[up]
+        if head:
+            key = head
+            out.setdefault(key, [])
+            continue
+        if key:
+            out[key].append(line)
+    texts = {k: "\n".join(v).strip() for k, v in out.items()}
+    return {k: v for k, v in texts.items() if v}
 
 
 def normalize(text: str) -> str:

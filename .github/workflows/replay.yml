@@ -1,11 +1,12 @@
 # PHAROS — replay a real past revision of a label through the label watch's change detector (dry run: nothing
-# stored, no message). collectors/spc/replay.py. Run by hand with a DailyMed set id and two versions; a pull
-# request that changes the replay runs the Corlanor 2019 paediatric revision (versions 16 and 20) once.
+# stored, no message). collectors/spc/replay.py. Run by hand with a DailyMed set id and two versions, and a Korean
+# item code; a pull request that changes the replay runs the Corlanor 2019 paediatric revision (versions 16 and
+# 20) and the Procoralan 2017 revision in Korea (item 200906066) once.
 name: PHAROS label change replay
 
 on:
   pull_request:
-    paths: [collectors/spc/replay.py, .github/workflows/replay.yml]
+    paths: [collectors/spc/replay.py, collectors/spc/nedrug.py, .github/workflows/replay.yml]
   workflow_dispatch:
     inputs:
       setid:
@@ -20,6 +21,10 @@ on:
         description: The newer version
         type: string
         default: "20"
+      korea_item:
+        description: Korean item code (nedrug 품목기준코드)
+        type: string
+        default: "200906066"
 
 permissions:
   contents: read
@@ -51,3 +56,10 @@ jobs:
         run: |
           [[ "$SETID" =~ ^[0-9a-f-]{36}$ && "$FROM" =~ ^[0-9]{1,4}$ && "$TO" =~ ^[0-9]{1,4}$ ]] || { echo "not a set id and two versions"; exit 2; }
           python -m collectors.spc.replay dailymed "$SETID" "$FROM" "$TO"
+
+      - name: Replay Korea
+        env:
+          ITEM: ${{ inputs.korea_item || '200906066' }}
+        run: |
+          [[ "$ITEM" =~ ^[0-9]{6,12}$ ]] || { echo "not an item code"; exit 2; }
+          python -m collectors.spc.replay nedrug "$ITEM"

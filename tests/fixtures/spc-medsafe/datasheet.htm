@@ -1,0 +1,2637 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-nz" xml:lang="en-nz">
+<!-- #BeginTemplate "../../medicines-master.dwt" -->
+<head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MG2S63BSQQ" type="text/javascript"></script>
+<script src="../../analytics.js" type="text/javascript"></script>
+<meta http-equiv="Content-Language" content="en-nz" />
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<!-- #BeginEditable "doctitle" -->
+<title>Data Sheets</title>
+<!-- #EndEditable -->
+<link href="../../css/medsafe_003.css" media="screen" rel="stylesheet" title="CSS" type="text/css" />
+<link href="../../css/medsafe-print.css" media="print" rel="stylesheet" title="CSS" type="text/css" />
+<link rel="shortcut icon" href="../../images/Medsafe.ico" type="image/vnd.microsoft.icon" />
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript" src="../../utilities.js"></script>
+<!-- #BeginEditable "menustyle" -->
+<style type="text/css">
+#medicinemenu a {
+color: black;
+background-color: white;
+box-shadow: none;
+}
+#medicinemenu ul li {
+display: none;
+}
+#secondary-nav #education a {
+color: black;
+background-color: white;
+box-shadow: none;
+}
+#education ul li {
+display: none;
+}
+</style>
+<!-- #EndEditable -->
+</head>
+<body>
+<div id="masthead" role="banner">
+<div id="top">
+<a href="../../index.asp" tabindex="-1">
+<img alt="Medsafe: New Zealand Medicines nd Medical Devices Safety Authority" src="../../images/medsafe-logo-white-transparent.png" height="80" style="margin: 2.5em 1em 0em 0em" /></a>
+<div style="color: white; float: left; width 15em; margin-top: 1.7em">
+<h1><a href="../../index.asp" tabindex="-1">MEDSAFE</a></h1>
+<hr />
+<h2><a href="../../index.asp" tabindex="-1">New Zealand Medicines and Medical Devices Safety Authority</a></h2>
+</div>
+<form id="cse-search-form" action="../../searchResults.asp" method="get" class="search">
+<input type="text" id="q" name="q" size="25" maxlength="100" />
+<label for="q"><input type="submit" value="Search" /></label>
+</form>
+</div>
+<div style="display: none">
+<%
+Dim q
+q = Request.Form("q")
+If len(q) > 0 Then
+    Response.Redirect "../../searchResults.asp?q=" & q
+End if
+%></div>
+</div>
+</div>
+<div id="page-content" role="main">
+<div id="content-wrapper">
+<div id="primary-nav" role="navigation">
+<ul class="nav">
+<li id="medicinemenu"><a href="../../medicines/medicines-landing.asp">Medicines</a>
+<ul>
+<li>
+<a href="../../Medicines/medicine-information.asp" tabindex="-1">Medicine Information</a></li>
+<li><a href="../../medicines/regulatory-approval-process.asp" tabindex="-1">Regulatory Guidance</a></li>
+<li><a href="../../medicines/regulatory-landing.asp" tabindex="-1">Regulatory Guidance</a></li>
+<li><a href="../../profs/class/clascon.asp" tabindex="-1">Classification</a></li>
+<li><a href="../../medicines/manufacturing.asp" tabindex="-1">Manufacturing</a></li>
+<li><a href="../../compliance/pharmacy-licensing.asp" tabindex="-1">Pharmacy Licensing</a></li>
+</ul>
+</li>
+<li id="devicemenu"><a href="../../devices/devices-landing.asp">Devices</a>
+<ul>
+<li><a href="../../regulatory/DevicesNew/3WAND.asp" tabindex="-1">WAND</a></li>
+<li><a href="../../regulatory/DevicesNew/industry.asp" tabindex="-1">Regulatory Guidance</a></li>
+<li><a href="../../Devices/Surgical%20Mesh/Landing.asp" tabindex="-1">Surgical Mesh</a></li>
+<li><a href="../../regulatory/DevicesNew/safety.asp" tabindex="-1">Safety</a></li>
+<li><a href="../../devices/education-and-information.asp" tabindex="-1">Device Information</a></li>
+</ul>
+</li>
+<li id="safetymenu"><a href="../../safety/safety-landing.asp">Safety</a>
+<ul>
+<li>
+<a href="../../safety/education-and-information.asp" tabindex="-1" tabindex="-1">Safety Information</a></li>
+<li><a href="../../hot/ProductRecallInformation/ProductRecallHome.asp" tabindex="-1">Product Recalls</a></li>
+<li><a href="../../safety/alerts.asp" tabindex="-1">Safety Communications</a></li>
+<li><a href="../../safety/ADR-reporting.asp" tabindex="-1">Adverse Reaction Reporting</a></li>
+</ul>
+</li>
+<li id="enforcemenu"><a href="../../compliance/compliance-landing.asp">Compliance</a>
+<ul>
+<li><a href="../../profs/RIss/unapp.asp" tabindex="-1">Unapproved Medicines</a></li>
+<li><a href="../../hot/ProductRecallInformation/ProductRecallHome.asp" tabindex="-1">Recalls</a></li>
+<li><a href="../../medicines/manufacturing.asp" tabindex="-1">Manufacturing</a></li>
+<li><a href="../../compliance/advertising.asp" tabindex="-1">Marketing</a></li>
+<li><a href="../../compliance/importing-medicines.asp" tabindex="-1">Importing Medicines</a></li>
+<li><a href="../../regulatory/gazette.asp" tabindex="-1">Gazette Notices</a></li>
+</ul>
+</li>
+<li id="publicationmenu"><a href="../../publications/publications-landing.asp">Publications</a>
+<ul>
+<li><a href="../../hot/MediaContents.asp" tabindex="-1">Media</a></li>
+<li><a href="../../profs/puarticles.asp" tabindex="-1">Prescriber Update</a></li>
+<li><a href="../../publications/oia.asp" tabindex="-1">OIA Releases</a></li>
+</ul>
+</li>
+<li id="consultmenu"><a href="../../consultations/consultations-landing.asp">Consultations</a>
+<ul>
+<li>
+<a href="../../consultations/current.asp" tabindex="-1">Current</a></li>
+<li><a href="../../consultations/closed.asp" tabindex="-1">Past</a></li>
+<li><a href="../../consultations/outcome.asp" tabindex="-1">Outcomes</a></li>
+</ul>
+</li>
+<li id="committeemenu"><a href="../../committees/committees-landing.asp">Committees</a>
+<ul>
+<li><a href="../../committees/mcc.asp" tabindex="-1">Medicines Classification</a></li>
+<li><a href="../../committees/maac.asp" tabindex="-1">Medicines Assessment Advisory</a></li>
+<li><a href="../../committees/marc.asp" tabindex="-1">Medicines Adverse Reactions</a></li>
+</ul>
+</li>
+<li id="aboutmenu"><a href="../../about/about-landing.asp">About Medsafe</a>
+<ul>
+<li><a href="../../other/about.asp" tabindex="-1">Our Role</a></li>
+<li><a href="../../other/new.asp" tabindex="-1">What's New</a></li>
+<li><a href="../../other/contact.asp" tabindex="-1">Contact Us</a></li>
+<li><a href="../../other/people.asp" tabindex="-1">Our People</a></li>
+<li><a href="../../about/HistoryRegulation/HistoryRegulationContents.asp" tabindex="-1">History</a></li>
+</ul>
+</li>
+<li><a href="../../other/contact.asp">Contact Us</a></li>
+</ul>
+</div>
+<!-- Begin Navigation Row -->
+<div id="secondary-nav">
+<ul id="nav" class="nav">
+<li id="education"><a href="../../Medicines/medicine-information.asp">Medicine Information</a>
+<ul>
+<li>
+<a href="../..//DbSearch/InfoSearch" tabindex="-1">Data Sheets and Consumer Medicine Information</a></li>
+<li><a href="../../profs/class/classintro.asp" tabindex="-1">Classification Database</a></li>
+<li><a href="../../profs/RIss/restrict.asp" tabindex="-1">Medicines with Restrictions</a></li>
+<li><a href="../../Consumers/PharmOnly.asp" tabindex="-1">Pharmacist Only Medicines</a></li>
+<li><a href="../../profs/RIss/INN.asp" tabindex="-1">International Non-proprietary Names for Active Ingredients</a></li>
+<li><a href="../../regulatory/flu.asp" tabindex="-1">Influenza Vaccine Composition</a></li>
+</ul>
+</li>
+<li id="approval"><a href="../../Medicines/regulatory-approval-process.asp">Approval Process</a>
+<ul>
+<li>
+<a href="../../Consumers/Safety-of-Medicines/medsafe-evaluation-process.asp" tabindex="-1">
+Medsafe's Evaluation Process</a></li>
+<li><a href="../../regulatory/labelling.asp" tabindex="-1">Labelling</a></li>
+<li><a href="../../regulatory/Guideline/PermittedColourings.asp" tabindex="-1">Colouring</a></li>
+<li><a href="../../regulatory/forms.asp" tabindex="-1">Forms and Templates</a></li>
+<li><a href="../../regulatory/fees.asp" tabindex="-1">Schedule of Fees</a></li>
+<li><a href="../../profs/RIss/unapp.asp" tabindex="-1">Unapproved Medicines</a></li>
+</ul>
+</li>
+<li id="guidance"><a href="../../Medicines/regulatory-landing.asp">Regulatory Guidance</a>
+<ul>
+<li>
+<a href="../../regulatory/regguidance.asp" tabindex="-1">Introductory Regulatory Guidance</a></li>
+<li><a href="../../regulatory/current-guidelines.asp" tabindex="-1">Current Regulatory Guidelines</a></li>
+<li><a href="../../regulatory/EvaluationTimeframes.asp" tabindex="-1">Evaluation Timeframes</a></li>
+<li><a href="../../Medicines/policy-statements.asp" tabinex="-1">Policy Statements</a></li>
+<li><a href="../../regulatory/Performance.asp" tabindex="-1">Medsafe's Performance</a></li>
+</ul>
+</li>
+<li id="manufacturing" style="border-right: 1px black solid"><a href="../../Medicines/manufacturing.asp">Manufacturing</a>
+<ul>
+<li>
+<a href="../../regulatory/Guideline/code.asp" tabindex="-1">Good Manufacturing Practice</a></li>
+<li><a href="../../regulatory/licensed.asp" tabindex="-1">Licensed Manufacturers</a></li>
+<li><a href="../../regulatory/packers.asp" tabindex="-1">Licensed Packers</a></li>
+<li><a href="../../regulatory/contractTesting.asp" tabindex="-1">GMP Certified Testing Labs</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<!-- End Navigation Row -->
+<div id="hamburger">
+<a href="#top" class="icon" onclick="menuDisplay()">
+<img alt="Menu" src="../../images/hamburger-menu-transparent-background.png" height="24px" /></a>
+</div>
+<div style="position: absolute; width: 2em; float: left; top: 11.5em">
+<ul style="list-style-type: none; position: fixed; left: -2em">
+<li><a href="#A">A</a></li>
+<li><a href="#B">B</a></li>
+<li><a href="#C">C</a></li>
+<li><a href="#D">D</a></li>
+<li><a href="#E">E</a></li>
+<li><a href="#F">F</a></li>
+<li><a href="#G">G</a></li>
+<li><a href="#H">H</a></li>
+<li><a href="#I">I</a></li>
+<li><a href="#J">J</a></li>
+<li><a href="#K">K</a></li>
+<li><a href="#L">L</a></li>
+<li><a href="#M">M</a></li>
+<li><a href="#N">N</a></li>
+<li><a href="#O">O</a></li>
+<li><a href="#P">P</a></li>
+<li><a href="#Q">Q</a></li>
+<li><a href="#R">R</a></li>
+<li><a href="#S">S</a></li>
+<li><a href="#T">T</a></li>
+<li><a href="#U">U</a></li>
+<li><a href="#V">V</a></li>
+<li><a href="#W">W</a></li>
+<li><a href="#X">X</a></li>
+<li><a href="#Y">Y</a></li>
+<li><a href="#Z">Z</a></li>
+</ul>
+</div>
+<div id="content-area" class="part-width" role="main">
+<div id="breadcrumbs">
+<!-- #BeginEditable "breadcrumbs" -->
+<p><a href="../../index.asp">Home</a> &#9658;
+<a href="../../medicines/medicines-landing.asp">Medicines</a> &#9658;
+<a href="../../medicines/medicine-information.asp">Medicine Information</a> &#9658;
+Data Sheets</p>
+<!-- #EndEditable -->
+</div>
+<!-- #BeginEditable "updated" -->
+<p class="updated">Revised: 6 November 2026</p>
+<!-- #EndEditable -->
+<h1>Medicines</h1>
+<!-- #BeginEditable "content" -->
+<h2>Data Sheets</h2>
+<a href="09percentSodiumChlorideViafloInf.pdf">0.9% Sodium Chloride, Solution for infusion</a><br />
+<a href="s/SodiumChloride.pdf">0.9% Sodium Chloride, Solution for infusion</a><br />
+<p id="2"><strong>2</strong></p><p><a href="x/XylocaineDentalandAdrenaline.pdf">2% Xylocaine DENTAL with Adrenaline (epinephrine) 1:80,000, Solution for injection</a><br />
+</p>
+<p id="3"><strong>3</strong></p><p><a href="c/Citanestwithoctapressininj.pdf">3% Citanest DENTAL with Octapressin, Solution for injection</a><br />
+<a href="3tctab.pdf">3TC, Film coated tablet</a><br />
+<a href="3tcsoln.pdf">3TC, Oral solution</a><br />
+</p>
+<p id="4"><strong>4</strong></p><p><a href="4percentArticadentDentalWithAdrenalineinj.pdf">4% Articadent DENTAL with Adrenaline (Epinephrine) 1:100,000, Solution for injection</a><br />
+</p>
+<p id="5"><strong>5</strong></p><p><a href="Baxter5percentGlucoseAvivaInf.pdf">5% Glucose, Solution for infusion</a><br />
+<a href="Baxter5percentGlucoseViaFloInf.pdf">5% Glucose, Solution for infusion</a><br />
+</p>
+<p id="A"><strong>A</strong></p><p><a href="abacavirlamivudineviatristab.pdf">Abacavir/Lamivudine Viatris, Film coated tablet</a><br />
+<a href="a/Abilifytab.pdf">Abilify, Tablet</a><br />
+<a href="a/AbilifyMaintenainj.pdf">Abilify Maintena, Injection with diluent</a><br />
+<a href="a/AbirateroneDevatisTab.pdf">Abiraterone Devatis, Film coated tablet</a><br />
+<a href="a/Abraxaneinj.pdf">Abraxane, Powder for injection</a><br />
+<a href="a/acarizaxtab.pdf">Acarizax, Sublingual tablet</a><br />
+<a href="a/accarbtab.pdf">Accarb, Tablet</a><br />
+<a href="a/Accuretictab.pdf">Accuretic, Film coated tablet</a><br />
+<a href="a/acetazolamideMedicianztab.pdf">Acetazolamide, Tablet</a><br />
+<a href="a/acetazolamideMedsurgetab.pdf">Acetazolamide, Tablet</a><br />
+<a href="a/acetectab.pdf">Acetec, Tablet</a><br />
+<a href="a/Acetylcysteineinj.pdf">Acetylcysteine 200mg/mL Injection, Concentrate for infusion</a><br />
+<a href="A/AciclovirClaris.pdf">Aciclovir-Baxter, Solution for infusion</a><br />
+<a href="a/Aclastainf.pdf">Aclasta, Solution for infusion</a><br />
+<a href="a/Actairtab.pdf">Actair 100 IR &amp; 300 IR Initiation treatment sublingual tablets, Sublingual tablet</a><br />
+<a href="a/Actairtab.pdf">Actair 300 IR Continuation treatment sublingual tablets, Sublingual tablet</a><br />
+<a href="a/Actemrainf.pdf">Actemra, Concentrate for infusion</a><br />
+<a href="a/Actemrainf.pdf">Actemra, Solution for injection</a><br />
+<a href="a/acthibinj.pdf">Act-HIB vaccine, Injection with diluent</a><br />
+<a href="a/Actilyseinj.pdf">Actilyse, Powder for injection with diluent</a><br />
+<a href="a/Actrapidinj.pdf">Actrapid, Solution for injection</a><br />
+<a href="a/Actrapidinj.pdf">Actrapid Flexpen, Solution for injection</a><br />
+<a href="a/Actrapidinj.pdf">Actrapid Penfill, Solution for injection</a><br />
+<a href="a/aculareyedrops.pdf">Acular, Eye drops, solution</a><br />
+<a href="a/acupantabinj.pdf">Acupan, Tablet</a><br />
+<a href="a/adacelinj.pdf">Adacel, Suspension for injection</a><br />
+<a href="a/AdacelPolioinj.pdf">Adacel Polio, Suspension for injection</a><br />
+<a href="a/adcetrisinj.pdf">Adcetris, Powder for injection</a><br />
+<a href="a/Addaveninf.pdf">Addaven, Solution for infusion</a><br />
+<a href="a/Adenocorinj.pdf">Adenocor, Solution for injection</a><br />
+<a href="a/AdenosineBaxterinf.pdf">Adenosine Baxter, Solution for infusion</a><br />
+<a href="a/adenurictab.pdf">Adenuric, Film coated tablet</a><br />
+<a href="a/AdiraMedicaHyoscineButylbromidetab.pdf">AdiraMedica Hyoscine Butylbromide 10 mg, Film coated tablet</a><br />
+<a href="a/AdiraMedicaHyoscineButylbromidetab.pdf">AdiraMedica Hyoscine Butylbromide 20 mg, Film coated tablet</a><br />
+<a href="a/AdiramedicaPromethazinetab.pdf">Adiramedica Promethazine 10, Film coated tablet</a><br />
+<a href="a/AdiramedicaPromethazinetab.pdf">Adiramedica Promethazine 25, Film coated tablet</a><br />
+<a href="a/admedlevetiracetamtab.pdf">Admed Levetiracetam, Film coated tablet</a><br />
+<a href="a/adriamycininj.pdf">Adriamycin, Solution for injection</a><br />
+<a href="a/adsineinf.pdf">Adsine, Solution for injection</a><br />
+<a href="a/ADTBoosterinj.pdf">ADT Booster, Suspension for injection</a><br />
+<a href="a/Advantanointcrm.pdf">Advantan, Topical cream</a><br />
+<a href="a/Advantanointcrm.pdf">Advantan, Topical ointment</a><br />
+<a href="a/advateinj.pdf">Advate, Injection with diluent</a><br />
+<a href="a/adynovateinj.pdf">Adynovate, Powder for injection with diluent</a><br />
+<a href="a/Aerraneliq.pdf">Aerrane Inhalation Anaesthetic, Volatile liquid for inhalation</a><br />
+<a href="a/Afinitortab.pdf">Afinitor, Tablet</a><br />
+<a href="a/Afluriainj.pdf">Afluria Quad, Suspension for injection</a><br />
+<a href="a/Afluriainj.pdf">Afluria Quad Junior, Suspension for injection</a><br />
+<a href="a/AfqlirInj.pdf">Afqlir, Solution for injection</a><br />
+<a href="a/AFTMetoprololCRtab.pdf">AFT - Metoprolol CR, Modified release tablet</a><br />
+<a href="a/agrylincap.pdf">Agrylin, Capsule</a><br />
+<a href="a/aimoviginj.pdf">Aimovig, Solution for injection</a><br />
+<a href="a/Ajovyinj.pdf">Ajovy, Solution for injection</a><br />
+<a href="a/AlbeyVenomsinj.pdf">Albey Bee Venom, Powder for injection</a><br />
+<a href="a/AlbeyVenomsinj.pdf">Albey Paper Wasp Venom, Powder for injection</a><br />
+<a href="a/AlbeyVenomsinj.pdf">Albey Yellow Jacket Venom, Powder for injection</a><br />
+<a href="a/Albumex20inf.pdf">Albumex 20, Solution for infusion</a><br />
+<a href="a/Albumex4inf.pdf">Albumex 4, Solution for infusion</a><br />
+<a href="a/alburex20NZinf.pdf">Alburex 20 NZ, Solution for infusion</a><br />
+<a href="a/Alburex5inf.pdf">Alburex 5 NZ, Solution for infusion</a><br />
+<a href="a/alcainedrop.pdf">Alcaine, Eye drops, solution</a><br />
+<a href="a/aldurazymeinf.pdf">Aldurazyme, Concentrate for infusion</a><br />
+<a href="a/alecensacap.pdf">Alecensa, Capsule</a><br />
+<a href="a/alfentanilinjmedsurge.pdf">Alfentanil, Solution for injection</a><br />
+<a href="a/alfentanilinj.pdf">Alfentanil 500 micrograms/ml, Solution for injection</a><br />
+<a href="a/alkerantab.pdf">Alkeran, Film coated tablet</a><br />
+<a href="a/Alkeraninj.pdf">Alkeran, Solution for injection</a><br />
+<a href="a/AllegronTab.pdf">Allegron, Film coated tablet</a><br />
+<a href="a/allercleartab.pdf">Allerclear, Tablet</a><br />
+<a href="a/Allersoothetabelix.pdf">Allersoothe, Elixir</a><br />
+<a href="a/Allersoothetab.pdf">Allersoothe, Film coated tablet</a><br />
+<a href="a/allmercapsusp.pdf">Allmercap, Oral suspension</a><br />
+<a href="a/alphagandrops.pdf">Alphagan, Eye drops, solution</a><br />
+<a href="a/AlphaganP1point0eyedrops.pdf">Alphagan P 1.0, Eye drops, solution</a><br />
+<a href="a/AlphaganP15eyedrops.pdf">Alphagan P 1.5, Eye drops, solution</a><br />
+<a href="a/Alphamoxsusp.pdf">Alphamox 125, Powder for oral suspension</a><br />
+<a href="a/Alphamoxsusp.pdf">Alphamox 250, Powder for oral suspension</a><br />
+<a href="a/Alprolixinf.pdf">Alprolix, Powder for infusion</a><br />
+<a href="a/Alyftrektab.pdf">Alyftrek 10/50/125, Film coated tablet</a><br />
+<a href="a/Alyftrektab.pdf">Alyftrek 4/20/50, Film coated tablet</a><br />
+<a href="a/AmantamedCap.pdf">Amantamed, Capsule</a><br />
+<a href="a/AmBisomeinj.pdf">AmBisome, Powder for injection</a><br />
+<a href="a/ambrisentandevatistab.pdf">Ambrisentan , Film coated tablet</a><br />
+<a href="a/AmbrisentanMylantab.pdf">Ambrisentan Viatris, Film coated tablet</a><br />
+<a href="a/ametopgel.pdf">Ametop, Topical gel</a><br />
+<a href="a/amgevitainj.pdf">Amgevita, Solution for injection</a><br />
+<a href="a/AmikacinMedsurgeinj.pdf">Amikacin, Solution for injection</a><br />
+<a href="a/amiodaroneinj.pdf">Amiodarone Hydrochloride, Concentrate for injection</a><br />
+<a href="a/Amiroltab.pdf">Amirol, Film coated tablet</a><br />
+<a href="a/AmisulprideMaxtab.pdf">Amisulpride, Film coated tablet</a><br />
+<a href="a/AmisulprideMaxtab.pdf">Amisulpride, Tablet</a><br />
+<a href="a/amoxiclavdevatisduosusp.pdf">Amoxiclav Devatis Duo, Powder for oral suspension</a><br />
+<a href="a/amoxiclavDevatisFortesusp.pdf">Amoxiclav Devatis Forte, Powder for oral suspension</a><br />
+<a href="m/m-amoxiclavinj.pdf">Amoxiclav multichem, Powder for injection</a><br />
+<a href="a/amoxycillinSandozcap.pdf">Amoxycillin Sandoz, Capsule</a><br />
+<a href="a/AmphotericinLiposomalSUNinj.pdf">Amphotericin Liposomal SUN, Powder for injection</a><br />
+<a href="a/anatroletab.pdf">Anatrole, Film coated tablet</a><br />
+<a href="a/Andembryinj.pdf">Andembry, Solution for injection</a><br />
+<a href="a/AndroFeme1Crm.pdf">AndroFeme 1, Transdermal cream</a><br />
+<a href="a/AndroForte5Crm.pdf">AndroForte 5, Transdermal cream</a><br />
+<a href="a/anoroelliptapowder.pdf">Anoro Ellipta, Powder for inhalation</a><br />
+<a href="a/Antabusetab.pdf">Antabuse, Effervescent tablet</a><br />
+<a href="a/antizolinj.pdf">Antizol, Solution for injection</a><br />
+<a href="a/anzataxinj.pdf">Anzatax, Concentrate for injection</a><br />
+<a href="a/ApidraApidraSoloStarinj.pdf">Apidra, Solution for injection</a><br />
+<a href="a/ApidraApidraSoloStarinj.pdf">Apidra SoloStar, Solution for injection</a><br />
+<a href="a/apoatomoxetinecap.pdf">Apo-Atomoxetine, Capsule</a><br />
+<a href="a/apo-candesartanHCTZtab.pdf">APO-CANDESARTAN HCTZ , Tablet</a><br />
+<a href="a/Apoclomipraminetab.pdf">Apo-Clomipramine, Film coated tablet</a><br />
+<a href="a/apofurosemidetab.pdf">Apo-Furosemide, Tablet</a><br />
+<a href="a/APOHEALTHFamciclovirOncetab.pdf">APOHEALTH Famciclovir Once, Film coated tablet</a><br />
+<a href="a/ApoHealthMelatoninSleepAidTab.pdf">APOHEALTH Melatonin Sleep Aid, Modified release tablet</a><br />
+<a href="a/ApoLevodopaCarbidopatab.pdf">APO-Levodopa/Carbidopa 100/25, Tablet</a><br />
+<a href="a/ApoLevodopaCarbidopatab.pdf">APO-Levodopa/Carbidopa 250/25, Tablet</a><br />
+<a href="a/apometoprololtab.pdf">Apo-Metoprolol, Film coated tablet</a><br />
+<a href="a/apomineinf.pdf">Apomine, Solution for infusion</a><br />
+<a href="a/apomineintermittentinj.pdf">Apomine Intermittent, Solution for injection</a><br />
+<a href="a/apomorphineinf.pdf">Apomorphine, Solution for infusion</a><br />
+<a href="a/apo-ondansetrontab.pdf">Apo-Ondansetron, Film coated tablet</a><br />
+<a href="a/ApoParacetamol665mgtab.pdf">APO-Paracetamol 665 mg, Modified release tablet</a><br />
+<a href="a/Apo-Prazotab.pdf">APO-Prazosin, Tablet</a><br />
+<a href="a/Apo-Propranoltab.pdf">Apo-Propranolol, Tablet</a><br />
+<a href="a/aposumatriptantab.pdf">Apo-Sumatriptan, Film coated tablet</a><br />
+<a href="a/AprepitantCap.pdf">Aprepitant, Capsule</a><br />
+<a href="a/AprepitantAlchemyCap.pdf">Aprepitant (Alchemy), Capsule</a><br />
+<a href="a/Apresolineinj.pdf">Apresoline, Powder for injection</a><br />
+<a href="a/Aquiptatab.pdf">Aquipta, Tablet</a><br />
+<a href="a/ArabitroTab.pdf">Arabitro, Film coated tablet</a><br />
+<a href="a/ArabitroTab.pdf">Arabitro, Tablet</a><br />
+<a href="a/aramineinj.pdf">Aramine, Solution for injection</a><br />
+<a href="a/aratactab.pdf">Aratac, Tablet</a><br />
+<a href="a/aravatab.pdf">Arava, Film coated tablet</a><br />
+<a href="a/Arcoxiatab.pdf">Arcoxia, Film coated tablet</a><br />
+<a href="a/ardanestinj.pdf">ARDANEST 4% with adrenaline (epinephrine) 1:100,000, Solution for injection</a><br />
+<a href="a/ardanestinj.pdf">ARDANEST 4% with adrenaline (epinephrine) 1:200,000, Solution for injection</a><br />
+<a href="a/aremedtab.pdf">Aremed, Film coated tablet</a><br />
+<a href="a/Arexvyinj.pdf">Arexvy, Suspension for injection</a><br />
+<a href="a/AripiprazoleLupinTab.pdf">Aripiprazole Lupin, Tablet</a><br />
+<a href="a/aripiprazolesandoztab.pdf">Aripiprazole Sandoz, Tablet</a><br />
+<a href="a/aristocortcrmoint.pdf">Aristocort, Topical cream</a><br />
+<a href="a/aristocortcrmoint.pdf">Aristocort, Topical ointment</a><br />
+<a href="a/Aropaxtab.pdf">Aropax, Film coated tablet</a><br />
+<a href="a/ArrowAmitryptylinetab.pdf">Arrow - Amitriptyline, Film coated tablet</a><br />
+<a href="a/arrow-bendrofluazidetab.pdf">Arrow - Bendrofluazide 2.5, Tablet</a><br />
+<a href="a/arrow-bendrofluazidetab.pdf">Arrow - Bendrofluazide 5, Tablet</a><br />
+<a href="a/arrowbrimonidinesoln.pdf">Arrow - Brimonidine, Eye drops, solution</a><br />
+<a href="a/arrowClopidtab.pdf">Arrow - Clopid, Film coated tablet</a><br />
+<a href="a/ArrowDiazepamtab.pdf">Arrow - Diazepam 2, Tablet</a><br />
+<a href="a/ArrowDiazepamtab.pdf">Arrow - Diazepam 5, Tablet</a><br />
+<a href="a/arrowfluoxetinetab.pdf">Arrow - Fluoxetine, Capsule</a><br />
+<a href="a/arrowfluoxetinetab.pdf">Arrow - Fluoxetine Dispersible, Dispersible tablet</a><br />
+<a href="a/Arrow-Lamotriginetab.pdf">Arrow - Lamotrigine, Chewable/dispersible tablet</a><br />
+<a href="a/arrowlattimeyedropssol.pdf">Arrow - Lattim, Eye drops, solution</a><br />
+<a href="a/arrowlosartantab.pdf">Arrow - Losartan potassium &amp; Hydrochlorothiazide, Film coated tablet</a><br />
+<a href="a/ArrowNorfloxacintab.pdf">Arrow - Norfloxacin, Film coated tablet</a><br />
+<a href="a/arrowornidazoletab.pdf">Arrow - Ornidazole, Film coated tablet</a><br />
+<a href="a/ArrowQuinapriltab.pdf">Arrow - Quinapril 10, Film coated tablet</a><br />
+<a href="a/ArrowQuinapriltab.pdf">Arrow - Quinapril 20 , Film coated tablet</a><br />
+<a href="a/ArrowQuinapriltab.pdf">Arrow - Quinapril 5, Film coated tablet</a><br />
+<a href="a/ArrowRoxithromycintab.pdf">Arrow - Roxithromycin 150, Coated tablet</a><br />
+<a href="a/ArrowRoxithromycintab.pdf">Arrow - Roxithromycin 300, Coated tablet</a><br />
+<a href="a/ArrowTimololeyedrops.pdf">Arrow - Timolol, Eye drops, solution</a><br />
+<a href="a/arrowtramadolcap.pdf">Arrow - Tramadol, Capsule</a><br />
+<a href="a/ArsenicTrioxideAFTinf.pdf">Arsenic trioxide &ndash; AFT, Concentrate for infusion</a><br />
+<a href="a/artisssol.pdf">ARTISS , Topical solution</a><br />
+<a href="a/Asacoltabsupposenema.pdf">Asacol, Enteric coated tablet</a><br />
+<a href="a/Asacoltabsupposenema.pdf">Asacol, Suppository</a><br />
+<a href="a/ascorlinj.pdf">Ascor L 500, Solution for injection</a><br />
+<a href="a/aspenadrenalineinj.pdf">Aspen Adrenaline, Solution for injection</a><br />
+<a href="a/AspenDexamfetaminetab.pdf">Aspen Dexamfetamine, Tablet</a><br />
+<a href="a/Asthalininh.pdf">Asthalin, Solution for inhalation</a><br />
+<a href="a/AtazanavirTevacap.pdf">Atazanavir (Teva), Capsule</a><br />
+<a href="a/atazanavirMylancap.pdf">Atazanavir Viatris, Capsule</a><br />
+<a href="m/MylanAtenololtab.pdf">Atenolol Viatris, Film coated tablet</a><br />
+<a href="a/atenololaftsol.pdf">Atenolol-AFT, Oral solution</a><br />
+<a href="a/atgaminf.pdf">Atgam, Concentrate for injection</a><br />
+<a href="a/Ativantab.pdf">Ativan, Tablet</a><br />
+<a href="a/AtomoxetineGPcap.pdf">Atomoxetine, Capsule</a><br />
+<a href="a/AtracuriumBesilateinj.pdf">ATRACURIUM BESILATE, Solution for injection</a><br />
+<a href="a/AtropineSulfateMartindaleinj.pdf">Atropine Sulfate Injection, Solution for injection</a><br />
+<a href="a/Atropteyedrop.pdf">Atropt, Eye drops, solution</a><br />
+<a href="a/AtroventHFAinh.pdf">Atrovent, Aerosol inhaler, metered dose</a><br />
+<a href="a/Augmentintabsusp.pdf">Augmentin, Film coated tablet</a><br />
+<a href="a/Augmentintabsusp.pdf">Augmentin 125, Powder for oral suspension</a><br />
+<a href="a/Augmentintabsusp.pdf">Augmentin Forte, Powder for oral suspension</a><br />
+<a href="a/aurorixtab.pdf">Aurorix, Film coated tablet</a><br />
+<a href="a/Avastininf.pdf">Avastin, Concentrate for infusion</a><br />
+<a href="a/Avaximinj.pdf">Avaxim, Suspension for injection</a><br />
+<a href="a/AveloxtabIVinf.pdf">Avelox, Film coated tablet</a><br />
+<a href="a/AveloxtabIVinf.pdf">Avelox IV 400, Solution for infusion</a><br />
+<a href="a/Avonexinj.pdf">Avonex, Solution for injection</a><br />
+<a href="a/Avonexinj.pdf">Avonex Pen, Solution for injection</a><br />
+<a href="a/azacitidineaccordinj.pdf">Azacitidine Accord, Powder for injection</a><br />
+<a href="a/azacitidineDrReddysinj.pdf">Azacitidine Dr Reddy's, Powder for injection</a><br />
+<a href="a/AzacitidineEugiaInj.pdf">Azacitidine Eugia, Powder for injection</a><br />
+<a href="a/Azactaminj.pdf">Azactam, Powder for injection</a><br />
+<a href="a/Azamuntab.pdf">Azamun, Film coated tablet</a><br />
+<a href="a/azithromycinAFTinj.pdf">Azithromycin-AFT, Powder for injection</a><br />
+<a href="a/Azopteyedrop.pdf">Azopt, Eye drops, suspension</a><br />
+</p>
+<p id="B"><strong>B</strong></p><p><a href="b/baclofentab.pdf">Baclofen (Noumed), Tablet</a><br />
+<a href="b/baclofeninj.pdf">Baclofen Injection, Solution for injection</a><br />
+<a href="b/BactrimInf.pdf">Bactrim 400/80, Concentrate for infusion</a><br />
+<a href="b/Bactrobanoint.pdf">Bactroban, Topical ointment</a><br />
+<a href="b/BCGCSLinj.pdf">BCG Vaccine AJV, Suspension for injection</a><br />
+<a href="b/BeclazoneCFCinh.pdf">Beclazone 100 micrograms CFC-Free Inhaler, Aerosol inhaler, metered dose</a><br />
+<a href="b/BeclazoneCFCinh.pdf">Beclazone 250 micrograms CFC-Free Inhaler, Aerosol inhaler, metered dose</a><br />
+<a href="b/BeclazoneCFCinh.pdf">Beclazone 50 micrograms CFC-Free Inhaler, Aerosol inhaler, metered dose</a><br />
+<a href="b/Becloclearspray.pdf">BecloClear100, Nasal spray solution</a><br />
+<a href="b/BeconaseHayfever.pdf">Beconase Allergy &amp; Hayfever, Nasal spray suspension</a><br />
+<a href="b/belkyrainj.pdf">Belkyra, Solution for injection</a><br />
+<a href="b/Bemfolainj.pdf">Bemfola, Solution for injection</a><br />
+<a href="b/BendamustineEugiaInj.pdf">Bendamustine Eugia, Powder for injection</a><br />
+<a href="b/BendamustineSandozinj.pdf">Bendamustine Sandoz, Powder for injection</a><br />
+<a href="b/Benedoinj.pdf">Benedo, Solution for injection</a><br />
+<a href="b/BeneFIXinj.pdf">BeneFIX, Powder for injection with diluent</a><br />
+<a href="b/BenzacACgel.pdf">Benzac AC, Topical gel</a><br />
+<a href="b/BenzacACWashgel.pdf">Benzac AC Wash, Topical solution</a><br />
+<a href="b/benzatropineinj.pdf">Benzatropine Injection, Solution for injection</a><br />
+<a href="b/Benzetacilinj.pdf">Benzetacil, Solution for injection</a><br />
+<a href="b/Benztroptab.pdf">Benztrop, Tablet</a><br />
+<a href="b/BeriplexNZinj.pdf">Beriplex NZ, Powder for injection with diluent</a><br />
+<a href="b/BeriplexPNinj.pdf">Beriplex P/N, Powder for injection with diluent</a><br />
+<a href="b/besponsainj.pdf">Besponsa, Powder for injection</a><br />
+<a href="b/Betacrmoint.pdf">Beta , Topical cream</a><br />
+<a href="b/Betacrmoint.pdf">Beta, Topical ointment</a><br />
+<a href="b/BetaScalpsoln.pdf">Beta Scalp Application, Scalp lotion</a><br />
+<a href="b/Betaferoninj.pdf">Betaferon, Injection with diluent</a><br />
+<a href="b/Betnovatelot.pdf">Betnovate, Lotion</a><br />
+<a href="b/Betoptic-BetopticSsoln.pdf">Betoptic, Eye drops, solution</a><br />
+<a href="b/Betoptic-BetopticSsoln.pdf">Betoptic S, Eye drops, suspension</a><br />
+<a href="b/bexseroinj.pdf">Bexsero, Suspension for injection</a><br />
+<a href="b/BeyfortusInj.pdf">Beyfortus, Solution for injection</a><br />
+<a href="b/Bezaliptab.pdf">Bezalip, Film coated tablet</a><br />
+<a href="b/Bezaliptab.pdf">Bezalip Retard, Modified release tablet</a><br />
+<a href="b/Bicaloxtab.pdf">Bicalox, Film coated tablet</a><br />
+<a href="b/BicillinLAinj.pdf">Bicillin L-A , Suspension for injection</a><br />
+<a href="b/bicnuinj.pdf">BiCNU, Powder for injection with diluent</a><br />
+<a href="b/Biktarvytab.pdf">Biktarvy, Film coated tablet</a><br />
+<a href="b/biltricidetab.pdf">Biltricide, Film coated tablet</a><br />
+<a href="b/BimatoprostMultichemeyedrops.pdf">Bimatoprost Multichem, Eye drops, solution</a><br />
+<a href="b/binarextab.pdf">Binarex, Film coated tablet</a><br />
+<a href="b/binocritinj.pdf">Binocrit, Solution for injection</a><br />
+<a href="b/Biodoneoralsoln.pdf">Biodone, Oral solution</a><br />
+<a href="b/Biodoneoralsoln.pdf">Biodone Extra Forte, Oral solution</a><br />
+<a href="b/Biodoneoralsoln.pdf">Biodone Forte, Oral solution</a><br />
+<a href="f/fentanylbiomedinf.pdf">Biomed Fentanyl, Solution for infusion</a><br />
+<a href="f/fentanylbiomedinf.pdf">Biomed Fentanyl, Solution for injection</a><br />
+<a href="b/Biostateinj.pdf">Biostate, Injection with diluent</a><br />
+<a href="b/bisacodylviatristab.pdf">Bisacodyl Viatris, Enteric coated tablet</a><br />
+<a href="b/BisolvonTabSol.pdf">Bisolvon Chesty Forte, Oral solution</a><br />
+<a href="b/BisolvonTabSol.pdf">Bisolvon Chesty Forte, Tablet</a><br />
+<a href="b/bisolvondryoralsolution.pdf">Bisolvon Dry, Oral solution</a><br />
+<a href="b/bisolvondrypastilles.pdf">Bisolvon Dry, Pastille</a><br />
+<a href="b/BlenrepInj.pdf">BLENREP, Powder for injection</a><br />
+<a href="b/Boostrixinj.pdf">Boostrix, Suspension for injection</a><br />
+<a href="b/boostrixIPVinj.pdf">Boostrix-IPV, Suspension for injection</a><br />
+<a href="b/BortezomibDrReddysinj.pdf">Bortezomib - Dr. Reddy's, Powder for injection</a><br />
+<a href="b/BortezomibEugiainj.pdf">Bortezomib Eugia, Powder for injection</a><br />
+<a href="B/BortezomibEverPharmainj.pdf">Bortezomib Ever Pharma, Solution for injection</a><br />
+<a href="b/bortezomibjunoinj.pdf">Bortezomib Juno, Powder for injection</a><br />
+<a href="b/bortezomibAFTinj.pdf">Bortezomib-AFT, Powder for injection</a><br />
+<a href="b/bosentandrreddystab.pdf">Bosentan Dr Reddy's, Film coated tablet</a><br />
+<a href="b/bosvatetab.pdf">Bosvate, Tablet</a><br />
+<a href="b/Botoxinj.pdf">Botox, Powder for injection</a><br />
+<a href="b/BrenzysInj.pdf">Brenzys, Solution for injection</a><br />
+<a href="b/breoelliptainhalation.pdf">Breo&trade; Ellipta&reg;, Powder for inhalation</a><br />
+<a href="BrevinorNorimintab.pdf">Brevinor 21, Tablet</a><br />
+<a href="BrevinorNorimintab.pdf">Brevinor-1 21 Day, Tablet</a><br />
+<a href="BrevinorNorimintab.pdf">Brevinor-1 28 Day, Tablet</a><br />
+<a href="b/breztriinh.pdf">Breztri Aerosphere, Aerosol inhaler, metered dose</a><br />
+<a href="b/Bricanylturb.pdf">Bricanyl Turbuhaler, Powder for inhalation</a><br />
+<a href="b/brimonidineIndocoEyeDrops.pdf">Brimonidine Indoco, Eye drops, solution</a><br />
+<a href="b/BrimonidineTimololIndocoEyeDrops.pdf">Brimonidine Timolol Indoco, Eye drops, solution</a><br />
+<a href="b/brinovtab.pdf">Brinov, Film coated tablet</a><br />
+<a href="b/brintellixtab.pdf">Brintellix, Film coated tablet</a><br />
+<a href="b/BrinzolamideIndocoeyedrops.pdf">Brinzolamide Indoco, Eye drops, suspension</a><br />
+<a href="b/brufentab.pdf">Brufen, Film coated tablet</a><br />
+<a href="b/BrufenExtratab.pdf">Brufen Extra, Film coated tablet</a><br />
+<a href="b/brufenretardtab.pdf">Brufen SR, Modified release tablet</a><br />
+<a href="b/brukinsacap.pdf">Brukinsa, Capsule</a><br />
+<a href="b/Buccalinetab.pdf">Buccaline , Tablet</a><br />
+<a href="b/BudesonideTeAraicap.pdf">Budesonide Te Arai, Modified release capsule</a><br />
+<a href="b/Bupafeninf.pdf">Bupafen epidural infusion, Solution for infusion</a><br />
+<a href="b/BupivacaineWithAdrenalinePhebraInj.pdf">Bupivacaine 0.25% with Adrenaline 1:400,000 Phebra, Solution for injection</a><br />
+<a href="b/BupivacaineWithAdrenalinePhebraInj.pdf">Bupivacaine 0.5% with Adrenaline 1:200,000 Phebra, Solution for injection</a><br />
+<a href="b/BupivacaineBNMinj.pdf">Bupivacaine spinal heavy BNM, Solution for injection</a><br />
+<a href="b/BuprenorphineNaloxoneBNMsubtab.pdf">Buprenorphine Naloxone BNM, Sublingual tablet</a><br />
+<a href="b/burinextab.pdf">Burinex, Tablet</a><br />
+<a href="b/Buscopantabinj.pdf">Buscopan, Solution for injection</a><br />
+<a href="b/Buscopantabinj.pdf">Buscopan, Tablet</a><br />
+<a href="b/Buscopantabinj.pdf">Buscopan Forte, Film coated tablet</a><br />
+<a href="b/buspironeoriontab.pdf">Buspirone, Tablet</a><br />
+<a href="b/buspironeviatristab.pdf">Buspirone Viatris, Tablet</a><br />
+<a href="b/byoovizinj.pdf">Byooviz, Solution for injection</a><br />
+</p>
+<p id="C"><strong>C</strong></p><p><a href="c/Cabometyxtab.pdf">Cabometyx, Film coated tablet</a><br />
+<a href="c/caelyxinf.pdf">Caelyx, Concentrate for infusion</a><br />
+<a href="c/CalcitriolDevatisCap.pdf">Calcitriol Devatis, Soft gelatin capsule</a><br />
+<a href="c/Calcitriolcap.pdf">Calcitriol-AFT, Liquid filled capsule</a><br />
+<a href="c/Calciumchlorideinj.pdf">Calcium Chloride 10% (Phebra), Solution for injection</a><br />
+<a href="c/calciumFolinateSandozinj.pdf">Calcium Folinate Sandoz, Concentrate for injection</a><br />
+<a href="c/CalciumGluconatePhebraInj.pdf">Calcium Gluconate, Solution for injection</a><br />
+<a href="c/CalciumResoniumpowd.pdf">Calcium Resonium, Powder for oral solution</a><br />
+<a href="c/CalquenceTab.pdf">Calquence, Film coated tablet</a><br />
+<a href="c/CamzyosCap.pdf">Camzyos, Capsule</a><br />
+<a href="c/candadermcrm.pdf">CandaDerm, Topical cream</a><br />
+<a href="c/CandaDermPessary.pdf">CandaDerm 1 Day Thrush Pessary, Pessary</a><br />
+<a href="c/CandaDermPessary.pdf">CandaDerm 6 Day Thrush Pessary, Pessary</a><br />
+<a href="c/CandesartanViatrisTab.pdf">Candesartan Viatris, Tablet</a><br />
+<a href="c/candestartab.pdf">Candestar, Tablet</a><br />
+<a href="c/CanesoralFluconazoleCap.pdf">Canesoral, Capsule</a><br />
+<a href="c/CanesoralFluconazoleCapAndCreamDuo.pdf">Canesoral Duo, Combination</a><br />
+<a href="c/Canestenthrushtreatments.pdf">Canesten Clotrimazole Thrush 1 Day Cream, Vaginal cream</a><br />
+<a href="c/Canestenthrushtreatments.pdf">Canesten Clotrimazole Thrush 1 Day Pessary, Pessary</a><br />
+<a href="c/Canestenthrushtreatments.pdf">Canesten Clotrimazole Thrush 1 Day Pessary &amp; Cream, Combination</a><br />
+<a href="c/Canestenthrushtreatments.pdf">Canesten Clotrimazole Thrush 3 Day Cream, Vaginal cream</a><br />
+<a href="c/Canestenthrushtreatments.pdf">Canesten Clotrimazole Thrush 6 Day Cream, Vaginal cream</a><br />
+<a href="c/Canestenthrushtreatments.pdf">Canesten Clotrimazole Thrush 6 Day Pessary, Pessary</a><br />
+<a href="c/canestenExtraCrm.pdf">Canesten Extra, Topical cream</a><br />
+<a href="c/CapecitabineViatristab.pdf">Capecitabine Viatris, Film coated tablet</a><br />
+<a href="c/capercittab.pdf">Capercit, Film coated tablet</a><br />
+<a href="c/capotentabsol.pdf">Capoten, Oral solution</a><br />
+<a href="c/Carafatetab.pdf">Carafate, Tablet</a><br />
+<a href="c/CarboplatinAccordinj.pdf">Carboplatin Accord, Solution for injection</a><br />
+<a href="c/carboplatinEbeweinj.pdf">Carboplatin Ebewe, Concentrate for injection</a><br />
+<a href="c/CarboplatinEugiaInj.pdf">Carboplatin Eugia, Solution for injection</a><br />
+<a href="c/CarboprostReachinj.pdf">Carboprost-Reach, Solution for injection</a><br />
+<a href="c/Cardinol-LAcap.pdf">Cardinol LA, Modified release capsule</a><br />
+<a href="c/cardioplegiasolutionasol.pdf">Cardioplegia Solution A, Solution</a><br />
+<a href="c/CardizemCDcap.pdf">Cardizem CD, Modified release capsule</a><br />
+<a href="c/CarglumicAcidWaymadetab.pdf">Carglumic Acid (Sovereign Medical), Dispersible tablet</a><br />
+<a href="c/CarvedilolSandoztab.pdf">Carvedilol Sandoz, Tablet</a><br />
+<a href="c/CaspofunginMartindaleinf.pdf">Caspofungin, Powder for infusion concentrate</a><br />
+<a href="c/CaspofunginAlchemyinf.pdf">Caspofungin (Alchemy), Powder for infusion concentrate</a><br />
+<a href="c/Cataprestabinj.pdf">Catapres, Solution for injection</a><br />
+<a href="c/Cataprestabinj.pdf">Catapres, Tablet</a><br />
+<a href="c/CatapresTTS.pdf">Catapres-TTS, Transdermal patch</a><br />
+<a href="c/caverjectImpulseinj.pdf">Caverject Impulse, Powder for injection</a><br />
+<a href="c/CeeNUcap10mg.pdf">CeeNU, Capsule</a><br />
+<a href="c/CeeNUcap40mg.pdf">CeeNU, Capsule</a><br />
+<a href="c/cefalexinsusp.pdf">Cefalexin (Flynn), Granules for oral suspension</a><br />
+<a href="c/CephalexinABMcap.pdf">Cefalexin Lupin, Capsule</a><br />
+<a href="c/cefalexinsandozcapsusp.pdf">Cefalexin Sandoz, Capsule</a><br />
+<a href="c/cefalexinsandozcapsusp.pdf">Cefalexin Sandoz, Granules for oral suspension</a><br />
+<a href="c/cefazolinAFTinj.pdf">Cefazolin-AFT, Powder for injection</a><br />
+<a href="c/cefepimekabiinj.pdf">Cefepime Kabi, Powder for injection</a><br />
+<a href="c/cefepimeAFTinj.pdf">Cefepime-AFT, Powder for injection</a><br />
+<a href="c/CeftazidimeKabiinj.pdf">Ceftazidime Kabi, Powder for injection</a><br />
+<a href="c/ceftazidimeaftinj.pdf">Ceftazidime-AFT, Powder for injection</a><br />
+<a href="c/ceftriaxoneinjDEVA.pdf">Ceftriaxone (Devatis), Powder for infusion</a><br />
+<a href="c/ceftriaxoneinjDEVA.pdf">Ceftriaxone (Devatis), Powder for injection</a><br />
+<a href="c/ceftriaxoneaftinj.pdf">Ceftriaxone-AFT, Powder for injection</a><br />
+<a href="c/cefuroximeinj.pdf">Cefuroxime, Powder for injection</a><br />
+<a href="c/cefuroximeaftinj.pdf">Cefuroxime-AFT, Powder for injection</a><br />
+<a href="c/celapramtab.pdf">Celapram, Film coated tablet</a><br />
+<a href="c/celecoxibPfizercap.pdf">Celebrex (Aspen), Capsule</a><br />
+<a href="c/celecoxibPfizercap.pdf">Celecoxib Pfizer, Capsule</a><br />
+<a href="c/Celestonechronodoseinj.pdf">Celestone Chronodose, Solution for injection</a><br />
+<a href="c/Cellceptcapsuspinf.pdf">CellCept, Capsule</a><br />
+<a href="c/Cellceptcapsuspinf.pdf">CellCept, Powder for infusion</a><br />
+<a href="c/Cellceptcapsuspinf.pdf">CellCept, Powder for oral suspension</a><br />
+<a href="c/Cellceptcapsuspinf.pdf">CellCept, Tablet</a><br />
+<a href="c/CelosteaCap.pdf">Celostea, Capsule</a><br />
+<a href="c/cequaeyedrops.pdf">Cequa, Eye drops, solution</a><br />
+<a href="c/Cerazettetab.pdf">Cerazette, Film coated tablet</a><br />
+<a href="c/cerezymeinf.pdf">Cerezyme, Powder for infusion</a><br />
+<a href="c/Cernevitinj.pdf">Cernevit, Powder for injection</a><br />
+<a href="c/CetirizineIndocotab.pdf">Cetirizine Indoco, Film coated tablet</a><br />
+<a href="c/Cetrotideinj.pdf">Cetrotide, Injection with diluent</a><br />
+<a href="v/vareniclinePfizertab.pdf">Champix, Film coated tablet</a><br />
+<a href="c/ChemistsOwnDayNightColdFluRelieftab.pdf">Chemists' Own Day + Night Cold &amp; Flu Relief, Tablet</a><br />
+<a href="c/ChexateTab.pdf">Chexate, Tablet</a><br />
+<a href="c/chlorafasteyedrops.pdf">Chlorafast, Eye drops, solution</a><br />
+<a href="c/chloramphenicoloint.pdf">Chloramphenicol 1% w/w eye ointment, Eye ointment</a><br />
+<a href="c/ChloramphenicolLink.pdf">Chloramphenicol LINK, Powder for injection</a><br />
+<a href="c/chlorhexidineandcetrimideirrigation.pdf">Chlorhexidine Acetate 0.015% Cetrimide 0.15%, Antiseptic solution</a><br />
+<a href="c/Chlorhexidinesol.pdf">Chlorhexidine Acetate 0.05%, Antiseptic solution</a><br />
+<a href="c/chlorhexidineandcetrimideirrigation.pdf">Chlorhexidine Acetate 0.05% Cetrimide 0.5%, Antiseptic solution</a><br />
+<a href="c/Chlorhexidinesol.pdf">Chlorhexidine Acetate 0.1%, Antiseptic solution</a><br />
+<a href="c/chlorhexidineandcetrimideirrigation.pdf">Chlorhexidine Acetate 0.1% Cetrimide 1%, Antiseptic solution</a><br />
+<a href="c/Chlorsigeyedropeyeoint.pdf">Chlorsig, Eye drops, solution</a><br />
+<a href="c/Chlorsigeyedropeyeoint.pdf">Chlorsig, Eye ointment</a><br />
+<a href="c/chlorvescenttab.pdf">Chlorvescent, Effervescent tablet</a><br />
+<a href="c/Cialistab.pdf">Cialis, Film coated tablet</a><br />
+<a href="c/cilatiltab.pdf">Cilatil, Film coated tablet</a><br />
+<a href="c/CilcaineVKcap.pdf">Cilicaine VK, Capsule</a><br />
+<a href="c/Ciloxaneyedrop.pdf">Ciloxan, Eye drops, solution</a><br />
+<a href="c/CinacalcetDevatistab.pdf">Cinacalcet Devatis 30 mg Film-coated Tablet, Film coated tablet</a><br />
+<a href="c/CinacalcetDevatistab.pdf">Cinacalcet Devatis 60 mg Film-coated Tablet, Film coated tablet</a><br />
+<a href="c/CinacalcetDevatistab.pdf">Cinacalcet Devatis 90 mg Film-coated Tablet, Film coated tablet</a><br />
+<a href="c/CiplaLiraglutideInj.pdf">Cipla Liraglutide, Solution for injection</a><br />
+<a href="c/cipramiltab.pdf">Cipramil, Film coated tablet</a><br />
+<a href="c/ciprofloxacintevadrops.pdf">Ciprofloxacin , Eye drops, solution</a><br />
+<a href="c/CiprofloxacinKabiInf.pdf">Ciprofloxacin Kabi, Solution for infusion</a><br />
+<a href="c/Ciproxinhcotic.pdf">Ciproxin HC Otic, Ear drops</a><br />
+<a href="c/circadintab.pdf">Circadin, Modified release tablet</a><br />
+<a href="c/cisplatinaccordinj.pdf">Cisplatin Accord, Solution for injection</a><br />
+<a href="c/Citanestplaininj.pdf">Citanest Plain, Solution for injection</a><br />
+<a href="c/clariscaninj.pdf">Clariscan, Solution for injection</a><br />
+<a href="c/clarithromycininf.pdf">Clarithromycin 500 mg Powder for Concentrate for Solution for Infusion, Powder for infusion concentrate</a><br />
+<a href="c/Clexaneinj.pdf">Clexane, Solution for injection</a><br />
+<a href="c/Clexaneinj.pdf">Clexane Forte, Solution for injection</a><br />
+<a href="c/ClindamycinBrownAndBurkCap.pdf">Clindamycin, Capsule</a><br />
+<a href="c/ClindamycinMaxHealthCap.pdf">Clindamycin, Capsule</a><br />
+<a href="c/ClindamycinLUcap.pdf">Clindamycin LU, Capsule</a><br />
+<a href="c/clindamycin-hamelninj.pdf">Clindamycin-hameln, Solution for injection</a><br />
+<a href="c/ClindaTechsoln.pdf">ClindaTech Topical Solution, Topical solution</a><br />
+<a href="c/clinoleicinf.pdf">ClinOleic, Emulsion for infusion</a><br />
+<a href="c/clinprotoothpaste.pdf">Clinpro 5000 , Toothpaste</a><br />
+<a href="c/ClobazamBrownBurkTab.pdf">Clobazam (Brown &amp; Burk), Tablet</a><br />
+<a href="t/Tapclobsusp.pdf">Clobazam (Max Health), Oral suspension</a><br />
+<a href="c/ClobazamMaxHealthTab.pdf">Clobazam (Max Health), Tablet</a><br />
+<a href="c/Clobexshampoo.pdf">Clobex Shampoo, Shampoo</a><br />
+<a href="c/Clomazolcrmvagcrm.pdf">Clomazol 1%, Vaginal cream</a><br />
+<a href="c/Clomazolcrmvagcrm.pdf">Clomazol 2%, Vaginal cream</a><br />
+<a href="c/clonidinebnmtab.pdf">Clonidine (Teva), Tablet</a><br />
+<a href="c/clonidinehydrochlorideinj.pdf">Clonidine Hydrochloride Injection, Solution for injection</a><br />
+<a href="c/ClonidineTransdermalSystemUSP.pdf">Clonidine Transdermal System, USP, Transdermal patch</a><br />
+<a href="c/clopidogrelmultichemtab.pdf">Clopidogrel, Film coated tablet</a><br />
+<a href="c/Clopinetaboralsuspen.pdf">Clopine, Tablet</a><br />
+<a href="c/Clopixoltabinj.pdf">Clopixol, Tablet</a><br />
+<a href="c/Clopixoltabinj.pdf">Clopixol Acuphase, Solution for injection</a><br />
+<a href="c/Clopixoltabinj.pdf">Clopixol Depot, Solution for injection</a><br />
+<a href="c/clotrimazolevagcrm.pdf">Clotrimazole Vaginal Cream + Applicator, Vaginal cream</a><br />
+<a href="c/Clozariltab.pdf">Clozaril, Tablet</a><br />
+<a href="c/clustraninj.pdf">Clustran, Solution for injection</a><br />
+<a href="c/CodeinePhosphatePSMtab.pdf">Codeine Phosphate Tablets (Noumed), Tablet</a><br />
+<a href="C/CodralOriginalColdAndFlutab.pdf">Codral Original Cold &amp; Flu, Tablet</a><br />
+<a href="c/CodralOriginalDayAndNighttab.pdf">Codral Original Day &amp; Night, Tablet</a><br />
+<a href="c/ColchicineIndocotab.pdf">Colchicine Indoco, Tablet</a><br />
+<a href="c/Colgouttab.pdf">Colgout, Tablet</a><br />
+<a href="c/colifoamfoam.pdf">Colifoam, Foam</a><br />
+<a href="c/ColistinLinkinj.pdf">Colistin-Link, Powder for injection</a><br />
+<a href="c/colofactab.pdf">Colofac, Tablet</a><br />
+<a href="c/ColumviInf.pdf">Columvi, Concentrate for infusion</a><br />
+<a href="c/combiganeyedrop.pdf">Combigan, Eye drops, solution</a><br />
+<a href="c/CombolieveNightPainRelieftab.pdf">Combolieve Night Pain Relief, Film coated tablet</a><br />
+<a href="c/ComirnatyJN1-10mcgInj.pdf">Comirnaty JN.1, Concentrate for injection</a><br />
+<a href="c/ComirnatyJN1-3mcgInj.pdf">Comirnaty JN.1, Concentrate for injection</a><br />
+<a href="c/ComirnatyJN1-10mcgInj.pdf">Comirnaty JN.1, Suspension for injection</a><br />
+<a href="c/ComirnatyJN1-30mcgInj.pdf">Comirnaty JN.1, Suspension for injection</a><br />
+<a href="c/ComirnatyLP3mcg0point3mL1point8inj.pdf">Comirnaty LP.8.1, Concentrate for injection</a><br />
+<a href="c/ComirnatyLP10mcg0point3mL1point8inj.pdf">Comirnaty LP.8.1, Suspension for injection</a><br />
+<a href="c/ComirnatyLP30mcg0point3mL8point1inj.pdf">Comirnaty LP.8.1, Suspension for injection</a><br />
+<a href="c/ComirnatyXFGYellowCapinj.pdf">Comirnaty XFG, Concentrate for injection</a><br />
+<a href="c/ComirnatyXFGDarkGreyCapinj.pdf">Comirnaty XFG, Suspension for injection</a><br />
+<a href="c/ComirnatyXFGLightBlueCapinj.pdf">Comirnaty XFG, Suspension for injection</a><br />
+<a href="c/CompoundsodiumlactateandGlucoseHartmannsinf.pdf">Compound Sodium Lactate (Hartmann's Solution) and 5% Glucose, Solution for infusion</a><br />
+<a href="c/compoundsodiumlactateinf.pdf">Compound Sodium Lactate (Hartmanns), Solution for infusion</a><br />
+<a href="c/compoundsodiumlactateinfbaxter.pdf">Compound Sodium Lactate (Hartmanns), Solution for infusion</a><br />
+<a href="c/Comtantab.pdf">Comtan, Film coated tablet</a><br />
+<a href="c/Concertatab.pdf">Concerta Extended Release Tablets, Modified release tablet</a><br />
+<a href="c/Condylinesol.pdf">Condyline, Topical solution</a><br />
+<a href="c/Contravetab.pdf">Contrave 8/90, Modified release tablet</a><br />
+<a href="c/CopaxonePFSinj.pdf">Copaxone, Solution for injection</a><br />
+<a href="c/CopaxonePenInj.pdf">Copaxone Pen, Solution for injection</a><br />
+<a href="c/CordaroneXtabinj.pdf">Cordarone X, Tablet</a><br />
+<a href="c/CordaroneXtabinj.pdf">Cordarone X Intravenous, Solution for injection</a><br />
+<a href="c/cortimenttab.pdf">Cortiment, Modified release tablet</a><br />
+<a href="c/cosentyxinj.pdf">Cosentyx, Powder for injection</a><br />
+<a href="c/cosentyxinj.pdf">Cosentyx, Solution for injection</a><br />
+<a href="c/Cosmegeninj.pdf">Cosmegen, Powder for injection</a><br />
+<a href="c/cotellictab.pdf">Cotellic, Film coated tablet</a><br />
+<a href="c/Coumadintab.pdf">Coumadin, Tablet</a><br />
+<a href="c/CoversylPerindoprilErbumineTab.pdf">Coversyl, Tablet</a><br />
+<a href="c/CoversylTab.pdf">COVERSYL 10, Film coated tablet</a><br />
+<a href="c/CoversylTab.pdf">COVERSYL 2.5, Film coated tablet</a><br />
+<a href="c/CoversylTab.pdf">COVERSYL 5, Film coated tablet</a><br />
+<a href="c/CreonCreonFortecap.pdf">Creon 10,000, Modified release capsule</a><br />
+<a href="c/CreonCreonFortecap.pdf">Creon 20,000, Modified release capsule</a><br />
+<a href="c/CreonCreonFortecap.pdf">Creon 25,000, Modified release capsule</a><br />
+<a href="c/CreonCreonFortecap.pdf">Creon 35,000, Modified release capsule</a><br />
+<a href="c/CreonMicroGranules.pdf">Creon Micro, Modified release granules</a><br />
+<a href="c/Cresembacapinj.pdf">CRESEMBA, Capsule</a><br />
+<a href="c/Cresembacapinj.pdf">CRESEMBA, Powder for injection</a><br />
+<a href="c/Crestortab.pdf">Crestor, Film coated tablet</a><br />
+<a href="c/Crinonegel.pdf">Crinone 8%, Vaginal gel</a><br />
+<a href="c/crusia-aftinj.pdf">Crusia-AFT, Solution for injection</a><br />
+<a href="c/crusia-aftinj.pdf">Crusia-AFT Forte, Solution for injection</a><br />
+<a href="c/cupriortab.pdf">Cuprior, Film coated tablet</a><br />
+<a href="c/Curamtabsusp.pdf">Curam, Powder for oral suspension</a><br />
+<a href="c/Curamtabsusp.pdf">Curam Duo 500/125, Film coated tablet</a><br />
+<a href="c/Curosurfinj.pdf">Curosurf, Suspension for injection</a><br />
+<a href="c/CyclizineMedsurgeInj.pdf">Cyclizine, Solution for injection</a><br />
+<a href="c/cyclizinelactateHamelninj.pdf">Cyclizine Lactate, Solution for injection</a><br />
+<a href="c/Cyclogyleyedrop.pdf">Cyclogyl, Eye drops, solution</a><br />
+<a href="c/cyclonextab.pdf">Cyclonex, Film coated tablet</a><br />
+<a href="c/Cyklokaprontabinj.pdf">Cyklokapron, Solution for injection</a><br />
+<a href="c/Cyklokaprontabinj.pdf">Cyklokapron, Tablet</a><br />
+<a href="c/Cymeveneinj.pdf">Cymevene, Powder for infusion</a><br />
+<a href="c/cystadanesol.pdf">Cystadane, Powder for oral solution</a><br />
+<a href="c/Cytarabineinj.pdf">Cytarabine, Solution for injection</a><br />
+<a href="c/Cytotectab.pdf">Cytotec, Tablet</a><br />
+</p>
+<p id="D"><strong>D</strong></p><p><a href="d/Daivobetoint.pdf">Daivobet, Topical ointment</a><br />
+<a href="d/daivobetgel.pdf">Daivobet 50/500 gel, Topical gel</a><br />
+<a href="d/Daivonexoint.pdf">Daivonex, Topical ointment</a><br />
+<a href="d/daktaringel.pdf">Daktarin, Oral gel</a><br />
+<a href="d/DalacinCcap.pdf">Dalacin C, Capsule</a><br />
+<a href="d/Dalacincphosphateinj.pdf">Dalacin C, Solution for injection</a><br />
+<a href="d/Dantriumcap.pdf">Dantrium, Capsule</a><br />
+<a href="d/DantriumIVinj.pdf">Dantrium IV, Powder for injection</a><br />
+<a href="d/Daoniltab.pdf">Daonil, Tablet</a><br />
+<a href="d/DapagliflozinDevatisTab.pdf">Dapagliflozin Devatis, Film coated tablet</a><br />
+<a href="d/dapatabstab.pdf">DAPA-TABS, Tablet</a><br />
+<a href="d/Dapsomedtab.pdf">Dapsomed, Tablet</a><br />
+<a href="d/DapsoneLinktab.pdf">Dapsone (Link), Tablet</a><br />
+<a href="d/DaptomycinJunoinf.pdf">Daptomycin (Juno), Powder for infusion</a><br />
+<a href="d/DaptomycinDrReddyinj.pdf">Daptomycin Dr Reddy's, Powder for injection</a><br />
+<a href="D/DaptomycinAFTinj.pdf">Daptomycin-AFT, Powder for injection</a><br />
+<a href="d/darunavirmylantab.pdf">Darunavir Viatris, Film coated tablet</a><br />
+<a href="d/darzalexinf.pdf">Darzalex, Concentrate for infusion</a><br />
+<a href="d/darzalexscinj.pdf">Darzalex SC, Solution for injection</a><br />
+<a href="d/DasatinibTevaTab.pdf">Dasatinib-Teva, Film coated tablet</a><br />
+<a href="d/daunorubicininj.pdf">Daunorubicin, Solution for injection</a><br />
+<a href="d/DayvigoTab.pdf">DAYVIGO, Film coated tablet</a><br />
+<a href="l/LeucovorinCalciuminjtab.pdf">DBL&reg; Leucovorin Calcium, Solution for injection</a><br />
+<a href="l/LeucovorinCalciuminjtab.pdf">DBL&reg; Leucovorin Calcium , Tablet</a><br />
+<a href="d/DBLAcetylcysteineinj.pdf">DBL&trade; Acetylcysteine, Concentrate for injection</a><br />
+<a href="d/DBLAciclovirinf.pdf">DBL&trade; Aciclovir Intravenous, Solution for infusion</a><br />
+<a href="d/dblAdrenaline1in10,000inj.pdf">DBL&trade; Adrenaline Injection BP, Solution for injection</a><br />
+<a href="d/dblAdrenaline1in1000inj.pdf">DBL&trade; Adrenaline Injection BP, Solution for injection</a><br />
+<a href="a/Amikacininj.pdf">DBL&trade; Amikacin, Solution for injection</a><br />
+<a href="a/Aminophyllineinj.pdf">DBL&trade; Aminophylline Injection, Solution for injection</a><br />
+<a href="d/dblBleomycinsulphateinj.pdf">DBL&trade; Bleomycin Sulphate, Powder for injection</a><br />
+<a href="d/dblbortezomibinj.pdf">DBL&trade; Bortezomib, Powder for injection</a><br />
+<a href="c/CarboplatininjMaynePharma.pdf">DBL&trade; Carboplatin Injection, Solution for injection</a><br />
+<a href="d/dblCefotaximesodiuminj.pdf">DBL&trade; Cefotaxime Sodium for Injection, Powder for injection</a><br />
+<a href="d/DBLCisplatininj.pdf">DBL&trade; Cisplatin, Solution for injection</a><br />
+<a href="c/CytarabineDBLinj.pdf">DBL&trade; Cytarabine, Solution for injection</a><br />
+<a href="d/Dacarbazineinj.pdf">DBL&trade; Dacarbazine, Powder for injection</a><br />
+<a href="d/Desferrioxaminemesylateinj.pdf">DBL&trade; Desferrioxamine Mesylate for Injection BP, Powder for injection</a><br />
+<a href="d/DblDexamethasoneNewFormulationinj.pdf">DBL&trade; Dexamethasone Sodium Phosphate, Solution for injection</a><br />
+<a href="d/DBLDiazepaminj.pdf">DBL&trade; Diazepam Injection , Solution for injection</a><br />
+<a href="d/DBLDiazoxideinj.pdf">DBL&trade; Diazoxide, Solution for injection</a><br />
+<a href="d/Dobutaminehydrochlorideinj.pdf">DBL&trade; Dobutamine Hydrochloride, Solution for injection</a><br />
+<a href="d/dbldocetaxelinj.pdf">DBL&trade; Docetaxel, Concentrated Injection, Solution for infusion</a><br />
+<a href="d/DBLEphedrinesulfateinj.pdf">DBL&trade; Ephedrine Sulfate, Solution for injection</a><br />
+<a href="d/DBLErgometrineinj.pdf">DBL&trade; Ergometrine, Solution for injection</a><br />
+<a href="d/DBLGemcitabine38mgpermlinj.pdf">DBL&trade; Gemcitabine Injection, Solution for injection</a><br />
+<a href="d/DBLGentamicinBPinj.pdf">DBL&trade; Gentamicin Injection BP, Solution for infusion</a><br />
+<a href="d/DBLGentamicinBPinj.pdf">DBL&trade; Gentamicin Injection BP, Solution for injection</a><br />
+<a href="d/DBLGlyceryltrinitrateinj.pdf">DBL&trade; Glyceryl Trinitrate, Solution for injection</a><br />
+<a href="d/dblHeparininj.pdf">DBL&trade; Heparin Sodium Injection BP, Solution for injection</a><br />
+<a href="d/dblMethotrexateinjmayne.pdf">DBL&trade; Methotrexate, Solution for injection</a><br />
+<a href="d/dblMorphinesulphbpinj.pdf">DBL&trade; Morphine Sulfate Injection, Solution for injection</a><br />
+<a href="d/dblnaloxonehydrochlorideinj.pdf">DBL&trade; Naloxone Hydrochloride, Solution for injection</a><br />
+<a href="d/dblOctreotideinj.pdf">DBL&trade; Octreotide, Solution for injection</a><br />
+<a href="d/dblPapaverineHydrochlorideinj.pdf">DBL&trade; Papaverine Hydrochloride, Solution for injection</a><br />
+<a href="d/dblPethidineinj.pdf">DBL&trade; Pethidine Hydrochloride Injection, Solution for injection</a><br />
+<a href="d/dblphenytoininj.pdf">DBL&trade; Phenytoin Injection, Solution for injection</a><br />
+<a href="d/DBLPotassiumDihydrogeninj.pdf">DBL&trade; Potassium Dihydrogen Phosphate Concentrated Injection, Solution for injection</a><br />
+<a href="d/dblPromethazinehydrochlorideinj.pdf">DBL&trade; Promethazine hydrochloride, Solution for injection</a><br />
+<a href="d/dblSodiumNitriteinj.pdf">DBL&trade; Sodium Nitrite, Solution for injection</a><br />
+<a href="s/Sodiumnitroprussideinj50mg.pdf">DBL&trade; Sodium Nitroprusside Concentrated Injection, Solution for injection</a><br />
+<a href="d/DBL-SodiumThiosulfateinj.pdf">DBL&trade; Sodium thiosulfate, Solution for injection</a><br />
+<a href="d/dblSulfamethoxazoletrimethopriminj.pdf">DBL&trade; Sulfamethoxazole 400mg and Trimethoprim 80mg Concentrate injection, Solution for injection</a><br />
+<a href="v/Vinblastineinj.pdf">DBL&trade; Vinblastine, Solution for injection</a><br />
+<a href="v/Vincristinesulfatempinj.pdf">DBL&trade; Vincristine Sulfate, Solution for injection</a><br />
+<a href="d/dblzincchlorideinj.pdf">DBL&trade; Zinc Chloride, Solution for injection</a><br />
+<a href="d/decozolgel.pdf">Decozol, Oral gel</a><br />
+<a href="d/Definityinj.pdf">Definity, Solution for injection</a><br />
+<a href="d/DemazinOriginalColdAndFluReliefDayAndNighttab.pdf">Demazin Original Cold + Flu Relief Day + Night, Tablet</a><br />
+<a href="d/deolatetab.pdf">Deolate, Tablet</a><br />
+<a href="d/Depomedrolinj.pdf">Depo-Medrol, Injection (depot)</a><br />
+<a href="d/Depoproverainj.pdf">Depo-Provera, Injection (depot)</a><br />
+<a href="d/Depotestosteroneinj.pdf">Depo-Testosterone, Solution for injection</a><br />
+<a href="d/Deprimsusp.pdf">Deprim, Oral suspension</a><br />
+<a href="d/dermaidcrm.pdf">DermAid, Topical cream</a><br />
+<a href="d/dermaidcrm.pdf">DermAid 1%, Topical cream</a><br />
+<a href="d/dermaidsoftcrm.pdf">DermAid Soft 0.5% Cream, Topical cream</a><br />
+<a href="d/dermaidsoftcrm.pdf">DermAid Soft 1% Cream, Topical cream</a><br />
+<a href="d/DermolScalpsoln.pdf">Dermol, Scalp lotion</a><br />
+<a href="d/Dermolcrmoint.pdf">Dermol, Topical cream</a><br />
+<a href="d/Dermolcrmoint.pdf">Dermol, Topical ointment</a><br />
+<a href="d/descovytab.pdf">Descovy, Film coated tablet</a><br />
+<a href="d/DesmopressinPHTnasalspray.pdf">Desmopressin-PH&amp;T, Nasal spray solution</a><br />
+<a href="d/devatisSoreThroatGargle.pdf">Devatis Sore Throat Relief Gargle, Gargle</a><br />
+<a href="d/devatisSoreThroatSpray.pdf">Devatis Sore Throat Relief Spray, Oral spray</a><br />
+<a href="d/deventerinh.pdf">Deventer, Aerosol inhaler, metered dose</a><br />
+<a href="d/DexamethsoneMedsurgeinj.pdf">Dexamethasone, Solution for injection</a><br />
+<a href="d/dexamethasoneHamelninj.pdf">Dexamethasone phosphate, Solution for injection</a><br />
+<a href="d/Dexamphetaminesulphatetab.pdf">Dexamfetamine Tablets , Tablet</a><br />
+<a href="d/dexdorinf.pdf">Dexdor, Concentrate for infusion</a><br />
+<a href="d/dexmedetomidineAccordinj.pdf">Dexmedetomidine Accord, Concentrate for injection</a><br />
+<a href="d/dexamedtomidineEverPharmainj.pdf">Dexmedetomidine Ever Pharma, Concentrate for injection</a><br />
+<a href="d/DexmedetomidineMedicianzinf.pdf">Dexmedetomidine Medicianz, Concentrate for infusion</a><br />
+<a href="d/DexmedetomidineMedsurgeinf.pdf">Dexmedetomidine Medsurge, Concentrate for infusion</a><br />
+<a href="d/DexmedetomidineViatrisinf.pdf">Dexmedetomidine Viatris, Concentrate for infusion</a><br />
+<a href="d/DexmedetomidineAFTinj.pdf">Dexmedetomidine-AFT, Concentrate for injection</a><br />
+<a href="d/Dexmedetomidinetevainf.pdf">Dexmedetomidine-Teva, Concentrate for infusion</a><br />
+<a href="d/dexmethsonetab.pdf">Dexmethsone, Tablet</a><br />
+<a href="d/DHCContinustab.pdf">DHC Dihydrocodeine Modified Release, Modified release tablet</a><br />
+<a href="d/diacomitcap.pdf">Diacomit, Capsule</a><br />
+<a href="d/diacomitcap.pdf">Diacomit, Powder for oral suspension</a><br />
+<a href="d/Diamidecap.pdf">Diamide, Capsule</a><br />
+<a href="d/diamidereliefcap.pdf">Diamide Relief, Capsule</a><br />
+<a href="d/Diamoxtabinj.pdf">Diamox, Tablet</a><br />
+<a href="d/DianalPD4sol.pdf">Dianeal PD4 with 1.5% w/v glucose monohydrate, Dialysis solution</a><br />
+<a href="d/DianalPD4sol.pdf">Dianeal PD4 with 2.5% w/v glucose monohydrate, Dialysis solution</a><br />
+<a href="d/DianalPD4sol.pdf">Dianeal PD4 with 4.25% w/v glucose monohydrate, Dialysis solution</a><br />
+<a href="d/diclofenac25tab.pdf">Diclofenac 25, Enteric coated tablet</a><br />
+<a href="d/diclofenactab.pdf">Diclofenac 25, Film coated tablet</a><br />
+<a href="d/DiclofenacDevatisDrops.pdf">Diclofenac Devatis, Eye drops, solution</a><br />
+<a href="d/diclofenacsandoztab.pdf">Diclofenac Sandoz, Enteric coated tablet</a><br />
+<a href="d/Differincrm.pdf">Differin, Topical cream</a><br />
+<a href="d/Differingel.pdf">Differin, Topical gel</a><br />
+<a href="d/DifflamDryCoughPlusAntibacterialAndAntiInflammatoryBlackcurrantLozenge.pdf">Difflam Dry Cough + Antibacterial + Anti-Inflammatory, Lozenge</a><br />
+<a href="d/DiflucancapIVsusp.pdf">Diflucan, Powder for oral suspension</a><br />
+<a href="d/diflucanonecap.pdf">Diflucan One, Capsule</a><br />
+<a href="d/Dilantincapsusptab.pdf">Dilantin, Capsule</a><br />
+<a href="d/Dilantincapsusptab.pdf">Dilantin Infatabs, Chewable tablet</a><br />
+<a href="d/Dilantincapsusptab.pdf">Dilantin Paediatric, Oral suspension</a><br />
+<a href="a/apodiltiazemcdcap.pdf">Diltiazem CD, Modified release capsule</a><br />
+<a href="d/DimethylFumarateSandozCap.pdf">Dimethyl Fumarate Sandoz, Modified release capsule</a><br />
+<a href="d/dimethylFumarateTeAraicap.pdf">Dimethyl Fumarate Te Arai, Modified release capsule</a><br />
+<a href="d/dipentumcaptab.pdf">Dipentum, Capsule</a><br />
+<a href="d/dipentumcaptab.pdf">Dipentum, Tablet</a><br />
+<a href="d/Diprivaninj.pdf">Diprivan, Emulsion for injection</a><br />
+<a href="d/Diprosonecrointlot.pdf">Diprosone, Topical cream</a><br />
+<a href="d/Diprosonecrointlot.pdf">Diprosone, Topical ointment</a><br />
+<a href="d/DiprosoneOVcrmoint.pdf">Diprosone OV, Topical cream</a><br />
+<a href="d/DiprosoneOVcrmoint.pdf">Diprosone OV, Topical ointment</a><br />
+<a href="d/DizoleCap.pdf">Dizole 50, Capsule</a><br />
+<a href="d/dobutamineHamelninf.pdf">Dobutamine-hameln 12.5 mg/ml concentrate for solution for infusion, Concentrate for infusion</a><br />
+<a href="d/docetaxelaccordinj.pdf">Docetaxel Accord, Concentrate for injection</a><br />
+<a href="a/AdiraMedicaIbuprofencap.pdf">Dolomed Ibuprofen Liquicaps, Soft gelatin capsule</a><br />
+<a href="d/domperidoneviatristab.pdf">Domperidone Viatris, Tablet</a><br />
+<a href="d/donepeziltab.pdf">Donepezil, Film coated tablet</a><br />
+<a href="d/donepezilIPCAtab.pdf">Donepezil IPCA, Film coated tablet</a><br />
+<a href="d/dortimopteyedrops.pdf">Dortimopt, Eye drops, solution</a><br />
+<a href="d/Dostinextab.pdf">Dostinex, Tablet</a><br />
+<a href="d/Dopresscap.pdf">Dosulepin Viatris, Film coated tablet</a><br />
+<a href="d/Dotareminj.pdf">Dotarem, Solution for injection</a><br />
+<a href="d/dovatotab.pdf">Dovato 50/300, Film coated tablet</a><br />
+<a href="d/DovprelaTab.pdf">DOVPRELA, Tablet</a><br />
+<a href="a/ApoDoxazosintab.pdf">Doxazosin, Tablet</a><br />
+<a href="d/Doxinetab.pdf">Doxine, Film coated tablet</a><br />
+<a href="d/doxorubicinEbeweinj.pdf">Doxorubicin Ebewe, Concentrate for injection</a><br />
+<a href="d/Dozilecap.pdf">Dozile, Liquid filled capsule</a><br />
+<a href="d/DPHydrocortisonelot.pdf">DP Lotion-HC 1%, Lotion</a><br />
+<a href="d/dp-allopurinoltab.pdf">DP-Allopurinol, Tablet</a><br />
+<a href="d/dpCaptoprilsol.pdf">DP-Captopril, Oral solution</a><br />
+<a href="d/dpenaminetab.pdf">D-Penamine, Tablet</a><br />
+<a href="d/dpFebuxostattab.pdf">DP-Febuxostat, Film coated tablet</a><br />
+<a href="d/dPposaconazolesusp.pdf">DP-Posaconazole, Oral suspension</a><br />
+<a href="o/Omeprazole20mgcap.pdf">Dr Reddy's Omeprazole, Modified release capsule</a><br />
+<a href="d/drofatetab.pdf">Drofate, Tablet</a><br />
+<a href="d/droleptaninj.pdf">Droleptan, Solution for injection</a><br />
+<a href="d/DroperidolMedsurgeinj.pdf">Droperidol, Solution for injection</a><br />
+<a href="d/droperidolpanpharmainj.pdf">Droperidol Panpharma, Solution for injection</a><br />
+<a href="d/Duacgel.pdf">Duac Once Daily Gel, Topical gel</a><br />
+<a href="d/Dukoralsusp.pdf">Dukoral, Oral suspension</a><br />
+<a href="d/dulcolaxtabsupp.pdf">Dulcolax, Enteric coated tablet</a><br />
+<a href="d/dulcolaxtabsupp.pdf">Dulcolax, Suppository</a><br />
+<a href="d/duodopagel.pdf">Duodopa, Intestinal gel</a><br />
+<a href="d/duolinhfainh.pdf">Duolin, Aerosol inhaler, metered dose</a><br />
+<a href="d/Duolininhal.pdf">Duolin, Solution for inhalation</a><br />
+<a href="d/DuoRespinh.pdf">DuoResp Spiromax, Powder for inhalation</a><br />
+<a href="d/Duotraveyedrops.pdf">DuoTrav, Eye drops, solution</a><br />
+<a href="d/DuraphatFluorideVarnishsol.pdf">Duraphat Fluoride Varnish, Dental suspension</a><br />
+<a href="d/DurideCRtab.pdf">Duride, Modified release tablet</a><br />
+<a href="d/durominecap.pdf">Duromine, Modified release capsule</a><br />
+<a href="d/DuroTussDryCough&SoreThroatLozenge.pdf">Duro-Tuss Dry Cough &amp; Sore Throat , Lozenge</a><br />
+<a href="d/DuroTussDryCoughLiquidForte.pdf">Duro-Tuss Dry Cough Liquid Forte, Oral solution</a><br />
+<a href="d/dymistaspray.pdf">Dymista, Nasal spray suspension</a><br />
+<a href="d/Dynastatinj.pdf">Dynastat, Powder for injection</a><br />
+<a href="d/Dysportinj.pdf">Dysport, Powder for injection</a><br />
+</p>
+<p id="E"><strong>E</strong></p><p><a href="e/EbixaNEWtab.pdf">Ebixa, Film coated tablet</a><br />
+<a href="e/EdetateDisodiumUSPinj.pdf">Edetate Disodium USP, Solution for injection</a><br />
+<a href="e/Edronaxtab.pdf">Edronax, Tablet</a><br />
+<a href="e/eduranttab.pdf">Edurant, Film coated tablet</a><br />
+<a href="e/Efexorxrcap.pdf">Efexor-XR, Modified release capsule</a><br />
+<a href="e/Efudixcr.pdf">Efudix, Topical cream</a><br />
+<a href="e/EikanceEyeDrops.pdf">Eikance 0.01%, Eye drops, solution</a><br />
+<a href="e/EikanceEyeDrops.pdf">Eikance 0.025%, Eye drops, solution</a><br />
+<a href="e/EikanceEyeDrops.pdf">Eikance 0.05%, Eye drops, solution</a><br />
+<a href="e/Elahereinj.pdf">Elahere, Concentrate for injection</a><br />
+<a href="e/elapraseinf.pdf">Elaprase, Concentrate for infusion</a><br />
+<a href="e/elelysoinj.pdf">Elelyso, Powder for injection</a><br />
+<a href="e/Elidelcr.pdf">Elidel, Topical cream</a><br />
+<a href="e/eliquistab.pdf">Eliquis, Film coated tablet</a><br />
+<a href="e/Eloconcrointlot.pdf">Elocon, Lotion</a><br />
+<a href="e/Eloconcrointlot.pdf">Elocon, Topical ointment</a><br />
+<a href="e/Eloconcrointlot.pdf">Elocon Alcohol Free, Topical cream</a><br />
+<a href="e/Eloctateinf.pdf">ELOCTATE, Powder for infusion</a><br />
+<a href="e/elonvainj.pdf">Elonva, Solution for injection</a><br />
+<a href="e/EltroxintabNEW.pdf">Eltroxin, Tablet</a><br />
+<a href="e/Emendcap.pdf">Emend Tri-pack, Combination capsule</a><br />
+<a href="e/emgalityinj.pdf">Emgality , Solution for injection</a><br />
+<a href="e/Emlacream.pdf">Emla, Topical cream</a><br />
+<a href="e/Emlapatch.pdf">Emla Patch, Dermal patch</a><br />
+<a href="e/emnormtab.pdf">Emnorm, Film coated tablet</a><br />
+<a href="e/EmtricitabineTenofovirTevatab.pdf">Emtricitabine/Tenofovir disoproxil, Film coated tablet</a><br />
+<a href="e/Emtrivacap.pdf">Emtriva, Capsule</a><br />
+<a href="e/E-Mycintabsus.pdf">E-Mycin, Film coated tablet</a><br />
+<a href="e/E-Mycintabsus.pdf">E-Mycin, Granules for oral suspension</a><br />
+<a href="e/Enbrelinj.pdf">Enbrel, Powder for injection with diluent</a><br />
+<a href="e/Enbrelinj.pdf">Enbrel, Solution for injection</a><br />
+<a href="e/Endoxaninj.pdf">Endoxan, Powder for injection</a><br />
+<a href="e/Engerix-Binj.pdf">Engerix-B, Suspension for injection</a><br />
+<a href="e/Engerix-BAdultinj.pdf">Engerix-B vaccine, Suspension for injection</a><br />
+<a href="e/Enhertuinf.pdf">ENHERTU, Powder for infusion concentrate</a><br />
+<a href="e/enlafaxXRcap.pdf">Enlafax XR, Modified release capsule</a><br />
+<a href="e/EnstilarFoam.pdf">Enstilar, Foam</a><br />
+<a href="e/EntacaponeViatrisTab.pdf">Entacapone Viatris, Film coated tablet</a><br />
+<a href="e/entecavirtab.pdf">Entecavir (Generic Partners), Film coated tablet</a><br />
+<a href="e/entecavirtabJuno.pdf">Entecavir (Juno), Film coated tablet</a><br />
+<a href="e/EntecavirRextab.pdf">Entecavir (Rex), Film coated tablet</a><br />
+<a href="e/entecavirsandoztab.pdf">Entecavir Sandoz, Film coated tablet</a><br />
+<a href="e/entonoxgas.pdf">Entonox gas, Gas</a><br />
+<a href="e/entrestotab.pdf">Entresto 24/26, Film coated tablet</a><br />
+<a href="e/entrestotab.pdf">Entresto 49/51, Film coated tablet</a><br />
+<a href="e/entrestotab.pdf">Entresto 97/103, Film coated tablet</a><br />
+<a href="e/entyvioinjpwd.pdf">Entyvio, Powder for injection</a><br />
+<a href="e/entyvioinjpwd.pdf">Entyvio, Solution for injection</a><br />
+<a href="e/epclusatab.pdf">Epclusa, Tablet</a><br />
+<a href="e/ephedrinehydrochlorideinj.pdf">Ephedrine Hydrochloride, Solution for injection</a><br />
+<a href="e/EphedrineHydrochorideAFTInj.pdf">Ephedrine Hydrochloride AFT, Solution for injection</a><br />
+<a href="e/EphedrineHydrochloridemaxinj.pdf">Ephedrine Hydrochloride Injection (Max Health), Solution for injection</a><br />
+<a href="e/EphedrineHydrochlorideAguettantinj.pdf">Ephedrine Hydrochloride Juno, Solution for injection</a><br />
+<a href="e/epiduogel.pdf">Epiduo, Topical gel</a><br />
+<a href="e/epidyolexsol.pdf">Epidyolex, Oral solution</a><br />
+<a href="e/Epilimtabsyrliqiv.pdf">Epilim, Syrup</a><br />
+<a href="e/Epilimtabsyrliqiv.pdf">Epilim 100 Crushable, Tablet</a><br />
+<a href="e/Epilimtabsyrliqiv.pdf">Epilim EC, Modified release tablet</a><br />
+<a href="e/EpilimIV.pdf">Epilim IV, Powder for injection with diluent</a><br />
+<a href="e/Epilimtabsyrliqiv.pdf">Epilim Liquid, Oral solution</a><br />
+<a href="e/EpiPeninj.pdf">EpiPen, Solution for injection</a><br />
+<a href="e/EpiPenJnrinj.pdf">EpiPen Jr, Solution for injection</a><br />
+<a href="e/epirubicinEbeweinj.pdf">Epirubicin Ebewe, Solution for injection</a><br />
+<a href="E/Epkinlyinj.pdf">Epkinly, Concentrate for injection</a><br />
+<a href="E/Epkinlyinj.pdf">Epkinly, Solution for injection</a><br />
+<a href="e/eprexinj.pdf">Eprex, Solution for injection</a><br />
+<a href="e/EptifibatideViatrisinf.pdf">Eptifibatide Viatris, Solution for infusion</a><br />
+<a href="e/EptifibatideViatrisinf.pdf">Eptifibatide Viatris, Solution for injection</a><br />
+<a href="e/EpyztekInjInf.pdf">Epyztek, Concentrate for infusion</a><br />
+<a href="e/EpyztekInjInf.pdf">Epyztek, Solution for injection</a><br />
+<a href="e/ERAcaptab.pdf">ERA Filmtabs, Tablet</a><br />
+<a href="e/Erbituxinf.pdf">Erbitux, Solution for infusion</a><br />
+<a href="e/erivedgecap.pdf">Erivedge, Capsule</a><br />
+<a href="e/Erlotinibtab.pdf">Erlotinib (Alchemy), Film coated tablet</a><br />
+<a href="e/Erlyandtab.pdf">Erlyand, Film coated tablet</a><br />
+<a href="e/ErythrocinIVinj.pdf">Erythrocin - IV, Powder for injection</a><br />
+<a href="e/esbrietcap.pdf">Esbriet, Capsule</a><br />
+<a href="e/esbrietcap.pdf">Esbriet, Film coated tablet</a><br />
+<a href="e/EscitalopramApotextab.pdf">Escitalopram - Apotex, Film coated tablet</a><br />
+<a href="e/EsmololMedsurgeinj.pdf">Esmolol hydrochloride , Solution for injection</a><br />
+<a href="E/Estelle35Tab.pdf">Estelle-35, Film coated tablet</a><br />
+<a href="E/Estelle35Tab.pdf">Estelle-35 ED, Film coated tablet</a><br />
+<a href="e/Estradiolpatch.pdf">Estradiol (Viatris), Transdermal patch</a><br />
+<a href="e/estradotpatch.pdf">Estradot, Transdermal patch</a><br />
+<a href="e/estrofemtab.pdf">Estrofem, Film coated tablet</a><br />
+<a href="e/estrofemtab.pdf">Estrofem, Tablet</a><br />
+<a href="e/EstrogelGel.pdf">Estrogel, Transdermal gel</a><br />
+<a href="e/Etopophosinj.pdf">Etopophos, Powder for injection</a><br />
+<a href="e/EtoposideinjRex.pdf">Etoposide (Rex), Solution for injection</a><br />
+<a href="e/Eumovatecrm.pdf">Eumovate, Topical cream</a><br />
+<a href="e/EumovatecrmRestricted.pdf">Eumovate, Topical cream</a><br />
+<a href="e/EurofolicInj.pdf">Eurofolic, Solution for injection</a><br />
+<a href="e/everettab.pdf">Everet, Film coated tablet</a><br />
+<a href="e/everettab.pdf">Everet, Oral solution</a><br />
+<a href="e/evrysdisol.pdf">Evrysdi, Film coated tablet</a><br />
+<a href="e/evrysdisol.pdf">Evrysdi, Powder for oral solution</a><br />
+<a href="e/exaraneinj.pdf">Exarane, Solution for injection</a><br />
+<a href="e/exaraneinj.pdf">Exarane Forte, Solution for injection</a><br />
+<a href="e/Exeloncap.pdf">Exelon, Capsule</a><br />
+<a href="e/Exemestanetab.pdf">Exemestane Pfizer, Coated tablet</a><br />
+<a href="e/Exjadetab.pdf">Exjade, Dispersible tablet</a><br />
+<a href="e/Extranealsoln.pdf">Extraneal, Dialysis solution</a><br />
+<a href="e/eyleainj.pdf">Eylea, Solution for injection</a><br />
+<a href="e/ezetimibesandoztab.pdf">Ezetimibe Sandoz, Tablet</a><br />
+</p>
+<p id="F"><strong>F</strong></p><p><a href="f/fampyratab.pdf">Fampyra, Modified release tablet</a><br />
+<a href="f/fasenraPeninj.pdf">Fasenra Pen, Solution for injection</a><br />
+<a href="f/faslodexinj.pdf">Faslodex, Solution for injection</a><br />
+<a href="f/Fasturtecinf.pdf">Fasturtec, Powder for infusion</a><br />
+<a href="f/febrextab.pdf">Febrex, Tablet</a><br />
+<a href="f/febuxostattab.pdf">Febuxostat, Film coated tablet</a><br />
+<a href="f/febuxostatMultichemtab.pdf">Febuxostat multichem, Film coated tablet</a><br />
+<a href="f/FEIBANFinj.pdf">FEIBA NF, Powder for injection with diluent</a><br />
+<a href="f/felotab.pdf">Felo 10 ER, Modified release tablet</a><br />
+<a href="f/felotab.pdf">Felo 5 ER, Modified release tablet</a><br />
+<a href="f/Fenpaedsusp.pdf">Fenpaed, Oral suspension</a><br />
+<a href="f/FentanylMedsurgeinj.pdf">FENTANYL, Solution for injection</a><br />
+<a href="f/FentanylSolforinj.pdf">Fentanyl, Solution for injection</a><br />
+<a href="f/Fentanylinj.pdf">Fentanyl (AstraZeneca), Solution for injection</a><br />
+<a href="f/fentanylsandozpatch.pdf">Fentanyl Sandoz, Transdermal patch</a><br />
+<a href="f/ferinjectinj.pdf">Ferinject, Solution for injection</a><br />
+<a href="f/FerricSandozinj.pdf">Ferric carboxymaltose Sandoz, Solution for injection</a><br />
+<a href="f/Ferriproxtabsoln.pdf">Ferriprox, Film coated tablet</a><br />
+<a href="f/Ferriproxtabsoln.pdf">Ferriprox, Oral solution</a><br />
+<a href="f/ferrosiginj.pdf">Ferrosig, Solution for injection</a><br />
+<a href="f/FeryxaInj.pdf">Feryxa, Solution for injection</a><br />
+<a href="f/Fibroveininj.pdf">Fibrovein, Solution for injection</a><br />
+<a href="f/FingolimodDevatisCap.pdf">Fingolimod Devatis, Capsule</a><br />
+<a href="f/firazyrinj.pdf">Firazyr, Solution for injection</a><br />
+<a href="f/Flagylsuppossusp.pdf">Flagyl, Suppository</a><br />
+<a href="f/Flagylsuppossusp.pdf">Flagyl-S, Oral suspension</a><br />
+<a href="f/flamazinecrm.pdf">Flamazine, Topical cream</a><br />
+<a href="f/flebogammainf.pdf">Flebogamma 10% DIF, Solution for infusion</a><br />
+<a href="f/flebogamma5percentinf.pdf">Flebogamma 5% DIF, Solution for infusion</a><br />
+<a href="f/flecainidebnmtab.pdf">Flecainide BNM, Tablet</a><br />
+<a href="f/FlecainideTevacap.pdf">Flecainide Controlled Release (Teva), Modified release capsule</a><br />
+<a href="f/FlixotideCFCfree.pdf">Flixotide , Aerosol inhaler, metered dose</a><br />
+<a href="f/Flixotideacc.pdf">Flixotide Accuhaler, Powder for inhalation</a><br />
+<a href="f/FlixotideCFCfree.pdf">Flixotide Junior, Aerosol inhaler, metered dose</a><br />
+<a href="f/floairinh.pdf">Floair , Aerosol inhaler, metered dose</a><br />
+<a href="f/Flonazolcap.pdf">Flonazol, Capsule</a><br />
+<a href="f/Florineftab.pdf">Florinef, Tablet</a><br />
+<a href="f/FluadInj.pdf">Fluad, Suspension for injection</a><br />
+<a href="f/FluadQuadinj.pdf">Fluad Quad, Suspension for injection</a><br />
+<a href="f/Fluanxolinj.pdf">Fluanxol, Injection (depot)</a><br />
+<a href="f/Fluanxolinj.pdf">Fluanxol Concentrated, Injection (depot)</a><br />
+<a href="f/Flucazole150cap.pdf">Flucazole, Capsule</a><br />
+<a href="f/FlucelvaxInj.pdf">Flucelvax, Suspension for injection</a><br />
+<a href="f/flucelvaxquadinj.pdf">FLUCELVAX QUAD, Suspension for injection</a><br />
+<a href="f/flucilinj.pdf">Flucil, Powder for injection</a><br />
+<a href="f/FlucloxacillinAFTcapssoln.pdf">Flucloxacillin (AFT), Capsule</a><br />
+<a href="f/FlucloxacillinEugiaInj.pdf">Flucloxacillin Eugia, Powder for injection</a><br />
+<a href="f/FlucloxacillinKabiInj.pdf">Flucloxacillin Kabi, Powder for injection</a><br />
+<a href="f/FlucloxacillinAFTcapssoln.pdf">Flucloxacillin Oral Solution (AFT), Powder for syrup</a><br />
+<a href="f/Flucloxincapsyrinj.pdf">Flucloxin, Powder for injection</a><br />
+<a href="f/fluconazolecapmylan.pdf">Fluconazole, Capsule</a><br />
+<a href="f/fluconazoleClarisinj.pdf">Fluconazole-Baxter, Solution for infusion</a><br />
+<a href="f/Fludaratab.pdf">Fludara oral, Film coated tablet</a><br />
+<a href="f/FludarabineEbeweinj.pdf">Fludarabine Ebewe, Concentrate for injection</a><br />
+<a href="f/fludrocortisoneMedsurgeTab.pdf">Fludrocortisone, Tablet</a><br />
+<a href="f/Flumazenilinj.pdf">Flumazenil, Solution for injection</a><br />
+<a href="f/flumazenilkabiinj.pdf">Flumazenil Kabi, Solution for injection</a><br />
+<a href="f/FlumazenilClarisinj.pdf">Flumazenil-Baxter, Solution for injection</a><br />
+<a href="f/fluoresciteinj.pdf">Fluorescite, Solution for injection</a><br />
+<a href="f/FluorodoseSusp.pdf">FluoroDose, Dental suspension</a><br />
+<a href="f/FluorodoseSusp.pdf">FluoroDose (Combinations flavours (Cherry, Mint, Caramel, Bubble Gum and Melon)), Dental suspension</a><br />
+<a href="f/fluorouracilAccordinj.pdf">Fluorouracil Accord, Solution for injection</a><br />
+<a href="f/FluorouracilEbeweinj.pdf">Fluorouracil Ebewe, Solution for injection</a><br />
+<a href="f/fluoxcaptab.pdf">Fluox, Capsule</a><br />
+<a href="f/fluoxcaptab.pdf">Fluox, Dispersible tablet</a><br />
+<a href="f/fluquadriinj.pdf">FluQuadri, Suspension for injection</a><br />
+<a href="f/Flutamintab.pdf">Flutamin, Tablet</a><br />
+<a href="F/FluzoneInj.pdf">Fluzone, Suspension for injection</a><br />
+<a href="f/FMLdrops.pdf">FML, Eye drops, solution</a><br />
+<a href="f/Fobancrmoint.pdf">Foban, Topical cream</a><br />
+<a href="f/Fobancrmoint.pdf">Foban, Topical ointment</a><br />
+<a href="a/Apo-Folic0.8mgtab.pdf">Folic Acid 0.8 mg, Tablet</a><br />
+<a href="f/FolicAcidMylantab.pdf">Folic Acid Viatris, Tablet</a><br />
+<a href="f/forxigatab.pdf">Forxiga, Film coated tablet</a><br />
+<a href="f/Fosamaxtab.pdf">Fosamax, Tablet</a><br />
+<a href="f/fosamaxPlustab.pdf">Fosamax Plus, Tablet</a><br />
+<a href="f/Foscavirinf.pdf">Foscavir, Solution for infusion</a><br />
+<a href="f/fosrenoltab.pdf">Fosrenol, Chewable tablet</a><br />
+<a href="f/fosrenolsol.pdf">Fosrenol, Powder for oral solution</a><br />
+<a href="f/fresofolMCTLCTinj.pdf">Fresofol 1% MCT/LCT, Emulsion for injection</a><br />
+<a href="f/Frisiumtab.pdf">Frisium, Tablet</a><br />
+<a href="f/Frumiltab.pdf">Frumil, Tablet</a><br />
+<a href="f/fucicortcream.pdf">Fucicort, Topical cream</a><br />
+<a href="f/Fucidintab.pdf">Fucidin, Film coated tablet</a><br />
+<a href="f/Fucithalmiceyedrops.pdf">Fucithalmic, Eye drops, solution</a><br />
+<a href="F/FulvestrantRexinj.pdf">Fulvestrant (Rex), Solution for injection</a><br />
+<a href="f/FulvestrantEugiaInj.pdf">Fulvestrant Eugia, Solution for injection</a><br />
+<a href="f/FulvestrantEverPharmainj.pdf">Fulvestrant Ever Pharma, Solution for injection</a><br />
+<a href="f/FulvestrantSandozinj.pdf">Fulvestrant Sandoz, Solution for injection</a><br />
+<a href="f/Fulvestrant-AFTinj.pdf">Fulvestrant-AFT, Solution for injection</a><br />
+<a href="f/Fungilinlozenge.pdf">Fungilin, Lozenge</a><br />
+<a href="f/FurosemideAFTinj.pdf">Furosemide-AFT, Solution for injection</a><br />
+<a href="f/frusemideclarisinj.pdf">Furosemide-Baxter, Solution for injection</a><br />
+<a href="f/fycompatab.pdf">Fycompa, Film coated tablet</a><br />
+<a href="f/fycompatab.pdf">Fycompa, Oral suspension</a><br />
+</p>
+<p id="G"><strong>G</strong></p><p><a href="g/Gabapentincap.pdf">Gabapentin (Max Health), Capsule</a><br />
+<a href="g/gabapentinMedsurgecap.pdf">Gabapentin Medsurge, Capsule</a><br />
+<a href="g/Gadovistinj.pdf">Gadovist 1.0, Solution for injection</a><br />
+<a href="g/galafoldcap.pdf">Galafold, Capsule</a><br />
+<a href="g/galvusmettab.pdf">Galvumet, Film coated tablet</a><br />
+<a href="g/galvustab.pdf">Galvus, Tablet</a><br />
+<a href="g/gamunexinf.pdf">Gamunex, Solution for infusion</a><br />
+<a href="g/ganciclovirSXPinj.pdf">Ganciclovir SXP, Powder for injection</a><br />
+<a href="g/ganfortdrops.pdf">Ganfort 0.3/5, Eye drops, solution</a><br />
+<a href="g/ganfortpfdrops.pdf">Ganfort PF 0.3/5, Eye drops, solution</a><br />
+<a href="g/Ganirelix-AFT.pdf">Ganirelix-AFT, Solution for injection</a><br />
+<a href="g/gardasil9inj.pdf">Gardasil 9, Suspension for injection</a><br />
+<a href="g/Gastrografinoralrectalsusp.pdf">Gastrografin, Oral solution</a><br />
+<a href="g/Gastro-Sootheinj.pdf">Gastro-Soothe, Solution for injection</a><br />
+<a href="g/GastroSoothetab.pdf">Gastro-Soothe, Tablet</a><br />
+<a href="g/GastroSootheFortetab.pdf">Gastro-Soothe Forte, Film coated tablet</a><br />
+<a href="g/GazyvaInfusion.pdf">Gazyva, Concentrate for infusion</a><br />
+<a href="g/GemcitabineEbeweinj.pdf">Gemcitabine Ebewe, Concentrate for injection</a><br />
+<a href="g/Genotropininj.pdf">Genotropin, Powder for injection</a><br />
+<a href="g/Gentamicininj.pdf">Gentamicin , Solution for injection</a><br />
+<a href="g/genvoyatab.pdf">Genvoya, Tablet</a><br />
+<a href="g/gilenyacap.pdf">Gilenya, Capsule</a><br />
+<a href="g/ginettab.pdf">Ginet , Film coated tablet</a><br />
+<a href="g/giotriftab.pdf">Giotrif, Film coated tablet</a><br />
+<a href="g/glaumoxinj.pdf">Glaumox, Powder for injection</a><br />
+<a href="g/GliclazideIndocoTab.pdf">Gliclazide Indoco, Tablet</a><br />
+<a href="g/gliolansol.pdf">Gliolan, Powder for oral solution</a><br />
+<a href="g/Glivectabcap.pdf">Glivec, Film coated tablet</a><br />
+<a href="g/glizidetab.pdf">Glizide, Tablet</a><br />
+<a href="g/GlucaGeninj.pdf">Glucagen Hypokit, Solution for injection</a><br />
+<a href="g/glucoseinfFreseniusKabi.pdf">Glucose 10% w/v, Solution for infusion</a><br />
+<a href="g/GlucoseInSodiumChlorideinf.pdf">Glucose 2.5% Sodium Chloride 0.45%, Solution for infusion</a><br />
+<a href="g/GlucoseInSodiumChlorideinf.pdf">Glucose 4% Sodium Chloride 0.18%, Solution for infusion</a><br />
+<a href="g/glucose5percentFreeflexFreseniusinj.pdf">Glucose 5% Freeflex (Fresenius), Solution for infusion</a><br />
+<a href="g/GlucoseInSodiumChlorideinf.pdf">Glucose 5% Sodium Chloride 0.45%, Solution for infusion</a><br />
+<a href="g/GlucoseInSodiumChlorideinf.pdf">Glucose 5% Sodium Chloride 0.9%, Solution for infusion</a><br />
+<a href="g/glucoseinjviaflex.pdf">Glucose Injection (Baxter), Solution for infusion</a><br />
+<a href="g/GlycerylTrinitrateMedicianzinj.pdf">Glyceryl Trinitrate, Solution for infusion</a><br />
+<a href="g/GlycerylTrinitrateMedsurgeinj.pdf">Glyceryl Trinitrate, Solution for infusion</a><br />
+<a href="g/GlycoNeoinj.pdf">GlycoNeo 0.5/2.5, Solution for injection</a><br />
+<a href="g/Glycophosinf.pdf">Glycophos, Concentrate for infusion</a><br />
+<a href="g/glycopreporangesol.pdf">Glycoprep Orange, Powder for oral solution</a><br />
+<a href="g/glycopreppwder.pdf">Glycoprep powder, Powder for oral solution</a><br />
+<a href="g/glycoprepcpwder.pdf">Glycoprep-C, Powder for oral solution</a><br />
+<a href="g/glycoprep-oKit.pdf">Glycoprep-O Kit, Combination</a><br />
+<a href="g/glycopyrrolateIndocoinj.pdf">Glycopyrrolate Indoco, Solution for injection</a><br />
+<a href="g/GlycopyrroniumBromideAndNeostigmineMetilsulfateinj.pdf">Glycopyrronium Bromide 0.5mg/mL and Neostigmine Metilsulfate 2.5mg/mL Injection, Solution for injection</a><br />
+<a href="g/glycoprroniumbromideinj.pdf">Glycopyrronium Bromide 200 micrograms/ml Solution for Injection, Solution for injection</a><br />
+<a href="g/GlycopyrroniumAFTinj.pdf">Glycopyrronium-AFT, Solution for injection</a><br />
+<a href="g/Glypressin01mgmlFerringinj.pdf">Glypressin, Solution for injection</a><br />
+<a href="g/GonadronInj.pdf">Gonadron, Solution for injection</a><br />
+<a href="g/Gonalfpeninj.pdf">GONAL-f Pen for injection, Solution for injection</a><br />
+<a href="G/Goserelin108implant.pdf">Goserelin, Subcutaneous implant</a><br />
+<a href="G/Goserelin36implant.pdf">Goserelin, Subcutaneous implant</a><br />
+<a href="g/granirexinj.pdf">Granirex, Solution for injection</a><br />
+<a href="g/granisetroninjDeva.pdf">Granisetron 3 mg/3mL, Solution for injection</a><br />
+<a href="g/GranisetronKabi.pdf">Granisetron Kabi, Concentrate for injection</a><br />
+<a href="g/granisetron-AFTinj.pdf">Granisetron-AFT, Concentrate for injection</a><br />
+<a href="g/Gutrontab.pdf">Gutron, Tablet</a><br />
+</p>
+<p id="H"><strong>H</strong></p><p><a href="h/Habitrollozenge.pdf">Habitrol, Lozenge</a><br />
+<a href="h/habitrolgum.pdf">Habitrol (Fruit Flavour), Chewing gum</a><br />
+<a href="h/habitrolgum.pdf">Habitrol (Mint Flavour), Chewing gum</a><br />
+<a href="h/HabitrolTTS.pdf">Habitrol Step 1, Transdermal patch</a><br />
+<a href="h/HabitrolTTS.pdf">Habitrol Step 2, Transdermal patch</a><br />
+<a href="h/HabitrolTTS.pdf">Habitrol Step 3, Transdermal patch</a><br />
+<a href="h/Hadlimainj.pdf">Hadlima, Solution for injection</a><br />
+<a href="h/Haemorolinj.pdf">Haemorol Oily Phenol Injection , Injection (depot)</a><br />
+<a href="h/Halaveninj.pdf">Halaven, Solution for injection</a><br />
+<a href="h/Haldolinj.pdf">Haldol, Injection (depot)</a><br />
+<a href="h/Haldolinj.pdf">Haldol Conc, Injection (depot)</a><br />
+<a href="h/HaloperidolIndocoInj.pdf">Haloperidol Indoco, Solution for injection</a><br />
+<a href="h/HarvoniTab.PDF">Harvoni, Film coated tablet</a><br />
+<a href="h/Havrixinj.pdf">Havrix 1440 vaccine, Suspension for injection</a><br />
+<a href="h/Havrixjnrinj.pdf">Havrix Junior, Suspension for injection</a><br />
+<a href="h/hemlibrainj.pdf">Hemlibra, Solution for injection</a><br />
+<a href="h/HemosolB0sol.pdf">Hemosol B0, Dialysis solution</a><br />
+<a href="h/HenrySheinLidocaineAndEpinephrine.pdf">Henry Schein Lidocaine HCl 2% and Epinephrine 1:100 000, Solution for injection</a><br />
+<a href="h/HeparinsodiumPfizerinj.pdf">Heparin Injection, Solution for injection</a><br />
+<a href="h/HeparinSodiuminf.pdf">Heparin Sodium (Baxter), Solution for infusion</a><br />
+<a href="h/HeparinSodiumPanpharmainj.pdf">Heparin Sodium Panpharma, Solution for injection</a><br />
+<a href="h/Heparinisedsalineinj.pdf">Heparinised Saline Injection, Solution for injection</a><br />
+<a href="h/HepBimmunoglobulinVFinj.pdf">Hepatitis B Immunoglobulin-VF 100IU, Solution for injection</a><br />
+<a href="h/HepBimmunoglobulinVFinj.pdf">Hepatitis B Immunoglobulin-VF 400IU, Solution for injection</a><br />
+<a href="h/Herceptininf.pdf">Herceptin, Powder for infusion concentrate</a><br />
+<a href="h/herceptinscinj.pdf">Herceptin SC (Roche), Solution for injection</a><br />
+<a href="h/herzumainf.pdf">HERZUMA, Powder for infusion concentrate</a><br />
+<a href="h/hexvixinj.pdf">Hexvix, Powder for injection</a><br />
+<a href="h/hiberixinj.pdf">Hiberix, Powder for injection with diluent</a><br />
+<a href="h/hiprextab.pdf">Hiprex, Tablet</a><br />
+<a href="h/Histafenelixir.pdf">Histafen, Elixir</a><br />
+<a href="h/hizentrainj.pdf">Hizentra, Solution for injection</a><br />
+<a href="h/HizentraiNZnj.pdf">Hizentra NZ, Solution for injection</a><br />
+<a href="h/Holoxaninj.pdf">Holoxan, Powder for injection</a><br />
+<a href="h/hospirabortezomibinj.pdf">Hospira&trade; Bortezomib, Powder for injection</a><br />
+<a href="h/Humaloginj.pdf">Humalog, Solution for injection</a><br />
+<a href="h/Humaloginj.pdf">Humalog Mix25, Suspension for injection</a><br />
+<a href="h/Humaloginj.pdf">Humalog Mix50, Suspension for injection</a><br />
+<a href="h/humirainjpeninj.pdf">Humira, Solution for injection</a><br />
+<a href="h/Humulininj.pdf">Humulin 30/70, Suspension for injection</a><br />
+<a href="h/Humulininj.pdf">Humulin NPH, Suspension for injection</a><br />
+<a href="h/Humulininj.pdf">Humulin R, Solution for injection</a><br />
+<a href="h/Hyalaseinj.pdf">Hyalase, Powder for injection</a><br />
+<a href="h/Hydrocortisonetab.pdf">Hydrocortisone, Tablet</a><br />
+<a href="h/HydrocortisoneCreamEthicsRestricted.pdf">Hydrocortisone Cream 1%, Topical cream</a><br />
+<a href="h/HydrocortisonecrAFT.pdf">Hydrocortisone Cream 1% (AFT), Topical cream</a><br />
+<a href="h/HydrocortisonePSMcrm.pdf">Hydrocortisone Cream 1% (Noumed), Topical cream</a><br />
+<a href="H/Hydrocortisone-AFTinj.pdf">Hydrocortisone-AFT, Powder for injection</a><br />
+<a href="h/HydroxocobalaminPanpharmainj.pdf">Hydroxocobalamin Panpharma, Solution for injection</a><br />
+<a href="h/hydroxycarbimidecap.pdf">Hydroxycarbamide, Capsule</a><br />
+<a href="h/Hygrotontab.pdf">Hygroton, Tablet</a><br />
+<a href="h/hyoscinebutylbromideinj.pdf">Hyoscine Butylbromide (Medsurge), Solution for injection</a><br />
+<a href="h/HyperHepBinj.pdf">HyperHep B, Solution for injection</a><br />
+<a href="h/Hyrimozinj.pdf">Hyrimoz, Solution for injection</a><br />
+</p>
+<p id="I"><strong>I</strong></p><p><a href="i/ibavyrtab.pdf">Ibavyr, Film coated tablet</a><br />
+<a href="i/ibiamoxinj.pdf">Ibiamox, Powder for injection</a><br />
+<a href="i/ibrancecap.pdf">Ibrance, Capsule</a><br />
+<a href="i/ibrancecap.pdf">Ibrance, Film coated tablet</a><br />
+<a href="i/IbuprofenRelieveTab.pdf">Ibuprofen , Film coated tablet</a><br />
+<a href="i/ibuprofensuspmultichem.pdf">Ibuprofen, Oral suspension</a><br />
+<a href="i/ibuprofenGenericCap.pdf">Ibuprofen Liquid Capsules, Liquid filled capsule</a><br />
+<a href="i/ibuprofensrbnmtab.pdf">Ibuprofen SR BNM, Modified release tablet</a><br />
+<a href="I/IcatibantLupinSol.pdf">Icatibant Lupin, Solution for injection</a><br />
+<a href="I/Ilarisinj.pdf">Ilaris, Powder for injection</a><br />
+<a href="I/Ilarisinj.pdf">ILARIS, Solution for injection</a><br />
+<a href="i/llevroeyedrops.pdf">Ilevro, Eye drops, suspension</a><br />
+<a href="i/Ilomedininf.pdf">Ilomedin, Solution for infusion</a><br />
+<a href="i/IIoprostinf.pdf">Iloprost, Concentrate for infusion</a><br />
+<a href="I/ILosartanPotassiumAndHydrochlorothiazideTab.pdf">I-Losartan potassium and Hydrochlorothiazide, Tablet</a><br />
+<a href="i/iluvienimplant.pdf">Iluvien, Intraocular implant</a><br />
+<a href="i/imatinibcap.pdf">Imatinib, Capsule</a><br />
+<a href="i/imatinibaftcap100mg.pdf">Imatinib-AFT, Capsule</a><br />
+<a href="i/imatinibaftcap400mg.pdf">Imatinib-AFT, Capsule</a><br />
+<a href="i/imatistab.pdf">Imatis, Film coated tablet</a><br />
+<a href="I/Imbruvicacap.pdf">Imbruvica, Capsule</a><br />
+<a href="I/Imbruvicacap.pdf">Imbruvica, Film coated tablet</a><br />
+<a href="i/imfinziinf.pdf">Imfinzi, Concentrate for infusion</a><br />
+<a href="i/Imigraninj.pdf">Imigran , Solution for injection</a><br />
+<a href="i/imipenemAndcilastatinRBXinj.pdf">Imipenem+Cilastatin RBX, Powder for infusion</a><br />
+<a href="i/imiquimodcrm.pdf">Imiquimod Cream USP, Topical cream</a><br />
+<a href="i/Imovanetab.pdf">Imovane, Film coated tablet</a><br />
+<a href="i/incruseelliptainhal.pdf">Incruse Ellipta, Powder for inhalation</a><br />
+<a href="m/MetforminGenericHealthtab.pdf">Indoco Metformin, Film coated tablet</a><br />
+<a href="I/Infanrixhexainj.pdf">Infanrix-hexa, Suspension for injection</a><br />
+<a href="i/InfanrixIPVinj.pdf">Infanrix-IPV, Suspension for injection</a><br />
+<a href="I/infanrixIPVAndHibinj.pdf">Infanrix-IPV+Hib, Suspension for injection</a><br />
+<a href="i/influvacTetrainj.pdf">Influvac Tetra, Suspension for injection</a><br />
+<a href="i/inlytatab.pdf">INLYTA, Film coated tablet</a><br />
+<a href="i/inovelontab.pdf">INOVELON, Film coated tablet</a><br />
+<a href="i/inspratab.pdf">Inspra, Film coated tablet</a><br />
+<a href="i/Intelencetab.pdf">Intelence, Tablet</a><br />
+<a href="i/IntragamPinj.pdf">Intragam P, Solution for injection</a><br />
+<a href="i/Intralipidinf.pdf">Intralipid, Solution for infusion</a><br />
+<a href="I/Intunivtab.pdf">Intuniv, Modified release tablet</a><br />
+<a href="I/Invanzinj.pdf">Invanz, Powder for injection</a><br />
+<a href="i/InvegaHafyerainj.pdf">INVEGA HAFYERA, Suspension for injection</a><br />
+<a href="i/invegasustennainj.pdf">INVEGA SUSTENNA, Suspension for injection</a><br />
+<a href="i/invegatrinzainj.pdf">INVEGA TRINZA, Suspension for injection</a><br />
+<a href="I/InzaTab.pdf">Inza 250, Tablet</a><br />
+<a href="I/InzaTab.pdf">Inza 500, Tablet</a><br />
+<a href="i/Iomeroninj.pdf">Iomeron, Solution for injection</a><br />
+<a href="i/ionolyteinf.pdf">Ionolyte, Solution for infusion</a><br />
+<a href="i/iopidineeyedrops.pdf">Iopidine, Eye drops, solution</a><br />
+<a href="I/IpcaAllopurinoltab.pdf">Ipca-Allopurinol, Tablet</a><br />
+<a href="i/ipcaBisoprololtab.pdf">Ipca-Bisoprolol, Film coated tablet</a><br />
+<a href="i/Ipca-Ciprofoxacintab.pdf">Ipca-Ciprofloxacin, Film coated tablet</a><br />
+<a href="i/IPCA-EnalaprilTab.pdf">IPCA-Enalapril, Tablet</a><br />
+<a href="i/ipcaEscitalopramtab.pdf">Ipca-Escitalopram Tablets, Film coated tablet</a><br />
+<a href="i/ipcaFluconazolecap.pdf">Ipca-Fluconazole, Capsule</a><br />
+<a href="i/Ipca-Frusemidetab.pdf">IPCA-Frusemide, Tablet</a><br />
+<a href="i/IpcaHydroxychloroquineTab.pdf">IPCA-Hydroxychloroquine, Coated tablet</a><br />
+<a href="i/IPCA-Metoprololtab.pdf">IPCA-Metoprolol, Film coated tablet</a><br />
+<a href="I/IpcaPropranololtab.pdf">Ipca-Propranolol, Tablet</a><br />
+<a href="i/Ipolinj.pdf">Ipol, Suspension for injection</a><br />
+<a href="I/IbesartanMedicianztab.pdf">Irbesartan, Film coated tablet</a><br />
+<a href="i/irbesartanMedsurgetab.pdf">Irbesartan, Film coated tablet</a><br />
+<a href="I/Iressatab.pdf">Iressa, Coated tablet</a><br />
+<a href="i/IrinotecanInf.pdf">Irinotecan (Alchemy), Concentrate for infusion</a><br />
+<a href="i/irinotecanaccordinf.pdf">Irinotecan Accord, Solution for infusion</a><br />
+<a href="i/irinotecanactavisinj.pdf">Irinotecan Actavis 100, Concentrate for injection</a><br />
+<a href="i/irinotecanactavisinj.pdf">Irinotecan Actavis 40, Concentrate for injection</a><br />
+<a href="i/Isentresstab.pdf">Isentress, Film coated tablet</a><br />
+<a href="i/Isentresstab.pdf">Isentress HD, Film coated tablet</a><br />
+<a href="i/Ismo20tabs.pdf">Ismo 20, Tablet</a><br />
+<a href="i/ismo40retardtab.pdf">Ismo 40 Retard, Modified release tablet</a><br />
+<a href="i/IsoniazidPSMtab.pdf">Isoniazid, Tablet</a><br />
+<a href="i/IsoptintabSRtab.pdf">Isoptin, Film coated tablet</a><br />
+<a href="I/Isoptininj.pdf">Isoptin, Solution for injection</a><br />
+<a href="i/IsoptintabSRtab.pdf">Isoptin SR, Modified release tablet</a><br />
+<a href="i/Isoptocarpinedrops.pdf">Isopto Carpine, Eye drops, solution</a><br />
+<a href="I/ItovebiTab.pdf">Itovebi, Film coated tablet</a><br />
+<a href="I/I-Tramadolcap.pdf">I-Tramadol, Capsule</a><br />
+<a href="i/itrazolecap.pdf">Itrazole, Capsule</a><br />
+<a href="I/IvermectinADVZTab.pdf">Ivermectin ADVZ, Tablet</a><br />
+</p>
+<p id="J"><strong>J</strong></p><p><a href="j/Jadelleimplant.pdf">Jadelle, Subcutaneous implant</a><br />
+<a href="J/JaglixTab.pdf">Jaglix, Film coated tablet</a><br />
+<a href="j/jakavitab.pdf">Jakavi, Tablet</a><br />
+<a href="j/jardiamettab.pdf">Jardiamet, Film coated tablet</a><br />
+<a href="j/jardiamettab.pdf">Jardiamet, Modified release tablet</a><br />
+<a href="j/jardiancetab.pdf">Jardiance, Film coated tablet</a><br />
+<a href="j/jaydessIVD.pdf">Jaydess, Intrauterine contraceptive device</a><br />
+<a href="j/jemperliinf.pdf">Jemperli, Solution for infusion</a><br />
+<a href="j/jespectinj.pdf">Jespect, Suspension for injection</a><br />
+<a href="j/jinarctabcomb.pdf">Jinarc, Combination</a><br />
+<a href="j/jinarctabcomb.pdf">Jinarc, Tablet</a><br />
+<a href="j/jorvezatab.pdf">Jorveza, Orodispersible tablet</a><br />
+<a href="J/JuniorParapaedSusp.pdf">Junior Parapaed, Oral suspension</a><br />
+<a href="j/Jynneosinj.pdf">JYNNEOS, Suspension for injection</a><br />
+</p>
+<p id="K"><strong>K</strong></p><p><a href="k/kabivenG11inj.pdf">Kabiven G11%, Emulsion for injection</a><br />
+<a href="k/kabivenG19inj.pdf">Kabiven G19%, Emulsion for injection</a><br />
+<a href="k/kadcylainj.pdf">Kadcyla , Powder for infusion</a><br />
+<a href="k/Kalydecotab.pdf">Kalydeco, Film coated tablet</a><br />
+<a href="k/Kalydecotab.pdf">Kalydeco, Oral granules</a><br />
+<a href="k/Kemadrintab.pdf">Kemadrin, Tablet</a><br />
+<a href="k/Kenacombeardrops.pdf">Kenacomb Otic, Ear drops</a><br />
+<a href="k/KenacortA10inj.pdf">Kenacort-A 10, Suspension for injection</a><br />
+<a href="k/KenacortA40inj.pdf">Kenacort-A 40, Suspension for injection</a><br />
+<a href="k/kenaloginOrabasepaste.pdf">Kenalog in Orabase, Oral paste</a><br />
+<a href="k/ketalar100mginj.pdf">Ketalar, Solution for injection</a><br />
+<a href="k/ketamineinf.pdf">Ketamine, Solution for infusion</a><br />
+<a href="k/KetorolacMedsurgedrops.pdf">Ketorolac, Eye drops, solution</a><br />
+<a href="k/Keytruda.pdf">Keytruda, Concentrate for infusion</a><br />
+<a href="k/KeytrudaSCinj.pdf">Keytruda SC, Solution for injection</a><br />
+<a href="k/KinsonTab.pdf">Kinson, Tablet</a><br />
+<a href="k/Kisqalitab.pdf">KISQALI, Film coated tablet</a><br />
+<a href="k/Kivexatab.pdf">Kivexa, Film coated tablet</a><br />
+<a href="k/Klacidtabsuspivinj.pdf">Klacid, Film coated tablet</a><br />
+<a href="k/Klacidtabsuspivinj.pdf">Klacid, Granules for oral suspension</a><br />
+<a href="k/Klacidtabsuspivinj.pdf">Klacid IV, Powder for injection</a><br />
+<a href="k/Klean-Preppwdr.pdf">Klean-Prep powder, Powder for oral solution</a><br />
+<a href="k/kliogesttab.pdf">Kliogest, Film coated tablet</a><br />
+<a href="k/Kliovancetab.pdf">Kliovance, Film coated tablet</a><br />
+<a href="k/Konakiontabinjoralsoln.pdf">Konakion MM, Solution for injection</a><br />
+<a href="k/Konakiontabinjoralsoln.pdf">Konakion MM Paediatric, Solution for injection</a><br />
+<a href="k/kuvantab.pdf">Kuvan, Soluble tablet</a><br />
+<a href="k/kyprolisinf.pdf">Kyprolis , Powder for infusion</a><br />
+</p>
+<p id="L"><strong>L</strong></p><p><a href="l/Lamictalchewtab.pdf">Lamictal, Chewable/dispersible tablet</a><br />
+<a href="l/lamivudineviatristab.pdf">Lamivudine Viatris, Film coated tablet</a><br />
+<a href="LamivudineZidovudineAlphapharmtab.pdf">Lamivudine/Zidovudine Viatris 150/300, Film coated tablet</a><br />
+<a href="l/Lanoxintabelixinj.pdf">Lanoxin, Tablet</a><br />
+<a href="l/Lanoxintabelixinj.pdf">Lanoxin Paediatric, Elixir</a><br />
+<a href="l/Lanoxintabelixinj.pdf">Lanoxin PG, Tablet</a><br />
+<a href="l/lantusinj.pdf">Lantus, Solution for injection</a><br />
+<a href="l/lantusinj.pdf">Lantus SoloStar, Solution for injection</a><br />
+<a href="l/Lanvistab.pdf">Lanvis, Tablet</a><br />
+<a href="l/lanzolreliefcap.pdf">Lanzol Relief, Modified release capsule</a><br />
+<a href="l/largactiltabinjsusp.pdf">Largactil, Solution for injection</a><br />
+<a href="l/largactiltabinjsusp.pdf">Largactil, Tablet</a><br />
+<a href="l/lasixsolnHDinf.pdf">Lasix, Oral solution</a><br />
+<a href="l/lasixsolnHDinf.pdf">Lasix High Dose, Solution for infusion</a><br />
+<a href="l/LatanoprostTevadrops.pdf">Latanoprost (Teva), Eye drops, solution</a><br />
+<a href="L/LenalidomideJunocap.pdf">Lenalide, Capsule</a><br />
+<a href="l/LenalidomideDevatiscap.pdf">Lenalidomide Devatis, Capsule</a><br />
+<a href="L/LenalidomideSandozCap.pdf">Lenalidomide Sandoz, Capsule</a><br />
+<a href="l/LenalidomideViatriscap.pdf">Lenalidomide Viatris, Capsule</a><br />
+<a href="l/lenvimacap.pdf">Lenvima, Capsule</a><br />
+<a href="l/leqvioinj.pdf">Leqvio, Solution for injection</a><br />
+<a href="l/Letaratab.pdf">Letara, Film coated tablet</a><br />
+<a href="l/letroletab.pdf">Letrole, Film coated tablet</a><br />
+<a href="l/Leukerantab.pdf">Leukeran, Tablet</a><br />
+<a href="l/Leustatininf.pdf">Leustatin, Solution for infusion</a><br />
+<a href="l/Levemirinj.pdf">Levemir Flexpen, Solution for injection</a><br />
+<a href="l/Levemirinj.pdf">Levemir Penfill, Solution for injection</a><br />
+<a href="l/levetiracetamMaxTab.pdf">Levetiracetam Lupin, Film coated tablet</a><br />
+<a href="L/LevetiracetamLupinSol.pdf">Levetiracetam Lupin, Oral solution</a><br />
+<a href="l/levetiracetamAFTsol.pdf">Levetiracetam-AFT, Oral solution</a><br />
+<a href="l/levetiracetamAFTsol.pdf">Levetiracetam-AFT, Solution for infusion</a><br />
+<a href="l/Levitratab.pdf">Levitra, Film coated tablet</a><br />
+<a href="l/levlenedtab.pdf">Levlen ED, Tablet</a><br />
+<a href="LevodopaAndCarbidopaOrionTab.pdf">Levodopa/Carbidopa, Tablet</a><br />
+<a href="l/levodopaCarbidopatab.pdf">Levodopa/Carbidopa 100/25, Tablet</a><br />
+<a href="l/levodopaCarbidopatab.pdf">Levodopa/Carbidopa 250/25, Tablet</a><br />
+<a href="l/levomepromazineinj.pdf">Levomepromazine Hydrochloride, Solution for injection</a><br />
+<a href="l/levonorgestrelBNMtab.pdf">Levonorgestrel BNM, Tablet</a><br />
+<a href="l/Levonorgestrel1tab.pdf">Levonorgestrel-1, Tablet</a><br />
+<a href="l/Levophedinj.pdf">Levophed&trade; 1:1000 , Concentrate for injection</a><br />
+<a href="L/LevosimendanMedsurgeInj.pdf">Levosimendan, Concentrate for injection</a><br />
+<a href="l/Levothyroxinetab.pdf">Levothyroxine, Tablet</a><br />
+<a href="l/Lexaprotab.pdf">Lexapro, Film coated tablet</a><br />
+<a href="l/libtayoinf.pdf">LIBTAYO, Concentrate for infusion</a><br />
+<a href="l/lidocaineclarisinj.pdf">Lidocaine-Baxter, Solution for injection</a><br />
+<a href="l/lignospanSpecialinj.pdf">Lignospan Special, Solution for injection</a><br />
+<a href="l/linezolidNeoHealthtab.pdf">Linezolid, Film coated tablet</a><br />
+<a href="l/linezolidneohealthinf.pdf">Linezolid, Solution for infusion</a><br />
+<a href="l/linezolidjunotab.pdf">Linezolid Juno, Film coated tablet</a><br />
+<a href="l/linezolidjunoinf.pdf">Linezolid Juno, Solution for infusion</a><br />
+<a href="l/linezolidKabiinf.pdf">Linezolid Kabi, Solution for infusion</a><br />
+<a href="l/LioresalIntrathecainj.pdf">Lioresal Intrathecal, Solution for injection</a><br />
+<a href="l/Lipiodolultrafluidinj.pdf">Lipiodol Ultra Fluid, Solution for injection</a><br />
+<a href="L/LiraglutideRBXinj.pdf">Liraglutide RBX, Solution for injection</a><br />
+<a href="L/LiraglutideSUNinj.pdf">Liraglutide SUN, Solution for injection</a><br />
+<a href="l/lisinopriltab.pdf">Lisinopril (Teva), Tablet</a><br />
+<a href="l/Lithiumcarbonatecap.pdf">Lithium Carbonate, Capsule</a><br />
+<a href="l/Livialtab.pdf">Livial, Tablet</a><br />
+<a href="l/LMX4crm.pdf">LMX4, Topical cream</a><br />
+<a href="l/locacortenViaformdrops.pdf">Locacorten-Vioform, Ear drops</a><br />
+<a href="l/locerylnaillacq.pdf">Loceryl, Nail lacquer</a><br />
+<a href="l/Locoidcrmlipoointlotcrelo.pdf">Locoid, Scalp lotion</a><br />
+<a href="l/Locoidcrmlipoointlotcrelo.pdf">Locoid, Topical ointment</a><br />
+<a href="l/Locoidcrmlipoointlotcrelo.pdf">Locoid Crelo, Topical emulsion</a><br />
+<a href="l/Locoidcrmlipoointlotcrelo.pdf">Locoid Lipocream, Topical cream</a><br />
+<a href="l/locortenvioformeardrops.pdf">Locorten-Vioform, Ear drops</a><br />
+<a href="l/Lodiinf.pdf">Lodi, Concentrate for infusion</a><br />
+<a href="l/logemtab.pdf">Logem, Chewable/dispersible tablet</a><br />
+<a href="l/lomideeyedrops.pdf">Lomide, Eye drops, solution</a><br />
+<a href="l/lonitentab.pdf">Loniten, Tablet</a><br />
+<a href="l/LoOralcon20EDtab.pdf">Lo-Oralcon 20 ED, Film coated tablet</a><br />
+<a href="lopinavirAndritonavirtab.pdf">Lopinavir/Ritonavir Mylan, Film coated tablet</a><br />
+<a href="l/LoratabsAllergyAndHayfevertab.pdf">Lora-Tabs Allergy &amp; Hayfever, Tablet</a><br />
+<a href="l/LorazepamAFTinj.pdf">Lorazepam-AFT, Solution for injection</a><br />
+<a href="l/lorstattab.pdf">Lorstat, Film coated tablet</a><br />
+<a href="l/losartanactavistab.pdf">Losartan Actavis, Film coated tablet</a><br />
+<a href="l/Loseccap.pdf">Losec, Modified release capsule</a><br />
+<a href="l/lovirtab.pdf">Lovir, Dispersible tablet</a><br />
+<a href="l/loxalatetab.pdf">Loxalate, Film coated tablet</a><br />
+<a href="l/loxaminetab.pdf">Loxamine, Film coated tablet</a><br />
+<a href="l/Lucentisinj.pdf">Lucentis, Solution for injection</a><br />
+<a href="l/LucrinDepot1-month3month6monthDUALinj.pdf">Lucrin Depot 1-Month , Injection (depot)</a><br />
+<a href="l/LucrinDepot1-month3month6monthDUALinj.pdf">Lucrin Depot 3-Month, Injection (depot)</a><br />
+<a href="l/Lumigandrop.pdf">Lumigan, Eye drops, solution</a><br />
+<a href="l/lumiganPFdrop.pdf">Lumigan PF, Eye drops, solution</a><br />
+<a href="l/Luverisinj.pdf">Luveris, Powder for injection</a><br />
+<a href="l/LyllanaPatch.pdf">Lyllana, Transdermal patch</a><br />
+<a href="l/lynleyEDtab.pdf">Lynley 150/30 ED, Film coated tablet</a><br />
+<a href="l/lynparzatab.pdf">Lynparza, Film coated tablet</a><br />
+<a href="l/Lyricacaps.pdf">Lyrica, Capsule</a><br />
+</p>
+<p id="M"><strong>M</strong></p><p><a href="m/Mabtherainf.pdf">Mabthera, Concentrate for infusion</a><br />
+<a href="m/macrobidcap.pdf">Macrobid, Modified release capsule</a><br />
+<a href="m/Madoparcapdisptab.pdf">Madopar, Capsule</a><br />
+<a href="m/Madoparcapdisptab.pdf">Madopar HBS, Modified release capsule</a><br />
+<a href="m/Madoparcapdisptab.pdf">Madopar Rapid 62.5, Dispersible tablet</a><br />
+<a href="m/MagnesiumSulfateHeptahydrateMedsurgeInj.pdf">Magnesium Sulfate Heptahydrate 50%, Concentrate for injection</a><br />
+<a href="m/Malaronetab.pdf">Malarone, Film coated tablet</a><br />
+<a href="m/Malaronetab.pdf">Malarone Junior, Film coated tablet</a><br />
+<a href="m/Maltofertabsyrup.pdf">Maltofer Syrup, Syrup</a><br />
+<a href="m/Maltofertabsyrup.pdf">Maltofer Tablets, Film coated tablet</a><br />
+<a href="m/MarcainAndadrenalineinj.pdf">Marcain (polybag), Solution for infusion</a><br />
+<a href="m/MarcainAndadrenalineinj.pdf">Marcain Plain, Solution for injection</a><br />
+<a href="m/MarcainSpinalinj.pdf">Marcain Spinal 0.5%, Solution for injection</a><br />
+<a href="m/MarcainSpinalinj.pdf">Marcain Spinal 0.5% Heavy, Solution for injection</a><br />
+<a href="m/MarcainAndadrenalineinj.pdf">Marcain with adrenaline, Solution for injection</a><br />
+<a href="m/Marevantab.pdf">Marevan, Tablet</a><br />
+<a href="m/mavencladtab.pdf">Mavenclad, Tablet</a><br />
+<a href="m/mavirettab.pdf">Maviret, Film coated tablet</a><br />
+<a href="m/MaxiclearDayAndNightPlusCoughTab.pdf">Maxiclear Day and Night + Cough, Film coated tablet</a><br />
+<a href="m/MaxiclearPseSinusAndAntiInflammatoryPainReliefCap.pdf">Maxiclear PSE Sinus + Anti-inflammatory Pain Relief, Soft gelatin capsule</a><br />
+<a href="m/Maxidexeyedropsoint.pdf">Maxidex, Eye drops, suspension</a><br />
+<a href="m/Maxidexeyedropsoint.pdf">Maxidex, Eye ointment</a><br />
+<a href="m/maxigesictab.pdf">Maxigesic, Film coated tablet</a><br />
+<a href="m/MaxigesicColdFluHotDrink.pdf">Maxigesic Hot Drink, Powder for oral solution</a><br />
+<a href="m/MaxigesicColdFluHotDrink.pdf">Maxigesic Hot Drink Double Strength, Powder for oral solution</a><br />
+<a href="m/maxigesicinf.pdf">Maxigesic IV, Solution for infusion</a><br />
+<a href="m/mucinextab.pdf">Maximum Strength Mucinex, Modified release tablet</a><br />
+<a href="m/Maxitroleyedropsoint.pdf">Maxitrol, Eye drops, suspension</a><br />
+<a href="m/Maxitroleyedropsoint.pdf">Maxitrol, Eye ointment</a><br />
+<a href="m/mebeverinetab.pdf">Mebeverine (Generic Partners), Film coated tablet</a><br />
+<a href="m/Medroltab.pdf">Medrol, Tablet</a><br />
+<a href="m/mekinisttab.pdf">Mekinist, Film coated tablet</a><br />
+<a href="m/mekinisttab.pdf">Mekinist, Powder for oral solution</a><br />
+<a href="m/MelatoninLinkCapOralSol.pdf">Melatonin-Link, Capsule</a><br />
+<a href="m/MelatoninLinkCapOralSol.pdf">Melatonin-Link, Oral solution</a><br />
+<a href="m/Melorextab.pdf">Melorex, Tablet</a><br />
+<a href="m/melatonintab.pdf">Melotin, Modified release tablet</a><br />
+<a href="m/melphainj.pdf">Melpha, Powder for injection</a><br />
+<a href="m/menopur75iuinj.pdf">Menopur, Powder for injection with diluent</a><br />
+<a href="m/menopurinj.pdf">Menopur, Powder for injection with diluent</a><br />
+<a href="m/Menquadfiinj.pdf">MenQuadfi, Solution for injection</a><br />
+<a href="m/Mercilon28tab.pdf">Mercilon 28, Tablet</a><br />
+<a href="m/MerckCladribineTablet.pdf">Merck Cladribine, Tablet</a><br />
+<a href="m/meropenem-AFTinj.pdf">Meropenem-AFT, Powder for injection</a><br />
+<a href="m/mersyndolregisteredtab.pdf">Mersyndol, Tablet</a><br />
+<a href="m/mersynofentab.pdf">Mersynofen, Film coated tablet</a><br />
+<a href="m/mersynoNighttab.pdf">MersynoNight Night Time Pain Relief, Film coated tablet</a><br />
+<a href="m/m-EslonSRcap.pdf">m-Eslon SR, Modified release capsule</a><br />
+<a href="m/Mestinontab.pdf">Mestinon, Tablet</a><br />
+<a href="m/Metalyse25mgInj.pdf">Metalyse, Powder for injection</a><br />
+<a href="m/Metalyseinj.pdf">Metalyse, Powder for injection</a><br />
+<a href="m/metaraminolinj.pdf">Metaraminol, Solution for injection</a><br />
+<a href="m/metaraminolTorbay10mgml.pdf">Metaraminol, Solution for injection</a><br />
+<a href="m/metaraminoljunoinj.pdf">Metaraminol Juno, Solution for injection</a><br />
+<a href="m/metaraminolphebra10mgmlinj.pdf">Metaraminol Phebra, Solution for injection</a><br />
+<a href="m/metaraminolphebrainj.pdf">Metaraminol Phebra, Solution for injection</a><br />
+<a href="m/meterminecap.pdf">Metermine, Modified release capsule</a><br />
+<a href="m/meterolinh.pdf">Meterol , Aerosol inhaler, metered dose</a><br />
+<a href="m/Metformintab.pdf">Metformin, Film coated tablet</a><br />
+<a href="m/metforminmylantab.pdf">Metformin Viatris, Film coated tablet</a><br />
+<a href="m/methadoneAFTtab.pdf">Methadone - AFT, Tablet</a><br />
+<a href="m/methadonebnmtab.pdf">Methadone BNM, Tablet</a><br />
+<a href="m/Methadoneinj.pdf">Methadone Injection BP, Solution for injection</a><br />
+<a href="m/Methatabs.pdf">Methatabs, Tablet</a><br />
+<a href="m/MethotrexateEbeweinj.pdf">Methotrexate Ebewe, Concentrate for injection</a><br />
+<a href="m/methotrexatesandozinj.pdf">Methotrexate Sandoz , Injection with diluent</a><br />
+<a href="m/Methyldopatab.pdf">Methyldopa Viatris, Tablet</a><br />
+<a href="m/methylphenidateTevatab.pdf">Methylphenidate Extended Release, Modified release tablet</a><br />
+<a href="m/MethylphenidateSandozXRTab.pdf">Methylphenidate Sandoz XR, Modified release tablet</a><br />
+<a href="m/Metoclopramidepfizerinj.pdf">Metoclopramide (Lumacina), Solution for injection</a><br />
+<a href="m/MetoclopramideActavistab.pdf">Metoclopramide Actavis 10, Film coated tablet</a><br />
+<a href="m/MetoclopramideHCIMedsurgeinj.pdf">Metoclopramide HCl, Solution for injection</a><br />
+<a href="m/MetoclopramideClarisinj.pdf">Metoclopramide-Baxter, Solution for injection</a><br />
+<a href="m/metopironecap.pdf">Metopirone, Soft gelatin capsule</a><br />
+<a href="m/metoprololmylaninj.pdf">Metoprolol IV Viatris, Solution for injection</a><br />
+<a href="m/metrogyltab.pdf">Metrogyl, Tablet</a><br />
+<a href="m/metronidamedtab.pdf">Metronidamed, Film coated tablet</a><br />
+<a href="m/Metronidazolebaxterinf.pdf">Metronidazole, Solution for infusion</a><br />
+<a href="m/MetronidazoleMedsurgeinf.pdf">Metronidazole, Solution for infusion</a><br />
+<a href="m/MetronidazoleKabiinj.pdf">Metronidazole Kabi, Solution for injection</a><br />
+<a href="m/Metvixcr.pdf">Metvix, Topical cream</a><br />
+<a href="m/miacalcicinj.pdf">Miacalcic, Solution for injection</a><br />
+<a href="m/Micremevagcrm.pdf">Micreme, Vaginal cream</a><br />
+<a href="m/MicremeHcrm.pdf">Micreme H, Topical cream</a><br />
+<a href="m/Microgynon20edtab.pdf">Microgynon 20 ED, Coated tablet</a><br />
+<a href="m/Microgynon30EDtab.pdf">Microgynon 30 ED, Tablet</a><br />
+<a href="m/microgynon50edtab.pdf">Microgynon 50 ED, Tablet</a><br />
+<a href="m/microluttab.pdf">Microlut, Tablet</a><br />
+<a href="m/MidazolaminjPfizer.pdf">Midazolam, Solution for injection</a><br />
+<a href="m/MidazolamTeAraiOralSol.pdf">Midazolam Te Arai, Oral solution</a><br />
+<a href="m/MidazolamClarisinj.pdf">Midazolam-Baxter, Solution for injection</a><br />
+<a href="m/Midodrine-TilomedTab.pdf">Midodrine (Tillomed), Tablet</a><br />
+<a href="m/midodrinehydrochloridetabMedsurge.pdf">Midodrine Hydrochloride (Medsurge), Tablet</a><br />
+<a href="m/Mifegynetab.pdf">Mifegyne, Tablet</a><br />
+<a href="m/MilrinoneGenericHealthinj.pdf">Milrinone Lupin, Concentrate for injection</a><br />
+<a href="m/milrinoneclarisinj.pdf">Milrinone-Baxter, Concentrate for injection</a><br />
+<a href="m/MinibagSodiumChlorideinf.pdf">MINI-BAG 0.9% Sodium Chloride, Solution for infusion</a><br />
+<a href="m/Minidiabtab.pdf">Minidiab, Tablet</a><br />
+<a href="m/Minimsatropineeyedrop.pdf">Minims Atropine Sulphate, Eye drops, solution</a><br />
+<a href="m/Minimschloramphenicoleyedrop.pdf">Minims Chloramphenicol, Eye drops, solution</a><br />
+<a href="m/Minimscyclopentolateeyedrop.pdf">Minims Cyclopentolate Hydrochloride, Eye drops, solution</a><br />
+<a href="m/MinimsLigFluoroeyedrop.pdf">Minims Lidocaine &amp; Fluorescein, Eye drops, solution</a><br />
+<a href="m/Minimsoxybuprocaineeyedrop.pdf">Minims Oxybuprocaine Hydrochloride 0.4%w/v, Eye drops, solution</a><br />
+<a href="m/Minimsphenylephrineeyedrop.pdf">Minims Phenylephrine Hydrochloride, Eye drops, solution</a><br />
+<a href="m/Minimspilocarpineeyedrop.pdf">Minims Pilocarpine Nitrate, Eye drops, solution</a><br />
+<a href="m/Minimsprednisoloneeyedrop.pdf">Minims Prednisolone Sodium Phosphate, Eye drops, solution</a><br />
+<a href="m/Minims-Tetracainehydrochlorideeyedrops.pdf">Minims Tetracaine Hydrochloride, Eye drops, solution</a><br />
+<a href="m/Minimstropicamideeyedrop.pdf">Minims Tropicamide, Eye drops, solution</a><br />
+<a href="m/minirininj.pdf">Minirin, Solution for injection</a><br />
+<a href="m/Minirintab.pdf">Minirin, Tablet</a><br />
+<a href="m/minirinmeltwafer.pdf">Minirin Melt, Wafer</a><br />
+<a href="m/Minotabtab.pdf">Mino tabs, Tablet</a><br />
+<a href="m/Minomycincap.pdf">Minomycin, Capsule</a><br />
+<a href="m/MiocholEinj.pdf">Miochol-E, Powder for injection</a><br />
+<a href="m/Miostatinj.pdf">Miostat intraocular, Solution for injection</a><br />
+<a href="m/Mirenaius.pdf">Mirena, Intrauterine contraceptive device</a><br />
+<a href="m/MiroAmoxicillincap.pdf">Miro-Amoxicillin , Capsule</a><br />
+<a href="m/mirtazapinetab.pdf">Mirtazapine, Film coated tablet</a><br />
+<a href="m/mirvasogel.pdf">Mirvaso, Topical gel</a><br />
+<a href="m/MitomycinTevainj.pdf">Mitomycin, Powder for injection</a><br />
+<a href="m/MitozantroneEbeweinj.pdf">Mitozantrone Ebewe, Solution for injection</a><br />
+<a href="m/Mivacroninj.pdf">Mivacron, Solution for injection</a><br />
+<a href="PenmixMixtardProtaphaneinj.pdf">Mixtard 30, Suspension for injection</a><br />
+<a href="m/Mobictab.pdf">Mobic, Tablet</a><br />
+<a href="a/AdiraMedicaDiclofenacPotassiumtab.pdf">Mobiflam 25 Fast, Film coated tablet</a><br />
+<a href="m/modafiniltab.pdf">Modafinil (Max Health), Tablet</a><br />
+<a href="m/moduretictab.pdf">Moduretic, Tablet</a><br />
+<a href="m/Monofemetab.pdf">Monofeme , Tablet</a><br />
+<a href="m/monoferinj.pdf">Monofer, Solution for injection</a><br />
+<a href="m/Monofixvfinj.pdf">MonoFIX-VF, Injection with diluent</a><br />
+<a href="m/MontelukastMylanTab.pdf">Montelukast Viatris, Chewable tablet</a><br />
+<a href="m/MontelukastMylanTab.pdf">Montelukast Viatris, Film coated tablet</a><br />
+<a href="m/morphinejunoinj.pdf">Morphine Juno, Solution for injection</a><br />
+<a href="m/morphinesulfatemedsurgeinj.pdf">Morphine Sulfate, Solution for injection</a><br />
+<a href="m/Morphinesulphateinjbiomed.pdf">Morphine Sulfate (Biomed), Solution for injection</a><br />
+<a href="m/motetistab.pdf">Motetis, Tablet</a><br />
+<a href="m/motiliumtab.pdf">Motilium, Tablet</a><br />
+<a href="m/MounjaroInj.pdf">Mounjaro, Solution for injection</a><br />
+<a href="m/movapoinj.pdf">Movapo, Solution for injection</a><br />
+<a href="m/MovapoPeninj.pdf">Movapo Pen, Solution for injection</a><br />
+<a href="m/MovicolHalfpwdr.pdf">Movicol Junior Lemon-Lime Flavour, Powder for oral solution</a><br />
+<a href="m/Movicolpowdr.pdf">Movicol Lemon-Lime Flavour , Powder for oral solution</a><br />
+<a href="m/Movipreporalsoln.pdf">Moviprep, Powder for oral solution</a><br />
+<a href="m/MoviprepOrangeoralsoln.pdf">Moviprep Orange, Powder for oral solution</a><br />
+<a href="m/MoxifloxacinMedsurgeTab.pdf">Moxifloxacin, Film coated tablet</a><br />
+<a href="m/moxifloxacinkabiinf.pdf">Moxifloxacin Kabi, Solution for infusion</a><br />
+<a href="m/MoximedTab.pdf">Moximed, Film coated tablet</a><br />
+<a href="m/Mozobilinj.pdf">Mozobil, Solution for injection</a><br />
+<a href="m/mucinextab.pdf">Mucinex, Modified release tablet</a><br />
+<a href="m/MultiHanceinj.pdf">Multihance, Solution for injection</a><br />
+<a href="m/mupideroint.pdf">Mupider, Topical ointment</a><br />
+<a href="m/medsurgeMupirocinointment.pdf">Mupirocin Nasal Ointment (Medsurge), Topical ointment</a><br />
+<a href="m/medicianzMupirocinoint.pdf">Mupirocin Ointment, Topical ointment</a><br />
+<a href="m/Mycobutincap.pdf">Mycobutin, Capsule</a><br />
+<a href="m/Mycostatincrm.pdf">Mycostatin, Topical cream</a><br />
+<a href="m/Mydriacyleyedrop.pdf">Mydriacyl, Eye drops, solution</a><br />
+<a href="m/Mylerantab.pdf">Myleran, Film coated tablet</a><br />
+<a href="m/myloccrtab.pdf">Myloc CR, Modified release tablet</a><br />
+<a href="m/mylotarginj.pdf">MYLOTARG, Powder for injection</a><br />
+<a href="m/myozymeinf.pdf">Myozyme, Powder for infusion concentrate</a><br />
+<a href="m/mytolacinj.pdf">Mytolac, Solution for injection</a><br />
+</p>
+<p id="N"><strong>N</strong></p><p><a href="a/Aponadololtab.pdf">Nadolol, Tablet</a><br />
+<a href="n/NadololBNMtab.pdf">Nadolol BNM, Tablet</a><br />
+<a href="n/naglazymeinf.pdf">Naglazyme, Concentrate for infusion</a><br />
+<a href="n/naloxonehydrochloridemaxinj.pdf">Naloxone Hydrochloride Hameln, Solution for injection</a><br />
+<a href="n/naloxonejunoinj.pdf">Naloxone Juno, Solution for injection</a><br />
+<a href="n/naltraccordtab.pdf">Naltraccord, Film coated tablet</a><br />
+<a href="n/NaprosynSRtab.pdf">Naprosyn SR, Modified release tablet</a><br />
+<a href="n/Nardiltab.pdf">Nardil, Film coated tablet</a><br />
+<a href="n/Naropininj.pdf">Naropin, Solution for injection</a><br />
+<a href="n/Naropinwithfentanylinf.pdf">Naropin 2mg/mL with Fentanyl 2microgram/mL, Solution for infusion</a><br />
+<a href="n/Nausafixtab.pdf">Nausafix, Tablet</a><br />
+<a href="n/nausicalminj.pdf">Nausicalm, Solution for injection</a><br />
+<a href="n/Nausicalmtab.pdf">Nausicalm, Tablet</a><br />
+<a href="n/Navelbinecap.pdf">Navelbine, Soft gelatin capsule</a><br />
+<a href="n/Navelbineinj.pdf">Navelbine, Solution for injection</a><br />
+<a href="n/NeisVacCinj.pdf">NeisVac-C, Suspension for injection</a><br />
+<a href="n/Neo-B12inj.pdf">Neo-B12&trade;, Solution for injection</a><br />
+<a href="n/Neo-Mercazoletab.pdf">Neo-Mercazole, Tablet</a><br />
+<a href="n/Neoralsolcap.pdf">Neoral, Oral solution</a><br />
+<a href="n/Neoralsolcap.pdf">Neoral, Soft gelatin capsule</a><br />
+<a href="n/Neorecormoninj.pdf">Neorecormon, Solution for injection</a><br />
+<a href="n/neostigmineMaxinj.pdf">Neostigmine Methylsulfate Injection, Solution for injection</a><br />
+<a href="n/Neostigmineinj.pdf">Neostigmine Methylsulphate, Solution for injection</a><br />
+<a href="n/Neosynephrineinj.pdf">Neosynephrine, Solution for injection</a><br />
+<a href="n/nerlynxtab.pdf">Nerlynx, Film coated tablet</a><br />
+<a href="n/Neulactiltab.pdf">Neulactil, Tablet</a><br />
+<a href="n/Neupogeninj.pdf">Neupogen, Solution for injection</a><br />
+<a href="n/Neurontincaptab.pdf">Neurontin, Capsule</a><br />
+<a href="n/Neurontincaptab.pdf">Neurontin, Film coated tablet</a><br />
+<a href="n/neutrafluortoothpaste.pdf">Neutrafluor 5000 Plus , Toothpaste</a><br />
+<a href="n/neutrafluorsensitivetoothpaste.pdf">NeutraFluor 5000 Sensitive, Toothpaste</a><br />
+<a href="n/NevirapineAlphapharmtab.pdf">Nevirapine Viatris, Tablet</a><br />
+<a href="n/Nexavartab.pdf">Nexavar, Film coated tablet</a><br />
+<a href="n/Nexviazymeinf.pdf">Nexviazyme, Powder for infusion concentrate</a><br />
+<a href="n/nicorandiltab.pdf">Nicorandil (Max Health), Tablet</a><br />
+<a href="n/nicorettepatch.pdf">Nicorette 16hr Invisipatch, Transdermal patch</a><br />
+<a href="n/nicorettecooldrops.pdf">Nicorette Cooldrops, Lozenge</a><br />
+<a href="n/NicoretteGum.pdf">Nicorette Freshfruit Gum, Chewing gum</a><br />
+<a href="n/NicoretteGum.pdf">Nicorette Freshmint Gum, Chewing gum</a><br />
+<a href="n/NicoretteGum.pdf">Nicorette gum, Chewing gum</a><br />
+<a href="n/NicoretteGum.pdf">Nicorette Icy Mint Gum, Chewing gum</a><br />
+<a href="n/nicoretteihaler.pdf">Nicorette Inhalator, Volatile liquid for inhalation</a><br />
+<a href="n/NicoretteQuickmistSpray.pdf">Nicorette QuickMist, Oral spray</a><br />
+<a href="n/NicoretteQuickMistMildSpearmintMouthSpray.pdf">Nicorette QuickMist Mouthspray, Oral spray</a><br />
+<a href="n/NicoretteQuickmistSmartTrackMouthSpray.pdf">Nicorette QuickMist SmartTrack, Oral spray</a><br />
+<a href="n/NicoretteGum.pdf">Nicorette Spearmint Gum, Chewing gum</a><br />
+<a href="n/NicotrolGum.pdf">Nicotrol, Chewing gum</a><br />
+<a href="n/Nifurantab.pdf">Nifuran, Tablet</a><br />
+<a href="n/nilstatcapdrpowdtabcrointvagcr.pdf">Nilstat, Capsule</a><br />
+<a href="n/nilstatcapdrpowdtabcrointvagcr.pdf">Nilstat, Tablet</a><br />
+<a href="n/nilstatcapdrpowdtabcrointvagcr.pdf">Nilstat, Vaginal cream</a><br />
+<a href="n/nilstatcapdrpowdtabcrointvagcr.pdf">Nilstat Drops, Oral drops</a><br />
+<a href="n/nimenrixinj.pdf">Nimenrix, Powder for injection with diluent</a><br />
+<a href="n/nimotoptabinf.pdf">Nimotop, Film coated tablet</a><br />
+<a href="n/nimotoptabinf.pdf">Nimotop, Solution for infusion</a><br />
+<a href="n/NintedanibEugiaCap.pdf">Nintedanib Eugia, Soft gelatin capsule</a><br />
+<a href="n/NitisinoneDiPharmacap.pdf">Nitisinone (LogixX Pharma), Capsule</a><br />
+<a href="n/nitrodermttspatch.pdf">Nitroderm TTS 10, Transdermal patch</a><br />
+<a href="n/nitrodermttspatch.pdf">Nitroderm TTS 5, Transdermal patch</a><br />
+<a href="n/NitrofurantoinTab.pdf">Nitrofurantoin, Tablet</a><br />
+<a href="n/nitrolingualpumpspray.pdf">Nitrolingual Pump Spray, Oral spray</a><br />
+<a href="n/nitrousOxideGas.pdf">Nitrous Oxide, Gas</a><br />
+<a href="n/nityrtab.pdf">NITYR, Tablet</a><br />
+<a href="n/nivestiminj.pdf">Nivestim, Solution for injection</a><br />
+<a href="n/Noctamidtab.pdf">Noctamid, Tablet</a><br />
+<a href="n/nodiatab.pdf">Nodia, Tablet</a><br />
+<a href="n/Noflamtab.pdf">Noflam, Tablet</a><br />
+<a href="n/noradrenalineinf.pdf">Noradrenaline (Biomed), Solution for infusion</a><br />
+<a href="n/noradrenalineBNMinj.pdf">Noradrenaline BNM, Concentrate for injection</a><br />
+<a href="n/NoradrenalineMedsurgeinj.pdf">Noradrenaline Medsurge, Concentrate for injection</a><br />
+<a href="n/noralininf.pdf">Noralin, Solution for infusion</a><br />
+<a href="n/NorethindroneTab.pdf">Norethindrone Tablets USP, Tablet</a><br />
+<a href="n/Norflextabinj.pdf">Norflex, Tablet</a><br />
+<a href="n/Noriday28tab.pdf">Noriday, Tablet</a><br />
+<a href="BrevinorNorimintab.pdf">Norimin 28 Day, Tablet</a><br />
+<a href="n/NormalimmunoglobulinVFinj.pdf">Normal Immunoglobulin-VF, Solution for injection</a><br />
+<a href="n/Normisontab.pdf">Normison, Tablet</a><br />
+<a href="n/Nortriptimedtab.pdf">Nortriptimed, Film coated tablet</a><br />
+<a href="n/nortriptylinenrimtab.pdf">Nortriptyline NRIM, Tablet</a><br />
+<a href="n/norvirtaboralsolnNewPresentation.pdf">Norvir, Film coated tablet</a><br />
+<a href="n/NoumedColdFluRelieftab.pdf">Noumed Cold &amp; Flu Relief, Tablet</a><br />
+<a href="n/NoumedDayNightColdFluRelieftab.pdf">Noumed Day + Night Cold &amp; Flu Relief, Tablet</a><br />
+<a href="n/NoumedDecongestantTab.pdf">Noumed Decongestant Tablets, Tablet</a><br />
+<a href="n/NoumedNightTimeColdFluRelieftab.pdf">Noumed Night Time Cold &amp; Flu Relief, Tablet</a><br />
+<a href="n/NoumedParacetamolOsteotab.pdf">Noumed Paracetamol Osteo, Modified release tablet</a><br />
+<a href="n/novatretincap.pdf">Novatretin, Capsule</a><br />
+<a href="n/NovoMixinj.pdf">NovoMix 30 Flexpen, Suspension for injection</a><br />
+<a href="n/NovoRapid.pdf">NovoRapid, Solution for injection</a><br />
+<a href="n/NovoRapid.pdf">NovoRapid FlexPen, Solution for injection</a><br />
+<a href="n/NovoRapid.pdf">NovoRapid FlexTouch, Solution for injection</a><br />
+<a href="n/NovoRapid.pdf">NovoRapid Penfill, Solution for injection</a><br />
+<a href="n/NovoSevenRTinj.pdf">NovoSeven RT, Powder for injection with diluent</a><br />
+<a href="n/Nozinaninj.pdf">Nozinan, Solution for injection</a><br />
+<a href="n/NozinanSwisstab.pdf">Nozinan, Tablet</a><br />
+<a href="n/Nozinantabinj.pdf">Nozinan, Tablet</a><br />
+<a href="n/nubeqatab.pdf">Nubeqa, Film coated tablet</a><br />
+<a href="n/nucalainj.pdf">Nucala, Solution for injection</a><br />
+<a href="n/NuceivaInj.pdf">Nuceiva, Powder for injection</a><br />
+<a href="n/Nuelinsyr.pdf">Nuelin Syrup, Syrup</a><br />
+<a href="n/NuelinSRtab.pdf">Nuelin-SR, Modified release tablet</a><br />
+<a href="n/numitcream.pdf">Numit, Topical cream</a><br />
+<a href="n/nupentincaps.pdf">Nupentin, Capsule</a><br />
+<a href="n/Nurofen12Hourtab.pdf">Nurofen 12 Hour, Modified release tablet</a><br />
+<a href="n/nurofendoublestrengthtab.pdf">Nurofen 400 Double Strength, Coated tablet</a><br />
+<a href="n/NurofenColdAndFluWithDecongestanttab.pdf">Nurofen Cold &amp; Flu with Decongestant, Film coated tablet</a><br />
+<a href="n/nurofenplustab.pdf">Nurofen Plus , Film coated tablet</a><br />
+<a href="n/Nyefaxretardtab.pdf">Nyefax Retard, Modified release tablet</a><br />
+<a href="n/nystatindevatisoraldrops.pdf">Nystatin Devatis, Oral drops</a><br />
+</p>
+<p id="O"><strong>O</strong></p><p><a href="o/Ocrevusinf.pdf">Ocrevus, Concentrate for infusion</a><br />
+<a href="o/Ocrevusinf.pdf">Ocrevus SC, Solution for injection</a><br />
+<a href="o/Octostiminj.pdf">Octostim, Solution for injection</a><br />
+<a href="o/OctreotideinjMaxRXinj.pdf">Octreotide, Solution for injection</a><br />
+<a href="o/optisootheeydrops.pdf">Ocuzo, Eye drops, solution</a><br />
+<a href="o/odefseytab.pdf">Odefsey, Film coated tablet</a><br />
+<a href="o/Oedemidtab.pdf">Oedemid, Tablet</a><br />
+<a href="o/ofevcap.pdf">Ofev, Liquid filled capsule</a><br />
+<a href="o/Olbetamcap.pdf">Olbetam, Capsule</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N12-640, Emulsion for infusion</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N12-640E, Emulsion for infusion</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N5-860E, Emulsion for infusion</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N7-960, Emulsion for infusion</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N7-960E, Emulsion for infusion</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N9-840, Emulsion for infusion</a><br />
+<a href="olimelandperiolimelinf.pdf">Olimel N9-840E, Emulsion for infusion</a><br />
+<a href="o/OlopatadineTevaeyedrops.pdf">Olopatadine, Eye drops, solution</a><br />
+<a href="o/Omegaveninf.pdf">Omegaven, Emulsion for infusion</a><br />
+<a href="o/OmeprazoleTevaCap.pdf">Omeprazole, Modified release capsule</a><br />
+<a href="o/OmeprazoleActaviscap.pdf">OMEPRAZOLE ACTAVIS 10, Modified release capsule</a><br />
+<a href="o/OmeprazoleActaviscap.pdf">OMEPRAZOLE ACTAVIS 20, Modified release capsule</a><br />
+<a href="o/OmeprazoleActaviscap.pdf">OMEPRAZOLE ACTAVIS 40, Modified release capsule</a><br />
+<a href="p/pedippisusp.pdf">Omeprazole ADVZ, Powder for oral suspension</a><br />
+<a href="o/Omeprazoleinf.pdf">Omeprazole Infusion 40 mg, Powder for infusion</a><br />
+<a href="o/Omeprazoleinj.pdf">Omeprazole Injection 40 mg, Powder for injection</a><br />
+<a href="o/omezolIVinf.pdf">Omezol IV, Powder for infusion</a><br />
+<a href="o/OmjjaraTab.pdf">Omjjara, Film coated tablet</a><br />
+<a href="o/Omnipaqueinj.pdf">Omnipaque, Solution for injection</a><br />
+<a href="o/omniscaninj.pdf">Omniscan, Powder for injection with diluent</a><br />
+<a href="o/omnitropeinj.pdf">Omnitrope, Solution for injection</a><br />
+<a href="o/onbrezcap.pdf">Onbrez Breezhaler, Powder filled inhalation capsule</a><br />
+<a href="o/oncasparinj.pdf">Oncaspar, Powder for injection</a><br />
+<a href="o/Oncoticeinj.pdf">OncoTICE , Powder for injection</a><br />
+<a href="o/ondansetronkabisol.pdf">Ondansetron Kabi, Solution for injection</a><br />
+<a href="o/ondansetronODT-DRLAtab.pdf">Ondansetron ODT-DRLA, Orodispersible tablet</a><br />
+<a href="o/ondesetronaftinj.pdf">Ondansetron-AFT, Solution for injection</a><br />
+<a href="o/ondansetronclarisinj.pdf">Ondansetron-Baxter, Solution for injection</a><br />
+<a href="o/ondansetronODT-DRLAtab.pdf">Ondansetron-DRLA, Film coated tablet</a><br />
+<a href="o/OneAlphacapdropinj.pdf">One Alpha, Liquid filled capsule</a><br />
+<a href="o/OneAlphacapdropinj.pdf">One Alpha, Oral drops</a><br />
+<a href="o/onivydeinj.pdf">Onivyde, Concentrate for infusion</a><br />
+<a href="o/onrextab.pdf">Onrex, Film coated tablet</a><br />
+<a href="o/Ontruzantinf.pdf">Ontruzant, Powder for infusion concentrate</a><br />
+<a href="o/opdivoinf.pdf">Opdivo, Concentrate for infusion</a><br />
+<a href="o/Opsumittab.pdf">Opsumit, Film coated tablet</a><br />
+<a href="o/Optisulininj.pdf">Optisulin, Solution for injection</a><br />
+<a href="o/Optisulininj.pdf">Optisulin Solostar, Solution for injection</a><br />
+<a href="o/Oracortdentalpaste.pdf">Oracort, Topical paste</a><br />
+<a href="o/oralairtab.pdf">Oralair, Sublingual tablet</a><br />
+<a href="o/oralcon30EDtab.pdf">Oralcon 30 ED, Film coated tablet</a><br />
+<a href="o/Oraqixgel.pdf">Oraqix Periodontal Gel (Lidocaine (Lignocaine) 25 mg/g, Prilocaine 25 mg/g), Oral gel</a><br />
+<a href="o/oratanecap.pdf">Oratane, Soft gelatin capsule</a><br />
+<a href="o/Orgalutraninj.pdf">Orgalutran, Solution for injection</a><br />
+<a href="o/orkambitabgranules.pdf">Orkambi, Film coated tablet</a><br />
+<a href="o/orkambitabgranules.pdf">Orkambi, Oral granules</a><br />
+<a href="o/OruvailSRCap.pdf">Oruvail SR, Modified release capsule</a><br />
+<a href="o/OseltamivirViatrisCap.pdf">Oseltamivir Viatris, Capsule</a><br />
+<a href="o/Osenveltinj.pdf">Osenvelt, Solution for injection</a><br />
+<a href="o/osmitrolinf.pdf">Osmitrol, Solution for infusion</a><br />
+<a href="o/OsteoReliefParacetamolTab.pdf">Osteo Relief Paracetamol, Modified release tablet</a><br />
+<a href="o/otezlatab.pdf">Otezla, Film coated tablet</a><br />
+<a href="o/Ovestinpessaries.pdf">Ovestin, Pessary</a><br />
+<a href="o/Ovestintab.pdf">Ovestin, Tablet</a><br />
+<a href="o/Ovestinvagcrm.pdf">Ovestin, Vaginal cream</a><br />
+<a href="o/Ovidrelinjpen.pdf">Ovidrel, Solution for injection</a><br />
+<a href="o/Oxaliplatininf.pdf">Oxaliplatin (Alchemy), Concentrate for infusion</a><br />
+<a href="o/oxaliccordinf.pdf">Oxaliplatin Accord , Concentrate for infusion</a><br />
+<a href="o/Oxisturbuhaler.pdf">Oxis Turbuhaler, Powder for inhalation</a><br />
+<a href="o/OxbutyninAlchemytab.pdf">Oxybutynin , Tablet</a><br />
+<a href="o/Oxycodonetab.pdf">Oxycodone Controlled Release Tablets, Modified release tablet</a><br />
+<a href="o/oxycodoneMedsurgeinj.pdf">Oxycodone HCl (Medsurge), Solution for injection</a><br />
+<a href="o/OxycodoneHydrochlorideSolOrspec.pdf">Oxycodone Hydrochloride, Oral solution</a><br />
+<a href="o/oxycodonehydrochloridemaxinj.pdf">Oxycodone hydrochloride (Hameln), Solution for injection</a><br />
+<a href="O/OxycodoneHydrochlorideUSPtab.pdf">Oxycodone Hydrochloride Tablets, USP (Immediate Release), Tablet</a><br />
+<a href="o/oxycodonesandoztab.pdf">Oxycodone Sandoz, Modified release tablet</a><br />
+<a href="a/apoOxytocininj.pdf">Oxytocin APOTEX, Solution for injection</a><br />
+<a href="o/oxytocinbnminj.pdf">Oxytocin Injection BP, Solution for injection</a><br />
+<a href="o/ozurdeximplant.pdf">Ozurdex, Intraocular implant</a><br />
+</p>
+<p id="P"><strong>P</strong></p><p><a href="p/pabrinexinf.pdf">Pabrinex, Concentrate for infusion</a><br />
+<a href="p/Pacifentab.pdf">Pacifen, Tablet</a><br />
+<a href="p/pacimoltab.pdf">Pacimol, Tablet</a><br />
+<a href="p/PaclitaxelAccordInf.pdf">Paclitaxel Accord, Concentrate for infusion</a><br />
+<a href="p/PaclitaxelEbeweinj.pdf">Paclitaxel Ebewe, Concentrate for infusion</a><br />
+<a href="p/PalbociclibPfizerTab.pdf">Palbociclib Pfizer, Film coated tablet</a><br />
+<a href="p/Pamisolinj.pdf">Pamisol &trade; , Concentrate for injection</a><br />
+<a href="p/panadolOsteocaplets.pdf">Panadol Osteo, Modified release tablet</a><br />
+<a href="p/pantoprazoleAFTinj.pdf">Pantoprazole-AFT, Powder for injection</a><br />
+<a href="p/PanvaxH5N8inj.pdf">Panvax H5N8 pre-pandemic, Suspension for injection</a><br />
+<a href="p/panzoptab.pdf">Panzop Relief, Enteric coated tablet</a><br />
+<a href="p/paracetamolPharmacaretab.pdf">Paracetamol, Tablet</a><br />
+<a href="p/ParacetamolAndCodeinetab.pdf">Paracetamol + Codeine, Tablet</a><br />
+<a href="p/Paracetamol665mgTab.pdf">Paracetamol 665 mg, Modified release tablet</a><br />
+<a href="p/paracetamolKabiinj.pdf">Paracetamol Kabi, Solution for injection</a><br />
+<a href="p/ParacetamolOsteoPharmHealthtab.pdf">Paracetamol Osteo, Modified release tablet</a><br />
+<a href="p/paracetamolosteotab.pdf">Paracetamol Osteo-Tab, Modified release tablet</a><br />
+<a href="ParacetamolDiphenhydraminetab.pdf">Paracetamol/Diphenhydramine, Film coated tablet</a><br />
+<a href="p/paracetamolAFTinf.pdf">Paracetamol-AFT, Solution for infusion</a><br />
+<a href="p/parecoxibMedsurgeinj.pdf">Parecoxib, Powder for injection</a><br />
+<a href="p/parecoxibNeoHealthinj.pdf">Parecoxib, Powder for injection</a><br />
+<a href="p/parecoxibMedsurgeInjWithDiluent.pdf">Parecoxib, Powder for injection with diluent</a><br />
+<a href="p/parecoxibNeoHealthinj.pdf">Parecoxib, Powder for injection with diluent</a><br />
+<a href="p/parecoxibinj.pdf">Parecoxib Juno, Powder for injection</a><br />
+<a href="p/parecoxibinj.pdf">Parecoxib Juno, Powder for injection with diluent</a><br />
+<a href="p/ParecoxibAFTinj.pdf">Parecoxib-AFT, Powder for injection</a><br />
+<a href="p/parizemcap.pdf">Parizem, Liquid filled capsule</a><br />
+<a href="p/Parnatetab.pdf">Parnate, Film coated tablet</a><br />
+<a href="p/Patanoldr.pdf">Patanol, Eye drops, solution</a><br />
+<a href="p/Paxamtab.pdf">Paxam, Tablet</a><br />
+<a href="p/paxlovidtab.pdf">Paxlovid, Film coated tablet</a><br />
+<a href="p/PazopanibTab.pdf">Pazopanib, Film coated tablet</a><br />
+<a href="p/Pyrazinamide-AFTtab.pdf">pdp-Pyrazinamide, Tablet</a><br />
+<a href="p/pegasysinj.pdf">Pegasys, Solution for injection</a><br />
+<a href="p/pelgrazinj.pdf">Pelgraz, Solution for injection</a><br />
+<a href="p/PemetrexedAccordinf.pdf">Pemetrexed Accord, Powder for infusion</a><br />
+<a href="p/PemetrexedJunoinf.pdf">Pemetrexed Juno, Powder for infusion</a><br />
+<a href="p/PemetrexedAFTinf.pdf">Pemetrexed-AFT, Powder for infusion</a><br />
+<a href="p/penicillinginj.pdf">Penicillin G Sodium, Powder for injection</a><br />
+<a href="p/penicillinginj.pdf">Penicillin G Sodium Injection, Powder for injection</a><br />
+<a href="p/Pentacarinatinj.pdf">Pentacarinat, Powder for injection</a><br />
+<a href="p/Pentasatabgranenemasuppos.pdf">Pentasa, Enema</a><br />
+<a href="p/Pentasatabgranenemasuppos.pdf">Pentasa, Modified release granules</a><br />
+<a href="p/Pentasatabgranenemasuppos.pdf">Pentasa, Modified release tablet</a><br />
+<a href="p/Pentasatabgranenemasuppos.pdf">Pentasa, Suppository</a><br />
+<a href="p/penthroxinh.pdf">Penthrox, Volatile liquid for inhalation</a><br />
+<a href="p/Peptisoothesyrup.pdf">Peptisoothe, Syrup</a><br />
+<a href="olimelandperiolimelinf.pdf">PeriOlimel N4-600E, Emulsion for infusion</a><br />
+<a href="p/perisettab.pdf">Periset, Film coated tablet</a><br />
+<a href="p/PerisetODTtab.pdf">Periset ODT, Orodispersible tablet</a><br />
+<a href="p/perjetainf.pdf">Perjeta, Concentrate for infusion</a><br />
+<a href="p/Pethidinetab.pdf">Pethidine (Noumed), Tablet</a><br />
+<a href="p/Pethidinetab.pdf">Pethidine (PSM), Tablet</a><br />
+<a href="p/Pevarylcrsolpwdr.pdf">Pevaryl Anti-fungal Cream, Topical cream</a><br />
+<a href="p/PevarylFoamingSol.pdf">Pevaryl Foaming, Topical solution</a><br />
+<a href="p/pexsigtab.pdf">Pexsig, Tablet</a><br />
+<a href="p/PfizerDaunorubicininj.pdf">PFIZER DAUNORUBICIN, Powder for injection</a><br />
+<a href="p/PharmacorDabigatranEtexilateCap.pdf">Pharmacor Dabigatran Etexilate , Capsule</a><br />
+<a href="p/PharmacorDeferasiroxTab.pdf">Pharmacor Deferasirox, Dispersible tablet</a><br />
+<a href="p/PharmacorDimethylFumarateCap.pdf">Pharmacor Dimethyl Fumarate, Enteric coated capsule</a><br />
+<a href="p/PharmacorEmpagliflozinTab.pdf">Pharmacor Empagliflozin, Film coated tablet</a><br />
+<a href="p/PharmacorFingolmodCap.pdf">Pharmacor Fingolimod, Capsule</a><br />
+<a href="p/PharmacorRivaroxabanTab.pdf">Pharmacor Rivaroxaban, Film coated tablet</a><br />
+<a href="p/PharmacorSacubitrilValsartanTab.pdf">Pharmacor Sacubitril Valsartan 24/26, Film coated tablet</a><br />
+<a href="p/PharmacorSacubitrilValsartanTab.pdf">Pharmacor Sacubitril Valsartan 49/51, Film coated tablet</a><br />
+<a href="p/PharmacorSacubitrilValsartanTab.pdf">Pharmacor Sacubitril Valsartan 97/103, Film coated tablet</a><br />
+<a href="p/PharmacorTicagrelorTab.pdf">Pharmacor Ticagrelor, Film coated tablet</a><br />
+<a href="p/PharmacorVareniclineTab.pdf">Pharmacor Varenicline, Film coated tablet</a><br />
+<a href="p/pheburanegran.pdf">Pheburane, Oral granules</a><br />
+<a href="p/phenaseninj.pdf">Phenasen, Concentrate for infusion</a><br />
+<a href="p/Phenergantabelixir.pdf">Phenergan, Tablet</a><br />
+<a href="p/Phenergantabelixir.pdf">Phenergan Elixir, Elixir</a><br />
+<a href="p/Phenobarbitonetab.pdf">Phenobarbitone (Noumed), Tablet</a><br />
+<a href="p/Phenoxymethylpenicillinoralsoln.pdf">Phenoxymethylpenicillin - AFT, Granules for oral solution</a><br />
+<a href="p/PhentermineJunoTab.pdf">Phentermine Juno ER, Modified release tablet</a><br />
+<a href="p/PhentermineLupinCap.pdf">Phentermine Lupin, Modified release capsule</a><br />
+<a href="p/PhentodurCap.pdf">Phentodur, Modified release capsule</a><br />
+<a href="p/PhenylephrineAFTinj.pdf">Phenylephrine-AFT, Solution for injection</a><br />
+<a href="p/Phesgoinj.pdf">Phesgo, Solution for injection</a><br />
+<a href="p/PholcodineLinctusBP.pdf">Pholcodine Linctus BP, Linctus</a><br />
+<a href="f/fleetphosphosoln.pdf">Phospho-Soda , Oral solution</a><br />
+<a href="p/Phoxilliumsol.pdf">Phoxilium&trade; 1.2 mmol/L, phosphate, Dialysis solution</a><br />
+<a href="p/Physionealsoln.pdf">Physioneal 40, Dialysis solution</a><br />
+<a href="p/Physionealsoln.pdf">Physioneal 40 Glucose 1.36% w/v/13.6 mg/mL CLEAR-FLEX, Dialysis solution</a><br />
+<a href="p/Physionealsoln.pdf">Physioneal 40 Glucose 2.27% w/v/22.7mg/mL CLEAR-FLEX, Dialysis solution</a><br />
+<a href="p/Physionealsoln.pdf">Physioneal 40 Glucose 3.86% w/v/38.6 mg/mL CLEAR-FLEX, Dialysis solution</a><br />
+<a href="p/PicoPrepsol.pdf">PicoPrep, Powder for oral solution</a><br />
+<a href="p/picoprepOrangepwdr.pdf">Picoprep Orange, Powder for oral solution</a><br />
+<a href="p/picosalaxsoln.pdf">Picosalax, Powder for oral solution</a><br />
+<a href="p/Pimafucortcrmoint.pdf">Pimafucort, Topical ointment</a><br />
+<a href="PiperacillinTazobactamEugiaInj.pdf">Piperacillin/Tazobactam Eugia, Powder for injection</a><br />
+<a href="PiperacillinAndTazobactamKabiinj.pdf">Piperacillin/Tazobactam Kabi, Powder for injection</a><br />
+<a href="p/PiptazMedsurgeinj.pdf">PipTaz 2/0.25, Powder for injection</a><br />
+<a href="p/PiptazMedsurgeinj.pdf">PipTaz 4/0.5, Powder for injection</a><br />
+<a href="p/PiptazAFTinj.pdf">PipTaz-AFT, Powder for injection</a><br />
+<a href="p/piramalsevofluraneinhalation.pdf">Piramal Sevoflurane, Volatile liquid for inhalation</a><br />
+<a href="p/PirfenidoneSandoztab.pdf">Pirfenidone Sandoz, Film coated tablet</a><br />
+<a href="p/Pitressininj.pdf">Pitressin, Solution for injection</a><br />
+<a href="p/Plaqueniltab.pdf">Plaquenil, Film coated tablet</a><br />
+<a href="p/plasmalyte148in5percentglucosesol.pdf">Plasmalyte 148 in 5% Glucose, Solution for infusion</a><br />
+<a href="p/plasmalytesol.pdf">Plasma-Lyte 148, pH 7.4, Solution for infusion</a><br />
+<a href="p/plasmalyte56in5percentglucosesol.pdf">Plasmalyte 56 in 5% Glucose, Solution for infusion</a><br />
+<a href="p/PlatexaTab.pdf">Platexa, Film coated tablet</a><br />
+<a href="p/plegridyinj.pdf">Plegridy, Solution for injection</a><br />
+<a href="p/PlendilERtab.pdf">Plendil ER, Modified release tablet</a><br />
+<a href="p/plenvusol.pdf">Plenvu, Powder for oral solution</a><br />
+<a href="p/PlerixaforEugiaInj.pdf">Plerixafor Eugia, Solution for injection</a><br />
+<a href="p/PlerixaforAFTInj.pdf">Plerixafor-AFT, Solution for injection</a><br />
+<a href="p/Pneumovax23inj.pdf">Pneumovax 23 vaccine, Solution for injection</a><br />
+<a href="p/Polaraminetabreptabsyrup.pdf">Polaramine , Film coated tablet</a><br />
+<a href="p/Polaraminetabreptabsyrup.pdf">Polaramine , Syrup</a><br />
+<a href="p/polargentab.pdf">Polargen, Tablet</a><br />
+<a href="p/polivyinj.pdf">Polivy, Powder for injection</a><br />
+<a href="p/PomalidomideDevatisCap.pdf">Pomalidomide Devatis, Capsule</a><br />
+<a href="p/pomalystcap.pdf">Pomalyst, Capsule</a><br />
+<a href="p/pomolidecap.pdf">Pomolide, Capsule</a><br />
+<a href="p/Ponstan250mgcapOTC.pdf">Ponstan, Capsule</a><br />
+<a href="p/Ponstancap.pdf">Ponstan, Capsule</a><br />
+<a href="p/posaconazolesusp.pdf">Posaconazole, Oral suspension</a><br />
+<a href="p/PosaconazoleDevatisTab.pdf">Posaconazole Devatis, Modified release tablet</a><br />
+<a href="p/posaconazolejunotab.pdf">Posaconazole JUNO, Modified release tablet</a><br />
+<a href="p/Postinor-1tab.pdf">Postinor-1, Tablet</a><br />
+<a href="p/PotassiumChlorideInSodiumChlorideFrensiusKabiinj.pdf">Potassium Chloride 10 mmol in Sodium Chloride 0.9% (500 mL), Solution for infusion</a><br />
+<a href="p/PotassiumAndSodiumChlorideinf.pdf">Potassium Chloride 10mmol in 0.29% Sodium Chloride (100mL), Solution for infusion</a><br />
+<a href="p/PotassiumChlorideInSodiumChlorideFrensiusKabiinj.pdf">Potassium Chloride 20 mmol in Sodium Chloride 0.9% (1000 mL), Solution for infusion</a><br />
+<a href="p/PotassiumChlorideInSodiumChlorideFrensiusKabiinj.pdf">Potassium Chloride 20 mmol in Sodium Chloride 0.9% (500 mL), Solution for infusion</a><br />
+<a href="p/PotassiumAndSodiumChlorideinf.pdf">Potassium Chloride 20mmol in 0.9% Sodium Chloride (1000mL), Solution for infusion</a><br />
+<a href="p/PotassiumChlorideANDGlucoseANDSodiumChlorideinf.pdf">Potassium Chloride 20mmol in 4% Glucose and 0.18% Sodium Chloride, Solution for infusion</a><br />
+<a href="p/PotassiumAndPotassiumChlorideInGlucoseinf.pdf">Potassium Chloride 20mmol in 5% Glucose , Solution for infusion</a><br />
+<a href="p/PotassiumChlorideANDGlucoseANDSodiumChlorideinf.pdf">Potassium Chloride 20mmol, 5% Glucose and 0.45% Sodium Chloride, Solution for infusion</a><br />
+<a href="p/PotassiumChlorideANDGlucoseANDSodiumChlorideinf.pdf">Potassium Chloride 20mmol, 5% Glucose and 0.9% Sodium Chloride, Solution for infusion</a><br />
+<a href="p/PotassiumAndSodiumChlorideinf.pdf">Potassium Chloride 30mmol in 0.9% Sodium Chloride (1000mL), Solution for infusion</a><br />
+<a href="p/PotassiumChlorideANDGlucoseANDSodiumChlorideinf.pdf">Potassium Chloride 30mmol in 4% Glucose and 0.18% Sodium Chloride (Baxter), Solution for infusion</a><br />
+<a href="p/PotassiumAndPotassiumChlorideInGlucoseinf.pdf">Potassium chloride 30mmol in 5% Glucose, Solution for infusion</a><br />
+<a href="p/PotassiumChlorideInSodiumChlorideFrensiusKabiinj.pdf">Potassium Chloride 40 mmol in Sodium Chloride 0.9% (1000 mL), Solution for infusion</a><br />
+<a href="p/PotassiumAndSodiumChlorideinf.pdf">Potassium Chloride 40mmol in 0.9% Sodium Chloride (1000mL), Solution for infusion</a><br />
+<a href="p/PotassiumAndSodiumChlorideinf.pdf">Potassium Chloride 40mmol in 0.9% Sodium Chloride (100mL), Solution for infusion</a><br />
+<a href="p/PotassiumChlorideInj.pdf">Potassium chloride Aborns, Solution for injection</a><br />
+<a href="p/PotassiumCitrate10PharmacyOnlyTab.pdf">Potassium citrate 10, Modified release tablet</a><br />
+<a href="p/Pradaxacap.pdf">Pradaxa, Capsule</a><br />
+<a href="p/PrasugrelLupinTab.pdf">Prasugrel Lupin, Film coated tablet</a><br />
+<a href="p/pravastatintab.pdf">Pravastatin, Tablet</a><br />
+<a href="p/praxbindinj.pdf">Praxbind, Solution for injection</a><br />
+<a href="p/Precedexinf.pdf">Precedex, Concentrate for infusion</a><br />
+<a href="p/Predforteophthsoln.pdf">Pred Forte, Eye drops, solution</a><br />
+<a href="p/PrednisoloneAFTDrops.pdf">Prednisolone-AFT, Eye drops, suspension</a><br />
+<a href="a/Apoprednisonetab.pdf">Prednisone, Tablet</a><br />
+<a href="p/pregabalin-AFTsol.pdf">Pregabalin-AFT, Oral solution</a><br />
+<a href="p/Premarintab.pdf">Premarin, Tablet</a><br />
+<a href="p/PrepkitOrangeCombo.pdf">Prepkit Orange, Combination</a><br />
+<a href="p/PrepkitCsol.pdf">Prepkit-C, Combination</a><br />
+<a href="p/prevenar13inj.pdf">Prevenar 13, Suspension for injection</a><br />
+<a href="p/Prevenar20inj.pdf">Prevenar 20, Suspension for injection</a><br />
+<a href="p/Prevymistabinf.pdf">Prevymis, Concentrate for infusion</a><br />
+<a href="p/Prevymistabinf.pdf">Prevymis, Film coated tablet</a><br />
+<a href="p/Prezistatab.pdf">Prezista, Film coated tablet</a><br />
+<a href="p/priadeltab.pdf">Priadel, Modified release tablet</a><br />
+<a href="p/primeneinf.pdf">Primene, Solution for infusion</a><br />
+<a href="a/Apoprimidonetab.pdf">Primidone, Tablet</a><br />
+<a href="p/primolutntab.pdf">Primolut N, Tablet</a><br />
+<a href="p/primovistsol.pdf">Primovist, Solution for injection</a><br />
+<a href="p/Priorixvac.pdf">Priorix, Powder for injection with diluent</a><br />
+<a href="p/privigeninj.pdf">Privigen, Solution for infusion</a><br />
+<a href="p/privigeninf.pdf">Privigen NZ, Solution for infusion</a><br />
+<a href="p/ProBanthinetab.pdf">Pro-Banthine, Tablet</a><br />
+<a href="a/aft-Probenecidtab.pdf">Probenecid-AFT, Film coated tablet</a><br />
+<a href="p/ProchlorperazineMaleateBrownAndBurkBuccalTab.pdf">Prochlorperazine maleate, Buccal tablet</a><br />
+<a href="p/ProchlorperazineMaleateMaxHealthBuccalTab.pdf">Prochlorperazine maleate (Max Health), Buccal tablet</a><br />
+<a href="p/Procurtab.pdf">Procur, Tablet</a><br />
+<a href="p/progynovatab.pdf">Progynova, Coated tablet</a><br />
+<a href="p/proliainj.pdf">Prolia, Solution for injection</a><br />
+<a href="p/Propeciatab.pdf">Propecia, Film coated tablet</a><br />
+<a href="p/Prostin15Minj.pdf">Prostin 15M, Solution for injection</a><br />
+<a href="p/ProstinE2vaggel.pdf">Prostin E2, Vaginal gel</a><br />
+<a href="p/ProstinVRinj.pdf">Prostin VR Pediatric, Solution for injection</a><br />
+<a href="p/Protaminesulphateinj.pdf">Protamine Sulfate, Solution for injection</a><br />
+<a href="PenmixMixtardProtaphaneinj.pdf">Protaphane, Suspension for injection</a><br />
+<a href="PenmixMixtardProtaphaneinj.pdf">Protaphane Flexpen, Suspension for injection</a><br />
+<a href="PenmixMixtardProtaphaneinj.pdf">Protaphane Penfill, Suspension for injection</a><br />
+<a href="p/ProthrombinexVFinj.pdf">Prothrombinex-VF, Powder for injection with diluent</a><br />
+<a href="p/proveblueinj.pdf">Proveblue Methylene Blue, Solution for injection</a><br />
+<a href="p/Proveratab.pdf">Provera, Tablet</a><br />
+<a href="p/ProveraHDtab.pdf">Provera HD, Tablet</a><br />
+<a href="p/Proviveinj.pdf">Provive 1%, Emulsion for injection</a><br />
+<a href="p/Pulmicortturbuhaler.pdf">Pulmicort Turbuhaler, Powder for inhalation</a><br />
+<a href="p/Pulmozymesoln.pdf">Pulmozyme, Solution for inhalation</a><br />
+<a href="p/Puregonsoln.pdf">Puregon, Solution for injection</a><br />
+<a href="p/Puri-netholtab.pdf">Puri-nethol, Tablet</a><br />
+<a href="p/PyridostigimineBromideJAMPtab.pdf">Pyridostigmine Bromide JAMP, Tablet</a><br />
+<a href="a/Apopyridoxinetab.pdf">Pyridoxine multichem, Tablet</a><br />
+<a href="p/pytazensrtab.pdf">Pytazen SR, Modified release tablet</a><br />
+</p>
+<p id="Q"><strong>Q</strong></p><p><a href="q/qinlocktab.pdf">Qinlock, Tablet</a><br />
+<a href="q/qlairatab.pdf">Qlaira, Film coated tablet</a><br />
+<a href="q/quadracellinj.pdf">Quadracel, Suspension for injection</a><br />
+<a href="q/QuestranLightsus.pdf">Questran Lite, Powder for oral suspension</a><br />
+<a href="q/Quetapeltab.pdf">Quetapel, Film coated tablet</a><br />
+<a href="Q/QuichlorTab.pdf">Quichlor, Coated tablet</a><br />
+<a href="q/qvarinhaler.pdf">Qvar 100, Aerosol inhaler, metered dose</a><br />
+<a href="q/qvarinhaler.pdf">Qvar 50, Aerosol inhaler, metered dose</a><br />
+</p>
+<p id="R"><strong>R</strong></p><p><a href="r/rabipurinj.pdf">Rabipur, Injection with diluent</a><br />
+<a href="n/Nalcromcap.pdf">Ralicrom, Capsule</a><br />
+<a href="r/Ramipextab.pdf">Ramipex, Tablet</a><br />
+<a href="r/ramorphsol.pdf">RA-Morph, Oral solution</a><br />
+<a href="r/RanbaxyCefaclorcapsusp.pdf">Ranbaxy-Cefaclor, Capsule</a><br />
+<a href="r/RanbaxyCefaclorcapsusp.pdf">Ranbaxy-Cefaclor, Granules for oral suspension</a><br />
+<a href="r/RanbaxyCefaclorcapsusp.pdf">Ranbaxy-Cefaclor SR, Modified release tablet</a><br />
+<a href="r/Rapamunetaboralsoln.pdf">Rapamune , Coated tablet</a><br />
+<a href="r/Rapamunetaboralsoln.pdf">Rapamune, Oral solution</a><br />
+<a href="r/rapifeninj.pdf">Rapifen, Solution for injection</a><br />
+<a href="r/razenetab.pdf">Razene, Film coated tablet</a><br />
+<a href="r/Reandron1000inj.pdf">Reandron 1000, Solution for injection</a><br />
+<a href="r/rectogesicoint.pdf">Rectogesic, Rectal ointment</a><br />
+<a href="r/Redipredoralliq.pdf">Redipred, Oral solution</a><br />
+<a href="r/rekovelleinj.pdf">Rekovelle, Solution for injection</a><br />
+<a href="r/relenzarotadisk.pdf">Relenza Rotadisk, Powder for inhalation</a><br />
+<a href="r/Relfydessinj.pdf">Relfydess, Solution for injection</a><br />
+<a href="r/relistorinj.pdf">Relistor, Solution for injection</a><br />
+<a href="r/Remicadeinj.pdf">Remicade, Powder for injection</a><br />
+<a href="r/remifentanilaftinj.pdf">Remifentanil-AFT, Powder for injection</a><br />
+<a href="r/Reminylcap.pdf">Reminyl , Modified release capsule</a><br />
+<a href="r/RemsimaSCinj.pdf">Remsima SC, Solution for injection</a><br />
+<a href="r/renflexisinj.pdf">Renflexis, Powder for injection</a><br />
+<a href="r/Renitectab.pdf">Renitec, Tablet</a><br />
+<a href="r/Renitectab.pdf">Renitec M, Tablet</a><br />
+<a href="r/replagalinf.pdf">Replagal, Concentrate for infusion</a><br />
+<a href="r/resolveplus05crm.pdf">Resolve Plus 0.5, Topical cream</a><br />
+<a href="r/resolveplus10crm.pdf">Resolve Plus 1.0, Topical cream</a><br />
+<a href="r/ResoniumApowder.pdf">Resonium-A, Powder for oral solution</a><br />
+<a href="r/resotranstab.pdf">Resotrans, Film coated tablet</a><br />
+<a href="r/retrievecream.pdf">ReTrieve Cream, Topical cream</a><br />
+<a href="r/Retrovircapsoln.pdf">Retrovir, Capsule</a><br />
+<a href="r/Retrovircapsoln.pdf">Retrovir, Oral solution</a><br />
+<a href="r/RetrovirIVinj.pdf">Retrovir IV, Solution for injection</a><br />
+<a href="r/reutenoxtab.pdf">Reutenox, Film coated tablet</a><br />
+<a href="r/revestiveinj.pdf">Revestive, Powder for injection with diluent</a><br />
+<a href="r/revlimidcap.pdf">Revlimid, Capsule</a><br />
+<a href="r/revoladetab.pdf">Revolade, Film coated tablet</a><br />
+<a href="s/SodiumcromoglycateREXeyedrops.pdf">Rexacrom Eye Drops, Eye drops, solution</a><br />
+<a href="r/rexairinh.pdf">Rexair , Aerosol inhaler, metered dose</a><br />
+<a href="r/RhDimmunoglobulinVFinj.pdf">Rh(D) Immunoglobulin-VF, Solution for injection</a><br />
+<a href="r/RiaSTAPinj.pdf">RiaSTAP, Powder for injection with diluent</a><br />
+<a href="f/Finasteridetab.pdf">Ricit, Film coated tablet</a><br />
+<a href="r/Rifadin.pdf">Rifadin, Capsule</a><br />
+<a href="r/Rifadin.pdf">Rifadin, Oral suspension</a><br />
+<a href="r/Rifadin.pdf">Rifadin IV, Injection with diluent</a><br />
+<a href="r/Rifinahtab.pdf">Rifinah 150/100mg, Tablet</a><br />
+<a href="r/Rifinahtab.pdf">Rifinah 300/150mg, Tablet</a><br />
+<a href="r/Rilutektab.pdf">Rilutek, Film coated tablet</a><br />
+<a href="r/ringersinf.pdf">Ringers , Solution for infusion</a><br />
+<a href="r/rinvoqtab.pdf">Rinvoq, Modified release tablet</a><br />
+<a href="r/risedronatesandoztab.pdf">Risedronate Sandoz, Film coated tablet</a><br />
+<a href="r/Risperdaltabquickletssol.pdf">Risperdal, Film coated tablet</a><br />
+<a href="r/Risperdaltabquickletssol.pdf">Risperdal, Oral solution</a><br />
+<a href="r/RisperdalConstaNEWinj.pdf">Risperdal Consta, Suspension for injection</a><br />
+<a href="r/Risperidonetab.pdf">Risperidone (Teva), Film coated tablet</a><br />
+<a href="r/Risperonoralsoln.pdf">Risperon, Oral solution</a><br />
+<a href="r/RitalintabSRtabLAtab.pdf">Ritalin, Tablet</a><br />
+<a href="r/RitalintabSRtabLAtab.pdf">Ritalin LA, Modified release capsule</a><br />
+<a href="r/RivaroxabanMedsurgeTab.pdf">Rivaroxaban, Film coated tablet</a><br />
+<a href="r/RivastigminePatch.pdf">Rivastigmine Patch 10, Transdermal patch</a><br />
+<a href="r/RivastigminePatch.pdf">Rivastigmine Patch 15, Transdermal patch</a><br />
+<a href="r/RivastigminePatch.pdf">Rivastigmine Patch 5, Transdermal patch</a><br />
+<a href="r/rivastigminepatchBNM.pdf">Rivastigmine Patch BNM 10, Transdermal patch</a><br />
+<a href="r/rivastigminepatchBNM.pdf">Rivastigmine Patch BNM 5, Transdermal patch</a><br />
+<a href="r/Rivotriltabdropinj.pdf">Rivotril, Injection with diluent</a><br />
+<a href="r/RivotrilOralSol.pdf">Rivotril, Oral solution</a><br />
+<a href="r/RivoxaTab.pdf">Rivoxa, Film coated tablet</a><br />
+<a href="r/riximyoinf.pdf">Riximyo, Concentrate for infusion</a><br />
+<a href="r/Rixubisinj.pdf">RIXUBIS, Powder for injection</a><br />
+<a href="r/rizamelttab.pdf">Rizamelt, Orodispersible tablet</a><br />
+<a href="R/RizatriptanViatrisTab.pdf">Rizatriptan Viatris, Orodispersible tablet</a><br />
+<a href="r/Robinulinj.pdf">Robinul, Solution for injection</a><br />
+<a href="r/rocuroniumbromideinj.pdf">Rocuronium bromide, Solution for injection</a><br />
+<a href="r/RocuroniumBromideMedsurgeinj.pdf">Rocuronium Bromide, Solution for injection</a><br />
+<a href="r/ronapreveinj.pdf">Ronapreve, Solution for injection</a><br />
+<a href="r/ropintab.pdf">Ropin, Film coated tablet</a><br />
+<a href="r/ropivacainekabiinj.pdf">Ropivacaine Kabi, Solution for injection</a><br />
+<a href="r/ropivacaineAFTinf.pdf">Ropivacaine-AFT, Solution for infusion</a><br />
+<a href="r/RospridTab.pdf">Rosprid, Film coated tablet</a><br />
+<a href="r/RosuvastatinMylanTab.pdf">Rosuvastatin Mylan, Film coated tablet</a><br />
+<a href="r/RosuvastatinSandozTab.pdf">Rosuvastatin Sandoz, Film coated tablet</a><br />
+<a href="r/rosuvastatinviatristab.pdf">Rosuvastatin Viatris, Film coated tablet</a><br />
+<a href="r/Rotarixliquidvac.pdf">Rotarix Oral Vaccine, Oral suspension</a><br />
+<a href="r/rozexcream.pdf">Rozex, Topical cream</a><br />
+<a href="r/rozexgel.pdf">Rozex, Topical gel</a><br />
+<a href="r/rozlytrekcap.pdf">Rozlytrek, Capsule</a><br />
+<a href="r/rubifentabsrtab.pdf">Rubifen, Tablet</a><br />
+<a href="r/RubifenLACap.pdf">Rubifen LA, Modified release capsule</a><br />
+<a href="r/rubifentabsrtab.pdf">Rubifen SR, Modified release tablet</a><br />
+<a href="r/rybrevantinf.pdf">Rybrevant, Concentrate for infusion</a><br />
+<a href="r/rydaptcap.pdf">Rydapt, Soft gelatin capsule</a><br />
+<a href="r/RyeqoTab.pdf">Ryeqo 40/1/0.5, Film coated tablet</a><br />
+<a href="r/Rytmonormtab.pdf">Rytmonorm, Tablet</a><br />
+<a href="r/Ryzodeginj.pdf">Ryzodeg 70/30 FlexTouch, Solution for injection</a><br />
+<a href="r/Ryzodeginj.pdf">Ryzodeg 70/30 Penfill, Solution for injection</a><br />
+</p>
+<p id="S"><strong>S</strong></p><p><a href="s/Sabriltaboralsol.pdf">Sabril, Film coated tablet</a><br />
+<a href="SacubitrilAndValsartanTab.pdf">Sacubitril/Valsartan 24/26, Film coated tablet</a><br />
+<a href="SacubitrilAndValsartanTab.pdf">Sacubitril/Valsartan 49/51, Film coated tablet</a><br />
+<a href="SacubitrilAndValsartanTab.pdf">Sacubitril/Valsartan 97/103, Film coated tablet</a><br />
+<a href="s/SafeTPenSol.pdf">Safe T Pen, Solution</a><br />
+<a href="s/SalAirNoDoseCounterinh.pdf">SalAir , Aerosol inhaler, metered dose</a><br />
+<a href="s/SalazopyrintabENtab.pdf">Salazopyrin, Tablet</a><br />
+<a href="s/SalazopyrintabENtab.pdf">Salazopyrin-EN, Enteric coated tablet</a><br />
+<a href="s/sandimmuninj.pdf">Sandimmun, Solution for infusion</a><br />
+<a href="s/Sandomigrantab.pdf">Sandomigran, Tablet</a><br />
+<a href="s/SandostatinLARinjDILUENT.pdf">Sandostatin LAR, Powder for injection</a><br />
+<a href="s/SandrenaGel.pdf">Sandrena, Transdermal gel</a><br />
+<a href="s/SaphneloInf.pdf">Saphnelo, Concentrate for infusion</a><br />
+<a href="s/sativexspray.pdf">Sativex, Oral spray</a><br />
+<a href="s/saxendainj.pdf">Saxenda, Solution for injection</a><br />
+<a href="s/Scandonestinj.pdf">Scandonest 2% Special, Solution for injection</a><br />
+<a href="s/scandonestinj.pdf">Scandonest 3%, Solution for injection</a><br />
+<a href="s/ScopolamineTransdermalSystem.pdf">Scopolamine Transdermal System, Transdermal patch</a><br />
+<a href="s/Sebizoleshampoo.pdf">Sebizole, Shampoo</a><br />
+<a href="s/seebricap.pdf">Seebri Breezhaler, Powder filled inhalation capsule</a><br />
+<a href="s/Septanestinj.pdf">Septanest, Solution for injection</a><br />
+<a href="s/Septanestinj.pdf">Septanest 1:200,000, Solution for injection</a><br />
+<a href="s/serctab.pdf">Serc, Tablet</a><br />
+<a href="s/Serenacetaboralsolninj.pdf">Serenace, Solution for injection</a><br />
+<a href="s/Serenacetaboralsolninj.pdf">Serenace, Tablet</a><br />
+<a href="s/Serenacetaboralsolninj.pdf">Serenace liquid, Oral solution</a><br />
+<a href="s/Seretideinh.pdf">Seretide, Aerosol inhaler, metered dose</a><br />
+<a href="s/Seretideacchal.pdf">Seretide Accuhaler, Powder for inhalation</a><br />
+<a href="s/Sereventaccuhal.pdf">Serevent Accuhaler, Powder for inhalation</a><br />
+<a href="s/SereventCFC-freeinh.pdf">Serevent Inhaler (CFC-free), Aerosol inhaler, metered dose</a><br />
+<a href="s/setronatab.pdf">Setrona, Film coated tablet</a><br />
+<a href="s/sevofluraneinhalation.pdf">Sevoflurane, Volatile liquid for inhalation</a><br />
+<a href="s/Sevredoltab.pdf">Sevredol, Film coated tablet</a><br />
+<a href="s/shingrixinj.pdf">Shingrix, Suspension for injection</a><br />
+<a href="s/silvastatab.pdf">Silvasta, Tablet</a><br />
+<a href="s/Simdaxinj.pdf">Simdax, Concentrate for infusion</a><br />
+<a href="s/simponiinj.pdf">Simponi , Solution for injection</a><br />
+<a href="s/Simulectinj.pdf">Simulect, Powder for injection</a><br />
+<a href="s/simvastatinmylantab.pdf">Simvastatin Viatris, Film coated tablet</a><br />
+<a href="s/Sinemettab.pdf">Sinemet, Tablet</a><br />
+<a href="s/SinemetCRtab.pdf">Sinemet CR, Modified release tablet</a><br />
+<a href="b/baclofensinteticainj.pdf">Sintetica Baclofen Intrathecal, Solution for infusion</a><br />
+<a href="b/baclofensinteticainj.pdf">Sintetica Baclofen Intrathecal, Solution for injection</a><br />
+<a href="s/Sirturotab.pdf">Sirturo, Tablet</a><br />
+<a href="s/Siteronetab.pdf">Siterone, Tablet</a><br />
+<a href="s/SixPlusParapaedSusp.pdf">Six plus Parapaed, Oral suspension</a><br />
+<a href="s/skinorencr.pdf">Skinoren, Topical cream</a><br />
+<a href="s/skyriziinj.pdf">Skyrizi, Concentrate for infusion</a><br />
+<a href="s/skyriziinj.pdf">Skyrizi, Solution for injection</a><br />
+<a href="s/SleepSafeBalanceSol.pdf">Sleep Safe Balance 1.5% glucose, 1.25mmol/L Ca, Dialysis solution</a><br />
+<a href="s/SleepSafeBalanceSol.pdf">Sleep Safe Balance 2.3% glucose, 1.25mmol/L Ca, Dialysis solution</a><br />
+<a href="s/SleepSafeBalanceSol.pdf">Sleep Safe Balance 4.25% glucose, 1.25mmol/L Ca, Dialysis solution</a><br />
+<a href="l/lopresortab.pdf">Slow Lopresor, Modified release tablet</a><br />
+<a href="s/smofKabiveninf.pdf">SmofKabiven, Emulsion for infusion</a><br />
+<a href="s/smofKabivenElectrolyteFreeinf.pdf">SmofKabiven Electrolyte Free, Emulsion for infusion</a><br />
+<a href="s/smofkabivenlowosmoinf.pdf">SmofKabiven Low Osmo, Emulsion for infusion</a><br />
+<a href="s/smofkabivenNtenseinf.pdf">SmofKabiven NTense, Emulsion for infusion</a><br />
+<a href="s/smoflipidinf.pdf">SMOFlipid, Emulsion for infusion</a><br />
+<a href="s/SodiumBicarbonateinjAFT.pdf">Sodium Bicarbonate Injection (AFT), Solution for injection</a><br />
+<a href="s/SodiumChlorideViaFlex.pdf">Sodium Chloride, Solution for infusion</a><br />
+<a href="s/SodiumChlorideinjPfizer.pdf">Sodium Chloride (Lumacina), Solution for injection</a><br />
+<a href="s/sodiumchlorideinj.pdf">Sodium Chloride 0.9% Freeflex, Solution for infusion</a><br />
+<a href="s/SodiumChlorideBPinj.pdf">Sodium Chloride Injection BP 0.9%, Solution for injection</a><br />
+<a href="s/sodiumNitroprussideMedsurgeinj.pdf">Sodium Nitroprusside, Concentrate for injection</a><br />
+<a href="s/Sofradexeyeeardrops.pdf">Sofradex, Ear/eye drops</a><br />
+<a href="s/Soframycineyeeardrop.pdf">Soframycin, Ear/eye drops</a><br />
+<a href="s/solifenacinsuccinateMaxHealthtab.pdf">Solifenacin Succinate, Film coated tablet</a><br />
+<a href="s/solifenacinMylantab.pdf">Solifenacin Viatris, Film coated tablet</a><br />
+<a href="s/solirisinf.pdf">Soliris, Solution for infusion</a><br />
+<a href="s/Solucortefinj.pdf">Solu-Cortef, Powder for injection</a><br />
+<a href="s/Solumedrolinj.pdf">Solu-Medrol, Powder for injection</a><br />
+<a href="s/Solumedrolinj.pdf">Solu-Medrol Act-O-Vial, Injection with diluent</a><br />
+<a href="s/Solumedrolinj.pdf">Solu-Medrol Act-O-Vial, Powder for injection</a><br />
+<a href="s/SoluPrepsol.pdf">SoluPrep Antiseptic Solution, Antiseptic solution</a><br />
+<a href="s/SoluPrepsol.pdf">SoluPrep Antiseptic Sponge, Antiseptic solution</a><br />
+<a href="s/SoluPrepsol.pdf">SoluPrep Antiseptic Swab, Antiseptic solution</a><br />
+<a href="s/SoluPrepsol.pdf">SoluPrep Antiseptic Wipe, Antiseptic solution</a><br />
+<a href="s/SoluvitNinf.pdf">Soluvit N, Powder for injection</a><br />
+<a href="s/SomatulineAutoGel.pdf">Somatuline Autogel, Solution for injection</a><br />
+<a href="s/SonaflamTab.pdf">Sonaflam, Film coated tablet</a><br />
+<a href="s/Soolantracrm.pdf">Soolantra, Topical cream</a><br />
+<a href="s/sotacortabinj.pdf">Sotacor, Tablet</a><br />
+<a href="s/Sotaloltab.pdf">Sotalol, Tablet</a><br />
+<a href="s/spanktab.pdf">Span-K, Tablet</a><br />
+<a href="s/spazmolinj.pdf">Spazmol, Solution for injection</a><br />
+<a href="s/spinrazainj.pdf">Spinraza, Solution for injection</a><br />
+<a href="s/SpioltoRespimatinh.pdf">Spiolto Respimat, Solution for inhalation</a><br />
+<a href="s/Spiractintab.pdf">Spiractin, Tablet</a><br />
+<a href="s/Spirivacap.pdf">Spiriva, Powder filled inhalation capsule</a><br />
+<a href="s/Spirivarespimat.pdf">Spiriva Respimat, Solution for inhalation</a><br />
+<a href="s/spironolactonetab.pdf">Spironolactone, Film coated tablet</a><br />
+<a href="s/spravatonasalspray.pdf">Spravato, Nasal spray solution</a><br />
+<a href="s/Spryceltab.pdf">Sprycel, Film coated tablet</a><br />
+<a href="s/spyagentgreeninj.pdf">Spy Agent Green, Powder for injection</a><br />
+<a href="s/stalevotab.pdf">Stalevo, Film coated tablet</a><br />
+<a href="s/Stamarilvac.pdf">Stamaril, Suspension for injection</a><br />
+<a href="s/StaphlexCap.pdf">Staphlex, Capsule</a><br />
+<a href="s/StaySafeBalanceSol.pdf">Stay Safe Balance 1.5% glucose, 1.25mmol/L Ca, Dialysis solution</a><br />
+<a href="s/StaySafeBalanceSol.pdf">Stay Safe Balance 2.3% glucose, 1.25mmol/L Ca, Dialysis solution</a><br />
+<a href="s/StaySafeBalanceSol.pdf">Stay Safe Balance 4.25% glucose, 1.25mmol/L Ca, Dialysis solution</a><br />
+<a href="s/stelarainj.pdf">Stelara, Concentrate for infusion</a><br />
+<a href="s/stelarainj.pdf">Stelara, Solution for injection</a><br />
+<a href="s/Stemetiltabsuppinj.pdf">Stemetil, Solution for injection</a><br />
+<a href="s/steriledopamineinj.pdf">Sterile Dopamine concentrate BP, Solution for injection</a><br />
+<a href="s/steroclearspray.pdf">SteroClear, Nasal spray suspension</a><br />
+<a href="s/Stesolidrectaltube.pdf">Stesolid Rectal Tubes, Enema</a><br />
+<a href="s/Stobocloinj.pdf">Stoboclo, Solution for injection</a><br />
+<a href="s/Stromectoltab.pdf">Stromectol, Tablet</a><br />
+<a href="s/StrongPholcodineLinctusBP.pdf">Strong Pholcodine Linctus BP, Linctus</a><br />
+<a href="s/sublimazeinj.pdf">Sublimaze, Solution for injection</a><br />
+<a href="s/sublocadeinj.pdf">Sublocade, Injection (depot)</a><br />
+<a href="s/Suboxonetab.pdf">Suboxone 2/0.5, Sublingual tablet</a><br />
+<a href="s/Suboxonetab.pdf">Suboxone 8/2, Sublingual tablet</a><br />
+<a href="s/suboxonewafer.pdf">Suboxone Film, Wafer</a><br />
+<a href="s/SudafedSinusAndPainReliefDayAndNighttab.pdf">Sudafed Sinus + Pain Relief Day &amp; Night, Tablet</a><br />
+<a href="s/SudafedSinusAndNasalDecongestanttab.pdf">Sudafed Sinus and Nasal Decongestant, Tablet</a><br />
+<a href="s/SugammadexMedsurgeinj.pdf">SUGAMMADEX, Solution for injection</a><br />
+<a href="s/sugammadexBNMinj.pdf">Sugammadex BNM, Solution for injection</a><br />
+<a href="s/sugammadexjunoinj.pdf">Sugammadex Juno, Solution for injection</a><br />
+<a href="s/SugammadexKabiInj.pdf">Sugammadex Kabi, Solution for injection</a><br />
+<a href="s/sulprixtab.pdf">Sulprix, Film coated tablet</a><br />
+<a href="s/sulprixtab.pdf">Sulprix, Tablet</a><br />
+<a href="s/sumagrantab.pdf">Sumagran, Film coated tablet</a><br />
+<a href="s/SumagranActivetab.pdf">Sumagran Active, Film coated tablet</a><br />
+<a href="s/SunitinibcapRex.pdf">Sunitinib (Rex), Capsule</a><br />
+<a href="s/sunitinibpfizercap.pdf">Sunitinib Pfizer, Capsule</a><br />
+<a href="s/Supraneliq.pdf">Suprane, Volatile liquid for inhalation</a><br />
+<a href="s/Supreminetab.pdf">Supremine, Modified release tablet</a><br />
+<a href="s/Sustanoninj.pdf">Sustanon 250, Solution for injection</a><br />
+<a href="s/Sutentcap.pdf">Sutent, Capsule</a><br />
+<a href="s/SuxamethotniumMedsurgeinj.pdF">Suxamethonium, Solution for injection</a><br />
+<a href="s/suxamethoniumchlorideinjmax.pdf">Suxamethonium Chloride, Solution for injection</a><br />
+<a href="s/sylvantinf.pdf">Sylvant, Powder for infusion concentrate</a><br />
+<a href="s/Symbicortinh.pdf">Symbicort 100/6 Turbuhaler, Powder for inhalation</a><br />
+<a href="s/Symbicortinh.pdf">Symbicort 200/6 Turbuhaler, Powder for inhalation</a><br />
+<a href="s/Symbicortinh.pdf">Symbicort 400/12 Turbuhaler, Powder for inhalation</a><br />
+<a href="s/symdekotab.pdf">Symdeko 100/150, Film coated tablet</a><br />
+<a href="s/symmetrelcap.pdf">Symmetrel, Capsule</a><br />
+<a href="s/synactheninj.pdf">Synacthen, Solution for injection</a><br />
+<a href="s/synacthendepot.pdf">Synacthen Depot, Injection (depot)</a><br />
+<a href="s/synagisinj.pdf">Synagis, Solution for injection</a><br />
+<a href="s/Syndrexinf.pdf">Syndrex, Concentrate for infusion</a><br />
+<a href="s/Synermoxinj.pdf">Synermox, Powder for injection</a><br />
+<a href="s/synthaminsol.pdf">Synthamin 13 with electrolytes, Solution for infusion</a><br />
+<a href="s/synthaminsol.pdf">Synthamin 17 (without electrolytes), Solution for infusion</a><br />
+<a href="s/synthaminsol.pdf">Synthamin 17 with electrolytes, Solution for infusion</a><br />
+<a href="s/Synthroidtab.pdf">Synthroid, Tablet</a><br />
+<a href="s/Syntometrineinj.pdf">Syntometrine, Solution for injection</a><br />
+</p>
+<p id="T"><strong>T</strong></p><p><a href="t/tacrolimussandozcap.pdf">Tacrolimus Sandoz, Capsule</a><br />
+<a href="t/TadalafilLupintab.pdf">Tadalafil Lupin, Film coated tablet</a><br />
+<a href="t/TadalafilSandoztab.pdf">Tadalafil Sandoz, Film coated tablet</a><br />
+<a href="t/TadalafilSandozPharmaTab.pdf">Tadalafil Sandoz Pharma, Film coated tablet</a><br />
+<a href="t/tafinlarcap.pdf">Tafinlar, Capsule</a><br />
+<a href="t/tafinlarcap.pdf">Tafinlar, Dispersible tablet</a><br />
+<a href="t/tagrissotab.pdf">Tagrisso, Film coated tablet</a><br />
+<a href="T/Takhzyroinj.pdf">TAKHZYRO, Solution for injection</a><br />
+<a href="t/tambocortabinjcap.pdf">Tambocor, Solution for injection</a><br />
+<a href="t/tambocortabcap.pdf">Tambocor, Tablet</a><br />
+<a href="t/tambocortabcap.pdf">Tambocor CR, Modified release capsule</a><br />
+<a href="t/Tamiflucapsusp.pdf">Tamiflu, Capsule</a><br />
+<a href="t/Tamiflucapsusp.pdf">Tamiflu, Powder for oral suspension</a><br />
+<a href="t/tamoxifensandoztab.pdf">Tamoxifen Sandoz, Film coated tablet</a><br />
+<a href="t/tamsulosincaps.pdf">Tamsulosin, Modified release capsule</a><br />
+<a href="t/tarcevatab.pdf">Tarceva, Film coated tablet</a><br />
+<a href="t/Targocidinj.pdf">Targocid, Powder for injection with diluent</a><br />
+<a href="t/Tasignacap.pdf">Tasigna, Capsule</a><br />
+<a href="t/Tasmartab.pdf">Tasmar, Film coated tablet</a><br />
+<a href="t/Tecentriqinf.pdf">Tecentriq, Concentrate for infusion</a><br />
+<a href="t/Tecentriqinf.pdf">Tecentriq SC, Solution for injection</a><br />
+<a href="t/tecfideracap.pdf">Tecfidera, Modified release capsule</a><br />
+<a href="t/Tegretoltabsyrup.pdf">Tegretol, Syrup</a><br />
+<a href="t/Tegretoltabsyrup.pdf">Tegretol, Tablet</a><br />
+<a href="t/Tegretoltabsyrup.pdf">Tegretol CR, Modified release tablet</a><br />
+<a href="t/Teicoplanininj.pdf">Teicoplanin, Powder for injection with diluent</a><br />
+<a href="t/Telfasttab.pdf">Telfast, Film coated tablet</a><br />
+<a href="t/Telfasttab.pdf">Telfast, Tablet</a><br />
+<a href="t/Telfasttab.pdf">Telfast 6 - 11 years, Film coated tablet</a><br />
+<a href="t/Telfasttab.pdf">Telfast Oral Liquid, Oral suspension</a><br />
+<a href="t/temaccordcap.pdf">Temaccord, Capsule</a><br />
+<a href="t/Temgesicinj.pdf">Temgesic, Solution for injection</a><br />
+<a href="t/TemozolomideDevatisCap.pdf">Temozolomide Devatis, Capsule</a><br />
+<a href="t/TenofovirDisoproxilEmtricitabineEfavirenzViatristab.pdf">Tenofovir Disoproxil Emtricitabine Efavirenz Viatris, Film coated tablet</a><br />
+<a href="t/TenofovirDisoproxilEmtricitabineMylantab.pdf">Tenofovir Disoproxil Emtricitabine Viatris, Film coated tablet</a><br />
+<a href="t/TenofovirDisoproxiltab.pdf">Tenofovir disoproxil tablets (Teva), Film coated tablet</a><br />
+<a href="t/tenofovirdisoproxiltabMylan.pdf">Tenofovir Disoproxil Viatris, Film coated tablet</a><br />
+<a href="t/TenoxicamDevatisinj.pdf">Tenoxicam, Powder for injection</a><br />
+<a href="t/tepadinainj.pdf">Tepadina, Powder for injection</a><br />
+<a href="t/tepadinainj.pdf">Tepadina, Powder for injection with diluent</a><br />
+<a href="t/terbinafine-DRLAtab.pdf">Terbinafine-DRLA, Tablet</a><br />
+<a href="t/TeriflunomideDevatisTab.pdf">Teriflunomide Devatis, Film coated tablet</a><br />
+<a href="t/teriflunomideSandoztab.pdf">Teriflunomide Sandoz, Film coated tablet</a><br />
+<a href="t/TeriparatideTevainj.pdf">Teriparatide-Teva, Solution for injection</a><br />
+<a href="t/TerlipressinAcetateAFTinj.pdf">Terlipressin Acetate AFT, Solution for injection</a><br />
+<a href="t/terlipressinEverPharmainj.pdf">Terlipressin Ever Pharma, Solution for injection</a><br />
+<a href="t/testogelGel.pdf">Testogel, Transdermal gel</a><br />
+<a href="t/TetanusimmunoglobulinVFinj.pdf">Tetanus Immunoglobulin-VF, Solution for injection</a><br />
+<a href="t/TevimbraInj.pdf">Tevimbra, Concentrate for injection</a><br />
+<a href="t/Tezspireinj.pdf">Tezspire, Solution for injection</a><br />
+<a href="t/thalomidcap.pdf">Thalomid, Capsule</a><br />
+<a href="a/Apo-Thiaminetab.pdf">Thiamine multichem , Tablet</a><br />
+<a href="t/ThiamineSteropInj.pdf">Thiamine Sterop, Solution for injection</a><br />
+<a href="t/ThiotepaReachInf.pdf">Thiotepa-Reach, Powder for infusion</a><br />
+<a href="t/Thrombotrolvfinj.pdf">Thrombotrol-VF, Powder for injection</a><br />
+<a href="t/thymoglobulineinf.pdf">Thymoglobuline, Powder for infusion</a><br />
+<a href="t/TicagrelorSandoztab.pdf">Ticagrelor Sandoz, Film coated tablet</a><br />
+<a href="t/tigecyclinejunoinj.pdf">Tigecycline Juno, Powder for injection</a><br />
+<a href="t/Tilcotiltab.pdf">Tilcotil, Film coated tablet</a><br />
+<a href="t/TisseelFibrinSealant.pdf">Tisseel , Topical solution</a><br />
+<a href="t/tivicaytab.pdf">Tivicay, Film coated tablet</a><br />
+<a href="t/tmptab.pdf">TMP, Tablet</a><br />
+<a href="t/tobradayinj.pdf">Tobra-Day, Solution for injection</a><br />
+<a href="t/Tobradexeyedropoint.pdf">Tobradex, Eye drops, suspension</a><br />
+<a href="t/tobramycinBNMinhal.pdf">Tobramycin BNM, Solution for inhalation</a><br />
+<a href="t/tobramycinmylaninj.pdf">Tobramycin Viatris, Solution for injection</a><br />
+<a href="t/tobramycinwockhardtsol.pdf">Tobramycin Wockhardt, Solution for inhalation</a><br />
+<a href="t/Tobrexeyedropoint.pdf">Tobrex, Eye drops, solution</a><br />
+<a href="t/Tobrexeyedropoint.pdf">Tobrex, Eye ointment</a><br />
+<a href="t/TofacitinibDevatistab.pdf">Tofacitinib Devatis, Film coated tablet</a><br />
+<a href="t/Tofraniltab.pdf">Tofranil, Coated tablet</a><br />
+<a href="t/topamaxtabcap.pdf">Topamax, Film coated tablet</a><br />
+<a href="t/topamaxtabcap.pdf">Topamax Sprinkle, Capsule</a><br />
+<a href="t/TopamineTopicalSol.pdf">Topamine, Topical solution</a><br />
+<a href="t/Topicainesoln.pdf">Topicaine, Topical solution</a><br />
+<a href="t/topicilcap.pdf">Topicil, Capsule</a><br />
+<a href="t/topidermcrm.pdf">topiderm Hydrocortisone acetate 1% Cream, Topical cream</a><br />
+<a href="t/topiramateactavistab.pdf">Topiramate Actavis 100, Film coated tablet</a><br />
+<a href="t/topiramateactavistab.pdf">Topiramate Actavis 200, Film coated tablet</a><br />
+<a href="t/topiramateactavistab.pdf">Topiramate Actavis 25, Film coated tablet</a><br />
+<a href="t/topiramateactavistab.pdf">Topiramate Actavis 50, Film coated tablet</a><br />
+<a href="t/ToprelocXLtab.pdf">Topreloc-XL, Modified release tablet</a><br />
+<a href="t/toujeoinj.pdf">Toujeo, Solution for injection</a><br />
+<a href="t/ToujeoMaxinj.pdf">Toujeo Max, Solution for injection</a><br />
+<a href="t/Tracleertab.pdf">Tracleer, Film coated tablet</a><br />
+<a href="t/Tracriuminj.pdf">Tracrium, Solution for injection</a><br />
+<a href="t/TramadolcapIPCA.pdf">Tramadol hydrochloride (Ipca), Capsule</a><br />
+<a href="t/TramalcapSRtabinjoraldrops.pdf">Tramal, Capsule</a><br />
+<a href="t/TramalcapSRtabinjoraldrops.pdf">Tramal 100, Solution for injection</a><br />
+<a href="t/TramalcapSRtabinjoraldrops.pdf">Tramal 50, Solution for injection</a><br />
+<a href="t/TramalcapSRtabinjoraldrops.pdf">Tramal SR, Modified release tablet</a><br />
+<a href="t/trandatetab.pdf">Trandate, Film coated tablet</a><br />
+<a href="t/Trandateinj.pdf">Trandate, Solution for injection</a><br />
+<a href="t/tranexamicacidMedsurgeinj.pdf">Tranexamic Acid Injection, Solution for injection</a><br />
+<a href="t/tranexamicacidjuno.pdf">Tranexamic Acid Juno, Solution for injection</a><br />
+<a href="t/Tranexamicacidinj.pdf">Tranexamic Acid Link, Solution for injection</a><br />
+<a href="t/tranexamicacidtab.pdf">Tranexamic Acid Tablets, Film coated tablet</a><br />
+<a href="t/TranexamicAFTinj.pdf">Tranexamic-AFT, Solution for injection</a><br />
+<a href="t/Travataneyedrop.pdf">Travatan, Eye drops, solution</a><br />
+<a href="t/trazimerainf.pdf">Trazimera, Powder for infusion concentrate</a><br />
+<a href="t/TrelegyElliptapowder.pdf">Trelegy Ellipta 100/62.5/25, Powder for inhalation</a><br />
+<a href="t/TrelegyElliptapowder.pdf">Trelegy Ellipta 200/62.5/25, Powder for inhalation</a><br />
+<a href="t/Tremfyainj.pdf">Tremfya, Concentrate for infusion</a><br />
+<a href="t/Tremfyainj.pdf">Tremfya, Solution for injection</a><br />
+<a href="t/Trentaltabinj.pdf">Trental, Modified release tablet</a><br />
+<a href="t/trexatetab.pdf">Trexate, Tablet</a><br />
+<a href="t/trientinewaymadecap.pdf">Trientine Waymade, Capsule</a><br />
+<a href="t/trikaftatab.pdf">Trikafta 100/50/75, Film coated tablet</a><br />
+<a href="t/trikaftatab.pdf">Trikafta 100/50/75, Oral granules</a><br />
+<a href="t/trikaftatab.pdf">Trikafta 50/25/37.5, Film coated tablet</a><br />
+<a href="t/trikaftatab.pdf">Trikafta 80/40/60, Oral granules</a><br />
+<a href="t/Trileptaltab.pdf">Trileptal, Film coated tablet</a><br />
+<a href="t/Trisequenstab.pdf">Trisequens (Combination pack), Film coated tablet</a><br />
+<a href="t/Trisultab.pdf">Trisul, Tablet</a><br />
+<a href="t/Trodelvyinf.pdf">Trodelvy, Powder for infusion</a><br />
+<a href="t/tropisetronaftinj.pdf">Tropisetron-AFT, Solution for injection</a><br />
+<a href="t/trulicityinj.pdf">Trulicity, Solution for injection</a><br />
+<a href="t/trumenbainj.pdf">Trumenba, Suspension for injection</a><br />
+<a href="t/TruximaInf.pdf">Truxima, Concentrate for infusion</a><br />
+<a href="t/tryzancap.pdf">Tryzan, Capsule</a><br />
+<a href="t/Tubersolinj.pdf">Tubersol (Tuberculin PPD), Solution for injection</a><br />
+<a href="t/Twinrixinj.pdf">Twinrix, Suspension for injection</a><br />
+<a href="t/Tygacilinj.pdf">Tygacil, Powder for injection</a><br />
+<a href="t/Tykerbtab.pdf">Tykerb, Tablet</a><br />
+<a href="t/TyphimVIinj.pdf">Typhim Vi vaccine, Solution for injection</a><br />
+<a href="t/Tysabriinf.pdf">Tysabri, Solution for infusion</a><br />
+<a href="t/Tysabriinf.pdf">Tysabri, Solution for injection</a><br />
+</p>
+<p id="U"><strong>U</strong></p><p><a href="u/ubistesinforteinj.pdf">Ubistesin, Solution for injection</a><br />
+<a href="u/ubistesinforteinj.pdf">Ubistesin Forte, Solution for injection</a><br />
+<a href="u/ucedanetab.pdf">Ucedane, Dispersible tablet</a><br />
+<a href="u/ultibrocap.pdf">Ultibro Breezhaler 110/50, Powder filled inhalation capsule</a><br />
+<a href="u/ultraproctsupp.pdf">Ultraproct, Suppository</a><br />
+<a href="u/ultraproctointsupp.pdf">Ultraproct, Topical ointment</a><br />
+<a href="u/Unisomsleepgels.pdf">Unisom SleepGels, Liquid filled capsule</a><br />
+<a href="u/univentsol.pdf">Univent, Solution for inhalation</a><br />
+<a href="u/uptravitab.pdf">Uptravi, Film coated tablet</a><br />
+<a href="u/urcholcap.pdf">Urchol, Capsule</a><br />
+<a href="u/urexfortetab.pdf">Urex Forte, Tablet</a><br />
+<a href="u/UroFosgranules.pdf">UroFos, Oral granules</a><br />
+<a href="u/Urografininf.pdf">Urografin, Solution for infusion</a><br />
+<a href="u/uromitexantab.pdf">Uromitexan, Film coated tablet</a><br />
+<a href="u/Uromitexaninj.pdf">Uromitexan, Solution for injection</a><br />
+<a href="u/uromitexantab.pdf">Uromitexan, Tablet</a><br />
+<a href="u/Ursosancap.pdf">Ursosan, Capsule</a><br />
+<a href="u/Utrogestan100cap.pdf">Utrogestan, Capsule</a><br />
+<a href="u/Utrogestan200cap.pdf">Utrogestan, Capsule</a><br />
+</p>
+<p id="V"><strong>V</strong></p><p><a href="v/vabysmoinj.pdf">Vabysmo, Solution for injection</a><br />
+<a href="v/vaclovirtab.pdf">Vaclovir, Film coated tablet</a><br />
+<a href="v/ValaciclovirViatrisTab.pdf">Valaciclovir Viatris, Film coated tablet</a><br />
+<a href="v/valganciclovirMaxHealthtab.pdf">Valganciclovir, Film coated tablet</a><br />
+<a href="v/valganciclovirmylantab.pdf">Valganciclovir Viatris, Film coated tablet</a><br />
+<a href="v/valproate-AFTinfinj.pdf">Valproate-AFT, Solution for injection</a><br />
+<a href="v/vamininf.pdf">Vamin 14 with electrolytes, Solution for infusion</a><br />
+<a href="v/vamininf.pdf">Vamin 14 without electrolytes, Solution for infusion</a><br />
+<a href="v/vamininf.pdf">Vamin 18 without electrolytes, Solution for infusion</a><br />
+<a href="v/VancomycinSandozinf.pdf">Vancomycin Sandoz, Powder for infusion</a><br />
+<a href="v/VancomycinViatrisInf.pdf">Vancomycin Viatris, Powder for infusion</a><br />
+<a href="v/vannairinh.pdf">Vannair 100/6, Aerosol inhaler, metered dose</a><br />
+<a href="v/vannairinh.pdf">Vannair 200/6, Aerosol inhaler, metered dose</a><br />
+<a href="v/VareniclineSandoztab.pdf">Varenicline Sandoz, Film coated tablet</a><br />
+<a href="v/Varilrixinj.pdf">Varilrix Vaccine, Powder for injection with diluent</a><br />
+<a href="v/Varivaxinj.pdf">Varivax, Injection with diluent</a><br />
+<a href="v/vasorextab.pdf">Vasorex, Tablet</a><br />
+<a href="v/vazkepacap.pdf">Vazkepa, Soft gelatin capsule</a><br />
+<a href="v/vebulissol.pdf">Vebulis, Solution for inhalation</a><br />
+<a href="v/vecureinj.pdf">Vecure, Powder for injection</a><br />
+<a href="v/vedafiltab.pdf">Vedafil, Film coated tablet</a><br />
+<a href="v/Vegzelmainf.pdf">Vegzelma, Concentrate for infusion</a><br />
+<a href="v/vekluryinj.pdf">Veklury, Powder for injection</a><br />
+<a href="v/Velcadeinj.pdf">Velcade, Powder for injection</a><br />
+<a href="v/veletriinj.pdf">Veletri, Powder for injection</a><br />
+<a href="v/venclextatab.pdf">Venclexta, Film coated tablet</a><br />
+<a href="v/Ventavisinh.pdf">Ventavis, Solution for inhalation</a><br />
+<a href="v/VentolinCFC-freeinh.pdf">Ventolin, Aerosol inhaler, metered dose</a><br />
+<a href="v/VentolininjIV.pdf">Ventolin, Solution for injection</a><br />
+<a href="v/VentolininjIV.pdf">Ventolin IV, Solution for injection</a><br />
+<a href="v/Ventolinelixir.pdf">Ventolin Syrup, Syrup</a><br />
+<a href="v/Vepesidcapinj.pdf">Vepesid, Capsule</a><br />
+<a href="v/verdyeinj.pdf">Verdye, Powder for injection</a><br />
+<a href="v/Vermoxtabsusp.pdf">Vermox, Oral suspension</a><br />
+<a href="v/Vermoxtabsusp.pdf">Vermox, Tablet</a><br />
+<a href="v/Vermoxtabsusp.pdf">Vermox Choc Chews , Chewable tablet</a><br />
+<a href="v/verorabinj.pdf">Verorab, Powder for injection with diluent</a><br />
+<a href="v/Versaclozsusp.pdf">Versacloz, Oral suspension</a><br />
+<a href="v/verzeniotab.pdf">Verzenio, Film coated tablet</a><br />
+<a href="v/Vesanoidcap.pdf">Vesanoid, Liquid filled capsule</a><br />
+<a href="v/VevyeDrops.pdf">Vevye, Eye drops, solution</a><br />
+<a href="v/Vexazonetab.pdf">Vexazone, Tablet</a><br />
+<a href="v/Vfendtabinj.pdf">Vfend, Film coated tablet</a><br />
+<a href="v/Vfendtabinj.pdf">Vfend, Powder for injection</a><br />
+<a href="v/Vfendtabinj.pdf">Vfend, Powder for oral suspension</a><br />
+<a href="v/ViadermKCCroint.pdf">Viaderm KC, Topical cream</a><br />
+<a href="v/ViadermKCCroint.pdf">Viaderm KC, Topical ointment</a><br />
+<a href="v/viagratab.pdf">Viagra, Film coated tablet</a><br />
+<a href="v/Victozainj.pdf">Victoza, Solution for injection</a><br />
+<a href="v/vigisomtab.pdf">Vigisom, Modified release tablet</a><br />
+<a href="v/VimcosaTab.pdf">Vimcosa, Film coated tablet</a><br />
+<a href="v/vimiziminf.pdf">VIMIZIM, Concentrate for injection</a><br />
+<a href="v/Vimpattab.pdf">Vimpat, Film coated tablet</a><br />
+<a href="v/Vimpattab.pdf">Vimpat, Oral solution</a><br />
+<a href="v/Vimpatinj.pdf">Vimpat, Solution for injection</a><br />
+<a href="v/vinorelbineTeAraicap.pdf">Vinorelbine Te Arai, Capsule</a><br />
+<a href="v/Viramunetabsusp.pdf">Viramune, Oral suspension</a><br />
+<a href="v/ViruPOSoint.pdf">ViruPOS, Eye ointment</a><br />
+<a href="v/Visipaqueinj.pdf">Visipaque, Solution for injection</a><br />
+<a href="v/VitD3cap.pdf">Vit.D3, Soft gelatin capsule</a><br />
+<a href="v/vitalipidNinj.pdf">Vitalipid N Adult, Emulsion for injection</a><br />
+<a href="v/vitalipidNinj.pdf">Vitalipid N Infant, Emulsion for injection</a><br />
+<a href="v/Vivotifcap.pdf">Vivotif Oral, Modified release capsule</a><br />
+<a href="v/vizoPFeyedrops.pdf">Vizo-PF Bimatoprost, Eye drops, solution</a><br />
+<a href="v/vizo-PFeyedrops.pdf">Vizo-PF Bimatotim 0.3/5, Eye drops, solution</a><br />
+<a href="v/Vizo-PFDorzolatimeyedrops.pdf">Vizo-PF Dorzolatim, Eye drops, solution</a><br />
+<a href="v/volibristab.pdf">Volibris, Tablet</a><br />
+<a href="v/voltarentab.pdf">Voltaren, Enteric coated tablet</a><br />
+<a href="v/voltareninj.pdf">Voltaren, Solution for injection</a><br />
+<a href="v/voltarensuppositories.pdf">Voltaren, Suppository</a><br />
+<a href="v/voltarendtab.pdf">Voltaren D, Dispersible tablet</a><br />
+<a href="v/voltarenophtha.pdf">Voltaren Ophtha, Eye drops, solution</a><br />
+<a href="v/VoltarenRapidtabandcap.pdf">Voltaren Rapid Extra Strength, Tablet</a><br />
+<a href="v/voltarensrtab.pdf">Voltaren SR, Modified release tablet</a><br />
+<a href="v/volulytesol.pdf">Volulyte 6%, Solution for infusion</a><br />
+<a href="v/Voluveninf.pdf">Voluven, Solution for infusion</a><br />
+<a href="v/VoquilyCapOralSol.pdf">Voquily, Capsule</a><br />
+<a href="v/VoquilyCapOralSol.pdf">Voquily, Oral solution</a><br />
+<a href="v/VoquilyJetLagReliefCap.pdf">Voquily Jet Lag Relief, Capsule</a><br />
+<a href="v/Voriconazoletabinj.pdf">Voriconazole, Film coated tablet</a><br />
+<a href="v/Voriconazoleinj.pdf">Voriconazole (Neo Health), Powder for injection</a><br />
+<a href="v/voriconazoleinfMax.pdf">Voriconazole 200 mg, Powder for infusion</a><br />
+<a href="v/voriconazoleaftinj.pdf">Voriconazole-AFT, Powder for injection</a><br />
+<a href="v/vosevitab.pdf">Vosevi, Film coated tablet</a><br />
+<a href="v/votrienttab.pdf">Votrient, Film coated tablet</a><br />
+<a href="v/vprivinf.pdf">VPRIV, Powder for infusion concentrate</a><br />
+<a href="v/vttacktab.pdf">Vttack, Film coated tablet</a><br />
+<a href="v/Vyalevinf.pdf">Vyalev, Solution for infusion</a><br />
+<a href="v/vyvansecap.pdf">Vyvanse, Capsule</a><br />
+</p>
+<p id="W"><strong>W</strong></p><p><a href="w/waterforinjectionbaxter.pdf">Water for Injection, Solution for infusion</a><br />
+<a href="w/WaterforInjectionPfizer.pdf">Water for Injection (Lumacina), Solution for injection</a><br />
+<a href="w/WaterforinjectionBP.pdf">Water for Injections BP, Solution for injection</a><br />
+<a href="w/Waterforinjection.pdf">Water for Injections Freeflex, Solution for injection</a><br />
+<a href="w/wegovyinjection.pdf">Wegovy, Solution for injection</a><br />
+<a href="w/WeliregTab.pdf">Welireg, Film coated tablet</a><br />
+<a href="w/WinleviCrm.pdf">Winlevi, Topical cream</a><br />
+</p>
+<p id="X"><strong>X</strong></p><p><a href="x/xalkoricap.pdf">Xalkori, Capsule</a><br />
+<a href="x/Xandanetab.pdf">Xandane, Tablet</a><br />
+<a href="x/Xareltotab.pdf">Xarelto, Film coated tablet</a><br />
+<a href="x/XaremedTab.pdf">Xaremed, Film coated tablet</a><br />
+<a href="x/xembifyinj.pdf">Xembify, Solution for injection</a><br />
+<a href="x/Xenicalcap.pdf">Xenical, Capsule</a><br />
+<a href="x/Xeomininj.pdf">Xeomin, Powder for injection</a><br />
+<a href="x/xgevainj.pdf">Xgeva, Solution for injection</a><br />
+<a href="x/xifaxantab.pdf">Xifaxan, Film coated tablet</a><br />
+<a href="x/Xofluzatab.pdf">Xofluza, Film coated tablet</a><br />
+<a href="x/Xolairinj.pdf">Xolair, Solution for injection</a><br />
+<a href="x/XylestesinAinj.pdf">Xylestesin-A, Solution for injection</a><br />
+<a href="x/XylocaineAndAdrenalineinj.pdf">Xylocaine 1%, Solution for injection</a><br />
+<a href="x/XylocaineAndAdrenalineinj.pdf">Xylocaine 1% with Adrenaline 1:100,000, Solution for injection</a><br />
+<a href="x/XylocaineAndAdrenalineinj.pdf">Xylocaine 1% with Adrenaline 1:200,000, Solution for injection</a><br />
+<a href="x/XylocaineAndAdrenalineinj.pdf">Xylocaine 2%, Solution for injection</a><br />
+<a href="x/XylocaineAndAdrenalineinj.pdf">Xylocaine 2% with Adrenaline 1:200,000, Solution for injection</a><br />
+<a href="x/Xylocainejelly.pdf">Xylocaine Jelly, Topical gel</a><br />
+<a href="x/Xylocainepumpspray.pdf">Xylocaine Pump Spray, Oral spray</a><br />
+<a href="x/xylocaineviscoussol.pdf">Xylocaine Viscous, Oral solution</a><br />
+<a href="x/Xynthainj.pdf">Xyntha, Injection with diluent</a><br />
+</p>
+<p id="Y"><strong>Y</strong></p><p><a href="y/Yasmintab.pdf">Yasmin, Tablet</a><br />
+<a href="y/Yaztab.pdf">Yaz, Tablet</a><br />
+<a href="y/yervoyinj.pdf">Yervoy, Concentrate for injection</a><br />
+<a href="y/yondelisinf.pdf">Yondelis, Powder for infusion</a><br />
+<a href="y/YonsaMpredtab.pdf">Yonsa Mpred, Tablet</a><br />
+<a href="y/Yuflyma40and80inj.pdf">Yuflyma, Solution for injection</a><br />
+<a href="y/Yuflymainj.pdf">Yuflyma, Solution for injection</a><br />
+</p>
+<p id="Z"><strong>Z</strong></p><p><a href="z/Zaditeneyedrops.pdf">Zaditen, Eye drops, solution</a><br />
+<a href="z/Zantac150-300tab.pdf">Zantac 150, Tablet</a><br />
+<a href="z/Zantac150-300tab.pdf">Zantac 300, Tablet</a><br />
+<a href="z/zapgel.pdf">ZAP Topical Anesthetic Gel (Cool Mint), Oral topical gel</a><br />
+<a href="z/Zarontinsyrcap.pdf">Zarontin, Soft gelatin capsule</a><br />
+<a href="z/Zarontinsyrcap.pdf">Zarontin Syrup, Syrup</a><br />
+<a href="z/Zavedoscapinf.pdf">Zavedos, Powder for injection</a><br />
+<a href="z/Zavescacap.pdf">Zavesca, Capsule</a><br />
+<a href="z/zaviceftainf.pdf">Zavicefta, Powder for infusion concentrate</a><br />
+<a href="z/Zeffixoralsol.pdf">Zeffix, Oral solution</a><br />
+<a href="z/zejulacap.pdf">Zejula, Capsule</a><br />
+<a href="z/ZejulaTab.pdf">Zejula, Film coated tablet</a><br />
+<a href="z/zelboraftab.pdf">Zelboraf, Film coated tablet</a><br />
+<a href="z/zemairainj.pdf">Zemaira, Powder for infusion</a><br />
+<a href="z/zematanecap.pdf">Zematane, Liquid filled capsule</a><br />
+<a href="z/zematopointment.pdf">Zematop, Topical ointment</a><br />
+<a href="z/zerbaxainj.pdf">Zerbaxa, Powder for injection</a><br />
+<a href="z/zetlamtab.pdf">Zetlam, Film coated tablet</a><br />
+<a href="z/Ziagentab.pdf">Ziagen, Film coated tablet</a><br />
+<a href="z/Ziextenzoinj.pdf">Ziextenzo, Solution for injection</a><br />
+<a href="z/zimybetab.pdf">Zimybe 10/10, Tablet</a><br />
+<a href="z/zimybetab.pdf">Zimybe 10/20, Tablet</a><br />
+<a href="z/zimybetab.pdf">Zimybe 10/40, Tablet</a><br />
+<a href="z/zimybetab.pdf">Zimybe 10/80, Tablet</a><br />
+<a href="z/Zincapscap.pdf">Zincaps, Capsule</a><br />
+<a href="z/zinforoinj.pdf">Zinforo, Powder for injection</a><br />
+<a href="z/Zinnattab.pdf">Zinnat, Film coated tablet</a><br />
+<a href="z/zistatab.pdf">ZISTA, Tablet</a><br />
+<a href="z/Zithromaxtabsusp.pdf">Zithromax, Film coated tablet</a><br />
+<a href="z/Zithromaxtabsusp.pdf">Zithromax, Powder for oral suspension</a><br />
+<a href="z/Zoladex10implant.pdf">Zoladex 10.8mg, Injection (depot)</a><br />
+<a href="z/Zoladex3implant.pdf">Zoladex 3.6mg, Injection (depot)</a><br />
+<a href="z/ZoledronicAcidinf.pdf">Zoledronic acid Viatris, Concentrate for infusion</a><br />
+<a href="z/zoledronicAcidViatrisinf.pdf">Zoledronic acid Viatris, Solution for infusion</a><br />
+<a href="z/ZonisamideTeAraicap.pdf">Zonisamide Te Arai, Capsule</a><br />
+<a href="z/zopicloneactavistab.pdf">Zopiclone Actavis, Film coated tablet</a><br />
+<a href="z/ZosterimmunoglobulinVFinj.pdf">Zoster Immunoglobulin-VF, Solution for injection</a><br />
+<a href="z/zoviraxduocream.pdf">Zovirax Duo, Topical cream</a><br />
+<a href="z/zusdonecap.pdf">Zusdone, Capsule</a><br />
+<a href="z/zybantab.pdf">Zyban, Modified release tablet</a><br />
+<a href="z/ZydeligTab.pdf">Zydelig, Film coated tablet</a><br />
+<a href="z/Zypinetab.pdf">Zypine, Film coated tablet</a><br />
+<a href="z/zypinewafer.pdf">Zypine&reg; ODT, Orodispersible tablet</a><br />
+<a href="z/ZyprexatabZyprexazydiswafer.pdf">Zyprexa, Film coated tablet</a><br />
+<a href="z/ZyprexaIMinj.pdf">Zyprexa IM, Powder for injection</a><br />
+<a href="z/zyprexarelprevvinj.pdf">Zyprexa Relprevv, Powder for injection</a><br />
+<a href="z/ZyprexatabZyprexazydiswafer.pdf">Zyprexa Zydis, Wafer</a><br />
+<a href="z/zytigatab.pdf">Zytiga, Film coated tablet</a><br />
+<a href="z/zytigatab.pdf">Zytiga, Tablet</a><br />
+<a href="z/Zyvoxinjtabsusp.pdf">Zyvox, Film coated tablet</a><br />
+<a href="z/Zyvoxinjtabsusp.pdf">Zyvox, Granules for oral suspension</a><br />
+<a href="z/Zyvoxinjtabsusp.pdf">Zyvox, Solution for infusion</a><br />
+</p>
+<!-- #EndEditable -->
+</div>
+<div id="hide" class="toggleMenu"><a href="#"><img alt="Hide menus" src="../../images/minus.png" /></a></div>
+<div id="show" class="toggleMenu"><a href="#"><img alt="Show menus" src="../../images/plus.png" /></a></div>
+<!-- Begin Right Column -->
+<div id="navcolumn" role="complementary">
+<div id="navrelated">
+<h2>Related Information</h2>
+<ul>
+<li><a href="../../regulatory/regguidance.asp">Introductory Regulatory Guidance</a></li>
+<li><a href="/DbSearch/InfoSearch">Data Sheets</a></li>
+<li><a href="/DbSearch/InfoSearch">Consumer Medicine Information</a></li>
+<li><a href="/DbSearch/">Product/Application Search</a></li>
+<li><a href="../../regulatory/labelling.asp">Label Statements Database</a></li>
+<li><a href="../../regulatory/CreditCard/CreditCard.asp">Credit Card Payment</a></li>
+<li><a href="../../profs/class/classintro.asp">Classification Database</a></li>
+<li><a href="/SMARS/">Suspected Medicine Adverse Reaction Search</a></li>
+<li><a href="../../consumers/MIET/ImportMedicines.asp">Importing Medicines</a></li>
+<li><a href="../../safety/report-a-problem.asp">Report a Problem</a></li>
+</ul>
+</div>
+</div>
+<!-- End Right Column -->
+</div> <!-- content-wrapper -->
+</div> <!-- page-content -->
+<div id="footer">
+<div id="government">
+<p><a href="https://www.govt.nz/" style="background: none; margin-right: 0px">
+<img src="../../images/nz-govt-logo-transparent-background.png" width="150" 
+alt = "www.govt.nz - connecting you to New Zealand central &amp; local government services"
+title = "www.govt.nz - connecting you to New Zealand central &amp; local government services"
+style="border: none" /></a></p>
+</div>
+<div id="moh">
+<a href="https://www.health.govt.nz/" style="background: none">
+<img src="../../images/mohlogo.png" alt="Link to Ministry of Health Website"
+style="border: none" height="50" width="122" /></a>
+</div>
+<p><a href="../../index.asp">Home</a> |
+<a href="../../other/siteinfo.asp">About this Site</a> |
+<a href="../../faq-index.asp">FAQs</a> |
+<a href="../../sitemap.htm">Site Map</a> |
+<a href="../../other/contact.asp">Contact Us</a></p>
+</div>
+<div id="accessibility">
+<a href="../../other/accesskeys.asp" accesskey="0">0</a>
+<a href="../../index.asp" accesskey="1">1</a>
+<a href="../../sitemap.htm" accesskey="2">2</a>
+<a href="/DbSearch/InfoSearch" accesskey="4">4</a>
+<a href="/DbSearch/InfoSearch" accesskey="5">5</a>
+<a href="../../profs/PUarticles.asp" accesskey="6">6</a>
+<a href="../../devices/devices-landing.asp" accesskey="7">7</a>
+<a href="../../other/contact.asp" accesskey="9">9</a>
+<a href="#top" accesskey="[">[</a>
+<a href="http://www.govt.nz/" accesskey="/" target="_blank">/</a>
+</div>
+</body>
+<!-- #EndTemplate -->
+</html>

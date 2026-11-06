@@ -1,0 +1,3921 @@
+<!DOCTYPE html>
+<html
+        lang="ko"
+        class="sub-html"
+>
+<head>
+    <title>의약품안전나라   &gt;   의약품등 검색 </title>
+    <meta charset="UTF-8">
+    <!--<title>현재메뉴 &gt; 3차메뉴 &gt; 2차메뉴 &gt; 1차메뉴 &gt; 식품의약품안전처 의약품통합정보시스템2</title> -->
+    <!-- 메뉴순서 역순으로 출력 접근성 필요  -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0, user-scalable=yes" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/><!-- 호환성보기로 인해 레이아웃이 비정상적으로 출력되는 문제 개선 -->
+    <meta name="title" content="의약품안전나라"/>
+    <meta name="description" content="의약품등검색,의약품 사이버민원, 제품 및 제조사 정보, 의약품광고검색, 규격기준정보 등 수록"/>
+    <meta name="robots" content="index,follow"/>
+    <meta name="google-site-verification" content="bQpJ2nuBB4ooNzYcb5sc19SUNGiNfN8rfWRFgnDKq10"/>    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="의약품안전나라" />
+    <meta property="og:description" content="의약품등검색, 의약품 사이버민원, 제품 및 제조사 정보, 의약품광고검색, 규격기준정보 등 수록" />
+    <meta property="og:image" content="https://nedrug.mfds.go.kr/resources/images/layout/img_header_logo_20190809_release.gif" />
+    <meta property="og:url" content="https://nedrug.mfds.go.kr" />
+    <link rel="stylesheet" media="print" href="/resources/css/print.css?v=20221028">
+    <link rel="stylesheet" href="/resources/css/import.css?v=20221028" >
+    
+    <!-- <link th:if="${not @viewUtil.isMobile()}" rel="stylesheet" th:href="@{/resources/css/jquery.bxslider.css}" >  -->
+    <link media="screen and (min-width: 1025px)" rel="stylesheet" href="/resources/css/jquery.bxslider.css" >
+    <!-- <link rel="stylesheet" th:href="@{/resources/css/mobile.css}" >  -->
+    <link rel="stylesheet" href="/resources/css/mobile.css?v=20221028" >
+    
+    <link rel="canonical" href="https://nedrug.mfds.go.kr/index">
+    <script type="text/javascript" src="/static/lib/jquery/jquery-1.12.4.min.js" ></script>
+    <script type="text/javascript" src="/static/lib/jquery-ui/jquery-ui.js" charset="utf-8"></script>
+    <script type="text/javascript" src="/resources/js/front_script.js" ></script>
+    <script type="text/javascript" src="/static/lib/colResizeable/colResizable-1.6.min.js"></script>
+    <script type="text/javascript" src="/resources/js/common-pbp.js"></script>
+    <script type="text/javascript" src="/resources/js/jquery.bxslider.js"></script>
+    <script type="text/javascript" src="/static/lib/bootstrap-3.3.7/js/bootstrap.js"></script>
+    <script type="text/javascript" src="/static/lib/moment.js"></script>
+    <script type="text/javascript" src="/static/lib/bootbox.js"></script>
+    <script type="text/javascript" src="/static/lib/jquery/jquery.maskedinput.min.js"></script>
+    <script type="text/javascript" src="/resources/js/js-1221/slick.min.js"></script>
+    <script type="text/javascript" src="/resources/js/js-1221/main.js"></script>
+    <!-- meta http-equiv="content-language" content="ko"/> -->
+    
+    
+    
+
+    <script>
+    var anyidAdaptor = anyidAdaptor || {};
+    var dn = ''
+    var name = ''
+    var mberType = ''
+
+
+
+
+    var AnyIdAuthCheckRes = {
+        NEED_LINK: "NEED_LINK",
+        ONE_MATCHED: "ONE_MATCHED",
+        MULTI_MATCHED: "MULTI_MATCHED"
+    }
+
+
+
+    var SsKeyName = {
+        ANYID_LINK_NEEDED: "anyidLinkNeeded",
+        TARGET_SERVICE_URL: "targetServiceUrl",
+        DO_SSO_LOGOUT_ON_HOME: "DO_SSO_LOGOUT_ON_HOME",
+    }
+
+
+    var UsrSeCd = {
+        USERSECD03 : "03"
+    }
+
+    var MberTypeEnum = {
+        INDV: "indv",
+        BIZ: "biz"
+    }
+
+    var Identifier = {
+        CI: "ci",
+        CN: "cn"
+    }
+
+    var AnyIdRestResMsg = {
+        OK: "OK"
+    }
+
+    var Gov24 = {
+        URL: "plus.gov.kr"
+    }
+
+    var NedrugUrl = "nedrug.mfds.go.kr"
+
+    function selectAnyidAccount(mberId) {
+        console.log(mberId)
+        $.ajax({
+            url: "/rest/anyid/login",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({mberId: mberId, ci: "null"}),
+            success: function (res) {
+                console.log("success anyid login")
+                console.log(res)
+                if (res.resultCode === 'success') {
+
+                    requestRestLogin(mberId)
+                }
+            }
+        })
+
+        $("#anyidAcountModal").modal('hide');
+    }
+
+    function sendDataToParent(data) {
+        if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(data, "*")
+        }
+        window.close();
+
+    }
+
+    function removeAccountItemById(id) {
+        $('.anyid-account-item').filter(function () {
+            return $(this).find('.anyid-account-name').text().trim() === id;
+        }).remove()
+    }
+
+    function setAnyIdNotLinked(mberId, ci) {
+        var infoParam = { ci: ci, mberId: mberId };
+
+        $.ajax({
+            url: '/rest/setAnyidNotLinked',
+            method : 'post',
+            async:false,
+            data : infoParam,
+            dataType : 'json',
+            complete : function(data) {
+
+                var json = JSON.parse(data.responseText);
+                if ('success' == json.result) {
+
+                    removeAccountItemById(window.removingMberId)
+                } else {
+                    bootbox.alert({
+                        title:'알림 메세지',
+                        message:'회원정보 변경중에 오류가 발생하였습니다.'
+                    });
+                }
+            }
+        });
+
+    }
+
+
+
+        anyidAdaptor.orgLogin = function({res, userSeCd, userChecked} = data){
+
+            // 인증 통과 후 최초로 orgLogin 호출
+            // SsoLogin 시도
+            if (!userChecked) {
+                anyidAdaptor.userCheck()
+                return
+            }
+
+            if(res.data || res.certInfo) {
+                $.ajax({
+                    url:"/rest/anyid",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        ci: userSeCd === UsrSeCd.USERSECD03 ? Identifier.CI : Identifier.CN,
+                        mberType: userSeCd === UsrSeCd.USERSECD03 ? MberTypeEnum.INDV : MberTypeEnum.BIZ
+                    }),
+                    success: function (res) {
+                        if (res.message === AnyIdRestResMsg.OK) {
+                            console.log("OK")
+                            handleAnyIdAuthResponse(res)
+                        }
+                    }
+                });
+            }
+        }
+
+
+
+    function getLinkedUserList ({res, userSeCd, userChecked} = data){
+
+        // 인증 통과 후 최초로 orgLogin 호출
+        // SsoLogin 시도
+        if (!userChecked) {
+            anyidAdaptor.userCheck()
+            return
+        }
+
+        if(res.data || res.certInfo) {
+            $.ajax({
+                url:"/rest/anyid",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    ci: userSeCd === UsrSeCd.USERSECD03 ? Identifier.CI : Identifier.CN,
+                    mberType: userSeCd === UsrSeCd.USERSECD03 ? MberTypeEnum.INDV : MberTypeEnum.BIZ
+                }),
+                success: function (res) {
+                    if (res.message === AnyIdRestResMsg.OK) {
+                        console.log("OK")
+                        handleAnyIdAuthResponse(res)
+                    }
+                }
+            });
+        }
+    }
+
+
+
+
+    function handleAnyIdAuthResponse({resultCode, data} = res) {
+
+        const targetServiceUrl = sessionStorage.getItem(SsKeyName.TARGET_SERVICE_URL)
+
+        // const prefix = targetServiceUrl && targetServiceUrl.includes('nedrug.mfds.go.kr') ? '안내받은' : ''
+        const prefix = targetServiceUrl && targetServiceUrl.includes(NedrugUrl) ? '안내받은' : ''
+        if (resultCode === AnyIdAuthCheckRes.NEED_LINK) {
+
+            openVisitorFromGov24CModal("정부통합로그인(Any-ID) 안내",
+                `
+
+                <div class="anyid-content">
+
+                        <p class="anyid-main">${prefix} 민원 진행을 위해 의약품안전나라 계정 로그인이 필요합니다.</p>
+
+                        <div class="anyid-cases">
+                            <div class="anyid-case">
+
+                                <div class="anyid-case-title">- 의약품안전나라를 처음 이용하시는 경우</div>
+                                <div class="anyid-case-body">아래의 버튼을 통해 회원가입 시 정부통합로그인(Any-ID) 연동이 자동으로 진행됩니다.</div>
+                            </div>
+
+                            <div class="anyid-case">
+
+                                <div class="anyid-case-title">- 기존에 가입한 계정이 있는 경우에는</div>
+                                <div class="anyid-case-body">이용기관 로그인 후 마이페이지에서 정부통합로그인(Any-ID) 연동을 진행해 주세요.</div>
+                            </div>
+                        </div>
+                </div>
+
+
+                `,
+                redirectToAuthPage
+            )
+
+
+        } else if (resultCode === AnyIdAuthCheckRes.ONE_MATCHED) {
+            console.log("단일 계정 매칭됨")
+            requestRestLogin(data.memberId)
+
+        } else if ( resultCode === AnyIdAuthCheckRes.MULTI_MATCHED) {
+            console.log("다중 계정 목록");
+
+            showAnyIdAccountModal(data)
+
+        }
+    }
+
+
+
+    function showAnyIdAccountModal(accountList) {
+        var container = $("#anyidAccountList");
+        container.empty();
+
+
+        accountList.forEach(function(acc) {
+            var li = $('<li class="anyid-account-item"></li>')
+
+            var nameSpan = $('<span class="anyid-account-list-item anyid-account-name"></span>')
+                .text(acc.memberId)
+                .on('click', function(e) {
+                    e.stopPropagation();
+                    console.log("clicked")
+                    selectAnyidAccount(acc.memberId)
+                })
+
+            var deleteBtn = $('<button type="button" class="anyid-account-list-item">정부통합로그인(Any-ID) 연동 해제</button>')
+                .on('click', function(e) {
+                    e.stopPropagation();
+                    window.removingMberId = acc.memberId
+                    confirmDelete(() => {
+                        setAnyIdNotLinked(acc.memberId, '')
+                    })
+                })
+
+            li.append(nameSpan)
+            li.append(deleteBtn)
+
+            container.append(li)
+        })
+
+        $("#anyidAccountModal").modal('show');
+
+    }
+
+
+    function confirmDelete(proceedFuntion) {
+        openAnyidConfirmModal("정부통합인증 연동 해제",
+            `<div style="padding: 6px 10px 6px 10px; line-height: 1.55; font-size: 15px; color: #444;">
+                        <p style="margin-bottom: 14px; margin-top: 14px; text-align: center;">
+                            <strong>정부통합로그인 연동을 해제할까요?</strong>
+                        </p>
+
+                    </div>
+
+                    `,
+             proceedFuntion
+
+        )
+    }
+
+    /*이용기관 수정 영역 End*/
+    function requestRestLogin(loginId) {
+        const referTo = sessionStorage.getItem("referToGov24")
+        let redirectTo = '/'
+        if (referTo && referTo.includes(Gov24.URL)) {
+            redirectTo = referTo
+        }
+        $.ajax({
+            url: "/rest/login"
+            , type: "post"
+            , contentType: "application/json"
+            , data: JSON.stringify({"loginId": loginId, "loginPwd": '', "anyIdSession": 'Y'})
+            , success: function (data) {
+
+                window.authSessionExists = 'Y';
+
+                if (data["resultCode"] == "success") {
+
+                    // 중단시킨 민원이 있는지 체크하는 영역같은데 이부분 보완 필요
+                    //alert('로그인 성공');
+                    // if(returnUrl.indexOf("CCAAC02F010") > -1){
+                    //     returnUrl = "/CCAAC02F010"
+                    // }
+
+                    // returnUrl = '/'
+
+                    if (data["data"] == "false") {
+                        bootbox.alert({
+                            title: '알림 메세지',
+                            message: '비밀번호를 변경한지 90일이 경과하였습니다.<br/>개인정보보안을 위해 분기별 비밀번호변경을 해주시기 바랍니다.<br/>변경을 위해서는 회원정보변경 화면으로 이동이 필요하며 변경 이전까지는 모든 권한이 제한 됩니다.',
+                            callback:function() {
+                                location.href = "/pbp/CCBQA04";
+                            }
+                        });
+                    } else {
+
+                        if(window.ssoLogin) {
+                            const targetServiceUrl = sessionStorage.getItem(SsKeyName.TARGET_SERVICE_URL)
+
+                            sessionStorage.removeItem(SsKeyName.TARGET_SERVICE_URL);
+                            location.href = targetServiceUrl && targetServiceUrl.includes(NedrugUrl) ? targetServiceUrl : '/'
+                        } else {
+                            window.endPoint = ""
+                            anyidAdaptor.userCheck();
+                        }
+
+                    }
+                } else if (data["resultCode"] == "failCountExceed") {
+                    bootbox.alert({
+                        title:'알림 메세지',
+                        message:'로그인실패횟수가 초과되었습니다.<br/> [비밀번호찾기]를 이용하여 비밀번호를 초기화하십시오',
+                        callback:function() {
+                            setTimeout(function() {
+                                $('#loginPwd').val('');
+                                $('#loginId').focus();
+                            }, 10);
+                        }
+                    });
+                } else if (data["resultCode"] == "reAgreeAuth") {
+                    bootbox.confirm({
+                        title:'알림 메세지',
+                        message:'개인정보 수집 및 이용목적 동의에 대하여 2년이 경과하여<br/> 재동의 후 서비스를 사용하실 수 있습니다.<br/> 재동의 하시겠습니까?',
+                        buttons : { confirm:{ label : '재동의'} },
+                        callback:function(result) {
+                            if (result) {
+                                $.ajax({
+                                    url: "/rest/reAgree"
+                                    , type: "post"
+                                    , contentType: "application/json"
+                                    , data: JSON.stringify({"loginId": $("#loginId").val()})
+                                    , success: function (data) {
+                                        if (data["resultCode"] == "success") {
+                                            bootbox.alert({
+                                                title:'알림 메세지',
+                                                message:'재동의 처리가 완료 되었습니다.',
+                                                callback:function() {
+                                                    rest.login();
+                                                }
+                                            });
+                                        } else {
+                                            bootbox.alert({
+                                                title:'알림 메세지',
+                                                message:'재동의 처리 중 오류가 발생하였습니다.<br/>다시 로그인해 주십시오.',
+                                                callback:function() {
+                                                    setTimeout(function() {
+                                                        $('#loginPwd').val('');
+                                                        $('#loginId').focus();
+                                                    }, 10);
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+                            } else {
+                                bootbox.alert({
+                                    title:'알림 메세지',
+                                    message:'재동의를 취소하였습니다.',
+                                    callback:function() {
+                                        setTimeout(function() {
+                                            $('#loginPwd').val('');
+                                            $('#loginId').focus();
+                                        }, 10);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                } else if (data["resultCode"] == "fail") {
+                    bootbox.alert({
+                        title:'알림 메세지',
+                        message:'아이디 혹은 비밀번호가 잘못되었습니다.',
+                        callback:function() {
+                            setTimeout(function() {
+                                $('#loginPwd').val('');
+                                $('#loginId').focus();
+                            }, 10);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /*이용기관 문구수정 영역 Start*/
+    anyidAdaptor.JoinConfirm = function(portalJoinUri, memberData){
+        if(!confirm('Any-ID 사용자등록 하시겠습니까?')) {
+            anyidAdaptor.orgLogin();
+            return;
+        }else{
+            anyidAdaptor.receiveAnyIdJoin(portalJoinUri, memberData);
+        }
+    }
+    /*이용기관 문구수정 영역 End*/
+
+
+
+
+    anyidAdaptor.portalJoinUri = /**/ "";
+    anyidAdaptor.certData = null;
+    anyidAdaptor.ssoByPass = /**/ 0;
+    anyidAdaptor.niRegYn = /**/ "";
+    anyidAdaptor.agencyContextPath = "";
+
+    function redirectToAuthPage() {
+        sessionStorage.setItem(SsKeyName.ANYID_LINK_NEEDED, 'Y')
+        window.location.href = '/join/originJoin';
+    }
+
+
+
+    function makeInput(name, value) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        return input;
+    }
+
+    anyidAdaptor.success = function(data){
+
+        anyidAdaptor.certData = data;
+        getLinkedUserList(data)
+        // anyidAdaptor.orgLogin(data);
+    }
+
+    anyidAdaptor.userCheck = function(){
+        if(!anyidAdaptor.certData) {
+           return
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", anyidAdaptor.agencyContextPath + "/oidc/userCheck", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+
+
+                if (response.success) {
+                    anyidAdaptor.ssoLogin();
+                } else {
+                    setTimeout(function() {
+                        anyidAdaptor.receiveAnyIdJoin(response.uri, response.data);
+                    }, 100);
+                }
+            }
+        };
+
+        let jsonObject = new Object();
+        jsonObject.txId = anyidAdaptor.certData.txId;
+        jsonObject.ssob = anyidAdaptor.certData.ssob;
+        jsonObject.userSeCd = anyidAdaptor.certData.userSeCd;
+
+        let jsonStr = JSON.stringify(jsonObject);
+        let encodedString = btoa(jsonStr);
+
+        var data = "data=" + encodedString + "&txId=" + anyidAdaptor.certData.txId;
+        xhr.send(data);
+    }
+
+    //anyid가입
+    anyidAdaptor.receiveAnyIdJoin = function(portalJoinUri, memberData){
+
+        var url = portalJoinUri+encodeURIComponent(memberData);
+        anyidAdaptor.popup(url,"openAnyIdRegistUserIdv",700,740);
+
+        window.addEventListener("message", function(event) {
+            var result;
+            try {
+                result = JSON.parse(event.data);
+            } catch (error) {
+                console.error("Received message is not valid JSON:", error);
+                return;
+            }
+
+            if(!result.funcName || (result.funcName !== "trmsAgreComplete" && result.funcName !== "registUserComplete")) {
+                return;
+            }
+            if(result.status === "success") {
+                if(result.trmsAgreYn == "Y"){
+                    anyidAdaptor.ssoLogin();
+                }else{
+                    anyidAdaptor.orgLogin();
+                }
+            }else{
+
+                anyidAdaptor.orgLogin();
+            }
+
+        }, false);
+    }
+
+    // 팝업 호출
+    anyidAdaptor.popup = function(url, name, width, height){
+        let left = (screen.width) ? (screen.width-width)/2 : 0;
+        let top = (screen.height) ? (screen.height-height)/2 : 0;
+        let popup=window.open(url, name ,"resizable=yes,toolbar=no,scrollbars=yes,location=no,top="+top+"px,left="+left+"px,width="+width+"px,height="+height+"px");
+        if(popup){
+            popup.focus();
+        }
+    }
+
+    anyidAdaptor.ssoLogin = function(){
+        let jsonObject = new Object();
+        jsonObject.txId = anyidAdaptor.certData.txId;
+        jsonObject.ssob = anyidAdaptor.certData.ssob;
+        jsonObject.userSeCd = anyidAdaptor.certData.userSeCd;
+        let jsonStr = JSON.stringify(jsonObject);
+        let encodedString = btoa(jsonStr);
+        var baseUrl = window.location.origin + anyidAdaptor.agencyContextPath + "/oidc/ssoLogin";
+        var urlWithParams = baseUrl + "?data=" + encodedString;
+        window.location.href = urlWithParams;
+
+    }
+
+    anyidAdaptor.ssoLoginPageSub = function (baseUrl, endPoint, acrValues) {
+        var subUrl = "";
+
+        if (endPoint && endPoint.trim() !== "") {
+            subUrl = "?endPoint=" + encodeURIComponent(endPoint);
+        }
+
+        if (!acrValues && acrValues.trim() == "") {
+            acrValues = "3"
+        }
+
+        if (acrValues && acrValues.trim() !== "") {
+            if(subUrl == ""){
+                subUrl = "?";
+            }else{
+                subUrl = subUrl + "&";
+            }
+            subUrl = subUrl + "acrValues=" + acrValues + "&" + "sss=awef";
+        }
+        window.location.replace(baseUrl+subUrl);
+    }
+
+    /**/
+    anyidAdaptor.ssoLogout = function(endPoint) {
+        endPoint = typeof endPoint !== 'undefined' ? endPoint : "/";
+        var baseUrl = window.location.origin + anyidAdaptor.agencyContextPath + "/oidc/ssoLogout";
+        baseUrl = baseUrl + "?endPoint=" + encodeURIComponent(endPoint);
+        window.location.replace(baseUrl);
+    }
+
+
+    /**/
+    anyidAdaptor.reAuthLevel = function(endPoint, acrValues){
+        endPoint = typeof endPoint !== 'undefined' ? endPoint : "/";
+        var baseUrl = window.location.origin + anyidAdaptor.agencyContextPath + "/oidc/reAuthLevel";
+
+        anyidAdaptor.ssoLoginPageSub(baseUrl, endPoint, acrValues)
+
+    }
+    /**/
+    anyidAdaptor.ssoLoginPage = function(endPoint, acrValues){
+        endPoint = typeof endPoint !== 'undefined' ? endPoint : "/";
+        var baseUrl = window.location.origin + anyidAdaptor.agencyContextPath + "/oidc/auth";
+        anyidAdaptor.ssoLoginPageSub(baseUrl, endPoint, acrValues)
+    }
+
+    /**/
+    anyidAdaptor.ssoSvcToSvc = function(url, endPoint){
+        var baseUrl = url + "/oidc/svcToSvc?endPoint=" + encodeURIComponent(endPoint);;
+        window.open(baseUrl, "_blank");
+    }
+</script>
+
+    <script type="text/javascript">
+        /*
+            20190709 로그아웃 타이머 구현
+            - 로그인 전 단계의 화면에서는 동작되지 않음
+            - 로그인 이후, 활성화되며 키입력이 되었을 경우 타이머가 초기화됨.
+            - "sessionTimer_startSecond"의 값(단위 : xx초)을 변경하여 로그인 유지 시간을 조정할 수 있음
+        */
+        var sessionTimer_restSecond = 3600;
+        var sessionTimer_startSecond = 3600;
+        var logout_modal;
+        var sessionTimer_timerObj = undefined;
+
+        function init_sessionTimer() {
+            window.sessionTimer_restSecond = window.sessionTimer_startSecond;
+        }
+        function timer_SessionTimer() {
+            var div, minute, second;
+
+            div = document.getElementById("session-timer-text");
+            if (div) {
+                minute = Math.floor(window.sessionTimer_restSecond / 60);
+                second = window.sessionTimer_restSecond % 60;
+
+                if (minute < 0) {
+                    minute = 0;
+                }
+                if (second < 0) {
+                    second = 0;
+                }
+
+                div.innerHTML = ( (minute < 10)? "0" + minute : minute ) + "분" + ( (second < 10)? "0" + second : second ) + "초";
+                if (window.sessionTimer_restSecond <= 600) {
+                    if (window.logout_modal === undefined) {
+                        window.logout_modal = bootbox.confirm({
+                            title: "로그아웃 알림"
+                            ,message: '<span id="modal-logout-timer"></span> 이후에 자동 로그아웃 됩니다.<br/>로그인 상태를 유지하시려면 [연장] 버튼을 클릭하시거나<br/>키보드의 아무 키를 입력하십시오.'
+                            ,buttons : { confirm:{ label : '연장' }, cancel:{ label : "로그아웃"} }
+                            ,callback: function() {
+                                if (arguments.length > 0 && arguments[0] === true) {
+                                    window.sessionTimer_restSecond = window.sessionTimer_startSecond;
+                                } else {
+                                    if (sessionTimer_timerObj !== undefined) {
+                                        clearTimeout(sessionTimer_timerObj);
+                                        sessionTimer_timerObj = undefined;
+                                    }
+                                    rest.logout();
+                                }
+                                if (window.logout_modal) {
+                                    window.logout_modal.detach();
+                                    window.logout_modal = undefined;
+                                }
+                            }
+                        });
+                    }
+                    div = document.getElementById("modal-logout-timer");
+                    if (div) {
+                        div.innerHTML = ( (minute > 0) ? '<span style="font-weight: bold; font-size: 27px;">' + ( (minute < 10)? "0" + minute : minute ) + '</span>분 ' : '' )
+                            + '<span style="font-weight: bold; font-size: 27px;">' + ( (second < 10)? "0" + second : second ) + '</span>초' ;
+                    }
+                } else {
+                }
+            }
+
+            if (window.sessionTimer_restSecond >= 0) {
+                window.sessionTimer_restSecond = window.sessionTimer_restSecond - 1;
+                sessionTimer_timerObj = setTimeout(timer_SessionTimer, 1000);
+                return;
+            }
+
+            if (window.logout_modal) {
+                window.logout_modal.detach();
+                window.logout_modal = undefined;
+            }
+
+            rest.logout();
+        }
+
+        window.addEventListener("keydown", function(event) {
+            window.sessionTimer_restSecond = window.sessionTimer_startSecond;
+            if (window.logout_modal) {
+                window.logout_modal.detach();
+                window.logout_modal = undefined;
+            }
+            /*
+                20200401 Shim, JW
+                이벤트 핸들러로 인해 기존의   TAB으로 포커싱된 A 태그 요소가 엔터키 입력시 이동이 되지 않는 문제가 있어
+                이에 대한 개선책으로 이벤트 핸들러 내에서 해당 기능을 구현
+            */
+            try {
+                if (event.keyCode === 13) {
+                    var target = event.target;
+                    if (target.nodeName === 'A') {
+                        if (target.getAttribute("href")
+                            && target.getAttribute("href").length > 0) {
+                            if (target.getAttribute("target") && target.getAttribute("target").length > 0 ) {
+
+
+                            } else {
+                                location.href = target.getAttribute("href");
+                            }
+
+                        } else {
+                            target.click();
+                        }
+                    }
+                }
+            } catch (e) {
+            }
+        });
+
+        /*
+            타임리프, 넥사크로 프레임워크가 페이지상에서 로드될때 까지 대기하는 기능 구현
+        */
+        var findSessionTimerCount = 0;
+        function findSessionTimer() {
+            if (document.getElementById("session-timer-text")) {
+                sessionTimer_restSecond = sessionTimer_startSecond;
+                timer_SessionTimer();
+            } else {
+                if (findSessionTimerCount++ < 10) {
+                    setTimeout(findSessionTimer, 500);
+                }
+            }
+        }
+        /*
+            세션 타이머 동작을 원하지 않을 경우
+            다음 함수 호출 부분을 주석처리함.
+        */
+        findSessionTimer();
+
+        function tempGoPCPage() {
+            $.ajax({
+                url: "/index?_desktopFromMobile=true",
+                method: "GET",
+                dataType: "text",
+                success: function() {
+                    location.href = "/index";
+                }
+            });
+        }
+    </script>
+
+    <script type="text/javascript">
+        /* <![CDATA[ */
+        window.bxSliderOptions = {
+            mode: 'horizontal',
+            auto:true,
+            moveSlides: 2,
+            slideMargin: 0,
+            infiniteLoop: true,
+            slideWidth: 960,
+            minSlides: 2,
+            autoControlsCombine:true,
+            autoControls:true,
+            maxSlides: 2,
+            pause:8000,
+            speed: 800,
+        };
+
+
+
+        var MberTypeEnum = {
+            INDV: "indv",
+            BIZ: "biz"
+        }
+
+        var MberTypeNo = {
+            TYPE03: "03",
+            TYPE02: "02",
+            TYPE01: "01"
+        }
+
+        var SsKeyName = {
+            ANYID_LINK_NEEDED: "anyidLinkNeeded",
+            TARGET_SERVICE_URL: "targetServiceUrl",
+            DO_SSO_LOGOUT_ON_HOME: "DO_SSO_LOGOUT_ON_HOME",
+
+        }
+
+        var MessageType = {
+            ANYID_REDIRECT: "ANYID_REDIRECT"
+        }
+
+        function sendAnyIdLinkReq(mberTypeNo) {
+
+
+            let isIndv = true
+            if (mberTypeNo === MberTypeNo.TYPE02 || mberTypeNo === MberTypeNo.TYPE01) isIndv = false
+            console.log(mberTypeNo)
+            console.log(mberTypeNo)
+            console.log(mberTypeNo)
+            const infoParam = { ci: "" };
+            $.ajax({
+                url: isIndv ? '/pbp/CCBQA04/setAnyidLinked' : '/pbp/CCBQA04/setAnyidLinkedBizTemp',
+                method : 'post',
+                async:false,
+                // data : JSON.stringify(infoParam),
+                data : infoParam,
+                dataType : 'json',
+                complete : function(data) {
+                    var json = JSON.parse(data.responseText);
+                    if ('success' == json.result) {
+                        sendDataToParent({
+                            status: "success",
+                            anyid: "Y"
+                        })
+                    } else {
+                        bootbox.alert({
+                            title:'알림 메세지',
+                            message:'회원정보 변경중에 오류가 발생하였습니다.'
+                        });
+                    }
+                }
+            });
+
+        }
+
+
+
+
+        $(function() {
+
+            if(sessionStorage.getItem(SsKeyName.DO_SSO_LOGOUT_ON_HOME) !== 'Y') return
+            sessionStorage.removeItem(SsKeyName.DO_SSO_LOGOUT_ON_HOME);
+
+            anyidAdaptor.ssoLogout('/')
+        })
+
+        $(document).ready(function(){
+
+            window.toOpenAnyId = true
+            window.toSsoLogin = true
+            window.toSsoLoginPage = true
+
+
+            const params = new URLSearchParams(window.location.search);
+            const tx = params.get("tx");
+            const ci = params.get("ci");
+            const mberTypeNo = params.get("mberTypeNo")
+            const sss = params.get('sss')
+            const setAnyIdlinked = params.get('setAnyIdlinked')
+
+            const hiddenLogin = window.location.href.includes("hiddenLogin")
+
+
+
+
+            if (setAnyIdlinked === 'Y') {
+                console.log("setanyidlinked in default")
+                sendAnyIdLinkReq(mberTypeNo)
+            }
+
+
+
+            if (!hiddenLogin && tx && sss) {
+
+                if(window.opener && !window.opener.closed) {
+
+                    setTimeout(() => {
+                        window.opener.postMessage({
+                            type: MessageType.ANYID_REDIRECT,
+                            payload: {
+                                tx, sss
+                            }
+                        })
+
+                        window.close()
+                    }, 150)
+
+                }
+
+
+
+
+            }
+
+            if (!hiddenLogin && !tx && ci) {
+                window.toOpenAnyId = false
+
+            }
+
+
+
+
+
+
+            window.bxsliderInitFlag = false;
+
+
+
+
+            var i, len, obj;
+            var arr = [];
+
+            window.bxsliderInitFlag = false;
+
+            if(arr.length > 0){
+                if (arr[0].updateTs) {
+                    arr[0].updateTs = arr[0].updateTs.replace(/[T,\-,:]/gi,'');
+                    if (arr[0].updateTs.indexOf('.') > -1) {
+                        arr[0].updateTs = arr[0].updateTs.substring(0, arr[0].updateTs.indexOf('.'));
+                    }
+                }
+                if (arr[0].ntcnSntncFixingYn) {
+                    if (arr[0].ntcnSntncFixingYn == 'Y') {
+                        $('.notice-pop').addClass('manual-slider');
+                        window.bxSliderOptions.auto = false;
+                    }
+                }
+                if (!cookieUtil.get("main_popup")) {
+                    $('.notice-pop').show().addClass("on");
+                    $(".pop-cl").addClass("on");
+                } else {
+                    if (cookieUtil.get("main_popup") && cookieUtil.get("main_popup_N_time") < arr[0].updateTs) {
+                        $('.notice-pop').show().addClass("on");
+                        $(".pop-cl").addClass("on");
+                    }
+                }
+                if (!cookieUtil.get("main_popup")) {
+                    if (arr[0]) {
+                        if (!cookieUtil.get("main_popup_N_time") || cookieUtil.get("main_popup_N_time") < arr[0].updateTs) {
+                            $('#noticePopup').bxSlider(window.bxSliderOptions);
+
+                            window.bxsliderInitFlag = true;
+                        }
+                    }
+                }
+            }
+            arr = $('a[href*="CCBAE01"]');
+            if (arr.length > 0) {
+                for (i = 0, len = arr.length; i < len; i++) {
+                    obj = arr[i];
+                    try {
+                        if (obj.getAttribute("href") && obj.getAttribute("href").length > 0) {
+                            obj.setAttribute("href", window.convertQueryStringToEncoded(obj.getAttribute("href")));
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            }
+
+            /*]]> */
+            /*웹접근성 : 단계별 타이틀*/
+            const url = window.location.href;
+            var slashCount = (/\/[a-zA-Z]{3}\//.test(url));
+            const element = document.querySelector(".text_st3");
+            var board_title = document.querySelector(".board_title");
+            if(element && element.classList.contains('text_st3')){
+                document.title += " - "+"상세";
+            }else{
+                if(slashCount){
+                    document.title += (board_title ? " > "+board_title.textContent : " - 목록") ;
+                }
+            }
+            /*웹접근성 : 단계별 타이틀*/
+        });
+
+        if (window.convertQueryStringToEncoded === undefined) {
+            window.convertQueryStringToEncoded = function(url) {
+                var queryString, params, keySet, i, len, obj, i2, len2, resultStr;
+
+                if (url === undefined || url.length < 1) {
+                    return url;
+                }
+
+                i = url.indexOf("?");
+
+                if (i < 0 || i == url.length -1) {
+                    return url;
+                }
+
+                queryString = url.substring(url.indexOf("?") + 1);
+
+                params = queryString.split("&");
+                if (params.length == 0) {
+                    return url;
+                }
+
+                for (i = 0, len = params.length; i < len; i++) {
+                    obj = params[i];
+                    keySet = obj.split("=");
+                    if (keySet.length > 1) {
+                        if (keySet.length > 2) {
+                            for (i2 = 2, len2 = keySet.length; i2 < len2; i2++) {
+                                keySet[1] = keySet[1] + keySet[i2];
+                            }
+                        }
+
+                        keySet[1] = encodeURIComponent(keySet[1]);
+
+                        params[i] = keySet[0] + "=" + keySet[1];
+                    }
+                }
+
+                resultStr = [];
+                resultStr.push(url.substring(0, url.indexOf("?")));
+                resultStr.push("?");
+                for (i = 0, len = params.length; i < len; i++) {
+                    resultStr.push(params[i]);
+                    if (i < len -1 ) {
+                        resultStr.push("&");
+                    }
+                }
+
+                return resultStr.join("");
+            }
+        }
+        /*]]> */
+    </script>
+<style type="text/css">
+        .ui-autocomplete {
+            z-index: 1051;
+            background-color: white;
+            width: 250px;
+        }
+    </style>
+<script>
+        /*<![CDATA[*/
+        var isFirst = true;
+        
+        $(document).ready(function() {
+            $("#classSelArea").hide();
+            $("#classSelArea5").hide();
+            $(".btn_folding").click(function () {
+                $(".mediWrap").toggleClass("left-close");
+            });
+            
+            //탭
+            $(".ltab > ul > li > a").click(function () {
+                // 해당 탭이 on이라면 이벤트 false
+                if ($(this).parent().hasClass('on')) {
+                    return false;
+                }
+
+                $(".ltab > ul > li.on > a").attr("title",$(".ltab > ul > li.on > a").text());
+
+                var titleValue = $(this).text() + " 선택됨";
+                $(this).attr("title",titleValue);
+
+
+                $(".ltab > ul > li").removeClass("on");
+                $(this).parent().addClass("on");
+                $(".l_sec_md").toggleClass("t-on");
+                return false
+            });
+            
+            // 화면 로딩시 낱알검색이라면 검색박스 toggle
+            var spItemCriteria ={"ingrEngName":"ivabradine","searchYn":"true","page":"1","cancelCode":"0","searchDivision":"detail"};
+
+            if('B0' == spItemCriteria.indutyClassCode) {
+                $("#classSelArea").show();
+            } else if('F0' == spItemCriteria.indutyClassCode) {
+                $("#classSelArea5").show();
+            }
+
+            if ('grain' == spItemCriteria.searchDivision) {
+                $(".l_sec_md").toggleClass("t-on");
+            }
+            try {
+	            if (spSearchYn != undefined) {
+	                $(function() {
+	                    if (0 < spSearchYn.length) {
+	                        if (JSON.parse(spSearchYn)) {
+	                            if ('detail' == spItemCriteria.searchDivision) {
+	                                $('#itemName1').focus();
+	                            } else {
+	                                $('#itemName2').focus();
+	                            }
+	                        }
+	                    } else {
+	                        if (0 < $('.spDiv').length) {
+	                            $('#content #paging_div button').get(0).focus();
+	                        }
+	                    }
+	                });
+	            }
+            } catch (e) {
+            	console.error(e);
+            }
+            
+            (function() {
+                $.ui.autocomplete.prototype._renderItem = function(ul, item) {
+                    let re = new RegExp(this.term, "i");
+                    let text = item.label.replace(re, "<span style='font-weight:bold; color: red;'>" + this.term + "</span>");
+                    return $("<li>")
+                        .data("item.autocomplete", item)
+                        .append($("<a>").append(text))
+                        .appendTo(ul);
+                };
+                
+                $("#itemName1, #itemName2, #entpName, #ingrName1, #ingrName2, #ingrName3").autocomplete({
+                    source: function(request, response) {
+                        var bindIdx = this.bindings[0].id;
+                        var sTarget = 'kifda_i';
+                        if ('entpName' == bindIdx) {
+                            sTarget = 'kifda_e';
+                        } else if ('ingrName1' == bindIdx || 'ingrName2' == bindIdx || 'ingrName3' == bindIdx) {
+                            sTarget = 'kifda_m';
+                        } else {
+                            sTarget = 'kifda_i';
+                        }
+                        
+                        $.ajax({
+                              url: "/autoSearch/" + sTarget + "/" + request.term
+                            , type: "post"
+                            , async: false
+                            , contentType: "application/json"
+                            , success: function(result) {
+                                let list = [];
+                                if(objectUtils.isNotEmpty(result)) {
+                                    let mainText = result["result"][0];
+                                    let subText = result["result"][1];
+                                    
+                                    if(objectUtils.isNotEmpty(mainText) && mainText["totalcount"] !== 0) {
+                                        mainText["items"].map(function(vo) {
+                                            list.push(vo["keyword"]);
+                                        });
+                                    }
+                                    
+                                    if(objectUtils.isNotEmpty(subText) && subText["totalcount"] !== 0) {
+                                        subText["items"].map(function(vo) {
+                                            list.push(vo["keyword"]);
+                                        });
+                                    }
+                                }
+                                response(list);
+                            }
+                        });
+                    },
+                    minLength: 2,
+                    messages: {
+                        noResults: '',
+                        results: function() {}
+                    },
+                    open: function() {
+                        $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+                    },
+                    close: function() {
+                        $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+                    }
+                });
+            })();
+            
+            let objectUtils = {
+                isEmpty: function (value) {
+                    return typeof value === 'undefined' || value === null || value === '' || value.length < 1;
+                }
+                , isNotEmpty: function (value) {
+                    return !this.isEmpty(value);
+                }
+                , typeofIsEmpty: function (value) {
+                    return value === 'undefined' || value === null || value === '' || value.length < 1;
+                }
+                , typeofIsNotEmpty: function (value) {
+                    return !this.typeofIsEmpty(value);
+                }
+                , convertJson: function(objx, dataName) {
+                    let jSelf = $(objx);
+                    let data = jSelf.attr(dataName);
+                    
+                    return JSON.parse(data);
+                }
+            };
+        });
+        
+        function goSearch() {
+            if (isFirst) {
+                if ('detail' == getInsideTab()) {
+                	/*
+	            	var itemName = $.trim($("#itemName1").val());
+	            	var entpName = $.trim($("#entpName").val());
+	            	var ingrName1 = $.trim($("#ingrName1").val());
+	            	var ingrName2 = $.trim($("#ingrName2").val());
+	            	var ingrName3 = $.trim($("#ingrName3").val());
+	            	var itemSeq = $.trim($("#itemSeq").val());
+	            	var stdrCodeName = $.trim($("#stdrCodeName").val());
+	            	
+	            	var eeDocData = $.trim($("#eeDocData").val());
+	            	var udDocData = $.trim($("#udDocData").val());
+	            	var nbDocData = $.trim($("#nbDocData").val());
+
+	            	var indutyClassCodeAll = $('#indutyClassCodeAll:checked');
+	            	var etcOtcCodeAll = $('#etcOtcCodeAll:checked');
+	            	var makeMaterialGbAll = $('#makeMaterialGbAll:checked');
+	            	if(1 > itemName.length && 1 > entpName.length && 1 > ingrName1.length && 1 > ingrName2.length && 1 > ingrName3.length
+	            			&& 1 > itemSeq.length && 1 > stdrCodeName.length && 1 > eeDocData.length && 1 > udDocData.length && 1 > nbDocData.length
+                            && indutyClassCodeAll.length > 0 && etcOtcCodeAll.length > 0 && makeMaterialGbAll.length > 0){
+	            		bootbox.alert({
+	            			title:'알림 메세지',
+	            			message:'제품명, 업체명, 성분명, 품목기준코드, 표준코드, 효능효과, 용법용량, 사용상의주의사항 중 반드시 하나 이상 입력거나, 품목구분, 전문일반, 원제원료 중 하나를 선택해야 합니다.',
+	            			callback:function() {
+	            			}
+	            		});
+	            		return false;
+	            	}else if((indutyClassCodeAll.length > 0 && etcOtcCodeAll.length > 0 && makeMaterialGbAll.length > 0) && 2 > itemName.length && 2 > entpName.length && 2 > ingrName1.length && 2 > ingrName2.length && 2 > ingrName3.length
+	            			 && 2 > eeDocData.length && 2 > udDocData.length && 2 > nbDocData.length){
+	            		bootbox.alert({
+	            			title:'알림 메세지',
+	            			message:'2글자 이상 입력하여야 합니다.',
+	            			callback:function() {
+	            			}
+	            		});
+	            		return false;
+	            	}else{
+	            		if(itemName.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'제품명은 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#itemName1').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}else if(entpName.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'업체명은 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#entpName').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;            			
+	            		}else if(ingrName1.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'성분명1은 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#ingrName1').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}else if(ingrName2.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'성분명2는 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#ingrName2').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}else if(ingrName3.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'성분명3은 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#ingrName3').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}else if(eeDocData.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'효능효과는 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#eeDocData').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}else if(udDocData.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'용법용량은 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#udDocData').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}else if(nbDocData.length == 1){
+	            			bootbox.alert({
+	            				title:'알림 메세지',
+	            				message:'사용상의주의사항은 2글자 이상 입력하여야 합니다.',
+	            				callback:function() {
+	            					setTimeout(function() {
+	            						$('#nbDocData').focus();
+	            						}, 10);
+	            				}
+	            			});
+	            			return false;
+	            		}
+	            		
+	            	}
+                	*/
+
+                    var startDate = $.trim($("#date_trMinDate").val()); //시작일자
+                    var endDate = $.trim($("#date_trMaxDate").val()); //종료일자
+
+                    //시작일자는 있고 종료일자가 없으면 종료일자를 오늘 날짜로 설정
+                    if(startDate != '' && endDate == ''){
+                        var today = new Date();
+
+                        var year = today.getFullYear();
+                        var month = String(today.getMonth() + 1).padStart(2, "0");
+                        var day = String(today.getDate()).padStart(2, "0");
+                        endDate = year + "-" + month + "-" + day;
+                        $("#date_trMaxDate").val(endDate);
+                    }
+
+                    //시작일자 유효성 검사
+                    if(startDate != null && startDate != ''){
+                        if(!isValidDate(startDate)){
+                            bootbox.alert({
+                                title:'알림 메세지',
+                                message:'시작일자가 유효하지 않습니다.',
+                                callback:function() {
+                                    setTimeout(function() {
+                                        $('#date_trMinDate').focus();
+                                    }, 10);
+                                }
+                            });
+                            return false;
+                        }
+                    }
+
+                    //종료일자 유효성 검사
+                    if(endDate != null && endDate != ''){
+                        if(!isValidDate(endDate)){
+                            bootbox.alert({
+                                title:'알림 메세지',
+                                message:'종료일자가 유효하지 않습니다.',
+                                callback:function() {
+                                    setTimeout(function() {
+                                        $('#date_trMaxDate').focus();
+                                    }, 10);
+                                }
+                            });
+                            return false;
+                        }
+                    }
+
+                    //시작일자가 종료일자 보다 크면 경고 메세지
+                    if(startDate != '' && endDate != ''){
+                        var start = formatDate(startDate).replace(/-/g, "");
+                        var end = formatDate(endDate).replace(/-/g, "");
+
+                        if(parseInt(start, 10) > parseInt(end, 10)){
+                            bootbox.alert({
+                                title:'알림 메세지',
+                                message:'시작 검색일은 종료 검색일 보다 늦을 수 없습니다.',
+                                callback:function() {
+                                    setTimeout(function() {
+                                        $('#date_trMinDate').focus();
+                                    }, 10);
+                                }
+                            });
+                            return false;
+                        }
+                    }
+
+                    //검색엔진으로 넘기기 전에 YYYY-MM-DD 형식으로 보냄
+                    if(startDate != ''){
+                        $("#date_trMinDate").val(formatDate(startDate));
+                    }
+                    if(endDate != ''){
+                        $("#date_trMaxDate").val(formatDate(endDate));
+                    }
+
+                    $('#searchDetail #page1').val(1);
+                    $('#searchDetail #sort1').val('');
+                    $('#searchDetail #sortOrder1').val(false);
+                } else {
+                    $('#searchGrain #page2').val(1);
+                    $('#searchGrain #sort2').val('');
+                    $('#searchGrain #sortOrder2').val(false);
+                }
+            }
+
+            
+            if ('grain' == getInsideTab()) {
+            	/*
+            	var drugCk = $('#drugShapeAll:checked').length > 0;
+            	var colorCk = $('#colorClassAll:checked').length > 0;
+            	var shapeCk = $('#shapeCodeAll:checked').length > 0;
+            	var lineCk = $('#lineFrontAll:checked').length > 0;
+            	*/
+                var leng1 = $.trim($('#lengLong').val());
+                var leng2 = $.trim($('#lengShort').val());
+                //var itemName = $.trim($('#itemName2').val());
+                
+                if (0 < leng1.length) {
+                    if (isNaN(leng1)) {
+                        bootbox.alert({
+                            title:'알림 메세지',
+                            message:'장축은 숫자만 입력이 가능합니다. 다시 입력해 주십시오.',
+                            callback:function() {
+                                setTimeout(function() {
+                                    $('#lengLong').focus();
+                                }, 10);
+                            }
+                        });
+                        
+                        return false;
+                    }
+                }
+                
+                if (0 < leng2.length) {
+                    if (isNaN(leng2)) {
+                        bootbox.alert({
+                            title:'알림 메세지',
+                            message:'단축은 숫자만 입력이 가능합니다. 다시 입력해 주십시오.',
+                            callback:function() {
+                                setTimeout(function() {
+                                    $('#lengShort').focus();
+                                }, 10);
+                            }
+                        });
+                        
+                        return false;
+                    }
+                }
+                /*
+                if(drugCk && colorCk && shapeCk && lineCk && 1 > itemName.length && 1 > leng1.length && 1 > leng2.length){
+            		bootbox.alert({
+            			title:'알림 메세지',
+            			message:'제품명, 모양, 색상, 제형, 분할선, 장축, 단축 중 반드시 하나 이상 입력하여야 합니다.',
+            			callback:function() {
+            			}
+            		});
+            		return false;
+                }
+                */
+            }
+            
+            $('#searchDetail #searchYn1').val(isFirst ? isFirst : '');
+            $('#searchGrain #searchYn2').val(isFirst ? isFirst : '');
+            
+            return true;
+        }
+
+        //날짜 유효성 검사 function
+        function isValidDate(value){
+            //숫자만 입력된 경우 :  년월일
+            if(/^\d{8}$/.test(value)){
+                var year = parseInt(value.substring(0, 4), 10);
+                var month = parseInt(value.substring(4, 6), 10);
+                var day = parseInt(value.substring(6, 8), 10);
+            }else if(/^\d{4}-\d{2}-\d{2}$/.test(value)){ //하이픈이 있는 경우 : 년도-월-일
+                var year = parseInt(value.substring(0, 4), 10);
+                var month = parseInt(value.substring(5, 7), 10);
+                var day = parseInt(value.substring(8, 10), 10);
+            }else{
+                return false;
+            }
+
+            //실제 존재하는 날짜인지 검사
+            var date = new Date(year, month - 1, day);
+            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+        }
+
+        //날짜 데이터 YYYY-MM-DD 형식으로 변환
+        function formatDate(value){
+            value = value.replace(/[^0-9]/g, "");
+            if(value.length == 8){
+                return value.substring(0, 4) + "-" + value.substring(4, 6) + "-" + value.substring(6, 8);
+            }
+
+            return value;
+        }
+        
+        function resetForm() {
+            if ('detail' == getInsideTab()) {
+                $('#searchDetail #page1').val(1);
+                $('#searchDetail #itemName1').val('');
+                $('#searchDetail #itemEngName').val('');
+                $('#searchDetail #entpName').val('');
+                $('#searchDetail #entpEngName').val('');
+                $('#searchDetail #ingrName1').val('');
+                $('#searchDetail #ingrName2').val('');
+                $('#searchDetail #ingrName3').val('');
+                $('#searchDetail #ingrEngName').val('');
+                $('#searchDetail #itemSeq').val('');
+                $('#searchDetail #stdrCodeName').val('');
+                setPbpCheck('etcOtcCode', '0', 'All');
+                setPbpCheck('makeMaterialGb', '0', 'All');
+                setPbpCheck('indutyClassCode', '0', 'All');
+                setPbpCheck('cancelCode', '0', 'All');
+                $("#searchDetail #searchConEe option:eq(0)").prop("selected", "selected");
+                $('#searchDetail #eeDocData').val('');
+                $("#searchDetail #searchConUd option:eq(0)").prop("selected", "selected");
+                $('#searchDetail #udDocData').val('');
+                $("#searchDetail #searchConNb option:eq(0)").prop("selected", "selected");
+                $('#searchDetail #nbDocData').val('');
+                $('#searchDetail #itemNo').val('');
+                setPbpSearchDate('', '');sClassNo
+                $("#searchDetail #sClassNo option:eq(0)").prop("selected", "selected");
+                $('#searchDetail #atcCodeName').val('');
+            } else {
+                $('#searchGrain #page2').val(1);
+                $('#searchGrain #itemName2').val('');
+                setPbpCheck('drugShape', '0', 'All');
+                setPbpCheck('colorClass', '0', 'All');
+                setPbpCheck('shapeCode', '0', 'All');
+                setPbpCheck('lineFront', '0', 'All');
+                $('#searchGrain #lengLong').val('');
+                $('#searchGrain #lengShort').val('');
+                $('#searchGrain #searchMarkCode').val('');
+                $('#searchGrain #searchMark').attr('src','/resources/images/common/blank.gif');
+                $('#searchGrain #searchMarkImgSrc').val('');
+                
+            }
+        }
+        
+        function getList1(page_no) {
+            if (page_no) {
+                $('#searchDetail #page1').val(page_no);
+                isFirst = false;
+            }
+            
+            $('#searchDetail').submit();
+        }
+        
+        function getList2(page_no) {
+            if (page_no) {
+                $('#searchGrain #page2').val(page_no);
+                isFirst = false;
+            }
+            
+            $('#searchGrain').submit();
+        }
+        
+        function getInsideTab() {
+            if ($('.ltab > ul > li:eq(0)').hasClass('on')) {
+                return 'detail';
+            } else {
+                return 'grain';
+            }
+        }
+
+        function InputExcelRowdata(){
+            var ExcelRowdataVal1 = $('#ExcelRowdataSB > option:selected').attr('value');
+            var ExcelRowdataVal2 = $('#ExcelRowdataSB > option:selected').attr('value2');
+
+           	$('#ExcelRowdata').val(ExcelRowdataVal1);
+            $('#ExcelRowdata2').val(ExcelRowdataVal2);
+
+        }
+
+        function downExcelFile() {
+            var ExcelRowdataVal1 = $('#ExcelRowdataSB > option:selected').attr('value');
+            var ExcelRowdataVal2 = $('#ExcelRowdataSB > option:selected').attr('value2');
+
+           	$('#ExcelRowdata').val(ExcelRowdataVal1);
+           	$('#ExcelRowdata1').val(ExcelRowdataVal1);
+            $('#ExcelRowdata2').val(ExcelRowdataVal2);
+
+            if(ExcelRowdataVal1 == "none" ){
+                bootbox.alert({
+                title:'알림 메세지',
+                message:'엑셀 다운로드를 지정해주세요.',
+
+                });
+            }else{
+               var sd = "detail"
+               var sForm = (sd == 'detail') ? 'searchDetail' : 'searchGrain';
+               if($('#excelSearchCnt').length > 0){
+                   $('#excelSearchCnt').remove();
+               }
+               $('#'+sForm).append('<input type="hidden" id="excelSearchCnt" name="excelSearchCnt" value="" />');
+               $('#excelSearchCnt').val($('#excelCnt').val());
+                /*ExcelRowdataVal1 == ExcelRowdataVal2 인 경우는 엑셀 다운로드 지정에서 조회값을 선택한 경우 이외에 없음. 조회값 제외 선택은 모두 10000건 단위임.*/
+               if(ExcelRowdataVal1 == ExcelRowdataVal2 && $('#excelSearchCnt').val()>10000){
+                   bootbox.alert({
+                   title:'알림 메세지',
+                   message:'엑셀파일은 최대 10000건 다운로드 가능합니다.',
+                   callback:function() {
+                       setTimeout(function() {
+                           $('#lengLong').focus();
+                       }, 10);
+                   }
+                   });
+                   $('#excelSearchCnt').val(10000);
+               } else { /*분기처리가 안되어 알림창이 뜬 이후에 엑셀 다운로드 됨. 분기처리*/
+                   $.download('/searchDrug/getExcel', sForm, 'post');
+               }
+            }
+        }
+        
+		function sort(sort, order) {
+			if ('detail' == getInsideTab()) {
+				if (0 == $("#searchDetail #totalPages").val()) {
+				    return false;
+				}
+				
+				if (sort) {
+				    $("#searchDetail #sort1").val(sort);
+				    if (order === 'DESC') {
+				        $("#searchDetail #sortOrder1").val(false);
+				    } else {
+				        $("#searchDetail #sortOrder1").val(true);
+				    }
+				}
+				getList1(1);
+			}
+			else{
+				if (0 == $("#searchGrain #totalPages").val()) {
+				    return false;
+				}
+				
+				if (sort) {
+				    $("#searchGrain #sort2").val(sort);
+				    if (order === 'DESC') {
+				        $("#searchGrain #sortOrder2").val(false);
+				    } else {
+				        $("#searchGrain #sortOrder2").val(true);
+				    }
+				}
+				getList2(1);
+			}
+        }
+
+        function searchMarkClear() {
+            $('#searchGrain #searchMarkCode').val('');
+            $('#searchGrain #searchMark').attr('src','/resources/images/common/blank.gif');
+            $('#searchGrain #searchMarkImgSrc').val('');
+        }
+
+        function setATCCode(atcCode) {
+            $('#searchDetail #atcCodeName').val(atcCode);
+        }
+
+        function searchAtcClear() {
+            $('#searchDetail #atcCodeName').val('');
+        }
+
+        function voiceTest() {
+            $.post('/searchDrug/makeAudioOne',function() {
+            });
+        }
+
+        function voiceTestMfds() {
+            $.post('/searchDrug/makeAudioOneMfds',function() {
+            });
+        }
+
+
+
+
+        /*]]>*/
+    </script>
+</head>
+
+<body class="_mobile" >
+
+
+    <div id="skipnavigation" tabindex="-1">
+        <ul>
+            <li><a href="#location">본문바로가기</a></li>
+            <li><a href="#gnb">주메뉴바로가기</a></li>
+        </ul>
+    </div>
+
+
+<!-- header -->
+<div class="header_wrap">
+    
+
+    <!--공지팝업 임시로 여기 넣음-->
+    
+    <!--공지팝업 임시로 여기 넣음-->
+    <header id="header">
+        <!-- <div class="sub-menu-bg" style="height:400px;"></div> -->
+        <!-- lnb -->
+        <div id="lnb">
+            <div class="area">
+                <ul style="float:left">
+                    <li><img src="/resources/images/layout/eg-logo.png" alt="" style="position: relative;  margin-right: 5px; height: 13px;"/>이 누리집은 대한민국 공식 전자정부 누리집입니다.</li>
+                </ul>
+                <ul>
+                    
+                        <li>
+                            <a id="templink" style="opacity: 1;" href="#" onclick="anyidAdaptor.ssoLoginPage('','');" title="로그인">로그인</a>
+                        </li>
+                        
+
+                    <!--
+                    /**  <li><a id="templink" style="opacity: 1;" href="#" onclick="anyidAdaptor.ssoLoginPage('','');" title="로그인">로그인</a></li>  */
+
+                        <li><a href="/login" title="로그인">로그인</a></li>
+                    -->
+                        <li><a href="/join" title="회원가입">회원가입</a></li>
+                    
+                    
+                    <li><a href="/sitemap" title="사이트맵">사이트맵</a></li>
+                    <li><a href="/support" title="고객지원">고객지원</a></li>
+                    <!--					<li><a href="/PPFAE10" title="법령/자료실">법령/자료실</a></li>--> 
+                    <li><a href="/eng/index" target="_blank" title="ENG">ENG</a></li>
+
+                    
+                        
+                    
+                    <!--	<li>
+                            <a href="https://blog.naver.com/kfdazzang" title="blog-naver" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_n_blog.png" alt="blog-naver" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+                            <a href="https://www.facebook.com/mfds" title="facebook" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_facebook.png" alt="facebook" height="26" width="26"  style="padding : 0px 3px 0px 0px;"></span></a>
+                            <a href="https://twitter.com/themfds" title="twitter" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_twitter.png" alt="twitter" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+                            <a href="https://www.instagram.com/mfdskorea" title="instagram" target="_blank"><span class="sound-only" ><img src="/resources/images/layout/sns_instagram.png" alt="instagram" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+                            <a href="https://www.youtube.com/user/theKFDA" title="youtube" target="_blank"><span class="sound-only" ><img src="/resources/images/layout/sns_youtube.png" alt="youtube" height="26" width="26" style="padding : 0px 0px 0px 0px;"></span></a>
+                        </li>-->
+
+                </ul>
+                
+            </div>
+        </div>
+        <!-- lnb -->
+        <!-- gnb -->
+        <!--
+            gnb 활성화는 상위 li에 class="active" 모든 요소 동일
+            gnb 메뉴 활성화 처리는 해당 a태그에 class="on" 모든요소 동일
+        -->
+        <!-- th menu -->
+        <div id="gnbStart">
+            <h1><a href="/" title="의약품안전나라 의약품통합정보시스템 메인페이지로 이동">식품의약품안전처 의약품통합정보시스템</a></h1>
+            <div class="area">
+
+                
+                <div class="total_search"><!-- 20191209 float: right으로 변경됨으로써 위치 변경   // 20200415 웹접근성 위치 다시 수정 -->
+                    <form method="get" action="/search">
+                        <fieldset>
+                            <legend class="hidden">통합검색</legend>
+                            <div class="search-con" >
+                                <div >
+                                    <label for="keywordTop" class="hidden">검색어입력</label>
+                                    <input type="text" style="width:200px;" name="keyword" id="keywordTop" placeholder="검색어로 메뉴·정보 검색 가능" value="" alt="통합검색 검색어 입력창" title="통합검색 검색어 입력창" />
+
+                                    <button type="submit" class="total_search" title="검색하기">검색</button>
+                                    <p style="font-size: 11px; -webkit-text-fill-color:#2366aa; font-weight: bold; position: absolute;">※ 이용하려는 메뉴 및 정보를 검색할 수 있습니다.</p>
+                                </div>
+                                <!--								<button type="button" class="t-search-btn" th:title="'통합검색'">검색</button>&lt;!&ndash; 20200415 웹접근성 위치 다시 수정 &ndash;&gt;-->
+                            </div>
+                        </fieldset>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+        <!-- //gnb -->
+        <!--mobile-menu-->
+        <nav class="mobile-menu">
+            
+                <!--<a href="/login" class="mobile-login" title="Login">Login</a>-->
+            
+            
+            <a href="#m-menu-list" class="open-m-menu">모바일 메뉴열기</a>
+            <div class="m-menu-back"></div>
+            <div id="m-menu-list"
+            >
+                <h2><button type="button" class="close-m-menu">메뉴닫기</button></h2>
+
+                
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_0 menu_PPA0000  hasChild"
+                >
+                    
+                    
+                    <a href="/PPA0000"
+                       onclick="subMenu(this)"
+                    >
+                        <span>전자민원/보고</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPAAD00  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>이상사례</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_2 menu_PPAAD04"
+                >
+                    
+                    
+                    <a href="/PPAAD04"
+                       onclick="subMenu(this)"
+                    >
+                        <span>국내이상사례보고(일반인)</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+                <li class="_menu_0 menu_PPL0000 active"
+                >
+                    
+                    
+                    <a href="/PPL0000"
+                       onclick="subMenu(this)" class="on"
+                    >
+                        <span>의약품등 검색</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_0 menu_PPOAC00  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>안전사용주의사항</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPOAC01"
+                >
+                    
+                    
+                    <a href="/PPOAC01"
+                       onclick="subMenu(this)"
+                    >
+                        <span>의약품이란 무엇인가요</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPOAC02"
+                >
+                    
+                    
+                    <a href="/PPOAC02"
+                       onclick="subMenu(this)"
+                    >
+                        <span>의약품 안전사용을 위한 주의사항</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+                <li class="_menu_0 menu_PPM0000  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>고시/공고알림</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPMAA00"
+                >
+                    
+                    
+                    <a href="/PPMAA00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>안전성서한(속보)</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAB00"
+                >
+                    
+                    
+                    <a href="/PPMAB00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>회수·폐기</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAC00"
+                >
+                    
+                    
+                    <a href="/PPMAC00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>행정처분정보</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAE00"
+                >
+                    
+                    
+                    <a href="/PPMAE00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>필수의약품공고</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAG00"
+                >
+                    
+                    
+                    <a href="/PPMAG00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>생산/수입/공급중단 보고 대상의약품</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAI00"
+                >
+                    
+                    
+                    <a href="/PPMAI00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>품목허가공고</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAK00"
+                >
+                    
+                    
+                    <a href="/PPMAK00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>국가출하승인</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAM00"
+                >
+                    
+                    
+                    <a href="/PPMAM00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>의약품 특허목록공고</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAN00"
+                >
+                    
+                    
+                    <a href="/PPMAN00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>우선판매품목허가공고</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAO00"
+                >
+                    
+                    
+                    <a href="/PPMAO00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>통지의약품공고</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAP00"
+                >
+                    
+                    
+                    <a href="/PPMAP00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>심판사항</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAR00"
+                >
+                    
+                    
+                    <a href="/PPMAR00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>공급중단·부족 의약품 현황(2023.01.01~)</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPMAS00"
+                >
+                    
+                    
+                    <a href="/PPMAS00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>공급중단·부족 의약품 현황(~2022.12.31)</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+                <li class="_menu_0 menu_PPOAD00  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>약물이상반응</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPOAD01"
+                >
+                    
+                    
+                    <a href="/PPOAD01"
+                       onclick="subMenu(this)"
+                    >
+                        <span>약물이상반응이란?</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPOAD02"
+                >
+                    
+                    
+                    <a href="/PPOAD02"
+                       onclick="subMenu(this)"
+                    >
+                        <span>주의해야 하는 의약품</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPOAD03"
+                >
+                    
+                    
+                    <a href="/PPOAD03"
+                       onclick="subMenu(this)"
+                    >
+                        <span>특별히 주의해야 하는 의약품</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPOAD04"
+                >
+                    
+                    
+                    <a href="/PPOAD04"
+                       onclick="subMenu(this)"
+                    >
+                        <span>의약품에 관한 약물이상반응 및 주의점</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPOAD05"
+                >
+                    
+                    
+                    <a href="/PPOAD05"
+                       onclick="subMenu(this)"
+                    >
+                        <span>약물이상반응 발생시 대처법</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+                <li class="_menu_0 menu_PPO0000  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>안전사용정보</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPOAA00"
+                >
+                    
+                    
+                    <a href="/PPOAA00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>적정사용정보</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+                <li class="_menu_0 menu_PPOAE00"
+                >
+                    
+                    
+                    <a href="/PPOAE00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>안전상비의약품</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_0 menu_PPOAF00"
+                >
+                    
+                    
+                    <a href="/PPOAF00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>많이 사용되는 일반의약품 정보</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_0 menu_PPP0000  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>의약품정보</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPPAA00"
+                >
+                    
+                    
+                    <a href="/PPPAA00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>DUR품목조회</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPPAB00"
+                >
+                    
+                    
+                    <a href="/PPPAB00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>안전상비약</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPPAC00"
+                >
+                    
+                    
+                    <a href="/PPPAC00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>의약품특허정보</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPPAD00"
+                >
+                    
+                    
+                    <a href="/PPPAD00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>해외특허정보</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPPAF00"
+                >
+                    
+                    
+                    <a href="/PPPAF00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>심판현황</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+                <li class="_menu_0 menu_PPQAA00"
+                >
+                    
+                    
+                    <a href="/PPQAA00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>민원진행현황</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_0 menu_PPR0000  hasChild"
+                >
+                    
+                    
+                    <a href="#none"
+                       onclick="subMenu(this)"
+                    >
+                        <span>코로나19</span>
+                    </a>
+                    
+                    
+                        
+    	<!-- 
+    		20191029
+    			- notOutputChildArr : 하위메뉴가 추가되지 않을 메뉴 리스트(하위메뉴를 포함하면서 링크가 연결된 메뉴) 추가
+    	 -->
+        
+            
+            <ul>
+                <li class="_menu_1 menu_PPRAA00"
+                >
+                    
+                    
+                    <a href="/PPRAA00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>임상시험 현황</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPRAB00"
+                >
+                    
+                    
+                    <a href="/PPRAB00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>마스크 허가 현황</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPRAC00"
+                >
+                    
+                    
+                    <a href="/PPRAC00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>코로나 치료제</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPRAD00"
+                >
+                    
+                    
+                    <a href="/PPRAD00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>코로나 백신</span>
+                    </a>
+                    
+                    
+                </li>
+                <li class="_menu_1 menu_PPRAE00"
+                >
+                    
+                    
+                    <a href="/PPRAE00"
+                       onclick="subMenu(this)"
+                    >
+                        <span>긴급사용승인현황</span>
+                    </a>
+                    
+                    
+                </li>
+            </ul>
+        
+    
+                    
+                </li>
+            </ul>
+        
+    
+            </div>
+        </nav>
+    </header>
+</div>
+<!-- //header -->
+
+<!-- container_wrap -->
+<div class="container_wrap">
+    <!-- container
+    menu : 의약품등 검색
+    cm : 의약품등 검색
+    cm command : PPL0000
+    -->
+    
+    <div id="container">  <!-- main일 경우  class="ext_main" 추가  -->
+        <!-- content_wrap -->
+        <div id="content_wrap"> <!-- subMain layout시  class="full_layout" 추가 -->
+            <!-- snb -->
+            <!--
+                클릭시 차수에 상관없이 a태그에 class="on"
+                3차 및 4차메뉴를 클릭했을때 페이지 로드시 2차메뉴 li부분에 class="active"
+            -->
+            
+            <!-- //snb -->
+
+            <!-- content -->
+            <!-- location -->
+            
+            <!-- //location -->
+            <!-- 자가치료용 마약류 예외 추가 -->
+            <div id="content">
+
+                <h2>
+                    
+                    <span id="spanMenuName1">의약품등 검색</span>
+                    
+                </h2>
+                <!-- 어린이 메뉴는 6depth가 존재함 -->
+
+                
+                <!-- cont_body -->
+                <div id="con_body" class="pl30 pr30">
+    <div class="mtab">
+        <ul>
+            <li class="on"><a href="/searchDrug" title="의약품등 제품정보 검색">의약품등 제품정보 검색</a></li>
+            <li><a href="/searchDur" title="DUR품목 검색">DUR품목 검색</a></li>
+            <li><a href="/searchBioeq" title="K-오렌지북">K-오렌지북</a></li>
+            <li><a href="/searchPatent" title="특허 검색">특허 검색</a></li>
+            <li><a href="/searchClinic" title="임상시험정보 검색">임상시험정보 검색</a></li>
+            <li><a href="/searchGeneric" title="제네릭의약품 묶음정보 검색">제네릭의약품 묶음정보 검색</a></li>
+            <li><a href="/searchEasyDrug" title="e약은요정보 검색">e약은요정보 검색</a></li>
+        </ul>
+    </div>
+
+    <div class="mediWrap m-search">
+        <!-- Left Section -->
+        <div class="m-search-bg"></div>
+        <div class="l_sec_md">
+            <h2>낱알검색 <button type="button" class="m-close" title="검색닫기">검색닫기</button></h2>
+            <div class="ltab">
+                <ul>
+                    <li class="on"><a href="#" title="상세검색 선택됨">상세검색</a></li>
+                    <li><a href="#" title="낱알검색">낱알검색</a></li>
+                </ul>
+            </div>
+            <div class="list-c" id="t1">
+                <form id="searchDetail" method="get" action="/searchDrug" onsubmit="return goSearch()">
+                    <fieldset>
+                        <input type="hidden" name="sort" id="sort1" value="" />
+                        <input type="hidden" name="sortOrder" id="sortOrder1" value="" />
+                        <input type="hidden" name="searchYn" id="searchYn1" value="true" />
+                        <input type="hidden" id="ExcelRowdata" name="ExcelRowdata" value="" />
+                        <div class="search_mini">
+                            <input type="hidden" name="page" id="page1" readonly="readonly"
+                                   value="1" />
+                            
+                            <input type="hidden" name="searchDivision" value="detail" readonly="readonly" />
+
+                            <legend class="hidden">제품명</legend>
+                            <label for="itemName1" class="choice_title">제품명</label>
+                            <input type="text" class="inp_search" name="itemName" id="itemName1" autocomplete="off"
+                                   value="" title="제품명" />
+                            
+
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">제품영문명</legend>
+                            <label for="itemEngName" class="choice_title">제품영문명</label>
+                            <input type="text" class="wd60" name="itemEngName" id="itemEngName" autocomplete="off"
+                                   value="" title="제품영문명"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">업체명</legend>
+                            <label for="entpName" class="choice_title">업체명</label>
+                            <input type="text" class="wd60" name="entpName" id="entpName" autocomplete="off"
+                                   value="" title="업체명"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">업체영문명</legend>
+                            <label for="entpEngName" class="choice_title">업체영문명</label>
+                            <input type="text" class="wd60" name="entpEngName" id="entpEngName" autocomplete="off"
+                                   value="" title="업체영문명"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">성분명1</legend>
+                            <label for="ingrName1" class="choice_title">성분명1</label>
+                            <input type="text" class="wd60" name="ingrName1" id="ingrName1" autocomplete="off"
+                                   value="" title="성분명1"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">성분명2</legend>
+                            <label for="ingrName2" class="choice_title">성분명2</label>
+                            <input type="text" class="wd60" name="ingrName2" id="ingrName2" autocomplete="off"
+                                   value="" title="성분명2" />
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">성분명3</legend>
+                            <label for="ingrName3" class="choice_title">성분명3</label>
+                            <input type="text" class="wd60" name="ingrName3" id="ingrName3" autocomplete="off"
+                                   value="" title="성분명3"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">성분영문명</legend>
+                            <label for="ingrEngName" class="choice_title">성분영문명</label>
+                            <input type="text" class="wd60" name="ingrEngName" id="ingrEngName" autocomplete="off"
+                                   value="ivabradine" title="영문성분명"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">품목기준코드</legend>
+                            <label for="itemSeq" class="choice_title">품목기준코드</label>
+                            <input type="text" class="wd60" name="itemSeq" id="itemSeq"
+                                   value="" title="품목기준코드"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">표준코드</legend>
+                            <label for="stdrCodeName" class="choice_title">표준코드</label>
+                            <input type="text" class="wd60" name="stdrCodeName" id="stdrCodeName"
+                                   value="" title="표준코드"/>
+                        </div>
+
+                        <div class="search_part">
+                            <legend class="hidden">ATC코드</legend>
+                            <label for="atcCodeName" class="choice_title">ATC코드</label>
+                            <input type="text" class="wd30" name="atcCodeName" id="atcCodeName" readonly="readonly" onfocus="this.blur()" style="cursor: default;"
+                                   value="" title="ATC코드"/>
+                            <button type="button" class="btn_small btn_base btn_point2" name="btnAtcSch" id="btnAtcSch" title="ATC코드검색" onclick="javascript:pbpPopup('/NEXACRO/launch.html?screenid=Portal_screen&formpath=Ext_popup::CCBJB01P012', 'ATC코드검색', 600, 550, 0, 0); return false;">검색</button>
+                            <button type="button" class="btn_small btn_base btn_point1" title="취소" onclick="searchAtcClear(); return false;">취소</button>
+                        </div>
+                        <div class="search_part">
+                            <p class="choice_title">품목구분</p>  <!--웹접근성 임시 수정조치  a href="#" input tabindex 추가 -->
+                            <ul class="chlist col3" id="indutyClassCodeList">
+                                <li class="on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('indutyClassCode', '0', 'All'); return false;">전체</a>
+                                    <label for="indutyClassCodeAll" class="hidden">전체</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked" />
+                                </li>
+                                <li>
+                                    <a href="#" title="의약품" onclick="setPbpCheck('indutyClassCode', '1', 'A0'); return false;">의약품</a>
+                                    <label for="indutyClassCodeA0" class="hidden">의약품</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeA0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="A0" title="의약품" tabindex="-1" />
+                                </li>
+                                <li>
+                                    <a href="#" title="의약외품" onclick="setPbpCheck('indutyClassCode', '2', 'B0'); return false;">의약외품</a>
+                                    <label for="indutyClassCodeB0" class="hidden">의약외품</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeB0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="B0" title="의약외품" tabindex="-1" />
+                                </li>
+                                <li>
+                                    <a href="#" title="생물의약품" onclick="setPbpCheck('indutyClassCode', '3', 'C0'); return false;">생물의약품</a>
+                                    <label for="indutyClassCodeC0" class="hidden">생물의약품</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeC0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="C0" title="생물의약품" tabindex="-1" />
+                                </li>
+
+                                <li>
+                                    <a href="#" title="마약류" onclick="setPbpCheck('indutyClassCode', '4', 'F0'); return false;">마약류</a>
+                                    <label for="indutyClassCodeF0" class="hidden">마약류</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeF0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="F0" title="마약류" tabindex="-1" />
+                                </li>
+                                <li>
+                                    <a href="#" title="첨단바이오" onclick="setPbpCheck('indutyClassCode', '5', 'J0'); return false;">첨단바이오</a>
+                                    <label for="indutyClassCodeJ0" class="hidden">첨단바이오</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeJ0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="J0" title="첨단바이오" tabindex="-1" />
+                                </li>
+
+                                <li>
+                                    <a href="#" title="한약(생약)제제등" onclick="setPbpCheck('indutyClassCode', '6', 'E0'); return false;">한약(생약)제제등</a>
+                                    <label for="indutyClassCodeE0" class="hidden">한약(생약)제제등</label>
+                                    <input type="radio" name="indutyClassCode" id="indutyClassCodeE0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="E0" title="한약(생약)제제등" tabindex="-1" />
+                                </li>
+
+                            </ul>
+                        </div>
+
+                        <div class="search_part" id="classSelArea">
+                            <legend class="hidden">분류번호</legend>
+                            <label for="sClassNo" class="choice_title">분류번호</label>
+                            <select id="sClassNo" name="sClassNo" title="분류번호" class="wd60">
+                                <option value="" selected="selected">전체</option>
+                                <option value="01000">[01000] 신경계 감각기관용 의약품</option>
+                                <option value="01100">[01100] 중추신경계용약</option>
+                                <option value="01110">[01110] 전신마취제</option>
+                                <option value="01120">[01120] 최면진정제</option>
+                                <option value="01130">[01130] 항전간제</option>
+                                <option value="01140">[01140] 해열.진통.소염제</option>
+                                <option value="01150">[01150] 각성제,흥분제</option>
+                                <option value="01160">[01160] 진훈제</option>
+                                <option value="01170">[01170] 정신신경용제</option>
+                                <option value="01190">[01190] 기타의 중추신경용약</option>
+                                <option value="01200">[01200] 말초신경계용약</option>
+                                <option value="01210">[01210] 국소마취제</option>
+                                <option value="01220">[01220] 골격근이완제</option>
+                                <option value="01230">[01230] 자율신경제</option>
+                                <option value="01240">[01240] 진경제</option>
+                                <option value="01250">[01250] 발한제,지한제</option>
+                                <option value="01290">[01290] 기타의 말초신경용약</option>
+                                <option value="01300">[01300] 감각기관용약</option>
+                                <option value="01310">[01310] 안과용제</option>
+                                <option value="01320">[01320] 이비과용제</option>
+                                <option value="01390">[01390] 기타의 감각기관용약</option>
+                                <option value="01400">[01400] 알레르기용약</option>
+                                <option value="01410">[01410] 항히스타민제</option>
+                                <option value="01420">[01420] 자격요법제(비특이성면역억제제를 포함)</option>
+                                <option value="01490">[01490] 기타의 알레르기용약</option>
+                                <option value="01900">[01900] 기타의 신경계및 감각기관용 의약품</option>
+                                <option value="02000">[02000] 개개의 기관계용 의약품</option>
+                                <option value="02100">[02100] 순환계용약</option>
+                                <option value="02110">[02110] 강심제</option>
+                                <option value="02120">[02120] 부정맥용제</option>
+                                <option value="02130">[02130] 이뇨제</option>
+                                <option value="02140">[02140] 혈압강하제</option>
+                                <option value="02150">[02150] 혈관보강제</option>
+                                <option value="02160">[02160] 혈관수축제</option>
+                                <option value="02170">[02170] 혈관확장제</option>
+                                <option value="02180">[02180] 동맥경화용제</option>
+                                <option value="02190">[02190] 기타의 순환계용약</option>
+                                <option value="02200">[02200] 호흡기관용약</option>
+                                <option value="02210">[02210] 호흡촉진제</option>
+                                <option value="02220">[02220] 진해거담제</option>
+                                <option value="02230">[02230] 함소흡입제</option>
+                                <option value="02290">[02290] 기타의 호흡기관용약</option>
+                                <option value="02300">[02300] 소화기관용약</option>
+                                <option value="02310">[02310] 치과구강용약</option>
+                                <option value="02320">[02320] 소화성궤양용제</option>
+                                <option value="02330">[02330] 건위소화제</option>
+                                <option value="02340">[02340] 제산제</option>
+                                <option value="02350">[02350] 최토제, 진토제</option>
+                                <option value="02360">[02360] 이담제</option>
+                                <option value="02370">[02370] 정장제</option>
+                                <option value="02380">[02380] 하제, 완장제</option>
+                                <option value="02390">[02390] 기타의 소화기관용약</option>
+                                <option value="02400">[02400] 호르몬제(항호르몬제를 포함)</option>
+                                <option value="02410">[02410] 뇌하수체호르몬제</option>
+                                <option value="02420">[02420] 수액선호르몬제</option>
+                                <option value="02430">[02430] 갑상선, 부갑상선호르몬제</option>
+                                <option value="02440">[02440] 단백동화스테로이드제</option>
+                                <option value="02450">[02450] 부신호르몬제</option>
+                                <option value="02460">[02460] 남성호르몬제</option>
+                                <option value="02470">[02470] 난포호르몬제 및 황체호르몬제</option>
+                                <option value="02480">[02480] 혼합호르몬제</option>
+                                <option value="02490">[02490] 기타의 호르몬제(항호르몬제를 포함)</option>
+                                <option value="02500">[02500] 비뇨생식기관 및 항문용약</option>
+                                <option value="02510">[02510] 요로소독제</option>
+                                <option value="02520">[02520] 자궁수축제</option>
+                                <option value="02530">[02530] 통경제</option>
+                                <option value="02540">[02540] 피임제</option>
+                                <option value="02550">[02550] 비뇨생식기관용제(성병예방제포함)</option>
+                                <option value="02560">[02560] 치질용제</option>
+                                <option value="02590">[02590] 기타의 비뇨생식기관 및 항문용약</option>
+                                <option value="02600">[02600] 외피용약</option>
+                                <option value="02610">[02610] 외피용살균소독제</option>
+                                <option value="02620">[02620] 창상보호제</option>
+                                <option value="02630">[02630] 화농성질환용제</option>
+                                <option value="02640">[02640] 진통.진양.수렴.소염제</option>
+                                <option value="02650">[02650] 기생성 피부질환용제</option>
+                                <option value="02660">[02660] 피부연화제(부식제를 포함)</option>
+                                <option value="02670">[02670] 모발용제(발모, 탈모, 염모, 양모제)</option>
+                                <option value="02680">[02680] 욕제</option>
+                                <option value="02690">[02690] 기타의 외피용약</option>
+                                <option value="02900">[02900] 기타의 개개의 기관용 의약품</option>
+                                <option value="03000">[03000] 대사성 의약품</option>
+                                <option value="03100">[03100] 비타민제</option>
+                                <option value="03110">[03110] 비타민 A 및 D제</option>
+                                <option value="03120">[03120] 비타민 B1제</option>
+                                <option value="03130">[03130] 비타민 B제(비타민 B1을 제외)</option>
+                                <option value="03140">[03140] 비타민 C 및 P제</option>
+                                <option value="03150">[03150] 비타민 E 및 K제</option>
+                                <option value="03160">[03160] 혼합비타민제(비타민AD 혼합제제를 제외)</option>
+                                <option value="03190">[03190] 기타의 비타민제</option>
+                                <option value="03200">[03200] 자양강장변질제</option>
+                                <option value="03210">[03210] 칼슘제</option>
+                                <option value="03220">[03220] 무기질제제</option>
+                                <option value="03230">[03230] 당류제</option>
+                                <option value="03240">[03240] 유기산제제</option>
+                                <option value="03250">[03250] 단백아미노산제제</option>
+                                <option value="03260">[03260] 장기제제</option>
+                                <option value="03270">[03270] 유유아용제</option>
+                                <option value="03290">[03290] 기타의 자양강장변질제</option>
+                                <option value="03300">[03300] 혈액 및 체액용약</option>
+                                <option value="03310">[03310] 혈액대용제</option>
+                                <option value="03320">[03320] 지혈제</option>
+                                <option value="03330">[03330] 혈액응고저지제</option>
+                                <option value="03390">[03390] 기타의 혈액 및 체액용약</option>
+                                <option value="03400">[03400] 인공관류용제</option>
+                                <option value="03410">[03410] 인공신장관류용제</option>
+                                <option value="03490">[03490] 기타의 인공관류용제</option>
+                                <option value="03900">[03900] 기타의 대사성 의약품</option>
+                                <option value="03910">[03910] 간장질환용제</option>
+                                <option value="03920">[03920] 해독제</option>
+                                <option value="03930">[03930] 습관성중독용제</option>
+                                <option value="03940">[03940] 통풍치료제</option>
+                                <option value="03950">[03950] 효소제제</option>
+                                <option value="03960">[03960] 당뇨병용제</option>
+                                <option value="03980">[03980] 종합대사성제제</option>
+                                <option value="03990">[03990] 따로 분류되지 않는 대사성 의약품</option>
+                                <option value="04000">[04000] 조직세포의 기능용 의약품</option>
+                                <option value="04100">[04100] 조직부활용약</option>
+                                <option value="04110">[04110] 클로로필제제</option>
+                                <option value="04120">[04120] 색소제제</option>
+                                <option value="04190">[04190] 기타의 세포부활용약</option>
+                                <option value="04200">[04200] 종양용약</option>
+                                <option value="04210">[04210] 항악성종양제</option>
+                                <option value="04290">[04290] 기타의 종양치료제</option>
+                                <option value="04300">[04300] 조직세포의 치료 및 진단 목적</option>
+                                <option value="04310">[04310] 방사성 의약품</option>
+                                <option value="04390">[04390] 기타의 조직세포의 치료 및 진단</option>
+                                <option value="04900">[04900] 기타의 조직세포의 기능용의약품</option>
+                                <option value="06000">[06000] 항병원생물성 의약품</option>
+                                <option value="06100">[06100] 항생물질제제</option>
+                                <option value="06110">[06110] 주로 그람양성균에 작용하는 것</option>
+                                <option value="06120">[06120] 주로 그람음성균에 작용하는 것</option>
+                                <option value="06130">[06130] 주로 항산성균에 작용하는 것</option>
+                                <option value="06140">[06140] 주로 그람양성균, 리케치아, 비루스에 작용하는 것</option>
+                                <option value="06150">[06150] 주로 그람양성, 음성균, 리케치아, 비루스에 작용하는 것</option>
+                                <option value="06160">[06160] 주로 곰팡이, 원충에 작용하는 것</option>
+                                <option value="06170">[06170] 주로 악성종양에 작용하는 것</option>
+                                <option value="06180">[06180] 주로 그람양성, 음성균에 작용하는 것</option>
+                                <option value="06190">[06190] 기타의 항생물질제제(복합항생물질제제를 포함)</option>
+                                <option value="06200">[06200] 화학료법제</option>
+                                <option value="06210">[06210] 설화제</option>
+                                <option value="06220">[06220] 항결핵제</option>
+                                <option value="06230">[06230] 치나제</option>
+                                <option value="06240">[06240] 구매제</option>
+                                <option value="06250">[06250] 후란계 제제</option>
+                                <option value="06290">[06290] 기타의 화학요법제</option>
+                                <option value="06300">[06300] 생물학적 제제</option>
+                                <option value="06310">[06310] 백신류</option>
+                                <option value="06320">[06320] 독소류 및 톡소이드류</option>
+                                <option value="06330">[06330] 항독소 및 렙토스피라혈청류</option>
+                                <option value="06340">[06340] 혈액제제류</option>
+                                <option value="06350">[06350] 생물학적 시험용제제류</option>
+                                <option value="06360">[06360] 생물학적 제제</option>
+                                <option value="06390">[06390] 기타의 생물학적 제제</option>
+                                <option value="06400">[06400] 기생동물에 대한 의약품</option>
+                                <option value="06410">[06410] 항원충제</option>
+                                <option value="06420">[06420] 구충제</option>
+                                <option value="06490">[06490] 기타의 기생동물에 대한 의약품</option>
+                                <option value="06900">[06900] 기타의 병원생물에 대한 의약품</option>
+                                <option value="07000">[07000] 치료를 주목적으로 하지 않는 의약품 및 관련제품</option>
+                                <option value="07100">[07100] 조제용약</option>
+                                <option value="07110">[07110] 부형제</option>
+                                <option value="07120">[07120] 연고기제</option>
+                                <option value="07130">[07130] 용해제</option>
+                                <option value="07140">[07140] 교미교취착색제</option>
+                                <option value="07150">[07150] 유화제</option>
+                                <option value="07190">[07190] 기타의 조제용약</option>
+                                <option value="07200">[07200] 진단용약</option>
+                                <option value="07210">[07210] X선조영제</option>
+                                <option value="07220">[07220] 일반검사용 시약</option>
+                                <option value="07230">[07230] 혈액검사용 시약</option>
+                                <option value="07240">[07240] 생화화적 검사용 시약</option>
+                                <option value="07250">[07250] 면역혈청학적 검사용 시약</option>
+                                <option value="07260">[07260] 세균학적 검사용제</option>
+                                <option value="07270">[07270] 병리조직 검사용 시약</option>
+                                <option value="07280">[07280] 기능 검사용 시약</option>
+                                <option value="07290">[07290] 기타의 진단용약</option>
+                                <option value="07300">[07300] 공중위생용약</option>
+                                <option value="07310">[07310] 방부제</option>
+                                <option value="07320">[07320] 방역용 살균소독제</option>
+                                <option value="07330">[07330] 방충제</option>
+                                <option value="07340">[07340] 살충제</option>
+                                <option value="07390">[07390] 기타의 공중위생용약</option>
+                                <option value="07400">[07400] 관련제품</option>
+                                <option value="07410">[07410] 캅셀류</option>
+                                <option value="07900">[07900] 기타의 치료를 주목적으로 하지 않는 의약품</option>
+                                <option value="07910">[07910] 반창고</option>
+                                <option value="07990">[07990] 따로 분류되지 않고 치료를 주목적으로 하지않는 의약품</option>
+                                <option value="08000">[08000] 마약</option>
+                                <option value="08100">[08100] 알카로이드 마약(천연)</option>
+                                <option value="08110">[08110] 아편알카로이드계 제제</option>
+                                <option value="08120">[08120] 코카알카로이드계 제제</option>
+                                <option value="08190">[08190] 기타의 알카로이드계 마약(천연마약)</option>
+                                <option value="08200">[08200] 비알카로이드계 마약</option>
+                                <option value="08210">[08210] 합성마약</option>
+                                <option value="08290">[08290] 기타의 비알카로이드계 마약</option>
+                                <option value="08900">[08900] 기타의 마약</option>
+                                <option value="09000">[09000] 위생용품</option>
+                                <option value="11000">[11000] 의료용구</option>
+                                <option value="20000">[20000] 화장품</option>
+                                <option value="20100">[20100] 어린이용제품류(의약부외품에 해당되는 것은 제외)</option>
+                                <option value="20200">[20200] 목욕용제품류(의약부외품에 해당되는 것은 제외)</option>
+                                <option value="20300">[20300] 눈화장용제품류</option>
+                                <option value="20400">[20400] 방향용제품류</option>
+                                <option value="20500">[20500] 두발용제품류</option>
+                                <option value="20600">[20600] 염모용제품류(의약부외품에 해당되는 것은 제외)</option>
+                                <option value="20700">[20700] 메이컵용제품류</option>
+                                <option value="20800">[20800] 메니큐어용제품류</option>
+                                <option value="20900">[20900] 면도용제품류</option>
+                                <option value="21000">[21000] 기초화장용제품류(의약부외품에 해당되는 것은 제외)</option>
+                                <option value="21100">[21100] 일소 및 일소방지용제품류</option>
+                                <option value="21900">[21900] 기타화장품류(따로 분류되지 않는 화장품)</option>
+                                <option value="30000">[30000] 약사법 제2조제7호 가목의 의약외품</option>
+                                <option value="31000">[31000] 생리혈 위생처리 제품</option>
+                                <option value="31100">[31100] 생리대</option>
+                                <option value="31200">[31200] 탐폰</option>
+                                <option value="31300">[31300] 생리컵</option>
+                                <option value="32000">[32000] 마스크</option>
+                                <option value="32100">[32100] 수술용 마스크</option>
+                                <option value="32200">[32200] 보건용 마스크</option>
+                                <option value="32300">[32300] 비말차단용 마스크</option>
+                                <option value="33000">[33000] 환부의 보존, 보호, 처치 등의 목적으로 사용하는 위생용품</option>
+                                <option value="33100">[33100] 안대</option>
+                                <option value="33200">[33200] 붕대</option>
+                                <option value="33300">[33300] 탄력붕대</option>
+                                <option value="33400">[33400] 석고붕대</option>
+                                <option value="33500">[33500] 원통형 탄력붕대(스터키넷)</option>
+                                <option value="33600">[33600] 거즈</option>
+                                <option value="33700">[33700] 탈지면</option>
+                                <option value="33800">[33800] 반창고</option>
+                                <option value="34000">[34000] 구강청결용 물휴지</option>
+                                <option value="35000">[35000] 기타 이와 유사한 물품</option>
+                                <option value="35100">[35100] 환부의 삼출물등의 흡수를 목적으로 사용되는 비접착성 물품</option>
+                                <option value="35200">[35200] 감염예방등의 목적으로 외과처치시 사용되는 멸균된 물품</option>
+                                <option value="35300">[35300] 가목과 유사한 물품</option>
+                                <option value="36000">[36000] 출산 직후 출혈 및 오로(산후 질 분비물)의 위생처리를 목적으로 사용하는 물품</option>
+                                <option value="40000">[40000] 약사법 제2조제7호 나목의 의약외품</option>
+                                <option value="41000">[41000] 구취 등의 방지제</option>
+                                <option value="41100">[41100] 구중청량제(내복용제 및 양치제)</option>
+                                <option value="41200">[41200] 액취방지제(외용제에 한함)</option>
+                                <option value="41300">[41300] 땀띠·짓무름용제</option>
+                                <option value="41400">[41400] 치약제</option>
+                                <option value="41500">[41500] 욕용제(외용제에 한함)</option>
+                                <option value="42000">[42000] 탈모의 방지, 모발의 염색(탈색·탈염포함), 제모 등을 위한 제제</option>
+                                <option value="42100">[42100] 탈모방지 또는 모발의 굵기 증가를 목적으로 사용하는 외용제</option>
+                                <option value="42200">[42200] 염모제(탈색·탈염 포함)</option>
+                                <option value="42300">[42300] 제모제(외용제에 한함)</option>
+                                <option value="43000">[43000] 사람의 보건을 목적으로 인체에 적용하는 모기, 진드기 등의 기피제</option>
+                                <option value="43100">[43100] 구제·방지·유인살충제</option>
+                                <option value="43200">[43200] 기피제</option>
+                                <option value="44000">[44000] 콘택트렌즈관리용품</option>
+                                <option value="45000">[45000] 금연보조제(니코틴, 연초[입담배] 함유제품 제외)</option>
+                                <option value="45100">[45100] 흡연욕구저하제</option>
+                                <option value="45200">[45200] 흡연습관개선보조제</option>
+                                <option value="46000">[46000] 외용소독제</option>
+                                <option value="47000">[47000] 표준제조기준 제제</option>
+                                <option value="47100">[47100] 외용 표준제조기준 제제</option>
+                                <option value="47110">[47110] 연고제</option>
+                                <option value="47120">[47120] 카타플라스마제</option>
+                                <option value="47130">[47130] 스프레이파스</option>
+                                <option value="47200">[47200] 내복용 표준제조기준 제제</option>
+                                <option value="47210">[47210] 저함량 비타민 및 미네랄 제제</option>
+                                <option value="47220">[47220] 자양강장변질제(내용액제에 한함)</option>
+                                <option value="47230">[47230] 건위소화제(내용액제에 한함)</option>
+                                <option value="47240">[47240] 정장제(내용고형제에 한함)</option>
+                                <option value="47250">[47250] 내용액제</option>
+                                <option value="47260">[47260] 내용고형제</option>
+                                <option value="48000">[48000] 구강위생 등에 사용한 제제</option>
+                                <option value="48100">[48100] 치아근관소독제(외용액제에 한함)</option>
+                                <option value="48200">[48200] 유·소아 손빨기 방지제(외용액제, 외용산제 등)</option>
+                                <option value="48300">[48300] 코골이 방지(보조)제</option>
+                                <option value="48400">[48400] 치아미백제</option>
+                                <option value="48500">[48500] 의치(틀니), 치아교정기 등 구강 내에 탈·부착하여 사용하는 물품의 세척 또는 소독을 목적으로 하는 제제</option>
+                                <option value="48600">[48600] 구강의 위생관리를 위해 구강 내의 치태 또는 설태 등을 염색 또는 착색하는데 사용하는 세제</option>
+                                <option value="48700">[48700] 치아 표면에 도포하여 치아의 색상을 일시적으로 조절하기 위해 사용하는 제품</option>
+                                <option value="49000">[49000] 기타 제제</option>
+                                <option value="49100">[49100] 미생물 번식과 물때 발생 예방목적으로 가습기 내의 물에 첨가하여 사용하는 제제</option>
+                                <option value="49200">[49200] 사람이 흡입하도록 제조된 공기 조성 또는 산소 함유 휴대용 제품</option>
+                                <option value="50000">[50000] 약사법 제2조제7호 다목의 의약외품</option>
+                                <option value="51000">[51000] 감염병 예방을 위하여 보건·위생상의 위해를 일으키거나 일으킬 수 있는 곤충이나 동물의 구제나 방지를 목적으로 하는 제제(희석하여 사용하는 제제 포함)</option>
+                                <option value="51100">[51100] 방역용 살충제</option>
+                                <option value="51200">[51200] 방역용 살서제</option>
+                                <option value="52000">[52000] 인체에 직접 적용되지 않으나 감염병 예방을 위하여 사용하는 살균·소독제제(희석하여 사용하는 제제 포함)</option>
+                                <option value="52100">[52100] 알코올류, 알데히드, 크레졸, 비누제제 형태의 살균소독제</option>
+                                <option value="52200">[52200] 기타 방역의 목적으로 사용하는 제제</option>
+                            </select>
+                        </div>
+
+                        <div class="search_part" id="classSelArea5">
+                            <legend class="hidden">마약구분</legend>
+                            <label for="narcoticKindCodeList" class="choice_title">마약구분</label>
+                            <!-- 주석처리 부분 접근성 으로  a href="#" 임시 수정  -->
+                            <ul class="chlist col3" id="narcoticKindCodeList">
+                                <li class="on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('narcoticKindCode', '0', 'All'); return false;">전체</a>
+                                    <label for="narcoticKindCodeAll" class="hidden">전체</label>
+                                    <input type="radio" name="narcoticKindCode" id="narcoticKindCodeAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked" />
+                                </li>
+                                <li>
+                                    <a href="#" title="마약" onclick="setPbpCheck('narcoticKindCode', '1', 'A'); return false;">마약</a>
+                                    <label for="narcoticKindCodeA" class="hidden">마약</label>
+                                    <input type="radio" name="narcoticKindCode" id="narcoticKindCodeA" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="A" title="마약" tabindex="-1" />
+                                </li>
+                                <li>
+                                    <a href="#" title="향정" onclick="setPbpCheck('narcoticKindCode', '2', 'B'); return false;">향정</a>
+                                    <label for="narcoticKindCodeB" class="hidden">향정</label>
+                                    <input type="radio" name="narcoticKindCode" id="narcoticKindCodeB" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="B" title="향정" tabindex="-1" />
+                                </li>
+                                <li>
+                                    <a href="#" title="한외마약" onclick="setPbpCheck('narcoticKindCode', '3', 'C'); return false;">한외마약</a>
+                                    <label for="narcoticKindCodeC" class="hidden">한외마약</label>
+                                    <input type="radio" name="narcoticKindCode" id="narcoticKindCodeC" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="C" title="한외마약" tabindex="-1"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="대마" onclick="setPbpCheck('narcoticKindCode', '4', 'D'); return false;">대마</a>
+                                    <label for="narcoticKindCodeD" class="hidden">대마</label>
+                                    <input type="radio" name="narcoticKindCode" id="narcoticKindCodeD" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="D" title="대마" tabindex="-1"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="원료물질" onclick="setPbpCheck('narcoticKindCode', '5', 'E'); return false;">원료물질</a>
+                                    <label for="narcoticKindCodeE" class="hidden">원료물질</label>
+                                    <input type="radio" name="narcoticKindCode" id="narcoticKindCodeE" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="E" title="원료물질" tabindex="-1"/>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="search_part">
+                            <p class="choice_title">취소/취하</p>
+                            <ul class="chlist col3" id="cancelCodeList">
+                                <li>
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('cancelCode', '0', 'All'); return false;">전체</a>
+                                    <label for="cancelCodeAll" class="hidden">전체</label>
+                                    <input type="radio" name="cancelCode" id="cancelCodeAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1"/>
+                                </li>
+                                <li class="on">
+                                    <a href="#" title="정상" onclick="setPbpCheck('cancelCode','1' ,'0'); return false;">정상</a>
+                                    <label for="cancelCode0" class="hidden">정상</label>
+                                    <input type="radio" name="cancelCode" id="cancelCode0" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="0" title="정상" tabindex="-1" checked="checked" />
+                                </li>
+                                <li>
+                                    <a href="#" title="취하" onclick="setPbpCheck('cancelCode', '2', '2'); return false;">취하</a>
+                                    <label for="cancelCode2" class="hidden">취하</label>
+                                    <input type="radio" name="cancelCode" id="cancelCode2" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="2" title="취하" tabindex="-1"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="유효기간 만료" onclick="setPbpCheck('cancelCode','3', 'A'); return false;">유효기간 만료</a>
+                                    <label for="cancelCodeA" class="hidden">유효기간 만료</label>
+                                    <input type="radio" name="cancelCode" id="cancelCodeA" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="A" title="유효기간 만료" tabindex="-1"/>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="search_part">
+                            <p class="choice_title">전문/일반</p>
+                            <ul class="chlist col3" id="etcOtcCodeList">
+                                <li class="on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('etcOtcCode', '0', 'All'); return false;">전체</a>
+                                    <label for="etcOtcCodeAll" class="hidden">전체</label>
+                                    <input type="radio" name="etcOtcCode" id="etcOtcCodeAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="전문" onclick="setPbpCheck('etcOtcCode', '1', '02'); return false;">전문</a>
+                                    <label for="etcOtcCode02" class="hidden">전문</label>
+                                    <input type="radio" name="etcOtcCode" id="etcOtcCode02" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="02" title="전문" tabindex="-1" />
+                                </li>
+                                <li>
+                                    <a href="#" title="일반" onclick="setPbpCheck('etcOtcCode', '2', '01'); return false;">일반</a>
+                                    <label for="etcOtcCode01" class="hidden">일반</label>
+                                    <input type="radio" name="etcOtcCode" id="etcOtcCode01" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="01" title="일반" tabindex="-1"/>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <p class="choice_title">완제/원료</p>
+                            <ul class="chlist dv_list2" id="makeMaterialGbList">
+                                <li class="on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('makeMaterialGb', '0', 'All'); return false;">전체</a>
+                                    <label for="makeMaterialGbAll" class="hidden">전체</label>
+                                    <input type="radio" name="makeMaterialGb" id="makeMaterialGbAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="완제" onclick="setPbpCheck('makeMaterialGb', '1', '01'); return false;">완제</a>
+                                    <label for="makeMaterialGb01" class="hidden">완제</label>
+                                    <input type="radio" name="makeMaterialGb" id="makeMaterialGb01" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="01" title="완제" tabindex="-1"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="원료" onclick="setPbpCheck('makeMaterialGb', '2', '03'); return false;">원료</a>
+                                    <label for="makeMaterialGb03" class="hidden">원료</label>
+                                    <input type="radio" name="makeMaterialGb" id="makeMaterialGb03" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="03" title="원료" tabindex="-1"/>
+                                </li>
+                                <li>
+                                    <a href="#" title="한약재" onclick="setPbpCheck('makeMaterialGb', '3', '02'); return false;">한약재</a>
+                                    <label for="makeMaterialGb02" class="hidden">한약재</label>
+                                    <input type="radio" name="makeMaterialGb" id="makeMaterialGb02" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="02" title="한약재" tabindex="-1"/>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">효능효과</legend>
+                            <label for="searchConEe" class="choice_title">효능효과</label>
+                            <span class="s-si">
+                                <select name="searchConEe" id="searchConEe">
+                                    <option value="AND" selected="selected">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                                <label for="eeDocData" class="hidden">효능효과 입력창</label>
+                                <input type="text" class="wd100" name="eeDocData" id="eeDocData" title="효능효과 입력창"
+                                       value="" />
+                            </span>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">용법용량</legend>
+                            <label for="searchConUd" class="choice_title">용법용량</label>
+                            <span class="s-si">
+                                <select name="searchConUd" id="searchConUd">
+                                    <option value="AND" selected="selected">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                                <label for="udDocData" class="hidden">용법용량 입력창</label>
+                                <input type="text" class="wd100" name="udDocData" id="udDocData" title="용법용량 입력창"
+                                       value="" />
+                            </span>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">사용상의주의사항</legend>
+                            <label for="searchConNb" class="choice_title">사용상의주의사항</label>
+                            <span class="s-si">
+                                <select name="searchConNb" id="searchConNb">
+                                    <option value="AND" selected="selected">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                                <label for="nbDocData" class="hidden">주의사항 입력창</label>
+                                <input type="text" class="wd100" name="nbDocData" id="nbDocData" title="주의사항 입력창"
+                                       value="" />
+                            </span>
+                        </div>
+
+                        <!--<div class="search_part">
+                            <legend class="hidden">허가번호</legend>
+                            <label for="itemNo" class="choice_title">허가번호</label>
+                            <input type="text" class="wd60" name="itemNo" id="itemNo" autocomplete="off"/>
+                        </div>-->
+                        <div class="search_part">
+
+                            <p class="choice_title">허가일</p>
+                            <div id="permitDate">
+                                <button type="button" class="btn_choice" title="전체" onclick="setPbpSearchDate(&#39;0&#39;,&#39;&#39;, &#39;&#39;);">전체</button>
+                                <button type="button" class="btn_choice" title="1개월" onclick="setPbpSearchDate(&#39;1&#39;,&#39;2026-10-07&#39;, &#39;2026-11-07&#39;);">1개월</button>
+                                <button type="button" class="btn_choice" title="6개월" onclick="setPbpSearchDate(&#39;2&#39;,&#39;2026-05-07&#39;, &#39;2026-11-07&#39;);">6개월</button>
+                                <button type="button" class="btn_choice" title="1년" onclick="setPbpSearchDate(&#39;3&#39;,&#39;2025-11-07&#39;, &#39;2026-11-07&#39;);">1년</button>
+                                <button type="button" class="btn_choice" title="3년" onclick="setPbpSearchDate(&#39;4&#39;,&#39;2023-11-07&#39;, &#39;2026-11-07&#39;);">3년</button>
+                            </div>
+                            <label for="date_trMinDate" class="hidden">시작일자</label>
+                            <span class="calender_type">
+                                        <input type="text" class="inp_spart date_min" name="startPermitDate" id="date_trMinDate" title="시작일자  (ex:YYYYMMDD)"
+                                               value="" minlength="8" maxlength="10"/>
+                                    </span>
+                            <label for="date_trMaxDate" class="hidden">종료일자</label>
+                            <span class="calender_type">
+                                        <input type="text" class="inp_spart date_max" name="endPermitDate" id="date_trMaxDate"  title="종료일자  (ex:YYYYMMDD)"
+                                               value="" minlength="8" maxlength="10"/>
+                                    </span>
+                        </div>
+
+                        <div class="search_part btn_part">
+                            <button type="submit" class="btn_search100" title="검색" ><span>검색</span></button>
+                            <button type="button" class="btn_init_x" title="초기화" onclick="resetForm();"><span>초기화</span></button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="list-c" id="t2">
+                <form id="searchGrain" method="post" action="/searchDrug" onsubmit="return goSearch()">
+                    <fieldset>
+                        <input type="hidden" name="searchYn" id="searchYn2" value="true" />
+                        <input type="hidden" name="sort" id="sort2" value="" />
+                        <input type="hidden" name="sortOrder" id="sortOrder2" value="" />
+                        
+                        <input type="hidden" name="page" id="page2" readonly="readonly" />
+                        <input type="hidden" name="searchDivision" value="grain" readonly="readonly" />
+                        <input type="hidden" id="ExcelRowdata1" name="ExcelRowdata" value="" />
+                        <div class="search_part">
+                            <legend class="hidden">도안</legend>
+                            <label for="searchMark" class="choice_title">도안선택</label>
+                            <ul>
+                                <span>
+                                    <input type="hidden" name="searchMarkCode" id="searchMarkCode" readonly="readonly" value="" />
+                                    <input type="hidden" name="searchMarkImgSrc" id="searchMarkImgSrc" readonly="readonly" value="" />
+                                    <img src="/resources/images/common/blank.gif" id="searchMark" width="45" height="45" style="border: 2px solid #d2d2d2;" alt="도안 이미지 입니다.">
+                                    <button type="button" class="btn_small btn_base btn_point2" name="btnMSch" id="btnMSch" title="도안검색 새창으로 열립니다." onclick="javascript:pbpPopup('/searchDrug/markSearchPopup?page=1&limit=50', '도안검색', 800, 700, 0, 0); return false;">도안</button>
+                                    <button type="button" class="btn_small btn_base btn_point1" title="취소" onclick="searchMarkClear(); return false;">취소</button>
+                                </span>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <p class="choice_title">모양선택</p>
+                            <ul class="chlist shape_list" id="drugShapeList">
+                                <label for="drugShapeAll" class="hidden">전체</label>
+                                <li class="l01 noico on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('drugShape', '0', 'All'); return false;">전체</a>
+                                    <input type="radio" name="drugShape" id="drugShapeAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked"/>
+                                </li>
+                                <label for="drugShapeCircle" class="hidden">원형</label>
+                                <li class="l02">
+                                    <a href="#" title="원형" onclick="setPbpCheck('drugShape', '1', 'Circle'); return false;"><span class="ico"></span>원형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeCircle" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="원형"  title="원형" tabindex="-1"/>
+                                </li>
+                                <label for="drugShapeOval" class="hidden">타원형</label>
+                                <li class="l03">
+                                    <a href="#" title="타원형" onclick="setPbpCheck('drugShape', '2', 'Oval'); return false;"><span class="ico"></span>타원형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeOval" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="타원형" title="타원형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeHemicyclea" class="hidden">반원형</label>
+                                <li class="l04">
+                                    <a href="#" title="반원형" onclick="setPbpCheck('drugShape', '3', 'Hemicyclea'); return false;"><span class="ico"></span>반원형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeHemicyclea" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="반원형" title="반원형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeTriangle" class="hidden">삼각형</label>
+                                <li class="l05">
+                                    <a href="#" title="삼각형" onclick="setPbpCheck('drugShape', '4', 'Triangle'); return false;"><span class="ico"></span>삼각형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeTriangle" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="삼각형" title="삼각형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeTetragon" class="hidden">사각형</label>
+                                <li class="l06">
+                                    <a href="#" title="사각형" onclick="setPbpCheck('drugShape', '5', 'Tetragon'); return false;"><span class="ico"></span>사각형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeTetragon" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="사각형" title="사각형" tabindex="-1"/>
+                                </li>
+                                <label for="drugShapeRhombic" class="hidden">마름모</label>
+                                <li class="l07">
+                                    <a href="#" title="마름모" onclick="setPbpCheck('drugShape', '6', 'Rhombic'); return false;"><span class="ico"></span>마름모</a>
+                                    <input type="radio" name="drugShape" id="drugShapeRhombic" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="마름모" title="마름모" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeRectangle" class="hidden">장방형</label>
+                                <li class="l08">
+                                    <a href="#" title="장방형" onclick="setPbpCheck('drugShape', '7', 'Rectangle'); return false;"><span class="ico"></span>장방형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeRectangle" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="장방형" title="장방형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapePentagon" class="hidden">오각형</label>
+                                <li class="l09">
+                                    <a href="#" title="오각형" onclick="setPbpCheck('drugShape', '8', 'Pentagon'); return false;"><span class="ico"></span>오각형</a>
+                                    <input type="radio" name="drugShape" id="drugShapePentagon" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="오각형" title="오각형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeHexagon" class="hidden">육각형</label>
+                                <li class="l10">
+                                    <a href="#" title="육각형" onclick="setPbpCheck('drugShape', '9', 'Hexagon'); return false;"><span class="ico"></span>육각형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeHexagon" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="육각형" title="육각형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeOctagon" class="hidden">팔각형</label>
+                                <li class="l11">
+                                    <a href="#" title="팔각형" onclick="setPbpCheck('drugShape', '10', 'Octagon'); return false;"><span class="ico"></span>팔각형</a>
+                                    <input type="radio" name="drugShape" id="drugShapeOctagon" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="팔각형" title="팔각형" tabindex="-1" />
+                                </li>
+                                <label for="drugShapeEtc" class="hidden">기타</label>
+                                <li class="l12">
+                                    <a href="#" title="기타" onclick="setPbpCheck('drugShape', '11', 'Etc'); return false;"><span class="ico"></span>기타</a>
+                                    <input type="radio" name="drugShape" id="drugShapeEtc" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="기타" title="기타" tabindex="-1" />
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <p class="choice_title">색상선택</p>
+                            <ul class="chlist color_list" id="colorClassList">
+                                <label for="colorClassAll" class="hidden">전체</label>
+                                <li class="l01 on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('colorClass', '0', 'All'); return false;">전체</a>
+                                    <input type="radio" name="colorClass" id="colorClassAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked" />
+                                </li>
+                                <label for="colorClassWhite" class="hidden">하양</label>
+                                <li class="l02">
+                                    <a href="#" title="하양" onclick="setPbpCheck('colorClass', '1', 'White'); return false;">하양</a>
+                                    <input type="radio" name="colorClass" id="colorClassWhite" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="하양" title="하양" tabindex="-1" />
+                                </li>
+                                <label for="colorClassYellow" class="hidden">노랑</label>
+                                <li class="l03">
+                                    <a href="#" title="노랑" onclick="setPbpCheck('colorClass', '2', 'Yellow'); return false;"><span class="ico"></span>노랑</a>
+                                    <input type="radio" name="colorClass" id="colorClassYellow" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="노랑" title="노랑" tabindex="-1" />
+                                </li>
+                                <label for="colorClassOrange" class="hidden">주황</label>
+                                <li class="l04">
+                                    <a href="#" title="주황" onclick="setPbpCheck('colorClass', '3', 'Orange'); return false;"><span class="ico"></span>주황</a>
+                                    <input type="radio" name="colorClass" id="colorClassOrange" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="주황" title="주황" tabindex="-1" />
+                                </li>
+                                <label for="colorClassPink" class="hidden">분홍</label>
+                                <li class="l05">
+                                    <a href="#" title="분홍" onclick="setPbpCheck('colorClass', '4', 'Pink'); return false;"><span class="ico"></span>분홍</a>
+                                    <input type="radio" name="colorClass" id="colorClassPink" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="분홍" title="분홍" tabindex="-1" />
+                                </li>
+                                <label for="colorClassRed" class="hidden">빨강</label>
+                                <li class="l06">
+                                    <a href="#" title="빨강" onclick="setPbpCheck('colorClass', '5', 'Red'); return false;"><span class="ico"></span>빨강</a>
+                                    <input type="radio" name="colorClass" id="colorClassRed" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="빨강" title="빨강" tabindex="-1" />
+                                </li>
+                                <label for="colorClassBrown" class="hidden">갈색</label>
+                                <li class="l07">
+                                    <a href="#" title="갈색" onclick="setPbpCheck('colorClass', '6', 'Brown'); return false;"><span class="ico"></span>갈색</a>
+                                    <input type="radio" name="colorClass" id="colorClassBrown" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="갈색" title="갈색" tabindex="-1" />
+                                </li>
+                                <label for="colorClassYellowishGreen" class="hidden">연두</label>
+                                <li class="l08">
+                                    <a href="#" title="연두" onclick="setPbpCheck('colorClass', '7', 'YellowishGreen'); return false;"><span class="ico"></span>연두</a>
+                                    <input type="radio" name="colorClass" id="colorClassYellowishGreen" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="연두" title="연두" tabindex="-1" />
+                                </li>
+                                <label for="colorClassGreen" class="hidden">초록</label>
+                                <li class="l09">
+                                    <a href="#" title="초록" onclick="setPbpCheck('colorClass', '8', 'Green'); return false;"><span class="ico"></span>초록</a>
+                                    <input type="radio" name="colorClass" id="colorClassGreen" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="초록" title="초록" tabindex="-1" />
+                                </li>
+                                <label for="colorClassBluishGreen" class="hidden">청록</label>
+                                <li class="l10">
+                                    <a href="#" title="청록" onclick="setPbpCheck('colorClass', '9', 'BluishGreen'); return false;"><span class="ico"></span>청록</a>
+                                    <input type="radio" name="colorClass" id="colorClassBluishGreen" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="청록" title="청록" tabindex="-1" />
+                                </li>
+                                <label for="colorClassBlue" class="hidden">파랑</label>
+                                <li class="l11">
+                                    <a href="#" title="파랑" onclick="setPbpCheck('colorClass', '10', 'Blue'); return false;"><span class="ico"></span>파랑</a>
+                                    <input type="radio" name="colorClass" id="colorClassBlue" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="파랑" title="파랑" tabindex="-1" />
+                                </li>
+                                <label for="colorClassNavy" class="hidden">남색</label>
+                                <li class="l12">
+                                    <a href="#" title="남색" onclick="setPbpCheck('colorClass', '11', 'Navy'); return false;"><span class="ico"></span>남색</a>
+                                    <input type="radio" name="colorClass" id="colorClassNavy" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="남색" title="남색" tabindex="-1" />
+                                </li>
+                                <label for="colorClassPurple" class="hidden">자주</label>
+                                <li class="l13">
+                                    <a href="#" title="자주" onclick="setPbpCheck('colorClass', '12', 'Purple'); return false;"><span class="ico"></span>자주</a>
+                                    <input type="radio" name="colorClass" id="colorClassPurple" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="자주" title="자주" tabindex="-1" />
+                                </li>
+                                <label for="colorClassViolet" class="hidden">보라</label>
+                                <li class="l14">
+                                    <a href="#" title="보라" onclick="setPbpCheck('colorClass', '13', 'Violet'); return false;"><span class="ico"></span>보라</a>
+                                    <input type="radio" name="colorClass" id="colorClassViolet" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="보라" title="보라" tabindex="-1" />
+                                </li>
+                                <label for="colorClassGray" class="hidden">회색</label>
+                                <li class="l15">
+                                    <a href="#" title="회색" onclick="setPbpCheck('colorClass', '14', 'Gray'); return false;"><span class="ico"></span>회색</a>
+                                    <input type="radio" name="colorClass" id="colorClassGray" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="회색" title="회색" tabindex="-1" />
+                                </li>
+                                <label for="colorClassBlack" class="hidden">검정</label>
+                                <li class="l16">
+                                    <a href="#" title="검정" onclick="setPbpCheck('colorClass', '15', 'Black'); return false;"><span class="ico"></span>검정</a>
+                                    <input type="radio" name="colorClass" id="colorClassBlack" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="검정" title="검정" tabindex="-1" />
+                                </li>
+                                <label for="colorClassClear" class="hidden">투명</label>
+                                <li class="l17">
+                                    <a href="#" title="투명" onclick="setPbpCheck('colorClass', '16', 'Clear'); return false;"><span class="ico"></span>투명</a>
+                                    <input type="radio" name="colorClass" id="colorClassClear" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="투명" title="투명" tabindex="-1" />
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <p class="choice_title">제형선택</p>
+                            <ul class="chlist od_list" id="shapeCodeList">
+                                <label for="shapeCodeAll" class="hidden">전체</label>
+                                <li class="l01 noico on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('shapeCode', '0', 'All'); return false;">전체</a>
+                                    <input type="radio" name="shapeCode" id="shapeCodeAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked" />
+                                </li>
+                                <label for="shapeCodeTablet" class="hidden">정제</label>
+                                <li class="l02">
+                                    <a href="#" title="정제" onclick="setPbpCheck('shapeCode', '1', 'Tablet'); return false;"><span class="ico"></span>정제</a>
+                                    <input type="radio" name="shapeCode" id="shapeCodeTablet" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="TABLET" title="정제" tabindex="-1" />
+                                </li>
+                                <label for="shapeCodeHard" class="hidden">경질</label>
+                                <li class="l03">
+                                    <a href="#" title="경질" onclick="setPbpCheck('shapeCode', '2', 'Hard'); return false;"><span class="ico"></span>경질</a>
+                                    <input type="radio" name="shapeCode" id="shapeCodeHard" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="HARD" title="경질" tabindex="-1" />
+                                </li>
+                                <label for="shapeCodeSoft" class="hidden">연질</label>
+                                <li class="l04">
+                                    <a href="#" title="연질" onclick="setPbpCheck('shapeCode', '3', 'Soft'); return false;"><span class="ico"></span>연질</a>
+                                    <input type="radio" name="shapeCode" id="shapeCodeSoft" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="SOFT" title="연질" tabindex="-1" />
+                                </li>
+                                <label for="shapeCodeOther" class="hidden">기타</label>
+                                <li class="l05 noico">
+                                    <a href="#" title="기타" onclick="setPbpCheck('shapeCode', '4', 'Other'); return false;">기타</a>
+                                    <input type="radio" name="shapeCode" id="shapeCodeOther" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="OTHER" title="기타" tabindex="-1" />
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <p class="choice_title">분할선</p>
+                            <ul class="chlist dv_list" id="lineFrontList">
+                                <label for="lineFrontAll" class="hidden">전체</label>
+                                <li class="l01 noico on">
+                                    <a href="#" title="전체 선택됨" onclick="setPbpCheck('lineFront', '0', 'All'); return false;">전체</a>
+                                    <input type="radio" name="lineFront" id="lineFrontAll" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="" title="전체" tabindex="-1" checked="checked" />
+                                </li>
+                                <label for="lineFrontPlus" class="hidden">+형</label>
+                                <li class="l02">
+                                    <a href="#" title="+형" onclick="setPbpCheck('lineFront', '1', 'Plus'); return false;"><span class="ico"></span>+형</a>
+                                    <input type="radio" name="lineFront" id="lineFrontPlus" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="+"  title="+형" tabindex="-1"/>
+                                </li>
+                                <label for="lineFrontMinus" class="hidden">-형</label>
+                                <li class="l03">
+                                    <a href="#" title="-형" onclick="setPbpCheck('lineFront', '2', 'Minus'); return false;"><span class="ico"></span>-형</a>
+                                    <input type="radio" name="lineFront" id="lineFrontMinus" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="-"  title="-형" tabindex="-1"/>
+                                </li>
+                                <label for="lineFrontEtc" class="hidden">기타</label>
+                                <li class="l04 noico">
+                                    <a href="#" title="기타"  onclick="setPbpCheck('lineFront', '3', 'Etc'); return false;">기타</a>
+                                    <input type="radio" name="lineFront" id="lineFrontEtc" readonly="readonly"
+                                           style="opacity: 0; position: absolute;" value="기타"  title="기타" tabindex="-1"/>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">장축</legend>
+                            <label for="lengLong" class="choice_title">장축</label>
+                            <input type="text" class="wd60" name="lengLong" id="lengLong" maxlength="4"
+                                   value="" title="장축"/>
+                        </div>
+                        <div class="search_part">
+                            <legend class="hidden">단축</legend>
+                            <label for="lengShort" class="choice_title">단축</label>
+                            <input type="text" class="wd60" name="lengShort" id="lengShort" maxlength="4"
+                                   value="" title="단축"/>
+                        </div>
+                        <div class="search_part btn_part">
+                            <button type="submit" class="btn_search100" title="검색"><span>검색</span></button>
+                            <button type="button" class="btn_init_x" title="초기화" onclick="resetForm();"><span>초기화</span></button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="fold_btn"><button type="button" class="btn_folding" title="펼치기/접기">펼치기/접기</button></div>
+        </div>
+        <!-- //Left Section -->
+
+        <!-- Right Section -->
+        <div class="r_sec_md">
+            <div class="medi_guide">
+                <span class="ico"></span>
+                <p class="tt" ondblClick="voiceTest();"><b>의약품등 정보 검색</b>
+                    <span class="note">단어나 문장 특정 성분 검색을 원하실 경우 상세 검색을 의약품의 모양이나 색상 등으로 검색을 하고자 할 경우 낱알 검색을 선택해 주세요.</span>
+                </p>
+                <p class="mobile-btn"><button type="button" class="md-btn" title="상세검색">상세검색</button><button type="button" class="ma-btn" title="낱알검색">낱알검색</button></p>
+            </div>
+
+            <div class="search_top mb10">
+                <p class="sch_info" ondblClick="voiceTestMfds();"
+                   title="총 2건" >총 <strong>2</strong> 건</p>
+
+                <button type="button" class="fr btn_small btn_icon" title="엑셀다운로드" onclick="downExcelFile()">
+                    <input type="hidden" id="excelCnt" name="excelCnt" value="2" />
+                    <span class="icon_xls">엑셀다운로드</span>
+                </button>
+                <label for="ExcelRowdataSB" class="hidden">엑셀다운로드 지정</label>
+                <select class="fr" name="ExcelRowdataSB" id="ExcelRowdataSB" title="ExcelRowdata" onchange="InputExcelRowdata()">
+                    <option value="none" >엑셀다운로드 지정</option>
+                    <option value="0" value2="0" >조회값</option>
+                    <option value="0" value2="10000" >의약품등 정보 1~10000</option>
+                    <option value="10000" value2="20000" >의약품등 정보 10001~20000 </option>
+                    <option value="20000" value2="30000" >의약품등 정보 20001~30000</option>
+                    <option value="30000" value2="40000" >의약품등 정보 30001~40000</option>
+                    <option value="40000" value2="50000" >의약품등 정보 40001~50000</option>
+                    <option value="50000" value2="60000" >의약품등 정보 50001~60000 </option>
+                    <option value="60000" value2="70000" >의약품등 정보 60001~70000</option>
+                    <option value="70000" value2="80000" >의약품등 정보 70001~80000</option>
+                    <option value="80000" value2="90000" >의약품등 정보 80001~90000</option>
+                    <option value="90000" value2="100000" >의약품등 정보 90001~100000</option>
+                    <option value="100000" value2="110000" >의약품등 정보 100001~110000</option>
+                    <option value="110000" value2="120000" >의약품등 정보 110001~120000</option>
+                </select>
+
+            </div>
+            <div class="table_scroll">
+                <table class="dr_table2 dr_table_type2">
+                    <caption><span>의약품등 정보검색 결과 목록입니다. - 순번, 제품명, 제품영문명, 업체명, 업체영문명, 품목기준코드, 허가번호, 허가일, 품목구분, 취소/취하, 취소/취하일자, 주성분, 첨가제, 품목분류, 전문의약품, 완제/원료구분, 허가/신고, 제조/수입, 수입제조국, 마약구분, 신약구분, 표준코드, ATC코드  정보 제공</span></caption>
+                    <colgroup>
+                        <col style="width:1%;"> <!--순번-->
+                        <col style="width:6%;"> <!--제품명-->
+                        <col style="width:6%;"> <!--제품영문명-->
+                        <col style="width:6%;"> <!--업체명-->
+                        <col style="width:6%;"> <!--업체영문명-->
+                        <col style="width:3%;"> <!--품목기준코드-->
+                        <col style="width:3%;"> <!--허가번호-->
+                        <col style="width:3%;"> <!--허가일-->
+                        <col style="width:4%;"> <!--품목구분-->
+                        <col style="width:3%;"> <!--취소/취하-->
+                        <col style="width:3%;"> <!--취소/취하일자-->
+                        <col style="width:5%;"> <!--주성분-->
+                        <col style="width:5%;"> <!--주성분영문명-->
+                        <col style="width:5%;"> <!--첨가제-->
+                        <col style="width:3%;"> <!--묶음의약품보기-->
+                        <col style="width:3%;"> <!--e약은요보기-->
+                        <col style="width:5%;"> <!--품목분류-->                           <!-- 2020.10.21 1 line add -->
+                        <col style="width:3%;"> <!--전문의약품-->
+                        <col style="width:4%;"> <!--완제/원료구분-->
+                        <col style="width:3%;"> <!--허가/신고-->
+                        <col style="width:3%;"> <!--제조/수입-->
+                        <col style="width:4%;"> <!--수입제조국-->
+                        <col style="width:2%;"> <!--마약구분-->
+                        <col style="width:2%;"> <!--신약구분-->
+                        <col style="width:5%;"> <!--표준코드-->
+                        <col style="width:4%;"> <!--ATC코드-->
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th scope="col">순번</th>
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ITEM_NAME&#39;, &#39;DESC&#39;); return false;"
+            >제품명</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ITEM_ENG_NAME&#39;, &#39;DESC&#39;); return false;"
+            >제품영문명</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ENTP_NAME&#39;, &#39;DESC&#39;); return false;"
+            >업체명</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ENTP_ENG_NAME&#39;, &#39;DESC&#39;); return false;"
+            >업체영문명</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ITEM_SEQ&#39;, &#39;DESC&#39;); return false;"
+            >품목기준코드</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ITEM_NO&#39;, &#39;DESC&#39;); return false;"
+            >허가번호</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ITEM_PERMIT_DATE&#39;, &#39;DESC&#39;); return false;"
+            >허가일</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;INDUTY_CLASS_CODE_NAME&#39;, &#39;DESC&#39;); return false;"
+            >품목구분</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;CANCEL_CODE_NM&#39;, &#39;DESC&#39;); return false;"
+            >취소/취하</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;CANCEL_DATE&#39;, &#39;DESC&#39;); return false;"
+            >취소/취하일자</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;MAIN_INGR&#39;, &#39;DESC&#39;); return false;"
+            >주성분/주원료</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;MAIN_INGR_ENG&#39;, &#39;DESC&#39;); return false;"
+            >주성분영문명</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ADIT_INGR&#39;, &#39;DESC&#39;); return false;"
+            >첨가제</a>
+        </th>
+    
+                        <th scope="col">묶음의약품보기</th>
+                        <!-- 2020.10.21 1 line add -->
+                        <th scope="col">e약은요보기</th>
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;CLASS_NO_NAME&#39;, &#39;DESC&#39;); return false;"
+            >품목분류</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ETC_OTC_CODE_NAME&#39;, &#39;DESC&#39;); return false;"
+            >전문의약품</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;MAKE_MATERIAL_GB_NAME&#39;, &#39;DESC&#39;); return false;"
+            >완제/원료구분</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;PERMIT_KIND_CODE_NM&#39;, &#39;DESC&#39;); return false;"
+            >허가/신고</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;INDUTY_CODE2&#39;, &#39;DESC&#39;); return false;"
+            >제조/수입</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;MANUF_COUNTRY_NAMES&#39;, &#39;DESC&#39;); return false;"
+            >수입제조국</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;NARCOTIC_KIND_CODE_NAME&#39;, &#39;DESC&#39;); return false;"
+            >마약구분</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;NEWDRUG_YN&#39;, &#39;DESC&#39;); return false;"
+            >신약구분</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;STDR_CODE&#39;, &#39;DESC&#39;); return false;"
+            >표준코드</a>
+        </th>
+    
+                        
+        <th scope="col" >
+            <a href="#" class="p_cursor sort2"
+               onclick="javascript:sort(&#39;ATC_CODE&#39;, &#39;DESC&#39;); return false;"
+            >ATC코드</a>
+        </th>
+    
+                        <!-- <th scope="col">제품명</th>
+                        <th scope="col">업체명</th>
+                        <th scope="col">품목기준코드</th>
+                        <th scope="col">허가일</th>
+                        <th scope="col">허가번호</th>
+                        <th scope="col">주성분</th>
+                        <th scope="col">품목분류</th>
+                        <th scope="col">전문의약품</th>
+                        <th scope="col">완제/원료구분</th>
+                        <th scope="col">허가/신고</th>
+                        <th scope="col">제조/수입</th>
+                        <th scope="col">마약구분</th>
+                        <th scope="col">신약구분</th> -->
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="al_c">1</td>
+                        <td class="al_l">
+                            <span class="s-th">제품명</span><span>
+                            <a href="/pbp/CCBBB01/getItemDetail?itemSeq=200906066" target="_blank" title="새창열림" onclick="javascript:pbpPopup(&#39;/pbp/CCBBB01/getItemDetail?itemSeq=200906066&#39;, &#39;의약품상세정보&#39;, 1200, 0, 0, 0); return false;">프로코라란정5밀리그램(이바브라딘염산염)</a></span>
+                        </td>
+                        <td class="al_l"><span class="s-th">제품영문명</span><span>Procoralan TAB 5mg</span></td>
+                        <td class="al_l"><span class="s-th">업체명</span><span>한국세르비에(주)</span></td>
+                        <td class="al_l"><span class="s-th">업체명(영문)</span><span>Servier Korea</span></td>
+                        <td><span class="s-th">품목기준코드</span><span>200906066</span></td>
+                        <td><span class="s-th">허가번호</span><span>12</span></td>
+                        <td><span class="s-th">허가일</span><span>2009-07-31</span></td>
+                        <td><span class="s-th">품목구분</span><span>의약품</span></td>
+                        <td><span class="s-th">취소/취하구분</span><span>정상</span></td>
+                        <td><span class="s-th">취소/취하일자</span><span></span></td>
+                        <td class="al_l"><span class="s-th">주성분</span><span>이바브라딘염산염</span></td>
+<!--                        <td class="al_l"><span class="s-th">주성분</span><span th:text="${item.MAIN_INGR}"></span></td>-->
+                        <td class="al_l"><span class="s-th">주성분영문명</span><span>Ivabradine Hydrochloride</span></td>
+                        <td class="al_l"><span class="s-th">첨가제</span>
+                            <span>건조된 흐린 노란주황 코팅제  혼합물,말토덱스트린,유당...</span>
+                        </td>
+                        <td><span class="s-th">묶음의약품정보</span>
+                            <span> - </span>
+                            
+                        </td>
+                        <!-- 2020.10.21 e약은요보기 추가 -->
+                        <td><span class="s-th">e약은요보기</span>
+                            <span> - </span>
+                            
+                        </td>
+                        <!-- 코드도 같이 묶기 -->
+                        <td class="al_l">
+                            <span class="s-th">품목분류</span>
+                            
+                        </td>
+                        <td>
+                            <span class="s-th">전문의약품</span>
+                            <span>전문의약품</span>
+                        </td>
+                        <td><span class="s-th">완제/원료구분</span><span>완제의약품</span></td>
+                        <td><span class="s-th">허가/신고</span><span>허가</span></td>
+                        <td><span class="s-th">제조/수입</span><span>수입</span></td>
+                        <td><span class="s-th">수입제조국</span><span>프랑스,아일랜드</span></td>
+                        <td><span class="s-th">마약구분</span><span>-</span></td>
+                        <td class="al_c">
+                            <span class="s-th">신약구분</span>
+                            <span>Y</span>
+                            <!-- <span th:text="${#maps.containsKey(item, 'NARCOTIC_KIND_CODE_NAME')} ? '-' : ${item.NARCOTIC_KIND_CODE_NAME}"></span> -->
+                        </td>
+
+                        <td><span class="s-th">표준코드</span><span>8806763001009...</span></td>
+                        <td><span class="s-th">ATC코드</span><span>C01EB17</span></td>
+                    </tr>
+                    <tr>
+                        <td class="al_c">2</td>
+                        <td class="al_l">
+                            <span class="s-th">제품명</span><span>
+                            <a href="/pbp/CCBBB01/getItemDetail?itemSeq=200906065" target="_blank" title="새창열림" onclick="javascript:pbpPopup(&#39;/pbp/CCBBB01/getItemDetail?itemSeq=200906065&#39;, &#39;의약품상세정보&#39;, 1200, 0, 0, 0); return false;">프로코라란정7.5밀리그램(이바브라딘염산염)</a></span>
+                        </td>
+                        <td class="al_l"><span class="s-th">제품영문명</span><span>Procoralan TAB 7.5mg</span></td>
+                        <td class="al_l"><span class="s-th">업체명</span><span>한국세르비에(주)</span></td>
+                        <td class="al_l"><span class="s-th">업체명(영문)</span><span>Servier Korea</span></td>
+                        <td><span class="s-th">품목기준코드</span><span>200906065</span></td>
+                        <td><span class="s-th">허가번호</span><span>11</span></td>
+                        <td><span class="s-th">허가일</span><span>2009-07-31</span></td>
+                        <td><span class="s-th">품목구분</span><span>의약품</span></td>
+                        <td><span class="s-th">취소/취하구분</span><span>정상</span></td>
+                        <td><span class="s-th">취소/취하일자</span><span></span></td>
+                        <td class="al_l"><span class="s-th">주성분</span><span>이바브라딘염산염</span></td>
+<!--                        <td class="al_l"><span class="s-th">주성분</span><span th:text="${item.MAIN_INGR}"></span></td>-->
+                        <td class="al_l"><span class="s-th">주성분영문명</span><span>Ivabradine Hydrochloride</span></td>
+                        <td class="al_l"><span class="s-th">첨가제</span>
+                            <span>건조된 흐린 노란주황 코팅제  혼합물,말토덱스트린,유당...</span>
+                        </td>
+                        <td><span class="s-th">묶음의약품정보</span>
+                            <span> - </span>
+                            
+                        </td>
+                        <!-- 2020.10.21 e약은요보기 추가 -->
+                        <td><span class="s-th">e약은요보기</span>
+                            <span> - </span>
+                            
+                        </td>
+                        <!-- 코드도 같이 묶기 -->
+                        <td class="al_l">
+                            <span class="s-th">품목분류</span>
+                            
+                        </td>
+                        <td>
+                            <span class="s-th">전문의약품</span>
+                            <span>전문의약품</span>
+                        </td>
+                        <td><span class="s-th">완제/원료구분</span><span>완제의약품</span></td>
+                        <td><span class="s-th">허가/신고</span><span>허가</span></td>
+                        <td><span class="s-th">제조/수입</span><span>수입</span></td>
+                        <td><span class="s-th">수입제조국</span><span>프랑스,아일랜드</span></td>
+                        <td><span class="s-th">마약구분</span><span>-</span></td>
+                        <td class="al_c">
+                            <span class="s-th">신약구분</span>
+                            <span>Y</span>
+                            <!-- <span th:text="${#maps.containsKey(item, 'NARCOTIC_KIND_CODE_NAME')} ? '-' : ${item.NARCOTIC_KIND_CODE_NAME}"></span> -->
+                        </td>
+
+                        <td><span class="s-th">표준코드</span><span>8806763001108...</span></td>
+                        <td><span class="s-th">ATC코드</span><span>C01EB17</span></td>
+                    </tr>
+                    </tbody>
+                    
+                </table>
+            </div>
+            <div class="spDiv" id="paging_div">
+        <p class="page_navi">
+            <button type="button" title="처음페이지"
+                    class="page_first disabled">처음페이지</button>
+            
+
+            <button type="button" title="이전페이지"
+                    class="page_prev disabled">이전페이지</button>
+            
+
+            
+                <a href="#list" class="on"
+                   title="현재페이지">1</a>
+                
+            
+
+            <button type="button" title="다음페이지"
+                    class="page_next disabled">다음페이지</button>
+            
+
+            <button type="button" title="마지막페이지"
+                    class="page_last disabled">마지막페이지</button>
+            
+        </p>
+    </div>
+            
+        </div>
+        <!-- //Right Section -->
+    </div>
+</div>
+                <!-- container
+menu : 의약품등 검색
+cm : 의약품등 검색
+cm command : PPL0000
+cpBizClassCode : 
+-->
+                <!-- //cont_body -->
+            </div>
+
+            <!-- //content -->
+
+        </div>
+        <!-- //content_wrap -->
+    </div>
+
+    
+
+    <!-- //container -->
+</div>
+<!-- //container_wrap -->
+
+<!-- footer -->
+<div class="footer_wrap">
+
+    <footer id="footer">
+        <p class="fnb">
+            <!--<a href="https://www.mfds.go.kr/wpge/m_30/de010802l001.do" th:title="'개인정보처리방침 새창열림'" target="_blank" style="text-decoration: underline; color: black">개인정보처리방침</a>-->
+            <a href="/privacyPolicy" title="개인정보처리방침 새창열림" target="_blank" style="text-decoration: underline; color: black">개인정보처리방침</a>
+            <!-- <a href="#" title="이메일무단수집거부"  target="_blank">이메일무단수집거부</a> -->
+            <a href="https://www.mfds.go.kr/wpge/m_34/de010803l001.do" title="저작권정책 새창열림" target="_blank">저작권정책</a>
+            <!--<a href="https://www.mfds.go.kr/usr/member_301/list.do" title="새창열림" target="_blank">전화번호</a> 2021.02.25일 주석 https://mfds.go.kr/wpge/m_271/de010705l0001.do로 변경-->
+            <a href="https://mfds.go.kr/wpge/m_271/de010705l0001.do" title="전화번호 새창열림" target="_blank">전화번호</a>
+            <a href="https://www.mfds.go.kr/wpge/m_278/de010706l0001.do" title="찾아오시는 길 새창열림" target="_blank">찾아오시는 길</a>
+            <a href="/PPEAA02" title="공공데이터 제공안내 현재창으로 열림">공공데이터 제공안내</a>
+            <a href="/cntnts/81" title="관련사이트 현재창으로 열림">관련사이트</a>
+            <a href="http://www.mfds.go.kr/brd/m_617/list.do" title="국가별 규제정보 새창열림" target="_blank">국가별 규제정보</a>
+            <a href="http://113366.com/nedrug" title="원격지원 새창열림" target="_blank">원격지원</a>
+        </p>
+        <!--sns1221추가-->
+        <div class="sns-link">
+            <a href="https://blog.naver.com/kfdazzang" title="blog-naver 새창열림" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_n_blog.png" alt="blog-naver" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+            <a href="https://www.facebook.com/mfds" title="facebook 새창열림" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_facebook.png" alt="facebook" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+            <a href="https://twitter.com/themfds" title="twitter 새창열림" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_twitter.png" alt="twitter" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+            <a href="https://www.instagram.com/mfdskorea" title="instagram 새창열림" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_instagram.png" alt="instagram" height="26" width="26" style="padding : 0px 3px 0px 0px;"></span></a>
+            <a href="https://www.youtube.com/user/theKFDA" title="youtube 새창열림" target="_blank"><span class="sound-only"><img src="/resources/images/layout/sns_youtube.png" alt="youtube" height="26" width="26" style="padding : 0px 0px 0px 0px;"></span></a>
+        </div>
+        <!--sns1221추가-->
+        <!--  <img th:if="${!@viewUtil.isMobile()}" style="margin-right: 30px; float: left; height: 50px; margin-top: 5px;" src="/resources/images/layout/footer_logo.png" alt="로고 이미지 입니다." />   -->
+        
+        <div class="footer_box">
+            <div class="footer_block">
+                <address><a onclick="javascript:pbpPopup(&#39;/pbp/CCBBB01T/getItemDetail?itemSeq=200500904&#39;, &#39;의약품상세정보&#39;, 1200, 0, 0, 0); return false;">우</a>)28159 충청북도 청주시 흥덕구 오송읍 오송생명2로 187</address>
+                <address>오송보건의료행정타운 식품의약품안전처</address>
+                <!--<p class="footer_info"><span>종합민원센터 : 1577-1255</span> <span>정보화도움터(시스템문의) : TEL-043-23
+                4-3100 / FAX-050-2604-7949</span>-->
+                <p class="footer_info">식약처 민원업무 및 정책 등 문의 : 1577-1255 <br>(9:00~18:00,공휴일 제외)(유료)
+
+                </p>
+            </div>
+            <div class="footer_block">
+                <address><a onclick="javascript:pbpPopup(&#39;/pbp/CCBBB01T/getItemDetail?itemSeq=200500904&#39;, &#39;의약품상세정보&#39;, 1200, 0, 0, 0); return false;">우</a>)14051 경기도 안양시 동안구 부림로 169번길 30(관양동,안양농협)</address>
+                <address>한국의약품안전관리원</address> <!-- 의약품통합정보시스템팀 문구 저게_2023.06 -->
+                <!--<p class="footer_info"><span>종합민원센터 : 1577-1255</span> <span>정보화도움터(시스템문의) : TEL-043-23
+                4-3100 / FAX-050-2604-7949</span>-->
+                <p class="footer_info">의약품 안전나라 관련 기능문의:1544-9563 <br>(9:00~18:00,공휴일 제외)(유료)</p>
+            </div>
+        </div>
+        <img class="wa_mark" title="한국웹접근성인증평가원 웹접근성 인증마크(2026.06.15~2027.06.14)" alt="한국웹접근성인증평가원 웹접근성 인증마크(2026.06.15~2027.06.14)" src="/resources/images/layout/wa_mark.png">
+        <p class="copy">Copyright ⓒ Ministry of Food and Drug Safety. All Rights Reserved. </p>
+        <p class="footer_info">
+            <span class="timestamp">build.timestmap : 2026-11-05 19:42:04 #E2번</span>
+        </p>
+        <div class="btn_area">
+            <a onclick="tempGoPCPage();" class="mobile_pc center">PC버전</a><!-- 20190809 모바일버전에서 PC버전으로 이동시 무한로딩이 일어나는 문제 개선을 위해 임시로 구현한 내용. 문제 해결시 원복이 필요함. -->
+        </div>
+        
+        
+
+    </footer>
+</div>
+<!-- //footer -->
+<div class="mo-menu-pop con_hide">
+    <div class="mo-pop-bg"></div>
+    <div class="mo-menu">
+        <div class="mo-header">
+            <span><button class="mo-close" type="button">닫기</button><a href="">로그인</a><a href="">회원가입</a></span>
+            <span><a href="">사이트맵</a><a href="">고객지원</a><a href="">법령/자료실</a></span>
+        </div>
+
+
+
+        
+
+    </div>
+
+</div>
+<noscript class="noScriptTitle">자바스크립트를 지원하지 않는 브라우저에서는 일부 기능을 사용하실 수 없습니다.</noscript>
+
+<script>
+    $(function(){
+        $("a[href='/PPAAN00']").attr('href', '/rpd/acmsltreport');
+
+        //이노릭스 agent 사용 여부 20201110 KHS
+        
+    });
+    //2020-11-11 이노릭스 Agent 설치 동의여부 팝업 호출 khs 시작
+    function fn_inoAgentYn() {
+        window.open('/NEXACRO/launch.html?screenid=Portal_screen&formpath=Ext_popup::CCAAC02P020','_blank','height=330,width=610,location=no,status=no,scrollbars=yes');
+    }
+
+    function fn_setAgreeYn(agreeYn) {
+        $("#inoAgentYn").val(agreeYn);
+    }
+    //2020-11-11 이노릭스 Agent 설치 동의여부 팝업 호출 khs 끝
+</script>
+
+<!--2020-11-11 이노릭스 Agent 설치 동의여부  khs 시작-->
+
+<!--2020-11-11 이노릭스 Agent 설치 동의여부  khs 끝-->
+</body>
+</html>

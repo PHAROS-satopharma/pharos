@@ -1206,3 +1206,36 @@ sources:
     languages: [ja]
     schedule: weekly
     expected_max_gap_days: null
+
+  - id: spc-nedrug
+    regulator: MFDS
+    kind: spc
+    channel: html
+    url: https://nedrug.mfds.go.kr/searchDrug
+    page: https://nedrug.mfds.go.kr/searchDrug
+    parser: spc_nedrug
+    languages: [ko]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-hc-dpd
+    regulator: HC
+    kind: spc
+    channel: api
+    url: https://health-products.canada.ca/api/drug/drugproduct/
+    page: https://health-products.canada.ca/dpd-bdpp/
+    parser: spc_hc_dpd
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-medsafe
+    regulator: MEDSAFE
+    kind: spc
+    channel: html
+    url: https://www.medsafe.govt.nz/profs/Datasheet/datasheet.htm
+    page: https://www.medsafe.govt.nz/profs/Datasheet/datasheet.htm
+    parser: spc_medsafe
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: null
