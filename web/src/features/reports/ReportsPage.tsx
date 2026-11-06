@@ -14,6 +14,8 @@ import { Table } from '../../ui/Table';
 import { PageHead, SectionHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
+import { SignOff } from '../signoff/SignOff';
+import { FileHash } from './FileHash';
 import {
   type WeeklyReport,
   lastCompleteWeek,
@@ -83,39 +85,44 @@ function WeeklyReports() {
   return (
     <>
       {error ? <Notice tone="error">The file could not be downloaded: {error}</Notice> : null}
-      <Table className="reports reports-weekly">
-        <thead>
-          <tr>
-            <th scope="col">Week</th>
-            <th scope="col" className="num">
-              Files
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.data.map((r) => {
-            const name = weekLabel(r.week_start);
-            return (
-              <tr key={r.id} className="report-row">
-                <td>
-                  <span className="report-month">{name}</span>
-                  <span className="cell-sub">
-                    Made <span className="mono">{formatDateTime(r.made_at)}</span>
-                  </span>
-                </td>
-                <td className="num">
-                  <Files
-                    name={name}
-                    pdf={[r.pdf_r2_key, weeklyFileName(r.week_start, 'pdf')]}
-                    xlsx={[r.xlsx_r2_key, weeklyFileName(r.week_start, 'xlsx')]}
-                    save={save}
-                  />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </Table>
+      <ul className="weekly-list">
+        {reports.data.map((r) => {
+          const name = weekLabel(r.week_start);
+          return (
+            <li key={r.id} className="weekly-card">
+              <div className="weekly-head">
+                <span className="report-month">{name}</span>
+                <span className="cell-sub">
+                  Made <span className="mono">{formatDateTime(r.made_at)}</span>
+                </span>
+              </div>
+              <div className="evidence-files">
+                <div className="evidence-file">
+                  <Button
+                    className="evidence-download"
+                    onClick={() => void save(r.pdf_r2_key, weeklyFileName(r.week_start, 'pdf'))}
+                    aria-label={`Download the ${name} report as PDF`}
+                  >
+                    PDF
+                  </Button>
+                  <FileHash hash={r.pdf_sha256} what={`PDF of ${name}`} />
+                </div>
+                <div className="evidence-file">
+                  <Button
+                    className="evidence-download"
+                    onClick={() => void save(r.xlsx_r2_key, weeklyFileName(r.week_start, 'xlsx'))}
+                    aria-label={`Download the ${name} report as Excel`}
+                  >
+                    Excel
+                  </Button>
+                  <FileHash hash={r.xlsx_sha256} what={`Excel file of ${name}`} />
+                </div>
+              </div>
+              <SignOff kind="weekly_report" id={r.id} name={name} />
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }
