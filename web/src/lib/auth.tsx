@@ -20,7 +20,7 @@ interface AuthState {
   retryPerson: () => void;
   role: PersonRole | null;
   isAdmin: boolean;
-  /** Admins and reviewers record decisions and confirm or split copies. */
+  /** Admins and reviewers record decisions (Concerns us, Doesn't concern us). */
   canReview: boolean;
   signOut: () => Promise<void>;
   refreshPerson: () => void;
