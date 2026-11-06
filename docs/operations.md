@@ -555,7 +555,10 @@ decision and keeps it inside the finding (migration 0042), so nothing is filled 
   again later opens no second one. `app_setting` `signal_auto_open` (true) switches this off.
 - **Doesn't concern us closes it — if nothing was done yet.** While the signal is still in validation with no real
   step taken, *Doesn't concern us* closes it as *not validated* with the words "Decision changed: <her reason>".
-  A signal already validated is left as it is and stays open on the screen.
+  A signal already validated is left as it is and stays open on the screen. *Concerns us* again reopens a signal
+  the decision closed this way, into validation, with "Decision changed back: <her reason>" (0058); the
+  decision's own closing and reopening are not work, so it can change either way again. A signal a person
+  closed (*Not a signal*, an assessment) stays closed.
 - **The steps, on the Ingredients screen.** Under the decision and the clock, the signal shows its reference, the
   chain *Validate → Assess → Action → Closed* with the current stage lit, and the day the stage is due ("Validate
   by Sun 6 Dec", marked **late** when past). A reviewer or administrator takes the next step there: *It is a
