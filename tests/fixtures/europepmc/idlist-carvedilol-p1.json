@@ -1,0 +1,280 @@
+{
+ "version": "6.9",
+ "hitCount": 56,
+ "nextCursorMark": "AoIIP5h0aSg1NjczMDgxNQ==",
+ "request": {
+  "queryString": "\"carvedilol\" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]",
+  "resultType": "idlist",
+  "cursorMark": "AoIIQBuqiSg1NjgyNTQ3MQ==",
+  "pageSize": 25,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": [
+   {
+    "id": "PMC13691538",
+    "source": "PMC",
+    "pmcid": "PMC13691538",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13691538"
+     ]
+    }
+   },
+   {
+    "id": "42950315",
+    "source": "MED",
+    "pmid": "42950315",
+    "pmcid": "PMC13446787",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13446787"
+     ]
+    }
+   },
+   {
+    "id": "42911149",
+    "source": "MED",
+    "pmid": "42911149",
+    "pmcid": "PMC13718686",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13718686"
+     ]
+    }
+   },
+   {
+    "id": "42964872",
+    "source": "MED",
+    "pmid": "42964872",
+    "pmcid": "PMC13722263",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13722263"
+     ]
+    }
+   },
+   {
+    "id": "42948581",
+    "source": "MED",
+    "pmid": "42948581",
+    "pmcid": "PMC13711409",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13711409"
+     ]
+    }
+   },
+   {
+    "id": "42899052",
+    "source": "MED",
+    "pmid": "42899052",
+    "pmcid": "PMC13679997",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13679997"
+     ]
+    }
+   },
+   {
+    "id": "42953547",
+    "source": "MED",
+    "pmid": "42953547",
+    "pmcid": "PMC13716346",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13716346"
+     ]
+    }
+   },
+   {
+    "id": "42938878",
+    "source": "MED",
+    "pmid": "42938878",
+    "pmcid": "PMC13702122",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13702122"
+     ]
+    }
+   },
+   {
+    "id": "42943691",
+    "source": "MED",
+    "pmid": "42943691",
+    "pmcid": "PMC13707573",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13707573"
+     ]
+    }
+   },
+   {
+    "id": "42958919",
+    "source": "MED",
+    "pmid": "42958919",
+    "pmcid": "PMC13720545",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13720545"
+     ]
+    }
+   },
+   {
+    "id": "42943226",
+    "source": "MED",
+    "pmid": "42943226",
+    "pmcid": "PMC13708138",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13708138"
+     ]
+    }
+   },
+   {
+    "id": "42948728",
+    "source": "MED",
+    "pmid": "42948728",
+    "pmcid": "PMC13712353",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13712353"
+     ]
+    }
+   },
+   {
+    "id": "42924824",
+    "source": "MED",
+    "pmid": "42924824",
+    "pmcid": "PMC13692543",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13692543"
+     ]
+    }
+   },
+   {
+    "id": "42942135",
+    "source": "MED",
+    "pmid": "42942135",
+    "pmcid": "PMC13705335",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13705335"
+     ]
+    }
+   },
+   {
+    "id": "42929952",
+    "source": "MED",
+    "pmid": "42929952",
+    "pmcid": "PMC13704759",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13704759"
+     ]
+    }
+   },
+   {
+    "id": "42940133",
+    "source": "MED",
+    "pmid": "42940133",
+    "pmcid": "PMC13702312",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13702312"
+     ]
+    }
+   },
+   {
+    "id": "42974013",
+    "source": "MED",
+    "pmid": "42974013",
+    "pmcid": "PMC13725066",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13725066"
+     ]
+    }
+   },
+   {
+    "id": "42910030",
+    "source": "MED",
+    "pmid": "42910030",
+    "pmcid": "PMC13686320",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13686320"
+     ]
+    }
+   },
+   {
+    "id": "42904224",
+    "source": "MED",
+    "pmid": "42904224",
+    "pmcid": "PMC13682510",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13682510"
+     ]
+    }
+   },
+   {
+    "id": "42903606",
+    "source": "MED",
+    "pmid": "42903606",
+    "pmcid": "PMC13681992",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13681992"
+     ]
+    }
+   },
+   {
+    "id": "42909325",
+    "source": "MED",
+    "pmid": "42909325",
+    "pmcid": "PMC13684872",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13684872"
+     ]
+    }
+   },
+   {
+    "id": "42943237",
+    "source": "MED",
+    "pmid": "42943237",
+    "pmcid": "PMC13708729",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13708729"
+     ]
+    }
+   },
+   {
+    "id": "42930824",
+    "source": "MED",
+    "pmid": "42930824",
+    "pmcid": "PMC13706029",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13706029"
+     ]
+    }
+   },
+   {
+    "id": "42900417",
+    "source": "MED",
+    "pmid": "42900417",
+    "pmcid": "PMC13683306",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13683306"
+     ]
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,231 @@
+{
+ "version": "6.9",
+ "hitCount": 56,
+ "nextCursorMark": "AoIIQBuqiSg1NjgyNTQ3MQ==",
+ "request": {
+  "queryString": "\"carvedilol\" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]",
+  "resultType": "idlist",
+  "cursorMark": "*",
+  "pageSize": 25,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": [
+   {
+    "id": "PPR1350007",
+    "source": "PPR"
+   },
+   {
+    "id": "PMC13690626",
+    "source": "PMC",
+    "pmcid": "PMC13690626",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13690626"
+     ]
+    }
+   },
+   {
+    "id": "42897877",
+    "source": "MED",
+    "pmid": "42897877"
+   },
+   {
+    "id": "42968865",
+    "source": "MED",
+    "pmid": "42968865",
+    "pmcid": "PMC13724075",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13724075"
+     ]
+    }
+   },
+   {
+    "id": "42919976",
+    "source": "MED",
+    "pmid": "42919976"
+   },
+   {
+    "id": "42900969",
+    "source": "MED",
+    "pmid": "42900969",
+    "pmcid": "PMC13717103",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13717103"
+     ]
+    }
+   },
+   {
+    "id": "42962313",
+    "source": "MED",
+    "pmid": "42962313"
+   },
+   {
+    "id": "PMC13728584",
+    "source": "PMC",
+    "pmcid": "PMC13728584",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13728584"
+     ]
+    }
+   },
+   {
+    "id": "42896200",
+    "source": "MED",
+    "pmid": "42896200"
+   },
+   {
+    "id": "42974550",
+    "source": "MED",
+    "pmid": "42974550",
+    "pmcid": "PMC13726794",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13726794"
+     ]
+    }
+   },
+   {
+    "id": "42958440",
+    "source": "MED",
+    "pmid": "42958440",
+    "pmcid": "PMC13721243",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13721243"
+     ]
+    }
+   },
+   {
+    "id": "42916126",
+    "source": "MED",
+    "pmid": "42916126",
+    "pmcid": "PMC13670896",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13670896"
+     ]
+    }
+   },
+   {
+    "id": "42929255",
+    "source": "MED",
+    "pmid": "42929255"
+   },
+   {
+    "id": "42910044",
+    "source": "MED",
+    "pmid": "42910044",
+    "pmcid": "PMC13686352",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13686352"
+     ]
+    }
+   },
+   {
+    "id": "42898726",
+    "source": "MED",
+    "pmid": "42898726",
+    "pmcid": "PMC13678575",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13678575"
+     ]
+    }
+   },
+   {
+    "id": "42950304",
+    "source": "MED",
+    "pmid": "42950304",
+    "pmcid": "PMC13585188",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13585188"
+     ]
+    }
+   },
+   {
+    "id": "42923775",
+    "source": "MED",
+    "pmid": "42923775",
+    "pmcid": "PMC13689743",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13689743"
+     ]
+    }
+   },
+   {
+    "id": "42935976",
+    "source": "MED",
+    "pmid": "42935976",
+    "pmcid": "PMC13696462",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13696462"
+     ]
+    }
+   },
+   {
+    "id": "42968449",
+    "source": "MED",
+    "pmid": "42968449",
+    "pmcid": "PMC13725087",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13725087"
+     ]
+    }
+   },
+   {
+    "id": "42928966",
+    "source": "MED",
+    "pmid": "42928966",
+    "pmcid": "PMC13696973",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13696973"
+     ]
+    }
+   },
+   {
+    "id": "42923567",
+    "source": "MED",
+    "pmid": "42923567",
+    "pmcid": "PMC13689039",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13689039"
+     ]
+    }
+   },
+   {
+    "id": "42959542",
+    "source": "MED",
+    "pmid": "42959542",
+    "pmcid": "PMC13717101",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13717101"
+     ]
+    }
+   },
+   {
+    "id": "42965183",
+    "source": "MED",
+    "pmid": "42965183",
+    "pmcid": "PMC13722135",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13722135"
+     ]
+    }
+   }
+  ]
+ }
+}

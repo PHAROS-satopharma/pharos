@@ -15,7 +15,7 @@ An EMA DHPC is an issue anchor (collectors/merge.py).
 from __future__ import annotations
 
 from collectors.parsers.base import (FetchContext, Item, ParseError, SourceConfig,
-                                     attachment_links, html_text, parse_date, soup)
+                                     attachment_links, dropped, html_text, parse_date, soup)
 
 STRUCTURED_FIELDS = ["active_substances", "name_of_medicine",
                      "other_related_medicines_nationally_authorised", "referral_name"]
@@ -43,6 +43,8 @@ def parse_rows(data: dict, source: SourceConfig) -> list[Item]:
     items: list[Item] = []
     for row in rows:
         if keep and (row.get("category") or "").casefold() not in keep:
+            # a veterinary letter: noted as dropped (filtered_item), never kept for a watched name
+            dropped(title_for(row), f"category: {row.get('category') or 'none'}", unless_watched=False)
             continue
         url = (row.get("dhpc_url") or "").strip()
         if not url:

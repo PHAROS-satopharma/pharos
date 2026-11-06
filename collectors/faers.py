@@ -195,6 +195,14 @@ class OpenFda:
                 return body
             if status == 404:
                 return None
+            if status == 403 and self.key and "API_KEY_INVALID" in _said(body):
+                # openFDA refused the key: count on without it, at the keyless pace, rather than not at all.
+                log.warning("FAERS: openFDA refused OPENFDA_API_KEY (API_KEY_INVALID); counting without a key")
+                self.key, self.gap, self.limit = None, 60 / 40, 100
+                params.pop("api_key", None)
+                if params.get("limit") == "1000":
+                    params["limit"] = "100"
+                continue
             if status in RETRY and attempt < len(WAITS):
                 self.sleep(WAITS[attempt])
                 continue
@@ -425,7 +433,7 @@ def main(argv: list[str] | None = None) -> int:
     from collectors.core.db import Db
 
     install_log_redaction()   # the request addresses carry the key and the ingredient: never printed
-    key = os.environ.get("OPENFDA_API_KEY") or None
+    key = os.environ.get("OPENFDA_API_KEY", "").strip() or None     # a pasted secret can carry a newline
     db = Db()
     try:
         with httpx.Client(timeout=90, headers={"User-Agent": "PHAROS pharmacovigilance monitor (Sato Pharma)"}) as client:

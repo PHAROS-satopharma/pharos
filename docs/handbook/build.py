@@ -643,8 +643,8 @@ y = notes_row(c, [
     ("In its own language", "A class word is looked for only in notices written in its language."),
     ("Marked By class", "A notice that names only the class goes to the daily digest, never an immediate "
                         "message. On screen it is marked <b>By class</b>."),
-    ("The check of the past", "A new name or class word is also checked against the stored notices of the last "
-                              "12 months. What it finds is marked <b>History</b> and sends no message."),
+    ("The check of the past", "A new name or class word is also checked against every stored notice, whatever "
+                              "its date. What it finds is marked <b>History</b> and sends no message."),
 ], y, 3) - 4 * mm
 check(3, y)
 c.showPage()
@@ -738,8 +738,8 @@ y = table(c, [
     ("Ready", "Its names, its class words, the check of the past, the NCBI look-back and the label watch are all "
               "done, and someone receives its Telegram messages."),
     ("class words waiting", "It has an ATC code and no drug class yet. The next class run makes it (three a day)."),
-    ("check of the past running, or waiting", "Its names are checked against the stored notices of the last 12 "
-                                              "months. It clears when every name is checked."),
+    ("check of the past running, or waiting", "Its names are checked against every stored notice, whatever its "
+                                              "date. It clears when every name is checked."),
     ("NCBI look-back running, or waiting", "PubMed and PubMed Central are read 12 months back for its name and "
                                            "class words. A large look-back takes a few days."),
     ("label watch on Monday (Spain)", "The countries whose label watch has not read since it was added. Monday's "

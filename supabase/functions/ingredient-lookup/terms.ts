@@ -11,6 +11,7 @@ import {
   type EmaSubstance,
   type WikidataItem,
 } from "./sources.ts";
+import { type Candidate, namesTheSubstance, otherSubstances } from "./guard.ts";
 import { key, looksLikeCode, modeFor, usableSynonym } from "./text.ts";
 
 export interface Term {
@@ -96,12 +97,17 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
 
   if (innEn) push({ lang: "en", country_code: null, term: innEn, kind: "inn", source: inn ? "manual" : "wikidata" });
 
+  // the substance's own one-word names: an alias of several words must contain one ("Canada og Japan" does not)
+  const ownNames = item
+    ? [innEn, ...Object.values(item.labels), ...Object.values(item.alt).flat()].filter((n) => n && !/\s/.test(n.trim()))
+    : [innEn];
   if (item) {
     for (const lang of LANGS) {
       const label = item.labels[lang];
       if (label) push({ lang, country_code: null, term: label, kind: "inn", source: "wikidata" });
       for (const alt of item.alt[lang] ?? []) {
         if (!usableSynonym(alt) && !looksLikeCode(alt)) continue;
+        if (!looksLikeCode(alt) && !namesTheSubstance(alt, ownNames)) continue;
         push({ lang, country_code: null, term: alt, kind: looksLikeCode(alt) ? "code" : "synonym", source: "wikidata" });
       }
     }
@@ -132,6 +138,33 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
     } else if (usableSynonym(s) && /^[\p{L}][\p{L}\- ]+$/u.test(s) && s.split(" ").length <= 2) {
       push({ lang: "en", country_code: null, term: s, kind: "synonym", source: "pubchem" });
       pcCount++;
+    }
+  }
+
+  // Names that belong to another substance are left out (guard.ts), and the form says which and why.
+  const checked = out.filter((t) => (t.kind === "synonym" || t.kind === "brand") &&
+    (t.source === "wikidata" || t.source === "pubchem"));
+  if (checked.length) {
+    try {
+      const other = await otherSubstances(
+        checked.map((t): Candidate => ({ term: t.term, lang: t.lang })),
+        { qid: qid || null, rxcui: item?.rxcui ?? [], inn: innEn },
+      );
+      if (other.size) {
+        const left: string[] = [];
+        for (let i = out.length - 1; i >= 0; i--) {
+          const why = checked.includes(out[i]) ? other.get(key(out[i].term)) : undefined;
+          if (!why) continue;
+          left.unshift(`${out[i].term} (${why})`);
+          out.splice(i, 1);
+        }
+        warnings.push(`Left out because they name another substance: ${[...new Set(left)].join("; ")}.`);
+      }
+    } catch (e) {
+      console.warn("name check", e);
+      warnings.push(
+        "The proposed names could not be checked against Wikidata and RxNorm for other substances; check each one yourself.",
+      );
     }
   }
 

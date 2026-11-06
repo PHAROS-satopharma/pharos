@@ -1,11 +1,13 @@
-"""The check of the past: ``python -m collectors.rematch [--months N | --all] [--trigger daily|manual]``.
+"""The check of the past: ``python -m collectors.rematch [--months N] [--trigger daily|manual]``.
 
 The collectors look for the watchlist's words in every notice as it arrives. A word saved later would never
 be looked for in what PHAROS already holds: a newly added ingredient (levofloxacin, added on 5 November 2026
 after the 12-month backfill, matched nothing at all), a new or changed name, an ingredient watched again
 after a pause, or a new class word (``collectors/classes.py``). The database marks each such word as due
-(``changed_at`` newer than ``rematched_at``, migration 0034); this job checks the stored notices of the last
-12 months (``app_setting.backfill_months``) with the due words only:
+(``changed_at`` newer than ``rematched_at``, migration 0034); this job checks EVERY stored notice, whatever its
+date, with the due words only (``--months N`` narrows a check by hand; such a check leaves its words due, so the
+next full one still covers the older notices: a 12-month window left 48 notices naming a watched ingredient
+unlinked, all older than the window, found on 6 November 2026):
 
 * the notice's title, its structured fields and its kept text; when no text was kept (only matched notices
   keep theirs), the archived original is read again from R2: the page (HTML), the PDF (with OCR as on
@@ -221,27 +223,24 @@ def record(store: Any, doc: dict, texts: Texts, hits: list[Hit], class_ingredien
 
 # ───────────────────────────── the job ─────────────────────────────
 
-def start_job(store: Any, settings: dict, *, months: int | None = None, all_history: bool = False,
-              trigger: str = "daily", today: date | None = None) -> dict | None:
-    """The open job, or a new one for the words now due; None when nothing is due."""
+def start_job(store: Any, settings: dict, *, months: int | None = None, trigger: str = "daily",
+              today: date | None = None) -> dict | None:
+    """The open job, or a new one for the words now due; None when nothing is due. A new job checks every stored
+    notice; ``months`` narrows it."""
     job = store.rematch_open_job()
     if job is not None:
         return job
     ing, cls = store.rematch_due_terms()
     if not ing and not cls:
         return None
-    if all_history:
-        since = ALL_HISTORY
-    else:
-        since = bf.cutoff({**settings, "backfill_months": months or settings.get("backfill_months", 12)}, today)
+    since = bf.cutoff({**settings, "backfill_months": months}, today) if months else ALL_HISTORY
     return store.rematch_create_job(since=since, ingredient_term_ids=ing, class_term_ids=cls, trigger=trigger)
 
 
-def run(store: Any, archive: Any, settings: dict, *, months: int | None = None, all_history: bool = False,
-        trigger: str = "daily", deadline: float | None = None, clock: Callable[[], float] = time.monotonic,
+def run(store: Any, archive: Any, settings: dict, *, months: int | None = None, trigger: str = "daily", deadline: float | None = None, clock: Callable[[], float] = time.monotonic,
         fields: Callable[[str | None], list[str]] = structured_fields, today: date | None = None) -> Summary:
     out = Summary()
-    job = start_job(store, settings, months=months, all_history=all_history, trigger=trigger, today=today)
+    job = start_job(store, settings, months=months, trigger=trigger, today=today)
     if job is None:
         out.nothing_due = True
         out.finished = True
@@ -289,15 +288,16 @@ def run(store: Any, archive: Any, settings: dict, *, months: int | None = None, 
             store.rematch_advance(job["id"], cursor=cursor, **pending)
             out.checked += pending["checked"]
             out.reread += pending["reread"]
-    store.rematch_finish(job["id"])
+    # Only a check of every stored notice marks its words checked; a narrower one leaves them due.
+    store.rematch_finish(job["id"], mark_checked=job["since"] <= ALL_HISTORY)
     out.finished = True
     return out
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.rematch", description=__doc__.split("\n\n")[0])
-    p.add_argument("--months", type=int, help="how far back a NEW job checks (default: app_setting.backfill_months)")
-    p.add_argument("--all", action="store_true", help="a NEW job checks every stored notice, whatever its date")
+    p.add_argument("--months", type=int,
+                   help="how far back a NEW job checks (default: every stored notice); its words stay due")
     p.add_argument("--trigger", choices=("daily", "manual"), default="daily")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -311,8 +311,8 @@ def main(argv: list[str] | None = None) -> int:
     db = Db()
     try:
         store = Store(db)
-        out = run(store, Archive(), store.settings(), months=args.months, all_history=args.all,
-                  trigger=args.trigger, deadline=deadline)
+        out = run(store, Archive(), store.settings(), months=args.months, trigger=args.trigger,
+                  deadline=deadline)
     finally:
         db.close()
     if out.nothing_due:

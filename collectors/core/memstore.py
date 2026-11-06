@@ -69,6 +69,7 @@ class MemoryStore:
         self.rematch_job: dict[str, dict] = {}
         self.match_audit: list[dict] = []                 # the weekly matching audit's rows (0075)
         self.audit_name_rows: list[dict] = []             # what audit_names() returns
+        self.filtered_item: dict[tuple[str, str], dict] = {}   # (source, title) -> reason, times_seen
         self.report_request: dict[str, dict] = {}         # id -> the row of 0048
 
     @contextmanager
@@ -159,6 +160,12 @@ class MemoryStore:
             row["last_item_at"] = last_item_at
 
     # ───────────────────────────── documents ─────────────────────────────
+    def record_filtered(self, source_id: str, dropped: list[tuple[str, str]]) -> None:
+        for title, why in dict(dropped).items():
+            if title:
+                row = self.filtered_item.setdefault((source_id, title), {"times_seen": 0})
+                row.update(reason=why, times_seen=row["times_seen"] + 1)
+
     def known_external_ids(self, source_id: str) -> set[str]:
         return {d["external_id"] for d in self.document.values() if d["source_id"] == source_id}
 
@@ -166,6 +173,24 @@ class MemoryStore:
         docs = [d for d in self.document.values() if d["source_id"] == source_id]
         return ({d["external_id"] for d in docs}
                 | {(d.get("structured") or {}).get("pmcid") for d in docs if (d.get("structured") or {}).get("pmcid")})
+
+    def literature_papers(self, source_id: str) -> list[dict]:
+        out = []
+        for d in self.document.values():
+            if d["source_id"] == source_id or (self.source.get(d["source_id"]) or {}).get("kind") != "literature":
+                continue
+            s = d.get("structured") or {}
+            out.append({"id": d["id"], "external_id": d["external_id"], "pmid": s.get("pmid"),
+                        "pmcid": s.get("pmcid"), "doi": s.get("doi")})
+        return out
+
+    def literature_found_also(self, found: dict[str, dict[str, str]], db: str) -> None:
+        from collectors.parsers._literature import found_also
+
+        for doc_id, queries in found.items():
+            d = self.document.get(doc_id)
+            if d is not None:
+                d["structured"] = found_also(d.get("structured"), db, queries)
 
     def literature_searches(self) -> dict[tuple[str, str], dict]:
         return {k: dict(v) for k, v in self.literature_search.items()}
@@ -757,9 +782,11 @@ class MemoryStore:
         j["documents_matched"] += matched
         j["issues_created"] += issues_created
 
-    def rematch_finish(self, job_id: str) -> None:
+    def rematch_finish(self, job_id: str, *, mark_checked: bool = True) -> None:
         j = self.rematch_job[job_id]
         j["finished_at"] = _now()
+        if not mark_checked:
+            return
         for tid in j["ingredient_term_ids"] + j["class_term_ids"]:
             st = self.term_state.get(tid)
             if st is not None and st["changed_at"] <= j["started_at"]:

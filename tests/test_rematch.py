@@ -1,5 +1,5 @@
-"""The check of the past (collectors/rematch.py): a word saved after the notices arrived is looked for in the
-stored notices of the last 12 months, as history, never as news. In-memory store and archive."""
+"""The check of the past (collectors/rematch.py): a word saved after the notices arrived is looked for in every
+stored notice, whatever its date, as history, never as news. In-memory store and archive."""
 
 from __future__ import annotations
 
@@ -96,14 +96,15 @@ def test_new_ingredient_past_items_matched_as_history():
     pdf_like = add_doc(s, a, "ansm-securite", "Antibiotiques : rappel", lang="fr",
                        attachment=html("La lévofloxacine expose à un risque de tendinopathie."))
     nothing = add_doc(s, a, "ema-dhpc", "Paracetamol: dosing", original=html("Nothing about it."))
-    old = add_doc(s, a, "ema-dhpc", "Levofloxacin: an old letter", days_ago=500, original=html("levofloxacin"))
+    old = add_doc(s, a, "ema-dhpc", "Dear healthcare professional letter", days_ago=4400,
+                  original=html("Levofloxacin: tendon rupture, 2014."))
     paper = add_doc(s, a, "pubmed", "Levofloxacin tendinopathy: a cohort", original=html("levofloxacin"))
     add_levofloxacin(s)
 
     out = rematch.run(s, a, s.settings(), fields=lambda _p: [])
 
-    assert out.finished and out.matched == 2 and out.issues_created == 2
-    for did in (page, pdf_like):
+    assert out.finished and out.matched == 3 and out.issues_created == 3
+    for did in (page, pdf_like, old):
         iss = issue_of(s, did)
         assert iss is not None and iss["is_backfill"] is True and iss["class_only"] is False
         assert (iss["id"], LEVO) in s.issue_ingredient
@@ -112,19 +113,22 @@ def test_new_ingredient_past_items_matched_as_history():
     assert {m["term_id"] for m in att} == {"t-levo-en", "t-levo-fr"}   # the INN finds the French spelling too
     assert all(m["field"] == "attachment" and m["attachment_id"] and m["matched_text"] == "lévofloxacine" for m in att)
     # the text read again is kept for the notices that now match, and only for them
-    assert {t["document_id"] for t in s.document_text} == {page, pdf_like}
+    assert {t["document_id"] for t in s.document_text} == {page, pdf_like, old}
     assert "Menu" not in next(t["text"] for t in s.document_text if t["document_id"] == page)
-    # older than 12 months, literature, and notices that do not name it: untouched
-    for did in (nothing, old, paper):
+    # a letter of 2014 is found too (the 12-month window missed 48 such notices); literature and notices that
+    # do not name it: untouched
+    assert {m["term_id"] for m in s.match if m["document_id"] == old} == {"t-levo-en"}
+    for did in (nothing, paper):
         assert issue_of(s, did) is None
-    assert f"raw/{old}" not in a.reads and f"raw/{paper}" not in a.reads
+    assert f"raw/{paper}" not in a.reads
     # history: no message of any kind, and nothing for the daily digest
     assert s.notification == []
     assert s.class_only_issues_since(NOW - timedelta(days=30)) == []
     # the words are checked; the next run has nothing to do
     assert not any(s._due(t) for t in ("t-levo-en", "t-levo-fr", "t-levo-sv"))
+    found = len(s.match)
     again = rematch.run(s, a, s.settings(), fields=lambda _p: [])
-    assert again.nothing_due and len(s.match) == 3
+    assert again.nothing_due and len(s.match) == found
 
 
 def test_a_notice_that_already_has_an_issue_gains_the_ingredient_and_stays_as_it_was():
@@ -275,14 +279,30 @@ def test_a_link_switched_off_or_to_a_paused_ingredient_makes_nothing_due():
     assert s.rematch_due_terms() == ([], [])
 
 
-@pytest.mark.parametrize("months,expected_matches", [(12, 1), (24, 2)])
+@pytest.mark.parametrize("months,expected_matches", [(12, 1), (24, 2), (None, 3)])
 def test_months_sets_how_far_back_a_new_job_checks(months, expected_matches):
     s, a = world()
     add_doc(s, a, "ema-dhpc", "Levofloxacin: recent", days_ago=30, original=html(""))
     add_doc(s, a, "ema-dhpc", "Levofloxacin: last year", days_ago=500, original=html(""))
+    add_doc(s, a, "ema-dhpc", "Levofloxacin: 2014", days_ago=4400, original=html(""))
     add_levofloxacin(s)
     out = rematch.run(s, a, s.settings(), months=months, fields=lambda _p: [])
     assert out.matched == expected_matches
+
+
+def test_a_narrower_check_leaves_its_words_due_for_a_check_of_every_notice():
+    """A check of 12 months by hand does not mark the words checked: the next (full) one still finds 2014."""
+    s, a = world()
+    recent = add_doc(s, a, "ema-dhpc", "Levofloxacin: recent", days_ago=30, original=html(""))
+    old = add_doc(s, a, "ema-dhpc", "Levofloxacin: 2014", days_ago=4400, original=html(""))
+    add_levofloxacin(s)
+    first = rematch.run(s, a, s.settings(), months=12, fields=lambda _p: [])
+    assert first.finished and first.matched == 1 and issue_of(s, old) is None
+    assert all(s._due(t) for t in ("t-levo-en", "t-levo-fr", "t-levo-sv"))
+    full = rematch.run(s, a, s.settings(), fields=lambda _p: [])
+    assert full.finished and full.matched == 1 and issue_of(s, old)["is_backfill"] is True
+    assert sum(1 for m in s.match if m["document_id"] == recent) == 1   # never matched twice for one word
+    assert not any(s._due(t) for t in ("t-levo-en", "t-levo-fr", "t-levo-sv"))
 
 
 def test_original_text_reads_pages_json_and_plain_text():

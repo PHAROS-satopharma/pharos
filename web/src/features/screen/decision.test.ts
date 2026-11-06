@@ -61,7 +61,17 @@ const DATA: IngredientScreenData = {
   to: '2026-11-07',
   regulators: [reg('A', [mention('a1', 'n1'), mention('a2', 'n2')]), reg('B', [mention('b1', 'n1'), mention('b2', null)])],
   label_changes: [mention('l1', 'n1'), mention('l2', 'n3')],
-  literature: { papers: 0, by_name: 0, by_class: 0, pubmed: 0, pmc: 0, by_query: [], first: [] },
+  literature: {
+    papers: 0,
+    by_name: 0,
+    by_class: 0,
+    pubmed: 0,
+    pmc: 0,
+    europepmc: 0,
+    preprints: 0,
+    by_query: [],
+    first: [],
+  },
   findings: {},
 };
 

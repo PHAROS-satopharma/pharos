@@ -171,8 +171,10 @@ def test_select_sources_and_args():
     assert all(s.schedule == "4h" and s.kind != "spc" for s in select_sources(SOURCES, "4h", None, False))
     assert [s.id for s in select_sources(SOURCES, "4h", "ema-psusa", False)] == ["ema-psusa"]
     literature = select_sources(SOURCES, "literature", None, False)
-    assert [s.id for s in literature] == ["pubmed"] and all(s.schedule == "daily" for s in literature)
+    assert [s.id for s in literature] == ["pubmed", "europepmc"] and all(s.schedule == "daily" for s in literature)
     off = [dataclasses.replace(s, enabled=False) if s.id == "pubmed" else s for s in SOURCES]
+    assert [s.id for s in select_sources(off, "literature", None, False)] == ["europepmc"]
+    off = [dataclasses.replace(s, enabled=False) if s.kind == "literature" else s for s in SOURCES]
     assert select_sources(off, "literature", None, False) == []
     with pytest.raises(SystemExit):
         select_sources(SOURCES, "4h", "no-such-source", False)

@@ -24,7 +24,8 @@ from __future__ import annotations
 from datetime import date
 
 from collectors.parsers.base import (FetchContext, Item, ParseError, SourceConfig, absolute,
-                                     attachment_links, html_text, keyword_ok, parse_date, soup)
+                                     attachment_links, dropped, html_text, keyword_ok, parse_date,
+                                     soup)
 
 STRUCTURED_FIELDS: list[str] = []
 
@@ -106,7 +107,8 @@ def parse_feed(content: bytes, source: SourceConfig, base_url: str) -> list[Item
             continue
         cats = _categories(entry)
         summary = _summary_text(entry)
-        if inc_cats and not inc_cats & {c.casefold() for c in cats}:
+        if inc_cats and not inc_cats & {c.casefold() for c in cats} and dropped(
+                f"{title}\n{summary}", "categories: " + ", ".join(cats)[:120]):
             continue
         if not keyword_ok(f"{title}\n{summary}", opts.get("include_keywords"),
                           opts.get("exclude_keywords")):

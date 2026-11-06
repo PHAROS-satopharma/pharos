@@ -608,6 +608,28 @@ def test_class_words_and_known_paper_ids(store, tag):
     assert store.literature_known_ids(src.id) == {"42979212", "PMC13730105", "PMC13727276", "42846100"}
 
 
+def test_a_paper_another_literature_source_stored_is_marked_found(store, tag):
+    # Europe PMC and NCBI (collectors/parsers/_literature.py): one paper, one document, marked by both.
+    ncbi, epmc = _source(store, f"{tag}n"), _source(store, f"{tag}e")
+    store.db.execute("update source set kind = 'literature' where id in (%(a)s, %(b)s)", {"a": ncbi.id, "b": epmc.id})
+    pmid = str(random.randint(10**8, 10**9))
+    did = store.insert_document(_doc(ncbi.id, pmid, doc_type="literature", structured={
+        "pmid": pmid, "pmcid": None, "doi": f"10.9999/{tag}", "found_in": ["pubmed"], "query_term": ["testamine"],
+        "queries": [{"query": "testamine", "kind": "name", "db": ["pubmed"]}]}))
+    mine = store.insert_document(_doc(epmc.id, f"PPR{pmid}", doc_type="literature", structured={"pmid": None}))
+    seen = {r["id"]: r for r in store.literature_papers(epmc.id)}
+    assert seen[did] == {"id": did, "external_id": pmid, "pmid": pmid, "pmcid": None, "doi": f"10.9999/{tag}"}
+    assert mine not in seen and mine in {r["id"] for r in store.literature_papers(ncbi.id)}
+
+    store.literature_found_also({did: {"testamine": "name", "testaminoids": "class"}}, "europepmc")
+    store.literature_found_also({did: {"testamine": "name"}}, "europepmc")           # twice is once
+    s = store.db.fetchone("select structured from document where id = %(d)s", {"d": did})["structured"]
+    assert s["found_in"] == ["europepmc", "pubmed"] and s["query_term"] == ["testamine"]
+    assert s["queries"] == [{"query": "testamine", "kind": "name", "db": ["europepmc", "pubmed"]},
+                            {"query": "testaminoids", "kind": "class", "db": ["europepmc"]}]
+    store.literature_found_also({}, "europepmc")                                      # nothing: no error
+
+
 def test_issues_of_papers_are_never_merge_candidates(store, tag):
     src = _source(store, tag)
     ing = _ingredient(store, tag)
@@ -747,3 +769,14 @@ def test_the_matching_audit_finds_candidates_in_the_database_and_keeps_its_row(s
                                "flagged_names": [{"term_id": "x", "term": "Ofloxacin", "why": "RxNorm: ofloxacin"}]}])
     row = store.db.fetchone("select * from match_audit where ingredient_id = %(i)s", {"i": ing})
     assert row["linked_now"] == 1 and row["flagged_names"][0]["term"] == "Ofloxacin"
+
+
+def test_what_a_filter_dropped_is_kept_once_per_title(store, tag):
+    src = _source(store, tag)
+    store.record_filtered(src.id, [("Veterinary letter: enrofloxacin", "category: veterinary"),
+                                   ("Press release: new chair", "keywords: none of sicherheit")])
+    store.record_filtered(src.id, [("Veterinary letter: enrofloxacin", "category: veterinary"), ("", "x")])
+    rows = store.db.fetchall("select title, reason, times_seen from filtered_item where source_id = %(s)s "
+                             "order by title", {"s": src.id})
+    assert [(r["title"], r["times_seen"]) for r in rows] == [("Press release: new chair", 1),
+                                                             ("Veterinary letter: enrofloxacin", 2)]

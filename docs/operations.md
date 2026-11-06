@@ -335,7 +335,14 @@ messages* (admins only):
    picks one for you.
 3. Click **Confirm <name> (<ATC>)**. Nothing is saved before this click.
 4. The term editor is pre-filled for each language. Add the names it marks as gaps, and the national brand
-   names.
+   names. Names that belong to another substance are left out and listed in a warning
+   (`ingredient-lookup/guard.ts`, 0073): a Wikidata or PubChem name that Wikidata gives to another substance
+   with a different RxNorm ingredient, to a medicine of another substance, or to a disambiguation page, or
+   that RxNorm resolves only to other ingredients; also chemical formulas, and aliases of several words that
+   contain none of the substance's names. On 6 November 2026 levofloxacin had "Ofloxacin", "Floxin" and
+   "Floxacin", which linked the EMA ofloxacin PSUSA to it. 0073 removed those names and what they found.
+   Wikidata cannot catch every wrong alias (guaifenesin's "Buchenteer" is on no other item), so still read
+   each name.
 5. Use **Test against archive** to see how many stored texts each term hits before saving.
 6. The SPC watch picks the ingredient up at its next weekly run.
 7. The next daily run adds its group from the ATC code (searched) and the class above it (shown, switched off
@@ -515,7 +522,8 @@ took its place.
 - **The check of the past** (`python -m collectors.rematch`). Notices are matched as they arrive, so a word
   saved later (a new ingredient, a new or changed name, an ingredient watched again after a pause, a new
   class word, and a class's words when a watched ingredient is linked to the class or watched again, 0055)
-  is "due" until the stored notices of the last 12 months have been checked with it. The daily
+  is "due" until every stored notice, whatever its date, has been checked with it (0072; until 6 November 2026
+  only the last 12 months, which left 48 older notices naming a watched ingredient unlinked). The daily
   run gives it 15 minutes after the collection; `rematch.yml` runs it by hand for up to 45 minutes. It reads
   each notice's kept text, or its original again from R2 (page, PDF with OCR, attachments), skips words that
   already matched that notice, and files what it finds as history: no Telegram message, no digest. A
@@ -523,7 +531,9 @@ took its place.
   0055 deployment the words of every class a watched ingredient joined after they were last checked became due. Its
   progress is the `rematch_job` row (one open at a time): the next run continues from
   `cursor_document_id`; when it reaches the end its words are marked checked, and a word changed meanwhile
-  waits for the next check. A list page shared by several notices is not read as any one notice's text.
+  waits for the next check. A check narrowed by hand (`--months`, the workflow's "months") marks nothing
+  checked: its words wait for the next full check. On the 0072 deployment every word became due again (except
+  the names found to belong to another substance), so the first checks after it read every stored notice. A list page shared by several notices is not read as any one notice's text.
   Literature has its own search and is not checked here.
 - **After the 0034 deployment** the words the 12-month backfill already covered are marked checked;
   everything added after it (levofloxacin, added 5 November 2026) is due, so the first daily run starts on it.
@@ -751,6 +761,36 @@ packs and their files and cannot ask for one.
   may be done with the copy: reading it for safety is always allowed, reusing it may not be. Live on 6 November
   2026: 10.1038/nature12373 was open (the publisher's PDF, which answers a script with a cookie page, plus an
   arXiv preprint), 10.1002/pds.5000 closed, and a DOI Unpaywall does not know answers 404.
+
+## Europe PMC literature (second source, migration 0066)
+
+- **What is searched.** The source `europepmc` (`collectors/parsers/europepmc.py`, regulator EBI) runs after
+  NCBI in the daily and literature runs and searches Europe PMC's REST API for the same words NCBI is searched
+  for: each active ingredient's English name and the English words of its classes in the literature search. Each
+  word is one exact phrase, `"word" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[from TO to]`, with
+  `synonym=false`, so it matches the title, the abstract and the full texts Europe PMC holds, plus preprints
+  (Research Square, medRxiv, bioRxiv …), which NCBI does not list.
+- **One paper, one document.** Before storing, the run looks every hit up among the papers the other literature
+  sources stored, by PMID, PMC id and DOI (case ignored). A paper NCBI already stored is not stored again: its
+  `structured.found_in` and the search's `db` list gain `europepmc`. The NCBI run does the same the other way,
+  so whichever source finds a paper first stores it. A new paper is a literature document with the same fields
+  as NCBI's, under its PMID, else its PMC id, else its Europe PMC id (a preprint's `PPR…`), linked to its
+  Europe PMC page and, when it has them, its PubMed and PMC pages.
+- **Preprints.** A paper from SRC:PPR has `preprint: true`. The Ingredients screen shows it with a *Preprint*
+  tag and "not peer reviewed", and the literature line counts Europe PMC beside PubMed and PMC and the preprints
+  apart. Europe PMC gives no language: its papers are stored as English. A preprint is typed "preprint", so it is
+  usually a possible case report by its title alone.
+- **Look-back and catch-up.** The same rules as NCBI (`literature_search` rows with `db = 'europepmc'`): a
+  new word reads 12 months as history, then each run reads from the last complete run minus 3 days.
+- **How fast.** Europe PMC first lists ids only (1,000 a page, under a second), then reads the new papers' records
+  100 at a time, half a second between requests. A run spends at most 6 minutes searching (words searched
+  before go first, then the look-backs; a word not reached keeps its row and goes first next time), stores at most
+  800 new papers and stops at 10 minutes. Volumes for 12 months on 6 November 2026: carvedilol 1,424 hits (14
+  preprints), paracetamol 6,925, metformin 15,618 (253 preprints); most are already stored from NCBI.
+- **Etiquette.** No key. The request says who we are in its User-Agent ("PHAROS pharmacovigilance literature
+  watch" and the company mailbox), never in the address, so no log line carries it.
+- **Case intake.** *Open a case* on a paper with no PMID or PMC id reads its Europe PMC record (the abstract)
+  and marks a preprint "not peer reviewed".
 
 ## Case reports in the literature
 
