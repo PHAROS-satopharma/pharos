@@ -82,7 +82,7 @@ describe('withDecision', () => {
 });
 
 describe('choices', () => {
-  it('offers her two decisions, Concerns us and Doesn't concern us, and never the one already taken', () => {
+  it("offers her two decisions, Concerns us and Doesn't concern us, and never the one already taken", () => {
     expect(choicesFor('new').map((c) => c.label)).toEqual(['Concerns us', "Doesn't concern us"]);
     expect(choicesFor('new').map((c) => c.to)).toEqual(['relevant', 'not_relevant']);
     expect(choicesFor('reviewed').map((c) => c.to)).toEqual(['relevant', 'not_relevant']);
