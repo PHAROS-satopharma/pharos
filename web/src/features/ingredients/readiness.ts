@@ -1,6 +1,6 @@
-// How far an ingredient is prepared, in her words (ingredient_readiness(), migration 0045). Pure: the component
-// (Readiness.tsx) reads the database; collectors/report_weekly.py (readiness_items, readiness_text) says the
-// same, and tests/test_report_weekly.py holds both to these phrases.
+// How far an ingredient is prepared, in her words (ingredient_readiness(), migrations 0045 and 0082). Pure: the
+// component (Readiness.tsx) reads the database; collectors/report_weekly.py (readiness_items, readiness_text) says
+// the same, and tests/test_report_weekly.py holds both to these phrases.
 import { formatDate } from '../../lib/format';
 import { languageName } from '../../lib/labels';
 
@@ -16,6 +16,15 @@ export interface Readiness {
   class: { atc: boolean; classes: number; words: number; confirmed: boolean };
   past_check: { done: boolean; words_due: number; job_running: boolean };
   ncbi: { searches: number; expected: number; look_back_done: boolean; last_run: string | null };
+  /** The Europe PMC watch (0082): the same words, once each; waited for only while it is switched on. Absent
+   *  before 0082 is applied. */
+  europepmc?: {
+    watched: boolean;
+    searches: number;
+    expected: number;
+    look_back_done: boolean;
+    last_run: string | null;
+  };
   label_watch: {
     products: number;
     by_source: Record<string, ReadinessSource>;
@@ -67,6 +76,10 @@ export function readinessItems(r: Readiness): string[] {
   if (r.class.atc && r.class.classes === 0) items.push('class words waiting');
   if (!r.past_check.done) items.push(r.past_check.job_running ? 'check of the past running' : 'check of the past waiting');
   if (!r.ncbi.look_back_done) items.push(r.ncbi.searches > 0 ? 'NCBI look-back running' : 'NCBI look-back waiting');
+  const epmc = r.europepmc;
+  if (epmc?.watched && !epmc.look_back_done) {
+    items.push(epmc.searches > 0 ? 'Europe PMC look-back running' : 'Europe PMC look-back waiting');
+  }
   if (r.label_watch.products === 0 && r.label_watch.waiting.length > 0) {
     items.push(`label watch on Monday (${countryList(r.label_watch.waiting)})`);
   }

@@ -203,8 +203,8 @@ SCREEN = {
     "regulators": REGULATORS,
     "label_changes": [_mention("d-spc", "EMA", "2026-11-03", "2026-11-03T07:00:00Z", country_name="European Union",
                                regulator_name="European Medicines Agency", sections=["4.4", "4.8"])],
-    "literature": {"papers": 2, "by_name": 1, "by_class": 1, "pubmed": 2, "pmc": 1,
-                   "by_query": [{"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1}]},
+    "literature": {"papers": 2, "by_name": 1, "by_class": 1, "pubmed": 2, "pmc": 1, "europepmc": 1,
+                   "by_query": [{"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1, "europepmc": 1}]},
 }
 
 
@@ -307,7 +307,9 @@ class FakeDb:
             return [{"document_id": "p-1", "title": "Tendon rupture after levofloxacin", "lang": "en",
                      "journal": "Drug Saf", "day": date(2026, 11, 4),
                      "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000001/",
-                     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9900001/", "by_class": False,
+                     "pmc_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9900001/",
+                     "europepmc_url": "https://europepmc.org/article/PPR/PPR900001", "preprint": True,
+                     "by_class": False,
                      "is_backfill": False, "first_seen_at": datetime(2026, 11, 4, 6, tzinfo=UTC)},
                     {"document_id": "p-2", "title": "Fluoroquinolones and aortic aneurysm: a case series", "lang": "en",
                      "journal": "", "day": date(2026, 11, 5), "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41000002/",
@@ -440,6 +442,12 @@ def test_readiness_is_worded_as_on_the_ingredients_page():
     assert rw.readiness_items({**done, "names": {"languages_with_a_name": 0, "of": 15, "missing": []}}) == [
         "no name to look for yet"]
     assert rw.country_list(["France", "Germany", "Japan", "Spain"]) == "4 countries"
+    # Europe PMC (0082): waited for only while its watch is switched on
+    epmc = {"watched": True, "searches": 0, "expected": 2, "look_back_done": False, "last_run": None}
+    assert rw.readiness_items({**done, "europepmc": epmc}) == ["Europe PMC look-back waiting"]
+    assert rw.readiness_items({**done, "europepmc": {**epmc, "searches": 1}}) == ["Europe PMC look-back running"]
+    assert rw.readiness_items({**done, "europepmc": {**epmc, "watched": False}}) == []
+    assert rw.readiness_items({**done, "europepmc": {**epmc, "searches": 2, "look_back_done": True}}) == []
 
 
 def test_readiness_words_are_the_screens():
@@ -447,7 +455,8 @@ def test_readiness_words_are_the_screens():
     ts = (ROOT / "web/src/features/ingredients/readiness.ts").read_text(encoding="utf-8")
     for words in ("Still preparing: ", "Ready", "no name to look for yet", "class words waiting",
                   "check of the past running", "check of the past waiting", "NCBI look-back running",
-                  "NCBI look-back waiting", "label watch on Monday (", "nobody receives its Telegram messages yet",
+                  "NCBI look-back waiting", "Europe PMC look-back running", "Europe PMC look-back waiting",
+                  "label watch on Monday (", "nobody receives its Telegram messages yet",
                   " countries"):
         assert words in ts, words
 
@@ -562,13 +571,16 @@ def test_assemble_answers_every_section():
     # the label change that concerns us shows the signal its decision opened (0042), even if decided before the week
     assert lc[0]["signal"] == "SIG-2026-002 · Assessment, high priority · due 3 Nov 2026 (late)"
     assert lc[1]["signal"] == "" and lc[2]["signal"] == ""
-    # 4. NCBI: the name first, then the class words; a search with no paper counts 0
+    # 4. Literature: the name first, then the class words; a search with no paper counts 0
     assert lev["literature"]["searches"] == [
-        {"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1},
-        {"query": "fluoroquinolone", "kind": "class word", "pubmed": 0, "pmc": 0}]
+        {"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1, "europepmc": 1},
+        {"query": "fluoroquinolone", "kind": "class word", "pubmed": 0, "pmc": 0, "europepmc": 0}]
     # possible case reports first, with day zero, the two dates and the decision on the paper
     assert [(p["pubmed_id"], p["pmc_id"]) for p in lev["literature"]["list"]] == [
         ("41000002", ""), ("41000001", "PMC9900001")]
+    # Europe PMC's page and the preprint flag reach the report; a paper without them has neither
+    assert [(p["europepmc_id"], p["preprint"]) for p in lev["literature"]["list"]] == [
+        ("", False), ("PPR900001", True)]
     case, other = lev["literature"]["list"]
     assert case["case_report"] and case["case_reason"] == "its title says so"
     assert (case["day_zero"], case["due_serious"], case["due_nonserious"]) == (
@@ -599,7 +611,7 @@ def test_the_pdf_page_has_six_sections_and_her_words():
     html = rw.render_weekly_html(data)
     heads = re.findall(r'<h2><span class="n">(\d\d)</span>([^<]+)</h2>', html)
     assert heads == [("01", "Summary"), ("02", "Authorities read"), ("03", "Our ingredients by country"),
-                     ("04", "NCBI literature"), ("05", "Everything new, per authority"), ("06", "To check by hand")]
+                     ("04", "Literature"), ("05", "Everything new, per authority"), ("06", "To check by hand")]
     assert html.count('<section class="part">') == 5      # sections 02 to 06 each open a new page
     for words in ("Concerns us", "No decision yet", "Sama Hassan", "Mentioned in 2 notices",
                   "Not read this week — check it by hand", "Looked at by Sama Hassan, 5 Nov 2026, 12:00",
@@ -615,6 +627,8 @@ def test_the_pdf_page_has_six_sections_and_her_words():
     # the case report is listed before the other paper
     assert html.index("Fluoroquinolones and aortic aneurysm") < html.index("Tendon rupture after levofloxacin")
     assert 'href="https://pubmed.ncbi.nlm.nih.gov/41000001/"' in html
+    assert '<a href="https://europepmc.org/article/PPR/PPR900001">PPR900001</a>' in html
+    assert '<span class="tag">preprint</span>' in html and "Europe PMC" in html
     assert "javascript:" not in html
     assert report.CREDIT in html and html.count(copyright_line()) == 1
 
@@ -635,15 +649,17 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
     assert labels[0][11] == "Sections changed: 4.4, 4.8 · Label dated 1 Oct 2026 · Sanofi · Reference product"
     assert labels[1][3] == "Not compared: different language" and labels[2][3] == "No label of ours uploaded"
     assert not labels[2][8]                                              # no javascript: link
-    link = next(c for c in wb["NCBI papers"]["E"] if c.value == "https://pubmed.ncbi.nlm.nih.gov/41000001/")
+    link = next(c for c in wb["Literature papers"]["E"] if c.value == "https://pubmed.ncbi.nlm.nih.gov/41000001/")
     assert link.hyperlink.target == link.value
-    papers = list(wb["NCBI papers"].iter_rows(values_only=True))
-    assert papers[0][8:] == ("Possible case report", "Day zero", "15 days", "90 days", "Decision", "Decided by",
+    papers = list(wb["Literature papers"].iter_rows(values_only=True))
+    assert papers[0][6:8] == ("Europe PMC", "Preprint")
+    assert papers[2][6:8] == ("https://europepmc.org/article/PPR/PPR900001", "yes")
+    assert papers[0][10:] == ("Possible case report", "Day zero", "15 days", "90 days", "Decision", "Decided by",
                              "Decided (Cairo)", "Reason")
-    assert papers[1][2].startswith("Fluoroquinolones") and papers[1][8:12] == (
+    assert papers[1][2].startswith("Fluoroquinolones") and papers[1][10:14] == (
         "yes, its title says so", "5 Nov 2026", "20 Nov 2026", "3 Feb 2027")
     # an empty cell reads back as None
-    assert tuple(x or "" for x in papers[2][8:]) == (
+    assert tuple(x or "" for x in papers[2][10:]) == (
         "", "", "", "", "Doesn't concern us", "Sama Hassan", "5 Nov 2026, 13:00", "Not our product")
     new = list(wb["Everything new"].iter_rows(values_only=True))
     austria = next(r for r in new if r[1] == "Austria")
@@ -733,6 +749,6 @@ def test_every_weekly_pdf_page_prints_the_footer(tmp_path):
         assert foot.endswith(f"Page {n} of {total}"), f"page {n}: {foot}"
     # sections 02 to 06 each start a page
     starts = [n for n, p in enumerate(pages, start=1) for head in ("02 Authorities read", "03 Our ingredients",
-              "04 NCBI literature", "05 Everything new", "06 To check by hand")
+              "04 Literature", "05 Everything new", "06 To check by hand")
               if " ".join(p.split()).startswith(head)]
     assert len(starts) == 5

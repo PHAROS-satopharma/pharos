@@ -116,8 +116,9 @@ pharmacovigilance system master file.
   filtered by what started it.
 - **Six sections**, in the PDF and as sheets of the Excel file: 1 Summary and the decisions taken (her words:
   Concerns us, Doesn't concern us, No decision yet, Reviewed, no decision yet); 2 Authorities read, hers first;
-  3 Our ingredients by country, with every notice, its link, the words matched and the decision; 4 NCBI
-  literature, each search with its counts and every paper with its PubMed and PubMed Central links; 5 Everything
+  3 Our ingredients by country, with every notice, its link, the words matched and the decision; 4
+  Literature, each search with its PubMed, PubMed Central and Europe PMC counts and every paper with its PubMed,
+  PubMed Central and Europe PMC links (a preprint tagged); 5 Everything
   new per authority, and who looked at the country; 6 To check by hand: her pages the app does not read, the
   sources whose reads failed (with the last failure) and the sources not read that week.
 - **Where it goes.** `reports/weekly/<Sunday>/PHAROS-weekly-<Sunday>.xlsx` and `.pdf` in R2, locked; a week made
@@ -356,16 +357,17 @@ messages* (admins only):
 ### Adding an ingredient: what follows by itself
 
 Nothing more is asked of her after Save. Each ingredient's row on the Ingredients page says how far the
-preparation has got, and the weekly report repeats it in section 1 (migration 0045, `ingredient_readiness()`):
+preparation has got, and the weekly report repeats it in section 1 (migrations 0045 and 0082,
+`ingredient_readiness()`):
 
 - **Ready** when the ingredient has a name in at least one language, its drug class is made (or it has no ATC
   code, so no class), its check of the past is done, NCBI's 12-month look-back has finished for every expected
-  search, every watched country's label watch has read since it was added (a watch that read and found no label
+  search, so has Europe PMC's for every word while its watch is switched on (0082), every watched country's label watch has read since it was added (a watch that read and found no label
   is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
   ingredient by the migration, so a new one is covered the moment it is saved.
 - Otherwise **Still preparing:** followed by what is still running or still to come, in order: *class words
   waiting* (the next daily or literature run: 02:31, 10:41 or 18:41), *check of the past running* or *waiting*,
-  *NCBI look-back running* or *waiting*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
+  *NCBI look-back running* or *waiting*, *Europe PMC look-back running* or *waiting*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
   03:23), *nobody receives its
   Telegram messages yet*.
 - Under the line: how many label products were found and where (or *No label found in any watched country*),
@@ -794,7 +796,9 @@ packs and their files and cannot ask for one.
   apart. Europe PMC gives no language: its papers are stored as English. A preprint is typed "preprint", so it is
   usually a possible case report by its title alone.
 - **Look-back and catch-up.** The same rules as NCBI (`literature_search` rows with `db = 'europepmc'`): a
-  new word reads 12 months as history, then each run reads from the last complete run minus 3 days.
+  new word reads 12 months as history, then each run reads from the last complete run minus 3 days. While the
+  source is switched on, an ingredient is not Ready until every word's look-back here has finished too
+  (`ingredient_readiness()`, migration 0082).
 - **How fast.** Europe PMC first lists ids only (1,000 a page, under a second), then reads the new papers' records
   100 at a time, half a second between requests. A run spends at most 6 minutes searching (words searched
   before go first, then the look-backs; a word not reached keeps its row and goes first next time), stores at most
