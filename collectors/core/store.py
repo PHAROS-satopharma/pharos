@@ -441,6 +441,18 @@ class Store:
                  and (error is null or tg_message_id is not null) limit 1""",
             {"p": person_id, "k": kind, "s": since}) is not None
 
+    def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
+        """The people a ``kind`` message (with no notice) really reached since ``since``: delivered, not a dry
+        run, never a refused one — the morning reminder's once-a-day gate. With ``dry_run`` the dry-run rows
+        count too, so a dry run is once a day like the real thing."""
+        rows = self.db.fetchall(
+            """select distinct person_id::text as person_id from notification
+                where kind = %(k)s and issue_id is null and person_id is not null and sent_at >= %(s)s
+                  and (error is null or tg_message_id is not null)
+                  and (not dry_run or %(d)s)""",
+            {"k": kind, "s": since, "d": dry_run})
+        return {r["person_id"] for r in rows}
+
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
         """Per country, how many items the authorities published in [since, until) — new_items() in
         0032_sources_horizontal.sql, the very list the Sources screen shows."""

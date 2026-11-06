@@ -347,21 +347,19 @@ class MemoryStore:
                 if p.get("role") in ("admin", "reviewer") and p.get("active", True) and p.get("telegram_chat_id")]
 
     def eda_reminders(self, today: date, within_days: int = 2) -> list[dict]:
-        """v_eda_clock in memory: a notice whose latest decision (self.review_event) is Concerns us and that no
-        authority_report not withdrawn answers; day zero is the Cairo day its anchor was first seen."""
+        """v_eda_clock in memory: a notice whose latest decision (self.review_event) is Concerns us and for which
+        no authority_report not withdrawn exists (whatever decision it answered: a report sent is never
+        forgotten, 0050); day zero is the Cairo day PHAROS first showed the notice, the day its row was created."""
         days = int(self.app_setting.get("eda_days") or 5)
         out = []
         for iid, iss in self.issue.items():
             decisions = sorted((e for e in self.review_event if e["issue_id"] == iid), key=lambda e: e["created_at"])
             if not decisions or decisions[-1]["to_status"] != "relevant":
                 continue
-            if any(a["issue_id"] == iid and a.get("withdrawn_at") is None
-                   and a.get("decision_id", decisions[-1].get("id")) == decisions[-1].get("id")
-                   for a in self.authority_report):
+            if any(a["issue_id"] == iid and a.get("withdrawn_at") is None for a in self.authority_report):
                 continue
             anchor = self.document.get(iss.get("anchor_document_id")) or {}
-            seen_at = anchor.get("first_seen_at") or iss["created_at"]
-            day_zero = seen_at.astimezone(ZoneInfo("Africa/Cairo")).date()
+            day_zero = iss["created_at"].astimezone(ZoneInfo("Africa/Cairo")).date()
             due = day_zero + timedelta(days=days)
             if due > today + timedelta(days=within_days):
                 continue
@@ -383,6 +381,12 @@ class MemoryStore:
     def notified_since(self, person_id: str, kind: str, since: datetime) -> bool:
         return any(n["person_id"] == person_id and n["kind"] == kind and n["sent_at"] >= since
                    and (n["error"] is None or n.get("tg_message_id")) for n in self.notification)
+
+    def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
+        return {n["person_id"] for n in self.notification
+                if n["kind"] == kind and n.get("issue_id") is None and n.get("person_id")
+                and n["sent_at"] >= since and (n.get("error") is None or n.get("tg_message_id"))
+                and (dry_run or not n.get("dry_run"))}
 
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
         """new_items() in memory: no history, no label watch, no literature."""

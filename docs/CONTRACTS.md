@@ -323,28 +323,34 @@ Collector: `python -m collectors.report [--week YYYY-MM-DD | --month YYYY-MM] [-
 Web: Reports (`web/src/features/reports/`, `weeks.ts`). `archive-url` serves a key a `weekly_report` row points
 at. SQL test: `supabase/tests/weekly_report.sql`; Python: `tests/test_report_weekly.py`.
 
-## The five-day clock (0041)
+## The five-day clock (0041, 0050)
 
 ```sql
 app_setting eda_days = '5', eda_day_zero = '"first_seen"'   -- jsonb; or '"decision"'
 authority_report (id, issue_id, authority 'EDA', sent_on date, reference, note, person_id, decision_id -> review_event,
   created_at, withdrawn_at, withdrawn_by, withdraw_reason)
-  -- append-only: the team reads; a reviewer or administrator inserts their own row (sent_on never after
-  -- today in Cairo, 22023); the trigger refuses 'PH409' 'NO_CONCERN …' when the notice's latest decision is
-  -- not relevant and 'PH409' 'ALREADY_SENT …' when that decision was reported already, and names the decision
-  -- (decision_id). Update and delete are refused ('… append-only'); only withdraw_authority_report() writes.
+  -- append-only: the team reads (never service_role, 0050); a reviewer or administrator inserts their own row
+  -- (sent_on never after today in Cairo and never before day zero, 22023); the trigger refuses 'PH409'
+  -- 'NO_CONCERN …' when the notice's latest decision is not relevant and 'PH409' 'ALREADY_SENT …' when that
+  -- decision was reported already, and names the decision (decision_id). Update and delete are refused
+  -- ('… append-only'); only withdraw_authority_report() writes.
 withdraw_authority_report(p_id uuid, p_reason text) returns void
   -- security definer; a reviewer or administrator; reason required (22023); P0002 when unknown or withdrawn.
 eda_clock(p_issues uuid[]) returns table (issue_id, ingredient_id, ingredient, title, country, regulator,
   day_zero, due, days_left, clock, decided_at, decided_by, sent_id, sent_on, sent_reference, sent_note, sent_by)
-  -- the collector's (null = every notice whose status and latest decision are relevant); not for authenticated.
+  -- the collector's (null = every notice whose status and latest decision are relevant); not for authenticated
+  -- nor service_role (0050).
 finding_state(p_issues uuid[]) returns jsonb
   -- the screen's: {"<issue_id>": {day_zero, due, days_left, clock, sent}} with clock running | late | sent | off
   -- and sent {id, on, reference, person, note} or null; {} for nothing or unknown ids; screen_reader() or 42501.
-  -- day_zero = Cairo day of the notice's earliest first_seen_at; due = day_zero + eda_days; days_left counts
-  -- from signal_cairo_today(), negative when late. off when the latest decision is not relevant.
+  -- day_zero = Cairo day of issue.created_at, the day PHAROS first showed the notice (0050; or of the decision
+  -- when eda_day_zero = decision); due = day_zero + eda_days; days_left counts from signal_cairo_today(),
+  -- negative when late. off when the latest decision is not relevant. sent = the latest authority_report not
+  -- withdrawn for the notice, whatever decision it was recorded under (never forgotten, 0050), even while off;
+  -- clock = sent whenever one exists and the latest decision is relevant.
 v_eda_clock  -- eda_clock(null) where clock in ('running', 'late'); the collector's reminder reads it on the
-  -- direct connection; revoked from public, anon and authenticated.
+  -- direct connection; revoked from public, anon, authenticated and service_role (0050).
+latest_decision(p_issue uuid) returns review_event   -- the guard's and eda_clock's own; nobody else (0050).
 ```
 
 Collector: `collectors/reminders.py` (`remind_if_due`, kind `escalation`, from 07:00 Cairo, once a day, findings

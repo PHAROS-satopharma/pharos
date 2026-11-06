@@ -149,16 +149,17 @@ export interface AuthoritySent {
 
 export type Clock = 'running' | 'late' | 'sent' | 'off';
 
-/** The five-day clock of one notice, as finding_state() answers it (migration 0041). */
+/** The five-day clock of one notice, as finding_state() answers it (migrations 0041 and 0050). */
 export interface FindingState {
-  /** The Cairo day PHAROS first showed the notice (YYYY-MM-DD). */
+  /** The Cairo day PHAROS first showed the notice — the day it was created in PHAROS (YYYY-MM-DD). */
   day_zero: string;
   /** Day zero plus the authority's days (5). */
   due: string;
   /** Days from today in Cairo to the due day; negative when late. */
   days_left: number;
-  /** off: the latest decision is not Concerns us; sent: reported for that decision; late: past due; else running. */
+  /** off: the latest decision is not Concerns us; sent: a report to the authority exists; late: past due; else running. */
   clock: Clock;
+  /** The latest report to the authority not withdrawn, under whatever decision — never forgotten, even while off. */
   sent: AuthoritySent | null;
 }
 

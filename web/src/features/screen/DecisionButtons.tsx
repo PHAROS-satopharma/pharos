@@ -3,13 +3,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { cairoToday, formatDateTime } from '../../lib/format';
+import { cairoToday, formatDate, formatDateTime } from '../../lib/format';
 import type { IssueStatus } from '../../lib/types';
 import { Button } from '../../ui/Button';
 import { Field, Input, Textarea } from '../../ui/Input';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
-import { canSend, clockLine, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
+import { canSend, clockLine, earliestSentDay, isClockRefusal, withClockDecision, withSent, withWithdrawn } from './clock';
 import { DECISION_LABEL, choicesFor, isStaleDecision, needsReason, withDecision } from './decision';
 import { useScreenData } from './queries';
 import type { AuthoritySent, FindingState, IngredientScreenData, Mention } from './types';
@@ -316,7 +316,9 @@ function AuthorityActions({
     },
   });
 
-  const dateBad = !/^\d{4}-\d{2}-\d{2}$/.test(sentOn) || sentOn > today;
+  // Between the day PHAROS first showed the notice and today: the database refuses anything else (22023).
+  const earliest = earliestSentDay(finding);
+  const dateBad = !/^\d{4}-\d{2}-\d{2}$/.test(sentOn) || sentOn > today || (earliest !== undefined && sentOn < earliest);
 
   if (mode === 'sent') {
     return (
@@ -328,8 +330,19 @@ function AuthorityActions({
         }}
       >
         <p className="clock-form-what">Sent to the Egyptian Drug Authority</p>
-        <Field label="Day sent" hint="Today or earlier.">
-          <Input type="date" value={sentOn} max={today} onChange={(e) => setSentOn(e.target.value)} required aria-invalid={dateBad || undefined} />
+        <Field
+          label="Day sent"
+          hint={earliest ? `From ${formatDate(earliest)}, the day PHAROS first showed the notice, to today.` : 'Today or earlier.'}
+        >
+          <Input
+            type="date"
+            value={sentOn}
+            min={earliest}
+            max={today}
+            onChange={(e) => setSentOn(e.target.value)}
+            required
+            aria-invalid={dateBad || undefined}
+          />
         </Field>
         <Field label="Reference (optional)" hint="The authority's or our file number.">
           <Input value={reference} onChange={(e) => setReference(e.target.value)} maxLength={200} />
