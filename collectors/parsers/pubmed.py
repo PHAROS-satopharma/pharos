@@ -39,6 +39,8 @@ digest line, like a backfill). The ``literature_search`` table (migration 0035) 
 look-back counts as done only once every paper it found is stored, so one cut short by the item cap or the time
 budget continues on the next run (its days again as history, the days since as new). New papers are stored
 first, then a look-back's name papers, then its class papers; at most ``max_new_items`` papers are read per run.
+New papers over that cap make the run incomplete ("item cap reached: …"), so ``last_ok_at`` stays and the next
+run reads the same days again; before 6 Nov 2026 the window moved on and those papers were never read.
 A backfill (``--backfill``) reads every search's whole backfill window as history and leaves the table alone.
 
 Options:
@@ -486,7 +488,11 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
 
     wanted = sorted((k for k in hits if not _known(k[0], k[1], known)), key=rank)
     if not ctx.backfill:
-        wanted = wanted[:int(opts.get("max_new_items", MAX_NEW_ITEMS))]
+        cap = int(opts.get("max_new_items", MAX_NEW_ITEMS))
+        # New papers over the cap wait for the next run, which must read their days again: the runner then
+        # leaves last_ok_at alone. A look-back's own papers over the cap need not: it stays unfinished.
+        ctx.held_back = sum(1 for k in wanted[cap:] if any(n for _, n in hits[k]))
+        wanted = wanted[:cap]
     records = {db: _esummary(ctx, db, [uid for d, uid in wanted if d == db]) for db in DBS}
     asked = set(wanted)
     # The publication types of a paper PMC alone found are in its PubMed record: read those too.

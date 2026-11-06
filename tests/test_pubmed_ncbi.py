@@ -405,6 +405,29 @@ def test_a_look_back_cut_short_continues_on_the_next_run(tmp_path):
     assert stats.alerts == []
 
 
+def test_new_papers_over_the_cap_are_read_on_the_next_run(tmp_path):
+    # After an NCBI outage the catch-up can find more new papers than max_new_items. The run used to count as
+    # complete, so the next window started after the papers it never read, and they were lost.
+    store = live_like_store()
+    add_levofloxacin(store)
+    assert not run_pubmed(store, tmp_path, Ncbi()).failed      # every word's look-back finds nothing
+    before = store.source["pubmed"]["last_ok_at"]
+
+    stats = run_pubmed(store, tmp_path, Ncbi(LEVO), max_new_items=40)
+    # 40 records read, one the PMC full text of a PubMed paper: 39 papers; 31 records wait
+    assert not stats.failed and stats.new == 39
+    assert stats.error == "item cap reached: 31 new item(s) wait for the next run"
+    assert store.source["pubmed"]["last_ok_at"] == before      # not a complete run: the window stays
+
+    ncbi = Ncbi(LEVO)
+    stats = run_pubmed(store, tmp_path, ncbi, max_new_items=40)
+    since = before.date() - timedelta(days=3)
+    assert not stats.failed and stats.new == 29 and stats.error is None
+    assert {(day(c["mindate"]), day(c["maxdate"])) for c in ncbi.esearches()} == {(since, TODAY)}
+    assert len(docs(store)) == 1 + 62 + 7 - 1
+    assert store.source["pubmed"]["last_ok_at"] > before       # every paper in: complete again
+
+
 def test_new_papers_never_reach_telegram(tmp_path):
     # Dr Sama reads papers on the Ingredients screen and in the weekly report: a new paper is never an
     # immediate alert and never a line in the class digest, found by the name or by a class word.

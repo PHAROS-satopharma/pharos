@@ -55,12 +55,12 @@ export interface RunTotals {
 
 /**
  * Notes a COMPLETED run carries in source_run.error, mirroring source_run_failed() in
- * supabase/migrations/0018_failed_runs_and_ingredient_lock.sql (keep the two lists the same). A Health
+ * the latest migration that defines it (0054; keep the two lists the same). A Health
  * Canada backfill that stopped at its 10-minute budget ("time budget reached: …") read the whole list;
  * this page counted six of them as failed runs on 5 Nov 2026 while the Reports screen did not.
  */
 export const RUN_NOTE =
-  /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text)/;
+  /^(imap not configured|imap: |[0-9]+ item\(s\) failed; first: |time budget reached: |item cap reached: |[0-9]+ error\(s\); first: |[0-9]+ product\(s\) without label text)/;
 
 export function isFailed(r: RunSlice): boolean {
   if (r.http_status != null && r.http_status >= 400) return true;

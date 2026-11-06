@@ -29,7 +29,9 @@ a new repository). The minutes are chosen off the hour to reduce this.
 Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under the job's timeout), and in a
 normal run one source gets at most 10 minutes (NCBI literature 15). When the budget runs out the run stops starting new notices
 and sources and ends cleanly; what is left waits for the next run, and the source checked longest ago goes
-first next time. The screening log shows "time budget reached" on a source that was cut short. A run that
+first next time. The screening log shows "time budget reached" on a source that was cut short. A source that
+found more new items than its `max_new_items` shows "item cap reached"; the rest are read on the next run, and
+the run does not count as complete, so NCBI literature reads the same days again. A run that
 crashes is recorded as not ok. Every run except the weekly one ends with a pack asked for on Reports, when one
 waits (at most 20 minutes, see *Packs on request*): the 4h, 12h and monthly runs have 60 minutes, the daily 80.
 
