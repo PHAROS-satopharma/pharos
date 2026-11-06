@@ -6,10 +6,11 @@
 -- carried 14 unrelated flags (lupus, pemphigus, hand deformity...) in reports also naming leflunomide.
 --
 -- For each flagged reaction collectors/faers.py finds the largest group of its reports that could be one patient:
--- one sex and an age in years within a year of one age (ages under 2 left out), when that group is at least a
--- quarter of the reaction's reports. When the reaction would no longer stand out without the group, the flag is
--- kept and marked: series_reports is the group's size, series_age its middle age and series_sex its sex (E2B:
--- 1 male, 2 female). All three are null otherwise.
+-- one sex and an age in years within a year of one age (ages under 2 left out). When the group holds at least a
+-- quarter of the reaction's reports, and at least 5, the flag is kept and marked: series_reports is the group's
+-- size, series_age its middle age and series_sex its sex (E2B: 1 male, 2 female). All three are null otherwise.
+-- Measured on 6 Nov 2026 it would mark 20 of paracetamol's 26 flags (one woman of 43-45), 12 of levofloxacin's 22
+-- (one man of 64-66), 18 of ivabradine's 27 (mostly one man of 54-56) and none of carvedilol's 13.
 
 alter table faers_reaction
   add column series_reports int check (series_reports >= 0),

@@ -77,7 +77,7 @@ CO_LIST = 25                   # drugs asked for with a flagged reaction
 CO_MIN, CO_LIFT = 3, 2.0       # a drug shown with a flag: in 3 of its reports, and twice its usual share
 AGE, AGE_UNIT, SEX = "patient.patientonsetage", "patient.patientonsetageunit", "patient.patientsex"
 YEARS = "801"                  # E2B's code for an age in years
-SERIES_SHARE = 0.25            # a group that could be one patient: at least a quarter of the reaction's reports
+SERIES_SHARE, SERIES_MIN = 0.25, 5   # a group that could be one patient: a quarter of a reaction's reports, and 5
 FRESH_DAYS = 6
 WAITS = (5, 15, 35)            # seconds before asking again after 429, a server error or a dropped connection
 RETRY = {0, 429, 500, 502, 503, 504}
@@ -132,17 +132,10 @@ def outliers(reactions: list[dict]) -> list[bool]:
     median PRR of these reactions. A reaction without a PRR counts as the highest in the median."""
     if not reactions:
         return []
-    bar = outlier_bar(reactions)
-    return [stands_out(x["reports"], x["prr"], x["prr_low"], bar) for x in reactions]
-
-
-def outlier_bar(reactions: list[dict]) -> float:
-    """Twice the median PRR of an ingredient's kept reactions."""
-    return 2 * statistics.median(math.inf if x["prr"] is None else x["prr"] for x in reactions)
-
-
-def stands_out(reports: int, prr: float | None, prr_low: float | None, bar: float) -> bool:
-    return reports >= 3 and (prr is None or (prr_low is not None and prr_low >= 2 and prr >= bar))
+    bar = 2 * statistics.median(math.inf if x["prr"] is None else x["prr"] for x in reactions)
+    return [x["reports"] >= 3 and (x["prr"] is None or (x["prr_low"] is not None and x["prr_low"] >= 2
+                                                        and x["prr"] >= bar))
+            for x in reactions]
 
 
 # ───────────────────────────── quarters ─────────────────────────────
@@ -428,8 +421,12 @@ def case_series(api: OpenFda, search: str, reports: int) -> tuple[int, str, int]
     """The largest group of a reaction's reports that could be one patient reported again and again (follow-ups, a
     published case filed by every company selling the drug): one sex and an age in years within a year of one age
     (a report gives the age the patient had then). Ages under 2 are left out: babies share an age without being one
-    patient. The middle age, the sex (E2B: 1 male, 2 female) and the reports, when they are at least SERIES_SHARE of
-    the reaction's; a search openFDA refuses gives none (0081)."""
+    patient. The middle age, the sex (E2B: 1 male, 2 female) and the reports, when they are at least SERIES_MIN and
+    SERIES_SHARE of the reaction's; a search openFDA refuses gives none (0081).
+
+    Whether the flag would stand without the group is not asked: a quarter of the reports give no age, so the same
+    patient's undated reports would keep it standing (paracetamol's lupus fell and its pemphigus stood, both from one
+    woman of 44, on 6 Nov 2026)."""
     try:
         ages = api.terms(f"{search} AND {AGE_UNIT}:{YEARS}", AGE, api.limit)
         years: dict[int, int] = {}
@@ -445,7 +442,8 @@ def case_series(api: OpenFda, search: str, reports: int) -> tuple[int, str, int]
             return None
         n, minus_age = max(bands)
         age = -minus_age                                        # the most reports, then the youngest
-        if n < SERIES_SHARE * reports:
+        least = max(SERIES_MIN, SERIES_SHARE * reports)
+        if n < least:
             return None
         sexes = api.terms(f"{search} AND {AGE_UNIT}:{YEARS} AND {AGE}:[{age - 1} TO {age + 1}]", SEX, 3)
     except OpenFdaError as exc:
@@ -453,7 +451,7 @@ def case_series(api: OpenFda, search: str, reports: int) -> tuple[int, str, int]
             raise
         return None                          # never lose the ingredient's counts over one reaction's lookup
     known = sorted((-c, s) for s, c in sexes.items() if s in ("1", "2"))
-    if not known or -known[0][0] < SERIES_SHARE * reports:
+    if not known or -known[0][0] < least:
         return None
     return age, known[0][1], -known[0][0]
 
@@ -487,7 +485,6 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
                           "co_drug": None, "co_reports": None, "co_all_reports": None,
                           "series_reports": None, "series_age": None, "series_sex": None})
     usual = UsualDrugs(api, names, bg.whole)
-    bar = outlier_bar(reactions) if reactions else 0.0
     for x, flag in zip(reactions, outliers(reactions), strict=True):
         x["flagged"] = flag
         if not flag:
@@ -496,15 +493,7 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
             api, names, searched_names(inn, us_name), x["reaction"], bg.whole, x["reports"], n_drug, usual)
         series = case_series(api, f"{names} AND {reaction_search(x['reaction'])} AND {bg.whole}", x["reports"])
         if series:
-            # without the group the reaction loses as many reports, the ingredient and every drug too: b, c and d
-            # are the same
-            age, sex, group = series
-            a = x["reports"]
-            m = min(group, a)                          # never more than the reaction's own (the lists can drift)
-            b, c = n_drug - a, x["all_reports"] - a
-            rest = disproportion(a - m, b, c, max(n_all - n_drug - c, 0))
-            if not stands_out(a - m, rest.prr, rest.prr_low, bar):
-                x["series_reports"], x["series_age"], x["series_sex"] = m, age, sex
+            x["series_age"], x["series_sex"], x["series_reports"] = series
     return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
             "quarters": quarters, "reactions": reactions, "counts": counts}

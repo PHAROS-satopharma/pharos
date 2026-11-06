@@ -191,10 +191,10 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
         ("2026-07-01", "HEPATITIS", 20, 40), ("2026-07-01", "NAUSEA", 12, 250)]
     # 1 for every drug's days; the ingredient's days, whole period and its 2 quarters with reports; every drug's
     # whole period and those 2 quarters; 1 reaction alone; the drugs named with the 1 flagged reaction, and in all
-    # the ingredient's reports; its patients' ages, and the sexes of the largest group
-    assert api.requests == 13
+    # the ingredient's reports; its patients' ages (3 reports are too few for a series: no sexes asked)
+    assert api.requests == 12
     faers.count_ingredient(api, bg, "Codamine")
-    assert api.requests == 21                                            # every drug's counts are asked once a run
+    assert api.requests == 19                                            # every drug's counts are asked once a run
     assert all(p["limit"] == "100" for p in fake.asked if p.get("count") == faers.REACTION)
 
 
@@ -289,13 +289,15 @@ def test_the_drug_shown_with_a_reaction_is_over_represented_and_never_the_ingred
     assert faers.reaction_search("HEPATITIS") == 'patient.reaction.reactionmeddrapt.exact:"HEPATITIS"'
 
 
-def test_a_flag_standing_on_one_repeated_case_series_is_marked():
+def test_a_flag_standing_on_one_repeated_case_series_is_marked(monkeypatch):
     fake = FakeFda()
     api = api_for(fake)
     got = faers.count_ingredient(api, faers.Background(api, today=date(2026, 11, 6)), "Codamine")
+    assert {r["reaction"]: r for r in got["reactions"]}["RARE THING"]["series_reports"] is None    # under 5
+    monkeypatch.setattr(faers, "SERIES_MIN", 3)
+    got = faers.count_ingredient(api, faers.Background(api, today=date(2026, 11, 6)), "Codamine")
     by = {r["reaction"]: r for r in got["reactions"]}
-    # all 3 of the rare thing's reports: a woman aged 60 to 62 (the 9 babies aged 1 are no patient group); without
-    # them nothing is left to stand out
+    # all 3 of the rare thing's reports: a woman aged 60 to 62 (the 9 babies aged 1 are no patient group)
     assert by["RARE THING"]["flagged"]
     assert (by["RARE THING"]["series_reports"], by["RARE THING"]["series_age"], by["RARE THING"]["series_sex"]) == (
         3, 61, "2")
@@ -328,6 +330,8 @@ def test_the_largest_group_that_could_be_one_patient():
     assert faers.case_series(api, "X", 189) is None                         # 70 of 189, but no sex holds a quarter
     answers.update(ages={"1": 50, "0": 70})
     assert faers.case_series(api, "X", 120) is None                         # babies share an age
+    answers.update(ages={"30": 4}, sexes={"2": 4})
+    assert faers.case_series(api, "X", 8) is None                           # half of 8, but under 5 reports
     assert faers.case_series(api, "REFUSED", 120) is None
 
 

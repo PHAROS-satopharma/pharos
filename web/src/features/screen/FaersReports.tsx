@@ -29,7 +29,7 @@ interface FaersReaction {
   co_drug: string | null;
   co_reports: number | null;
   co_all_reports: number | null;
-  /** The flag stands only on these reports, which could be one patient reported again and again: one sex
+  /** A quarter or more of the reaction's reports could be one patient reported again and again: one sex
    *  (E2B: '1' male, '2' female) and an age within a year of series_age (0081). */
   series_reports: number | null;
   series_age: number | null;
@@ -234,8 +234,8 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
                                 `${formatNumber(r.series_reports)} of the ${formatNumber(r.reports)} reports of ` +
                                 `${r.reaction} describe ${r.series_sex === '2' ? 'a woman' : 'a man'} aged ` +
                                 `${r.series_age - 1} to ${r.series_age + 1}: they could be one patient reported again ` +
-                                'and again (follow-ups, or a published case filed by each company). Without them the ' +
-                                'reaction would not stand out.'
+                                'and again (follow-ups, or a published case filed by each company). A flag resting on ' +
+                                'one patient is weaker than it looks.'
                               }
                             >
                               One case series?

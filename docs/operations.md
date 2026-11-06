@@ -978,16 +978,19 @@ count them; no report is downloaded, only numbers come back, and the log names n
   naming the prostate-cancer drug relugolix as the suspect in 199 of 239, with carvedilol only taken alongside; the
   weighing (0078) drops drugs taken with the ingredient whatever the reaction (aspirin, furosemide or amlodipine in
   25–43% of a reaction's reports), which explain nothing.
-- **A flag that stands on one repeated case series** (migration 0081): one patient can be reported to FDA many
-  times (every follow-up is a report, and a published case is filed by each company selling a drug it names), and
-  each report repeats the same list of reactions. For each flagged reaction the run counts its reports by the
-  patient's age in years (`patient.patientonsetage` with `patientonsetageunit` 801), takes the age whose year either
-  side holds the most (ages under 2 left out: babies share an age without being one patient), and counts that band's
-  reports by sex. When one sex in that band holds at least a quarter of the reaction's reports and the reaction would
-  no longer stand out without them, the flag is kept and marked "One case series?" on section 06; its tooltip gives
-  the group ("18 of the 28 reports of PSORIASIS describe a man aged 54 to 56"). Two more requests per flagged
-  reaction. Found on 6 Nov 2026: a man of 55 was 58–64% of ivabradine's reports on six unrelated flags (psoriasis,
-  contusion, angina pectoris...), and a woman of 43–45 was 44% of guaifenesin's WOUND reports.
+- **A flag that stands on one repeated case series** (migration 0081): one patient can be reported to FDA many times
+  (every follow-up is a report, and a published case is filed by each company selling a drug it names), and each
+  report repeats the same list of reactions. For each flagged reaction the run counts its reports by the patient's age
+  in years (`patient.patientonsetage` with `patientonsetageunit` 801), takes the age whose year either side holds the
+  most (ages under 2 left out: babies share an age without being one patient), and counts that band's reports by sex.
+  When one sex in that band holds at least a quarter of the reaction's reports, and at least 5, the flag is kept and
+  marked "One case series?" on section 06; its tooltip gives the group ("18 of the 28 reports of PSORIASIS describe a
+  man aged 54 to 56"). Up to two more requests per flagged reaction. Whether the flag would stand without the group is
+  not asked: a quarter of the reports give no age, so the same patient's undated reports keep it standing
+  (paracetamol's lupus would fall and its pemphigus stand, both from one woman of 44). Measured on 6 Nov 2026 (ages of
+  any unit): 20 of paracetamol's 26 flags (a woman of 43–45, with leflunomide), 12 of levofloxacin's 22 (a man of
+  64–66), 18 of ivabradine's 27 (mostly a man of 54–56), 21 of phenylephrine's 29, 3 of guaifenesin's 8, none of
+  carvedilol's 13.
 - **How an ingredient is found**: its INN in capitals, exactly, in three fields at once: `openfda.generic_name` and
   `openfda.substance_name` (filled only when FDA matched the product to a US label) and
   `activesubstance.activesubstancename` (the substance as FAERS coded it, also for products sold outside the US).
