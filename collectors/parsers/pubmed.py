@@ -346,6 +346,26 @@ def _pmid(value: str | None) -> str | None:
     return v if v.isdigit() and int(v) > 0 else None
 
 
+_DOI = re.compile(r"(?<![0-9])(10\.[0-9]{4,9}/\S+)")
+
+
+def clean_doi(value: str | None) -> str | None:
+    """'10.1038/nature12373' from a DOI as records write it ('doi: 10.1038/…', 'https://doi.org/10.1038/…'), or
+    None when it is not a DOI. The case is kept: DOIs ignore it."""
+    m = _DOI.search(str(value or "").strip())
+    return m.group(1).rstrip(".;,") if m else None
+
+
+def doi_of(rec: dict | None) -> str | None:
+    """A record's DOI: its ``articleids`` first, else its ``elocationid`` ('doi: 10.…'), which PubMed fills for
+    papers ahead of print whose article ids do not carry it yet."""
+    found = clean_doi(_article_ids(rec).get("doi"))
+    if found:
+        return found
+    loc = str((rec or {}).get("elocationid") or "")
+    return clean_doi(loc[loc.lower().index("doi:"):]) if "doi:" in loc.lower() else None
+
+
 @dataclass
 class Paper:
     pmid: str | None = None
@@ -396,7 +416,7 @@ class Paper:
                 "pubdate": rec.get("pubdate"), "authors": authors,
                 "pubtype": pubtype,
                 "case_report": case_report(pubtype, title),
-                "doi": _article_ids(self.pubmed).get("doi") or _article_ids(self.pmc).get("doi") or None,
+                "doi": doi_of(self.pubmed) or doi_of(self.pmc),
                 "vernaculartitle": rec.get("vernaculartitle") or None,
             },
         )

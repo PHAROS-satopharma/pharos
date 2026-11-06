@@ -191,6 +191,10 @@ def read_case(db: Any, archive: Archive, case: dict, *, reader: Callable[..., tu
             blocks = content.blocks_for(data, case.get("mime") or "", case.get("file_name"))
         except content.Unreadable as exc:
             raise ReadFailed(str(exc)) from exc
+        if case["origin"] == "paper":
+            from collectors.cases import paper
+
+            blocks += paper.attached_pdf_blocks(data, archive)   # the open-access PDF its text file names
         ingredients = watched_ingredients(db)
         reading, model = reader(blocks, ingredients)
     except ReadFailed as exc:

@@ -9,7 +9,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 |---|---|---|
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA newsletters) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
-| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and literature monitoring list (`collectors/mlm.py`), and up to 15 minutes of the check of the past |
+| `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and literature monitoring list (`collectors/mlm.py`), up to 15 minutes of the check of the past, and the papers' free full texts from Unpaywall (`collectors/fulltext.py`) |
 | `collect.yml`, schedule **literature** | 10:41 and 18:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
@@ -78,7 +78,8 @@ That is about 266 minutes a week, inside acceptance test 13's limit of 300, but 
 month (the cut is below). While a new ingredient's or class word's literature look-back is filling (see NCBI
 literature), the daily run takes up to about 18 minutes: up to about 360 more minutes in that month. The check
 of the past adds up to 15 minutes to a daily run only while one is open (a few days after an ingredient or
-words are added); with nothing due it ends in seconds. A backfill is a one-off, at most 300 minutes. Run it in
+words are added); with nothing due it ends in seconds. The open full-text step (Unpaywall) adds up to 11 minutes
+a day while the last year's papers are first looked up, then about a minute. A backfill is a one-off, at most 300 minutes. Run it in
 a month with headroom.
 Each pack asked for on Reports adds about 25 minutes to the collection run that makes it, and a pack that runs
 out of time three times costs about 75 before it is marked failed. At most two of one person's packs and five
@@ -733,6 +734,21 @@ packs and their files and cannot ask for one.
   357 for "levofloxacin", 233 and 475 for "fluoroquinolones", 187 and 491 for "nonsteroidal
   anti-inflammatory". The stored papers can differ from these counts: the watch reads by entry date, the
   counts are by publication date.
+- **Free full text (Unpaywall, migration 0068).** Once a day, after Coding, `python -m collectors.fulltext` looks
+  up each literature paper of the last year at Unpaywall (`api.unpaywall.org/v2/{doi}`, no key, identified by
+  pharos@satopharma.com; Unpaywall allows 100,000 calls a day, PHAROS makes at most 2,000 a run, about four a
+  second, in at most 11 minutes). Before that it asks PubMed again, at most every 30 days, for the DOI of the
+  papers stored without one (a paper ahead of print often gets it later). What Unpaywall says is kept in
+  `document.structured.oa`: whether a legal open copy exists, the best one's address, PDF address, licence
+  (`cc-by`, `cc-by-nc-nd`, `cc0`, `publisher-specific-oa` …, or none stated), version (*published*, *accepted*
+  manuscript or *submitted* preprint) and host (*publisher* or *repository*), the PDFs to try for a case, and
+  when it was asked. A paper with no open copy is asked again after 30 days; an open one is not asked again. A
+  failed lookup waits for the next day and never stops the others. On the Ingredients screen a paper with an
+  open copy shows **Free full text** (the best open location) beside its PubMed links, tagged with the licence
+  and the version; `paper_state()` returns it as `open_access` (only an http(s) address). The licence says what
+  may be done with the copy: reading it for safety is always allowed, reusing it may not be. Live on 6 November
+  2026: 10.1038/nature12373 was open (the publisher's PDF, which answers a script with a cookie page, plus an
+  arXiv preprint), 10.1002/pds.5000 closed, and a DOI Unpaywall does not know answers 404.
 
 ## Case reports in the literature
 
@@ -779,8 +795,14 @@ file the authority takes. A case opens three ways:
   its bytes, stores it in the archive under its SHA-256 (never overwritten) and opens the case.
 - **A literature paper.** On an ingredient's page, a paper flagged *Possible case report* has **Open a case**.
   Day zero is the day PHAROS found the paper. PHAROS fetches the paper's PubMed record and, when PubMed Central
-  holds it openly, its full text, and archives them as one text file. A paper opens one case at most; once open,
-  the paper shows a link to its case.
+  holds it openly, its full text, and archives them as one text file. When PubMed Central has no full text but
+  Unpaywall lists a legal open copy as a PDF, PHAROS fetches it (public addresses only, every redirect checked,
+  at most 20 MB, and only an answer that is a PDF by its type and its first bytes; the best copy first,
+  then the repositories'), archives it under its SHA-256 with its licence, version, host, address and DOI in the
+  archive's metadata, and names it in the text file (`Open-access PDF: sha256/…`); the reader then receives the
+  PDF beside the record, checked against its SHA-256. A copy that cannot be fetched (a cookie page, a bot check,
+  a private address) is said in the text file, and the record alone is read. A paper opens one case at most;
+  once open, the paper shows a link to its case.
 - **Forwarded email.** A reviewer or an administrator forwards the report to pharos@satopharma.com with the word
   CASE in the subject. Every 4-hourly run opens a case for it with the forwarding person as its creator and the
   day the message is dated (Cairo) as day zero. The sender must be the person's own address in People, and the

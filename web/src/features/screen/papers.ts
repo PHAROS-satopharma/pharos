@@ -1,7 +1,7 @@
 // The papers on the Ingredients screen: what paper_state() (migration 0044) says of each, in her words.
 // Pure functions; the hooks are in paperState.ts.
 
-import type { CaseReport, Decision, PaperPage, PaperState, PaperStates } from './types';
+import type { CaseReport, Decision, OpenAccess, PaperPage, PaperState, PaperStates } from './types';
 
 export type { PaperState, PaperStates } from './types';
 
@@ -83,4 +83,37 @@ export function mlmLabel(monitored: boolean | undefined): { label: string; expla
         label: 'Not monitored by EMA',
         explain: 'EMA does not read the literature for this ingredient: cases in the literature are ours to report.',
       };
+}
+
+const VERSION_WORDS: Record<string, string> = {
+  published: 'published version',
+  accepted: 'accepted manuscript',
+  submitted: 'preprint',
+};
+
+/** A licence as people say it: "cc-by-nc-nd" → "CC BY-NC-ND", "cc0" → "CC0", "pd" → "public domain". */
+export function licenceWords(license: string | null | undefined): string {
+  const l = (license ?? '').trim().toLowerCase();
+  if (!l) return 'licence not stated';
+  if (l === 'cc0') return 'CC0';
+  if (l === 'pd') return 'public domain';
+  const cc = /^cc-(by(?:-(?:nc|nd|sa))*)$/.exec(l);
+  if (cc) return `CC ${cc[1].toUpperCase()}`;
+  if (l === 'publisher-specific-oa') return "publisher's open licence";
+  if (l === 'implied-oa') return 'open, licence implied';
+  return l;
+}
+
+/** The tag beside "Free full text": its licence and version, e.g. "CC BY · accepted manuscript". */
+export function openAccessTag(oa: OpenAccess): { label: string; explain: string } {
+  const version = oa.version ? VERSION_WORDS[oa.version] : null;
+  const where = oa.host_type === 'repository' ? 'a repository' : oa.host_type === 'publisher' ? 'the publisher' : null;
+  return {
+    label: [licenceWords(oa.license), version].filter(Boolean).join(' · '),
+    explain:
+      'A legal open copy found by Unpaywall' +
+      (where ? `, at ${where}` : '') +
+      (version ? ` (${version})` : '') +
+      '. Check the licence before reusing it.',
+  };
 }

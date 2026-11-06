@@ -147,15 +147,26 @@ export interface CaseReport {
 /** What a mention or a paper carries of its notice: enough for the decision buttons. */
 export type Decided = Pick<Mention, 'issue_id' | 'issue_status' | 'decision'>;
 
+/** A legal free full text Unpaywall found for a paper (migration 0068): its best open location. */
+export interface OpenAccess {
+  url: string;
+  /** As Unpaywall writes it: "cc-by", "cc-by-nc-nd", "cc0", "pd", "publisher-specific-oa" …; null when not stated. */
+  license: string | null;
+  version: 'published' | 'accepted' | 'submitted' | null;
+  host_type: 'publisher' | 'repository' | null;
+}
+
 /**
  * What paper_state() (migration 0044) says of one paper: its notice and decision, whether it looks like a
  * case report, and the clock: day zero is the Cairo day PHAROS found it, the dates are +15 and +90 days.
+ * From 0068 also its free full text, null when Unpaywall found none (absent before 0068 is applied).
  */
 export interface PaperState extends Decided {
   case_report: CaseReport | null;
   day_zero: string;
   due_serious: string;
   due_nonserious: string;
+  open_access?: OpenAccess | null;
 }
 
 /** The states of the papers on screen, by document id. A paper not yet answered has no entry. */
