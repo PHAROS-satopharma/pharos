@@ -51,6 +51,8 @@ describe('the days of a pack, unless she changes them', () => {
         TODAY,
       ),
     ).toEqual({ from: '2024-03-02', to: TODAY, fromEurd: true });
+    // a DLP a short month cut: the next DLP gives the day, so the days the previous PSUR covered are not repeated
+    expect(psurDays([{ dlp: '2026-02-28', frequency: '6 months', next_dlp: '2026-08-31' }], TODAY).from).toBe('2025-09-01');
     expect(psurDays([], TODAY)).toEqual({ from: '2025-11-07', to: TODAY, fromEurd: false });
     expect(psurDays([{ dlp: '2031-12-01', frequency: '6 months' }], TODAY)).toEqual({
       from: '2025-11-07',
