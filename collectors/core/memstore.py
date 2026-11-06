@@ -108,7 +108,8 @@ class MemoryStore:
         if row and row.get("origin") == "user":
             return
         base = row or {"enabled": src.enabled, "origin": "catalogue", "health": "unknown",
-                       "consecutive_failures": 0, "last_ok_at": None, "last_item_at": None}
+                       "consecutive_failures": 0, "last_ok_at": None, "last_item_at": None,
+                       "created_at": datetime.now(timezone.utc)}
         base.update(id=src.id, regulator_id=src.regulator_id, kind=src.kind, channel=src.channel,
                     url=src.url, parser=src.parser, languages=list(src.languages),
                     schedule=src.schedule, expected_max_gap_days=src.expected_max_gap_days,
@@ -441,11 +442,14 @@ class MemoryStore:
                 and (dry_run or not n.get("dry_run")) and n.get("summary")}
 
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
-        """new_items() in memory: no history, no label watch, no literature."""
+        """new_items() in memory: no history, no label watch, no literature, no mail that is not a notice."""
+        from collectors.parsers.email_inbox import NOT_A_NOTICE
+
         counts: dict[str, int] = {}
         for d in self.document.values():
             src = self.source.get(d["source_id"]) or {}
             if (d.get("is_backfill") or src.get("kind") in ("spc", "literature")
+                    or (src.get("channel") == "email" and NOT_A_NOTICE.search(d.get("title_orig") or ""))
                     or not (since <= d["first_seen_at"] < until)):
                 continue
             country = (self.regulator.get(src.get("regulator_id")) or {}).get("country_name")

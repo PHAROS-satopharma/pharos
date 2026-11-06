@@ -15,6 +15,7 @@ import {
   sourceLabels,
   sourcePage,
   totalNew,
+  waitingForMail,
   type CardRegulator,
   type CardSource,
   type NewItem,
@@ -248,6 +249,21 @@ describe('sourceLabels', () => {
   it('leaves a label alone when no other source of the card shares it', () => {
     const one = src('pmda-urgent', 'PMDA', { url: 'https://www.pmda.go.jp/safety/0001.html' });
     expect(sourceLabels([one], []).get('pmda-urgent')).toBe('Safety notices · pmda.go.jp');
+  });
+});
+
+describe('waitingForMail', () => {
+  const tga = { enabled: true, channel: 'email', health: 'ok', last_item_at: null, created_at: '2026-11-05T10:00:00Z' };
+  it('a mail source with nothing received waits since the day it was added', () => {
+    expect(waitingForMail(tga)).toBe('2026-11-05T10:00:00Z');
+    expect(waitingForMail({ ...tga, health: 'unknown' })).toBe('2026-11-05T10:00:00Z');
+  });
+
+  it('once a notice came, or for a web source, a switched-off one or one already flagged, nothing is said', () => {
+    expect(waitingForMail({ ...tga, last_item_at: '2026-11-07T00:00:00Z' })).toBeNull();
+    expect(waitingForMail({ ...tga, channel: 'rss' })).toBeNull();
+    expect(waitingForMail({ ...tga, enabled: false })).toBeNull();
+    expect(waitingForMail({ ...tga, health: 'degraded' })).toBeNull();
   });
 });
 

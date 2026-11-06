@@ -15,7 +15,13 @@ digests that list several notices.
 
 ``Item.url`` is the first link to ``web_domain`` in the message (the notice on the regulator's
 site), else ``options.web_url``, else ``email:<row id>``. Links into a blocked site are kept as
-URLs only — never fetched (``fetch_attachments`` false).
+URLs only — never fetched (``fetch_attachments`` false). A GovDelivery click-tracking link
+(``links-N.govdelivery.com/CL0/<address>/…``) is read as the address it leads to.
+
+A message that is not a notice gives no item: a reply ("RE: Inscription VIG-news"), an automatic
+reply ("automatisch antwoord - ADR - réponse automatique") or a subscription mail ("Welcome to FDA's
+Email Updates"), the three kinds the mailbox received on 5 Nov 2026 (``NOT_A_NOTICE``), and any subject
+matching the source's ``exclude_subjects`` regex. It stays archived and is marked processed.
 
 Rows are read when unprocessed, or received within ``reread_days`` (14) — the runner's
 ``(source_id, external_id)`` dedupe makes a re-read harmless. ``processed_at`` is set only once a
@@ -25,13 +31,15 @@ read again however old it is.
 
 Options: ``from_domains`` (read by imap_inbox), ``web_domain`` (``fimea.fi`` / ``tga.gov.au``),
 ``web_url``, ``split_links``, ``doc_type`` (``newsletter``), ``fetch_attachments`` (false),
-``reread_days`` (14), ``include_keywords`` / ``exclude_keywords``; ``lang`` (source language).
+``reread_days`` (14), ``include_keywords`` / ``exclude_keywords``, ``exclude_subjects``; ``lang``
+(source language).
 """
 
 from __future__ import annotations
 
 import re
 from datetime import date, datetime
+from urllib.parse import unquote
 
 from collectors.parsers._html_util import absolute, block_text, clean, keep, node_text
 from collectors.parsers.base import Item, SourceConfig, soup
@@ -43,6 +51,15 @@ SQL = """select id, received_at, from_addr, subject, r2_key, text_body, html_bod
           order by received_at desc
           limit 500"""
 MARK = "update inbound_email set processed_at = now() where id = any(%(ids)s::uuid[]) and processed_at is null"
+# The same rule as not_a_notice in migration 0068_mail_not_a_notice.sql.
+NOT_A_NOTICE = re.compile(
+    r"^\s*(re|aw|sv|antw|antwort|réf|ref|tr|fw|fwd|wg)\s*:"              # a reply or a forward
+    r"|automatic reply|auto[- ]?reply|automatisch antwoord|réponse automatique|abwesenheitsnotiz"
+    r"|out of office|automaattinen vastaus"                             # an automatic reply
+    r"|^\s*welcome to\b|subscription (confirmed|confirmation)|confirm your subscription"
+    r"|you are (now )?(subscribed|registered)",                         # a subscription mail
+    re.I)
+_GOVDELIVERY_CLICK = re.compile(r"^https?://links(?:-\d+)?\.govdelivery\.com/CL0/([^/]+)/", re.I)
 
 
 def _day(value) -> date | None:
@@ -67,15 +84,33 @@ def _body(row: dict) -> str:
     return ""
 
 
+def unwrap(url: str) -> str:
+    """The address behind a GovDelivery click-tracking link; any other link unchanged."""
+    m = _GOVDELIVERY_CLICK.match(url)
+    if m:
+        target = unquote(m.group(1))
+        if target.startswith(("http://", "https://")):
+            return target
+    return url
+
+
+def not_a_notice(subject: str, source: SourceConfig) -> bool:
+    """A reply, an automatic reply or a subscription mail, or a subject the source excludes."""
+    if NOT_A_NOTICE.search(subject or ""):
+        return True
+    extra = (source.options or {}).get("exclude_subjects")
+    return bool(extra) and re.search(extra, subject or "", re.I) is not None
+
+
 def _links(row: dict) -> list[tuple[str, str]]:
     if not row.get("html_body"):
-        return [(u, "") for u in re.findall(r"https?://[^\s<>\")']+", row.get("text_body") or "")]
+        return [(unwrap(u), "") for u in re.findall(r"https?://[^\s<>\")']+", row.get("text_body") or "")]
     doc = soup(row["html_body"])
     out = []
     for a in doc.select("a[href]"):
         href = a["href"].strip()
         if href.startswith(("http://", "https://")):
-            out.append((absolute(href, href), node_text(a)))
+            out.append((unwrap(absolute(href, href)), node_text(a)))
     return out
 
 
@@ -90,6 +125,8 @@ def items_from_rows(rows: list[dict], source: SourceConfig) -> list[Item]:
     for row in rows:
         rid = str(row["id"])
         subject = clean(row.get("subject")) or "(no subject)"
+        if not_a_notice(subject, source):
+            continue                     # a reply, an automatic reply or a subscription mail
         received = _day(row.get("received_at"))
         body = _body(row)
         links = _links(row)
