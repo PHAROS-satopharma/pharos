@@ -136,6 +136,23 @@
 <div class="empty">No decision was taken this week.</div>
 {% endif %}
 
+<h3>Each ingredient: ready or still preparing</h3>
+{% if data.readiness %}
+<table>
+  <thead><tr><th>Ingredient</th><th>As the report was made</th></tr></thead>
+  <tbody>
+  {% for r in data.readiness %}
+  <tr>
+    <td class="title-orig">{{ r.name }}</td>
+    <td>{% if r.ready %}<span class="dot fine"></span>{% else %}<span class="dot check"></span>{% endif %}{{ r.text }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No ingredient is on the watchlist.</div>
+{% endif %}
+
 {% set a = data.authorities %}
 <section class="part">
 <h2><span class="n">02</span>Authorities read</h2>

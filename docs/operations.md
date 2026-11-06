@@ -298,6 +298,28 @@ messages* (admins only):
    words at its next daily run, looking back 12 months first (stored as history; papers never go to
    Telegram). See NCBI literature below.
 
+### Adding an ingredient: what follows by itself
+
+Nothing more is asked of her after Save. Each ingredient's row on the Ingredients page says how far the
+preparation has got, and the weekly report repeats it in section 1 (migration 0045, `ingredient_readiness()`):
+
+- **Ready** when the ingredient has a name in at least one language, its drug class is made (or it has no ATC
+  code, so no class), its check of the past is done, NCBI's 12-month look-back has finished for every expected
+  search, every watched country's label watch has read since it was added (a watch that read and found no label
+  is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
+  ingredient by the migration, so a new one is covered the moment it is saved.
+- Otherwise **Still preparing:** followed by what is still running or still to come, in order: *class words
+  tonight* (02:31 Cairo), *check of the past running* or *tonight*, *NCBI look-back running* or *tonight*,
+  *label watch on Monday (Japan, Spain)* naming the countries not yet read (03:23 Cairo), *nobody receives its
+  Telegram messages yet*.
+- Under the line: how many label products were found and where (or *No label found in any watched country*),
+  the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
+  `collectors/eurd.py`), whether EMA's literature monitoring covers it, and who receives its Telegram messages.
+- **Japan:** PMDA's search is a form that answers a POST only, so PHAROS cannot look a package insert up by
+  name. The term editor has a *Japan code* field: open the PMDA search (link in the editor), search the name,
+  open the product and copy the 7-digit code from its address (`…/GeneralList/<code>`). Without it the row says
+  *No Japan code yet, so Japan's label watch cannot find its package inserts*; it never holds Ready back.
+
 ## The Ingredients screen: one ingredient across every source
 
 Click an ingredient's name on *Ingredients* (the triangle beside it still shows every name looked for). The

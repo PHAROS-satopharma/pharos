@@ -7,6 +7,7 @@ any week again). It goes into her SOP and the pharmacovigilance system master fi
 It is read from the same database functions as the app, so the report and the screens never disagree:
 
   ingredient_screen(), ingredient_papers()   sections 3 and 4, per watched ingredient (migration 0039)
+  ingredient_readiness()                     section 1, ready or still preparing, per ingredient (migration 0045)
   paper_state(), mlm_monitored()             section 4: possible case reports, their dates and decisions, and
                                              whether EMA reads the literature for the ingredient (0044)
   screening_log()                            sections 2 and 6 (migration 0040)
@@ -402,8 +403,11 @@ def gather_week(db: Any, week: Week) -> dict:
             rows = db.fetchall("select paper_state(%(ids)s::uuid[]) as state", {"ids": ids[k:k + 200]})
             states.update((rows[0].get("state") if rows else None) or {})
         mlm = db.fetchall("select mlm_monitored(%(i)s::uuid) as monitored", {"i": ing["id"]})
+        # How far the ingredient is prepared, as the Ingredients page reads it (ingredient_readiness, 0045).
+        ready = db.fetchone("select ingredient_readiness(%(i)s::uuid) as readiness", {"i": ing["id"]}) or {}
         screens.append({"screen": row.get("screen") or {}, "papers": papers, "searches": searches,
-                        "states": states, "mlm": bool(mlm[0]["monitored"]) if mlm else None})
+                        "states": states, "mlm": bool(mlm[0]["monitored"]) if mlm else None,
+                        "readiness": ready.get("readiness") or {}})
     raw = {
         "screens": screens,
         "log": db.fetchall("select * from screening_log(%(f)s, %(t)s)", days),
@@ -461,6 +465,41 @@ def _screen_mentions(screen: dict) -> list[dict]:
     """Every notice an ingredient's screen lists: the authorities' mentions and the label changes."""
     out = [m for r in screen.get("regulators") or [] for m in r.get("mentions") or []]
     return out + list(screen.get("label_changes") or [])
+
+
+def country_list(countries: list[str]) -> str:
+    """Up to three country names; more are counted (countryList in readiness.ts)."""
+    if not countries:
+        return ""
+    return ", ".join(countries) if len(countries) <= 3 else f"{len(countries)} countries"
+
+
+def readiness_items(r: dict) -> list[str]:
+    """What is still running or still to come for an ingredient, in her words and in the order the days bring
+    it: exactly readinessItems() in web/src/features/ingredients/readiness.ts (ingredient_readiness, 0045)."""
+    names, cls, past = r.get("names") or {}, r.get("class") or {}, r.get("past_check") or {}
+    ncbi, labels, telegram = r.get("ncbi") or {}, r.get("label_watch") or {}, r.get("telegram") or {}
+    items = []
+    if int(names.get("languages_with_a_name") or 0) == 0:
+        items.append("no name to look for yet")
+    if cls.get("atc") and int(cls.get("classes") or 0) == 0:
+        items.append("class words tonight")
+    if not past.get("done"):
+        items.append("check of the past running" if past.get("job_running") else "check of the past tonight")
+    if not ncbi.get("look_back_done"):
+        items.append("NCBI look-back running" if int(ncbi.get("searches") or 0) > 0 else "NCBI look-back tonight")
+    waiting = list(labels.get("waiting") or [])
+    if int(labels.get("products") or 0) == 0 and waiting:
+        items.append(f"label watch on Monday ({country_list(waiting)})")
+    if not (telegram.get("people") or []):
+        items.append("nobody receives its Telegram messages yet")
+    return items
+
+
+def readiness_text(r: dict) -> str:
+    """The one line: "Ready", or "Still preparing: …" (readinessLine in readiness.ts)."""
+    items = readiness_items(r)
+    return "Ready" if not items and r.get("ready") else "Still preparing: " + " · ".join(items)
 
 
 def _finding_states(db: Any, issue_ids: list[str]) -> dict:
@@ -656,7 +695,11 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
                 "case_reports": sum(1 for x in listed if x["case_report"]),
                 "mlm": MLM_TEXT.get(entry.get("mlm"), ""),
             },
+            # 1. Ready, or still preparing: the row's line on the Ingredients page (0045).
+            "readiness": {"name": ing.get("inn_en") or "", "ready": bool((entry.get("readiness") or {}).get("ready")),
+                          "text": readiness_text(entry.get("readiness") or {})},
         })
+    readiness = [i["readiness"] for i in ingredients]
 
     # 5. Everything new per authority, with who looked at the country and when.
     def item(it: dict) -> dict:
@@ -760,8 +803,8 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
                ("Notices naming our ingredients", len(found)),
                ("To check by hand", len(pages) + len(failed) + len(unread))]
     return {"week": week, "made_at": made_at, "summary": summary, "figures": figures, "decisions": decisions,
-            "sent": sent, "authorities": authorities, "ingredients": ingredients, "new": new,
-            "check": {"pages": pages, "failed": failed, "unread": unread}}
+            "readiness": readiness, "sent": sent, "authorities": authorities, "ingredients": ingredients,
+            "new": new, "check": {"pages": pages, "failed": failed, "unread": unread}}
 
 
 # ───────────────────────────── Excel ─────────────────────────────
@@ -773,7 +816,7 @@ SHEETS = ("Summary", "Decisions", "Authorities read", "Ingredients by country", 
 def build_weekly_xlsx(data: dict) -> bytes:
     week: Week = data["week"]
     wb = xlsx_workbook(f"{TITLE}, {week.label}")
-    xlsx_summary(wb.active, data["summary"])
+    xlsx_summary(wb.active, data["summary"] + [(f"Readiness: {r['name']}", r["text"]) for r in data["readiness"]])
 
     def yes(v: bool) -> str:
         return "yes" if v else ""
