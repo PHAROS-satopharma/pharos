@@ -423,10 +423,22 @@ class MemoryStore:
                    and (dry_run or not n.get("dry_run")) for n in self.notification)
 
     def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
-        return {n["person_id"] for n in self.notification
+        rows = [(k, n) for k, n in enumerate(self.notification)
                 if n["kind"] == kind and n.get("issue_id") is None and n.get("person_id")
+                and n["sent_at"] >= since and (dry_run or not n.get("dry_run"))]
+
+        def ok(n: dict) -> bool:
+            return n.get("error") is None or bool(n.get("tg_message_id"))
+
+        # in list order (the insert order): delivered, and no part refused after it
+        return {n["person_id"] for k, n in rows if ok(n)
+                and not any(m["person_id"] == n["person_id"] and j > k and not ok(m) for j, m in rows)}
+
+    def delivered_texts(self, person_id: str, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
+        return {n["summary"] for n in self.notification
+                if n.get("person_id") == person_id and n["kind"] == kind and n.get("issue_id") is None
                 and n["sent_at"] >= since and (n.get("error") is None or n.get("tg_message_id"))
-                and (dry_run or not n.get("dry_run"))}
+                and (dry_run or not n.get("dry_run")) and n.get("summary")}
 
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
         """new_items() in memory: no history, no label watch, no literature."""

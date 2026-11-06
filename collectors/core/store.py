@@ -513,14 +513,30 @@ class Store:
     def told_since(self, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
         """The people a ``kind`` message (with no notice) really reached since ``since``: delivered, not a dry
         run, never a refused one — the morning reminder's once-a-day gate. With ``dry_run`` the dry-run rows
-        count too, so a dry run is once a day like the real thing."""
+        count too, so a dry run is once a day like the real thing. A message in parts reached them only when no
+        part was refused after a delivered one (audit, 6 Nov 2026): the refused part is tried again."""
         rows = self.db.fetchall(
-            """select distinct person_id::text as person_id from notification
-                where kind = %(k)s and issue_id is null and person_id is not null and sent_at >= %(s)s
-                  and (error is null or tg_message_id is not null)
-                  and (not dry_run or %(d)s)""",
+            """select distinct n.person_id::text as person_id from notification n
+                where n.kind = %(k)s and n.issue_id is null and n.person_id is not null and n.sent_at >= %(s)s
+                  and (n.error is null or n.tg_message_id is not null)
+                  and (not n.dry_run or %(d)s)
+                  and not exists (select 1 from notification m
+                                   where m.kind = n.kind and m.person_id = n.person_id and m.issue_id is null
+                                     and m.sent_at >= n.sent_at and m.id <> n.id
+                                     and m.error is not null and m.tg_message_id is null
+                                     and (not m.dry_run or %(d)s))""",
             {"k": kind, "s": since, "d": dry_run})
         return {r["person_id"] for r in rows}
+
+    def delivered_texts(self, person_id: str, kind: str, since: datetime, *, dry_run: bool = False) -> set[str]:
+        """The texts of the ``kind`` messages (with no notice) that really reached this person since ``since``:
+        a retry sends only the parts they do not have."""
+        rows = self.db.fetchall(
+            """select summary from notification
+                where person_id = %(p)s and kind = %(k)s and issue_id is null and sent_at >= %(s)s
+                  and (error is null or tg_message_id is not null) and (not dry_run or %(d)s)""",
+            {"p": person_id, "k": kind, "s": since, "d": dry_run})
+        return {r["summary"] for r in rows if r["summary"]}
 
     def new_item_counts(self, since: datetime, until: datetime) -> list[dict]:
         """Per country, how many items the authorities published in [since, until) — new_items() in

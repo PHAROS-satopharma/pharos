@@ -9,7 +9,9 @@ backfill. A dry run (``app_setting.telegram_dry_run``, ``--dry-run``, no bot tok
 with the exact text and sends nothing, like every other PHAROS message.
 
 Once a day means once to each person it really reached: a dry run never stands in for the real reminder, and a
-message Telegram refused is tried again at the next run while the people who got it are not told twice.
+message Telegram refused is tried again at the next run while the people who got it are not told twice. A long
+reminder goes in parts: a refused part is tried again with the parts after it, and the parts the person already
+has are not sent again.
 
 After the findings, the same message lists the signal steps that are late or due within two days (migration
 0042: the signal Concerns us opened on the finding, waiting to be validated, assessed or acted on), each with
@@ -130,8 +132,19 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
         return 0
     texts = build_messages(items, moment.date(), signals)
     for person in people:
+        # a retry sends only the parts this person does not have; a refused part holds back the ones after it
+        # (written down as refused), so they always arrive in order
+        have = store.delivered_texts(person["person_id"], KIND, midnight, dry_run=notifier.dry_run)
+        failed = None
         for text in texts:
-            notifier._deliver(person, None, KIND, text)
+            if text in have:
+                continue
+            if failed:
+                store.insert_notification(person_id=person["person_id"], issue_id=None, kind=KIND,
+                                          dry_run=notifier.dry_run, tg_message_id=None, error=failed, summary=text)
+                continue
+            if notifier._deliver(person, None, KIND, text) is None and not notifier.dry_run:
+                failed = "held back: an earlier part was refused"
     log.info("morning reminder: %d findings and %d signal steps to %d people (dry run: %s)", len(items),
              len(signals), len(people), notifier.dry_run)
     return len(people)
