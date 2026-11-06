@@ -257,6 +257,14 @@ def _log(sid, reg, country, kind, runs, failed=0, enabled=True, why=None):
             "items_seen": runs * 10, "items_new": 0, "items_matched": 0, "last_run": None, "last_failure": why}
 
 
+# The signal Concerns us opened on notice i-1 (0042), as finding_state() carries it.
+SIGNAL = {"id": "sig-1", "ref": "SIG-2026-001", "title": "Rote-Hand-Brief zu Fluorchinolonen", "stage": "validation",
+          "priority": None, "outcome": None, "next_step": "validated", "next_due": "2026-12-05", "overdue": False,
+          "owner": None, "opened_at": "2026-11-05T10:12:00Z", "opened_by": "Sama Hassan",
+          "steps": [{"step": "opened", "from_stage": None, "to_stage": "validation", "priority": None, "outcome": None,
+                     "person": "Sama Hassan", "at": "2026-11-05T10:12:00Z", "comment": None}]}
+
+
 class FakeDb:
     """Answers each query the report makes, and keeps every statement to be read back."""
 
@@ -267,11 +275,19 @@ class FakeDb:
     def fetchone(self, sql, params=None):
         self.sql.append(sql)
         if "finding_state(" in sql:
-            # The clock of the notices decided this week, as the screen reads it (0041).
-            assert params == {"ids": ["i-1"]}
+            # The clock of the notices decided this week, as the screen reads it (0041), and the signal the
+            # decision opened (0042).
+            # i-1 was decided this week; i-2 (the reference product's label change) concerns us from before.
+            assert params == {"ids": ["i-1", "i-2"]}
             return {"f": {"i-1": {"day_zero": "2026-11-05", "due": "2026-11-10", "days_left": -4, "clock": "sent",
                                   "sent": {"id": "ar-1", "on": "2026-11-06", "reference": "EDA/2026/0042",
-                                           "person": "Sama Hassan", "note": None}}}}
+                                           "person": "Sama Hassan", "note": None},
+                                  "signal": SIGNAL},
+                          "i-2": {"day_zero": "2026-10-20", "due": "2026-10-25", "days_left": -12, "clock": "late",
+                                  "sent": None,
+                                  "signal": {**SIGNAL, "id": "sig-2", "ref": "SIG-2026-002", "stage": "assessment",
+                                             "priority": "high", "next_step": "assessed",
+                                             "next_due": "2026-11-03", "overdue": True}}}}
         if "ingredient_readiness(" in sql:
             # How far the ingredient is prepared, as the Ingredients page reads it (0045).
             assert params == {"i": SCREEN["ingredient"]["id"]}
@@ -364,6 +380,10 @@ class FakeDb:
         if "from v_eda_clock" in sql:
             return [{"issue_id": "i-9", "clock": "late"}, {"issue_id": "i-8", "clock": "running"},
                     {"issue_id": "i-7", "clock": "running"}]
+        if "from v_signal_table" in sql:
+            # the signals still open (0042): two of them, one with its step late
+            assert "closed" in sql
+            return [{"stage": "validation", "overdue": False}, {"stage": "assessment", "overdue": True}]
         raise AssertionError(f"unexpected query: {sql}")
 
     def execute(self, sql, params=None):
@@ -453,12 +473,31 @@ def test_the_pdf_and_excel_say_how_far_each_ingredient_is():
 
 
 def test_clock_cells_say_due_late_and_sent_in_her_words():
-    assert rw.clock_cells(None) == {"due": "", "sent": ""}
-    assert rw.clock_cells({"clock": "off", "due": "2026-11-10", "sent": None}) == {"due": "", "sent": ""}
-    assert rw.clock_cells({"clock": "running", "due": "2026-11-10", "sent": None}) == {"due": "10 Nov 2026", "sent": ""}
-    assert rw.clock_cells({"clock": "late", "due": "2026-11-03", "sent": None}) == {"due": "3 Nov 2026 (late)", "sent": ""}
+    assert rw.clock_cells(None) == {"due": "", "sent": "", "signal": ""}
+    assert rw.clock_cells({"clock": "off", "due": "2026-11-10", "sent": None}) == {"due": "", "sent": "", "signal": ""}
+    assert rw.clock_cells({"clock": "running", "due": "2026-11-10", "sent": None}) == {
+        "due": "10 Nov 2026", "sent": "", "signal": ""}
+    assert rw.clock_cells({"clock": "late", "due": "2026-11-03", "sent": None}) == {
+        "due": "3 Nov 2026 (late)", "sent": "", "signal": ""}
     assert rw.clock_cells({"clock": "sent", "due": "2026-11-10",
-                           "sent": {"on": "2026-11-06", "reference": None}}) == {"due": "10 Nov 2026", "sent": "6 Nov 2026"}
+                           "sent": {"on": "2026-11-06", "reference": None}}) == {
+        "due": "10 Nov 2026", "sent": "6 Nov 2026", "signal": ""}
+    # the signal (0042) is shown whatever the clock says: a closed clock does not close the signal
+    assert rw.clock_cells({"clock": "off", "due": "2026-11-10", "sent": None, "signal": SIGNAL})["signal"] == (
+        "SIG-2026-001 · Validation · due 5 Dec 2026")
+
+
+def test_the_signal_cell_names_the_stage_its_due_day_and_the_outcome():
+    assert rw.signal_cell(None) == ""
+    assert rw.signal_cell(SIGNAL) == "SIG-2026-001 · Validation · due 5 Dec 2026"
+    assert rw.signal_cell({**SIGNAL, "stage": "assessment", "priority": "high", "next_due": "2026-11-03",
+                           "overdue": True}) == "SIG-2026-001 · Assessment, high priority · due 3 Nov 2026 (late)"
+    assert rw.signal_cell({**SIGNAL, "stage": "action", "outcome": "label_update", "next_due": "2026-12-20"}) == (
+        "SIG-2026-001 · Action: update our label · due 20 Dec 2026")
+    assert rw.signal_cell({**SIGNAL, "stage": "closed", "outcome": "not_validated", "next_due": None}) == (
+        "SIG-2026-001 · Closed: not validated")
+    assert rw.signal_cell({**SIGNAL, "stage": "closed", "outcome": "refuted", "next_due": None}) == (
+        "SIG-2026-001 · Closed: refuted")
 
 
 def test_gather_never_filters_by_run_trigger():
@@ -481,6 +520,9 @@ def test_assemble_answers_every_section():
     assert data["decisions"][0]["due"] == "10 Nov 2026"
     assert data["decisions"][0]["sent"] == "6 Nov 2026 · EDA/2026/0042"
     assert data["sent"][0]["reference"] == "EDA/2026/0042"
+    # The signal steps (0042): the signal on each Concerns us, and how many are open
+    assert data["decisions"][0]["signal"] == "SIG-2026-001 · Validation · due 5 Dec 2026"
+    assert summary["Signals open"] == "2 (1 step late)"
     # 2. Authorities read: hers first, then the others; label watch and literature apart
     a = data["authorities"]
     assert [r["country"] for r in a["hers"]] == ["Austria", "Germany", "Italy", "Japan"]
@@ -494,7 +536,9 @@ def test_assemble_answers_every_section():
     assert (newest["decided_by"], newest["decided_at"], newest["reason"]) == (
         "Sama Hassan", "5 Nov 2026, 12:12", "Our product is named")
     assert newest["words"] == "Fluorchinolone (2 languages)" and newest["by_class"]
+    assert newest["signal"] == "SIG-2026-001 · Validation · due 5 Dec 2026"
     assert germany["mentions"][1]["decision"] == "No decision yet"
+    assert germany["mentions"][1]["signal"] == ""
     # Label changes come from label_changes() (0043): the reference product first, with our label's gap
     assert summary["Label changes"] == 3
     lc = lev["label_changes"]
@@ -515,6 +559,9 @@ def test_assemble_answers_every_section():
     assert rw.gap_summary(None, OUR_LABEL) == "Not compared yet"
     assert rw.gap_summary({"lang_match": True, "covered": 0, "partly": 0, "missing": 0, "sections": []},
                           OUR_LABEL) == "Our label: 0 covered, 0 partly, 0 missing"
+    # the label change that concerns us shows the signal its decision opened (0042), even if decided before the week
+    assert lc[0]["signal"] == "SIG-2026-002 · Assessment, high priority · due 3 Nov 2026 (late)"
+    assert lc[1]["signal"] == "" and lc[2]["signal"] == ""
     # 4. NCBI: the name first, then the class words; a search with no paper counts 0
     assert lev["literature"]["searches"] == [
         {"query": "levofloxacin", "kind": "name", "pubmed": 1, "pmc": 1},
@@ -561,8 +608,10 @@ def test_the_pdf_page_has_six_sections_and_her_words():
                   "Our label: 2 covered, 1 partly, 1 missing", "Not compared: different language",
                   "No label of ours uploaded", "Levox 500 mg, Leaflet 2025",
                   "1 possible case report", "Possible case report", "Day zero 5 Nov 2026 · 15 days 20 Nov 2026 · "
-                  "90 days 3 Feb 2027", "Not monitored by EMA", "Not our product"):
+                  "90 days 3 Feb 2027", "Not monitored by EMA", "Not our product",
+                  "SIG-2026-001 · Validation · due 5 Dec 2026", "Signals open"):
         assert words in html, words
+    assert html.count("SIG-2026-001") == 2, "once in the decisions table, once on the notice"
     # the case report is listed before the other paper
     assert html.index("Fluoroquinolones and aortic aneurysm") < html.index("Tendon rupture after levofloxacin")
     assert 'href="https://pubmed.ncbi.nlm.nih.gov/41000001/"' in html
@@ -602,9 +651,11 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
     title = next(c for c in wb["Everything new"]["E"] if c.value == '=HYPERLINK("x")')
     assert title.data_type == "s"
     decisions = list(wb["Decisions"].iter_rows(values_only=True))
-    assert decisions[0][6:8] == ("Due", "Sent")
+    assert decisions[0][6:9] == ("Due", "Sent", "Signal")
     assert decisions[1][2:5] == ("Concerns us", "No decision yet", "Sama Hassan")
-    assert decisions[1][6:8] == ("10 Nov 2026", "6 Nov 2026 · EDA/2026/0042")
+    assert decisions[1][6:9] == ("10 Nov 2026", "6 Nov 2026 · EDA/2026/0042", "SIG-2026-001 · Validation · due 5 Dec 2026")
+    summary = list(wb["Summary"].iter_rows(values_only=True))
+    assert ("Signals open", "2 (1 step late)") in [tuple(r[:2]) for r in summary]
 
 
 def test_make_weekly_report_archives_records_and_never_overwrites(tmp_path, monkeypatch):

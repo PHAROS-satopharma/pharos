@@ -116,7 +116,7 @@
 <h3>Decisions taken this week</h3>
 {% if data.decisions %}
 <table>
-  <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th><th>Due</th><th>Sent</th></tr></thead>
+  <thead><tr><th>When (Cairo)</th><th>Notice</th><th>Decision</th><th>By</th><th>Reason</th><th>Due</th><th>Sent</th><th>Signal</th></tr></thead>
   <tbody>
   {% for d in data.decisions %}
   <tr>
@@ -127,6 +127,7 @@
     <td class="comment">{{ d.reason }}</td>
     <td class="code">{{ d.due }}</td>
     <td class="code">{{ d.sent }}</td>
+    <td class="code">{{ d.signal }}</td>
   </tr>
   {% endfor %}
   </tbody>
@@ -222,7 +223,7 @@ an authority and was never alerted.</p>
       <span class="title-orig" dir="auto">{{ m.title }}</span>{% if m.by_class %}<span class="tag">by class</span>{% endif %}{% if m.history %}<span class="tag">history</span>{% endif %}<br>
       <span class="what">{% if c.several %}{{ m.authority }} · {% endif %}{% if m.doc_type %}{{ m.doc_type }} · {% endif %}{% if m.lang %}{{ m.lang | language }} · {% endif %}Words: {{ m.words }}</span><br>
       {{ link(m.link) }}{{ by_email(m) }}<br>
-      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}{% if m.reason %} · <span class="comment">{{ m.reason }}</span>{% endif %}</span>
+      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}{% if m.reason %} · <span class="comment">{{ m.reason }}</span>{% endif %}</span>{% if m.signal %}<br><span class="decision">Signal {{ m.signal }}</span>{% endif %}
     </td>
   </tr>
   {% endfor %}
@@ -244,7 +245,7 @@ an authority and was never alerted.</p>
       <span class="what"><span dir="auto">{{ m.product }}</span>{% if m.mah %} · <span dir="auto">{{ m.mah }}</span>{% endif %} · {{ m.authority }}, {{ m.country }}{% if m.sections %} · Sections changed: {{ m.sections }}{% endif %}</span><br>
       <span class="what">{{ m.gap_summary }}{% if m.our_label %} · <span dir="auto">{{ m.our_label }}</span>{% endif %}</span><br>
       {{ link(m.link) }}<br>
-      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}{% if m.reason %} · <span class="comment">{{ m.reason }}</span>{% endif %}</span>
+      <span class="decision"><strong>{{ m.decision }}</strong>{% if m.decided_by %} · {{ m.decided_by }}, {{ m.decided_at }}{% endif %}{% if m.reason %} · <span class="comment">{{ m.reason }}</span>{% endif %}</span>{% if m.signal %}<br><span class="decision">Signal {{ m.signal }}</span>{% endif %}
     </td>
   </tr>
   {% endfor %}

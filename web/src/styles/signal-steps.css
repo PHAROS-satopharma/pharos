@@ -1,0 +1,195 @@
+/* The signal steps inside a finding on the Ingredients screen (0042): the chain Validate → Assess → Action →
+   Closed, the next due day, one form for the next step, the history. Flat, square, 1px rules, tokens only;
+   phone first: one column and full-width 44px targets below 760px. */
+
+.sig {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+
+.sig-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+.sig-ref {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+.sig-what {
+  color: var(--muted);
+}
+.sig-due {
+  color: var(--text);
+}
+.sig-due.is-late {
+  color: var(--danger);
+  font-weight: 600;
+}
+.sig-late {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 11.5px;
+  line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sig-owner {
+  color: var(--muted);
+}
+
+/* ───────── the chain ───────── */
+.sig-chain {
+  display: flex;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--rule);
+}
+.sig-link {
+  position: relative;
+  flex: 1 1 0;
+  padding: 6px 8px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.sig-link::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+}
+.sig-link.is-done {
+  color: var(--text);
+}
+.sig-link.is-done::before {
+  background: var(--sea);
+}
+.sig-link.is-current {
+  color: var(--text);
+  font-weight: 600;
+}
+.sig-link.is-current::before {
+  background: var(--text);
+}
+.sig-link-n {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* ───────── the next step ───────── */
+.sig-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sig-actions .btn {
+  min-height: 44px;
+}
+
+.sig-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 14px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.sig-form .field {
+  min-height: 44px;
+}
+.sig-form-what {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+.sig-form .sig-wide,
+.sig-form .sig-form-actions {
+  grid-column: 1 / -1;
+}
+.sig-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sig-form-actions .btn {
+  min-height: 44px;
+}
+.sig-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* ───────── the history ───────── */
+.sig-history {
+  margin-top: 8px;
+  font-size: 12.5px;
+}
+.sig-history > summary {
+  min-height: 32px;
+  line-height: 32px;
+  cursor: pointer;
+  color: var(--muted);
+}
+.sig-steps {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--rule);
+}
+.sig-step {
+  padding: 4px 0 4px 10px;
+}
+.sig-step-what {
+  font-weight: 600;
+}
+.sig-step-who {
+  color: var(--muted);
+}
+.sig-step-words {
+  display: block;
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  .sig-chain {
+    flex-direction: column;
+    border-top: 0;
+    border-left: 2px solid var(--rule);
+  }
+  .sig-link {
+    padding: 4px 0 4px 10px;
+  }
+  .sig-link::before {
+    top: 0;
+    bottom: 0;
+    left: -2px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+  .sig-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sig-actions .btn,
+  .sig-form-actions .btn {
+    width: 100%;
+  }
+}

@@ -12,6 +12,8 @@ It is read from the same database functions as the app, so the report and the sc
                                              whether EMA reads the literature for the ingredient (0044)
   screening_log()                            sections 2 and 6 (migration 0040)
   new_items(), country_look                  section 5 (migration 0032)
+  finding_state(), v_eda_clock               the five-day clock on each decision and what is due now (0041), and
+  v_signal_table                             the signal each finding opened and how many are open (0042)
 
 The answer for each country (mentioned / nothing found / reads failed / not read) is worked out exactly as the
 Ingredients screen works it out (``web/src/features/screen/answers.ts``, ``countryCards`` in
@@ -450,9 +452,23 @@ def gather_week(db: Any, week: Week) -> dict:
                 where ar.withdrawn_at is null and ar.sent_on >= %(f)s and ar.sent_on <= %(t)s
                 order by ar.sent_on, lower(i.title), ar.id""", days),
         "due": db.fetchall("select issue_id::text as issue_id, clock::text as clock from v_eda_clock"),
+        # The signals still open (0042), for the summary line.
+        "signals": db.fetchall("select stage::text as stage, overdue from v_signal_table where stage <> 'closed'"),
     }
-    raw["findings"] = _finding_states(db, sorted({d["issue_id"] for d in raw["decisions"] if d.get("issue_id")}))
+    # The clock and the signal of every notice decided this week, and of every notice on a screen that concerns us
+    # (its signal is shown on the notice, whenever the decision was taken).
+    concerned = {str(m["issue_id"]) for e in screens for m in _screen_mentions(e)
+                 if m.get("issue_id") and m.get("issue_status") == "relevant"}
+    decided = {d["issue_id"] for d in raw["decisions"] if d.get("issue_id")}
+    raw["findings"] = _finding_states(db, sorted(decided | concerned))
     return raw
+
+
+def _screen_mentions(entry: dict) -> list[dict]:
+    """Every notice an ingredient's part of the report lists: the authorities' mentions (ingredient_screen) and
+    the label changes (label_changes(), 0043)."""
+    out = [m for r in (entry.get("screen") or {}).get("regulators") or [] for m in r.get("mentions") or []]
+    return out + list(entry.get("label_changes") or [])
 
 
 def country_list(countries: list[str]) -> str:
@@ -491,18 +507,45 @@ def readiness_text(r: dict) -> str:
 
 
 def _finding_states(db: Any, issue_ids: list[str]) -> dict:
-    """The clock of each notice decided this week, as finding_state() (0041) answers the screen."""
+    """The clock and the signal of each notice, as finding_state() (0041, 0042) answers the screen."""
     if not issue_ids:
         return {}
     row = db.fetchone("select finding_state(%(ids)s::uuid[]) as f", {"ids": issue_ids}) or {}
     return row.get("f") or {}
 
 
+# The signal's stages and outcomes in her words (web/src/lib/labels.ts).
+SIGNAL_STAGE_LABEL = {"validation": "Validation", "assessment": "Assessment", "action": "Action", "closed": "Closed"}
+SIGNAL_OUTCOME_LABEL = {"not_validated": "not validated", "refuted": "refuted", "monitor": "keep monitoring",
+                        "no_action": "no action needed", "label_update": "update our label",
+                        "rmp_update": "update the RMP", "dhpc": "send a DHPC", "psur_input": "report in the next PSUR"}
+
+
+def signal_cell(sig: dict | None) -> str:
+    """The signal a notice belongs to, in one cell: "SIG-2026-001 · Validation · due 5 Dec 2026",
+    "SIG-2026-001 · Assessment, high priority · due 3 Nov 2026 (late)", "SIG-2026-001 · Action: update our
+    label · due …", "SIG-2026-001 · Closed: not validated". Empty when there is none."""
+    if not sig:
+        return ""
+    stage = sig.get("stage") or ""
+    what = SIGNAL_STAGE_LABEL.get(stage, stage)
+    if stage == "assessment" and sig.get("priority"):
+        what = f"{what}, {sig['priority']} priority"
+    elif stage in ("action", "closed") and sig.get("outcome"):
+        what = f"{what}: {SIGNAL_OUTCOME_LABEL.get(sig['outcome'], sig['outcome'])}"
+    parts = [sig.get("ref") or "", what]
+    if stage != "closed" and sig.get("next_due"):
+        parts.append(f"due {day_text(sig['next_due'])}" + (" (late)" if sig.get("overdue") else ""))
+    return " · ".join(p for p in parts if p)
+
+
 def clock_cells(f: dict | None) -> dict:
-    """The two clock columns of a decision row: the day the authority must have it by, and when it was sent
-    ("date · reference"). Empty when the clock is off, or the notice is unknown to finding_state()."""
+    """The clock columns of a decision row: the day the authority must have it by, when it was sent
+    ("date · reference"), and the signal (0042). The clock cells are empty when the clock is off, or the notice
+    is unknown to finding_state(); the signal is shown whatever the clock says."""
+    signal = signal_cell((f or {}).get("signal"))
     if not f or f.get("clock") == "off":
-        return {"due": "", "sent": ""}
+        return {"due": "", "sent": "", "signal": signal}
     due = day_text(f.get("due"))
     if f.get("clock") == "late":
         due = f"{due} (late)"
@@ -510,7 +553,7 @@ def clock_cells(f: dict | None) -> dict:
     sent = day_text(s.get("on")) if s else ""
     if sent and s.get("reference"):
         sent = f"{sent} · {s['reference']}"
-    return {"due": due, "sent": sent}
+    return {"due": due, "sent": sent, "signal": signal}
 
 
 def _authority_cards(raw: dict) -> tuple[list[dict], list[dict]]:
@@ -522,10 +565,12 @@ def _authority_cards(raw: dict) -> tuple[list[dict], list[dict]]:
     return country_cards(regs, raw["pages"], raw["sources"])
 
 
-def _mention(m: dict) -> dict:
+def _mention(m: dict, findings: dict | None = None) -> dict:
     d = m.get("decision") or None
     status = m.get("issue_status")
+    f = (findings or {}).get(str(m.get("issue_id") or "")) or {}
     return {
+        "signal": signal_cell(f.get("signal")),
         "document_id": m.get("document_id"),
         "day": day_text(m.get("published_date")) if m.get("published_date") else f"Found {day_text(m.get('date'))}",
         "date": str(m.get("date") or ""),
@@ -561,13 +606,16 @@ def gap_summary(gap: dict | None, our_label: dict | None) -> str:
             f"{int(gap.get('missing') or 0)} missing")
 
 
-def _label_change(c: dict) -> dict:
-    """One label change as label_changes() (0043) answers it, worded for the report."""
+def _label_change(c: dict, findings: dict | None = None) -> dict:
+    """One label change as label_changes() (0043) answers it, worded for the report, with the signal its notice
+    opened (0042)."""
     p = c.get("product") or {}
     d = c.get("decision") or None
     status = c.get("issue_status")
     ours = c.get("our_label") or None
+    f = (findings or {}).get(str(c.get("issue_id") or "")) or {}
     return {
+        "signal": signal_cell(f.get("signal")),
         "id": c.get("change_id"),
         "document_id": c.get("document_id"),
         "day": f"Detected {day_text(c.get('detected_day'))}",
@@ -663,6 +711,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
                    "label_watch": reads_of_kind("spc"), "literature": reads_of_kind("literature")}
 
     # 3 and 4. Our ingredients, each exactly as its Ingredients screen answers for the week.
+    findings = raw.get("findings") or {}
     ingredients = []
     for entry in raw["screens"]:
         screen = entry["screen"] or {}
@@ -675,7 +724,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
                                   "answer_text": answer_text(c), "reads_text": reads_text(c),
                                   "check": to_check_by_hand(c["answer"]),
                                   "several": len(c["regulators"]) > 1,
-                                  "mentions": [_mention(m) for m in c["mentions"]]})
+                                  "mentions": [_mention(m, findings) for m in c["mentions"]]})
         lit = screen.get("literature") or {}
         counts = {q.get("query"): q for q in lit.get("by_query") or []}
         searches = sorted(entry["searches"], key=lambda s: (s["kind"] != "name", s["query"]))
@@ -689,7 +738,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
             "classes": ", ".join(c.get("name_en") or "" for c in ing.get("classes") or []),
             "summary": summary_line(h + o),
             "countries": countries,
-            "label_changes": [_label_change(c) for c in entry.get("label_changes") or []],
+            "label_changes": [_label_change(c, findings) for c in entry.get("label_changes") or []],
             "literature": {
                 "papers": int(lit.get("papers") or 0), "by_name": int(lit.get("by_name") or 0),
                 "by_class": int(lit.get("by_class") or 0), "pubmed": int(lit.get("pubmed") or 0),
@@ -756,7 +805,6 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         elif r["enabled"] and int(r["runs"]) == 0:
             unread.append(row)
 
-    findings = raw.get("findings") or {}
     decisions = [{"at": cairo_time(d["created_at"]), "title": d["title"] or "",
                   "decision": DECISION_LABEL.get(d["to_status"], d["to_status"]),
                   "before": DECISION_LABEL.get(d["from_status"], d["from_status"]),
@@ -766,6 +814,8 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
              "person": s["person"], "note": s["note"] or ""} for s in raw.get("sent") or []]
     due_now = raw.get("due") or []
     late_now = sum(1 for r in due_now if r.get("clock") == "late")
+    signals_open = raw.get("signals") or []
+    steps_late = sum(1 for s in signals_open if s.get("overdue"))
 
     # 1. Summary
     found = {m["document_id"]: m for i in ingredients for c in i["countries"] for m in c["mentions"]}
@@ -797,6 +847,7 @@ def assemble(raw: dict, week: Week, made_at: datetime | None = None) -> dict:
         ("Decisions taken this week", len(decisions)),
         ("Reported to the authority this week", len(sent)),
         ("Due to the authority", f"{len(due_now)} ({late_now} late)"),
+        ("Signals open", f"{len(signals_open)} ({steps_late} {'step' if steps_late == 1 else 'steps'} late)"),
         ("Country answers to check by hand", to_check_answers),
         ("Pages to check by hand", len(pages)),
         ("Sources whose reads failed", len(failed)),
@@ -826,10 +877,10 @@ def build_weekly_xlsx(data: dict) -> bytes:
         return "yes" if v else ""
 
     xlsx_sheet(wb, "Decisions",
-               ["When (Cairo)", "Notice (original title)", "Decision", "Before", "By", "Reason", "Due", "Sent"],
-               [[d["at"], d["title"], d["decision"], d["before"], d["person"], d["reason"], d["due"], d["sent"]]
-                for d in data["decisions"]],
-               [18, 60, 22, 22, 22, 50, 20, 30])
+               ["When (Cairo)", "Notice (original title)", "Decision", "Before", "By", "Reason", "Due", "Sent", "Signal"],
+               [[d["at"], d["title"], d["decision"], d["before"], d["person"], d["reason"], d["due"], d["sent"],
+                 d["signal"]] for d in data["decisions"]],
+               [18, 60, 22, 22, 22, 50, 20, 30, 44])
     a = data["authorities"]
     xlsx_sheet(wb, "Authorities read",
                ["Group", "Country", "Authorities", "Reads", "OK", "Failed", "New items"],

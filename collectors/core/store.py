@@ -427,6 +427,19 @@ class Store:
                 order by due, lower(title), issue_id""", {"d": today, "w": within_days})
         return [{**r, "days_left": int(r["days_left"])} for r in rows]
 
+    def signal_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """The open signals whose current step is late or due within ``within_days`` of ``today``, most late
+        first (0042). Read through overdue_items() (0029, kind 'signal'), asked for the last day in reach: it is
+        security invoker and lists every signal on the collectors' own connection."""
+        rows = self.db.fetchall(
+            """select s.id::text as signal_id, s.ref, s.title, s.ingredient, s.ingredient_id::text as ingredient_id,
+                      s.stage::text as stage, o.due as next_due, (o.due - %(d)s) as days_left
+                 from overdue_items(%(d)s + %(w)s + 1) o
+                 join v_signal_table s on s.id = o.ref_id
+                where o.kind = 'signal'
+                order by o.due, s.ref""", {"d": today, "w": within_days})
+        return [{**r, "days_left": int(r["days_left"])} for r in rows]
+
     def notified(self, person_id: str, issue_id: str, kind: str) -> bool:
         """Delivered, or at least its text was: a PDF refused after the text went out still has a
         message id, and sending the text again would repeat it."""
