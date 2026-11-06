@@ -4,7 +4,10 @@ Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pm
 
 * ``SOURCE_ID`` — its ``source`` row (``spc-cima`` …, ``kind: spc``), ``COUNTRY`` and ``LANG``;
 * ``discover(ctx, ingredient) -> list[Product]`` — the products authorised for one active
-  ingredient (``ingredient`` = ``{"id", "inn_en", "atc_code", "terms": {lang: [term, …]}}``);
+  ingredient (``ingredient`` = ``{"id", "inn_en", "atc_code", "terms": {lang: [term, …]}}``). A module
+  whose list can break off partway (a page, a code or a search term that did not answer) returns a
+  ``Listing`` with ``complete`` False: ``run.py`` then switches off no product it did not reach, and
+  says so, instead of reading the missing ones as withdrawn;
 * ``snapshot(ctx, product) -> Snapshot | None`` — the product's current label split into sections
   (``product`` = the ``spc_product`` row as a dict); ``None`` when no label is published. A label
   that could not be read (an HTTP error, a missing section, an unknown shape) raises — never a
@@ -45,6 +48,26 @@ class Snapshot:
 
 class SnapshotError(Exception):
     """The label exists but could not be read completely: a failure of that product, not a change."""
+
+
+class Listing(list):
+    """``discover``'s products, and whether the list was read to its end (``gaps``: what was not)."""
+
+    def __init__(self, items=(), *, gaps: list[str] | None = None):
+        super().__init__(items)
+        self.gaps: list[str] = list(gaps or [])
+
+    @property
+    def complete(self) -> bool:
+        return not self.gaps
+
+
+def fetch_label(ctx, url: str, **kwargs: Any):
+    """``ctx.get`` for a label, always in full. Two ingredients may share one label (0079); the second
+    read in the same run would otherwise be a bare 304, read as "no label text" and never stored for it."""
+    if hasattr(ctx, "forget"):
+        ctx.forget(url)
+    return ctx.get(url, **kwargs)
 
 
 def run_cache(ctx, name: str) -> dict:

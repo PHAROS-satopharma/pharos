@@ -31,7 +31,7 @@ from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
 from collectors.core.context import FetchError
-from collectors.spc.common import Product, Snapshot, terms_for
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, terms_for
 from collectors.spc.sections import US_LOINC
 
 SOURCE_ID = "spc-dailymed"
@@ -131,13 +131,13 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     url = f"{API}/spls/{product['national_id']}.xml"
     # DailyMed answers HTTP 406 to "Accept: application/xml" alone (6 Nov 2026: every US label of the day's
     # label watch); with a wildcard after it, it serves the same XML
-    f = ctx.get(url, accept="application/xml, */*;q=0.8")
+    f = fetch_label(ctx, url, accept="application/xml, */*;q=0.8")
     if f.status != 200 or not f.content:
-        return None
+        raise SnapshotError(f"DailyMed {product['national_id']}: HTTP {f.status}, empty label")
     try:
         sections, when = parse_spl(f.content)
-    except ET.ParseError:
-        return None
+    except ET.ParseError as exc:
+        raise SnapshotError(f"DailyMed {product['national_id']}: the label XML does not parse ({exc})") from None
     if not sections:
         return None
     return Snapshot(sections=sections, doc_date=when, lang=LANG, source_url=url,

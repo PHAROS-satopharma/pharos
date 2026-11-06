@@ -877,3 +877,153 @@ def test_each_source_gets_its_share_of_the_time_left(spc_world, monkeypatch):
     monkeypatch.setattr(spc_run, "_sources", lambda db: ["spc-cima", "spc-pmda"])
     spc_run.run_spc(ctx, db, store=store, notifier=notifier, deadline=2, clock=clock)
     assert read == [("ES", "A1"), ("JP", "J1")]                    # Spain stops at half; Japan is reached
+
+
+# ───────────────────────────── a list that breaks off never switches products off ──────────────
+
+
+def _two_products():
+    return [Product(national_id="A", product_name="A 8 mg", country_code="ES"),
+            Product(national_id="B", product_name="B 4 mg", country_code="ES")]
+
+
+def _read_by(module):
+    read: list[str] = []
+    module.snapshot = lambda ctx, p: (read.append(p["national_id"])
+                                      or Snapshot(sections={"4.4": f"Texto {p['national_id']}."}, lang="es"))
+    return read
+
+
+def test_spc_partial_list_switches_nothing_off_and_still_reads_the_rest(spc_world):
+    from collectors.spc.common import Listing
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    module.discover = lambda ctx, ing: _two_products()
+    _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+    module.discover = lambda ctx, ing: Listing(_two_products()[:1], gaps=["page 2: HTTP 304"])
+    read = _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+    assert {nid: r["active"] for (_s, _i, nid), r in db.products.items()} == {"A": True, "B": True}
+    assert sorted(read) == ["A", "B"]                      # B, which the list did not reach, is read too
+    run = _spc_runs(store)[-1]
+    assert "partial list: page 2: HTTP 304" in run["error"] and run["items_seen"] == 2
+
+
+def test_spc_complete_list_still_switches_off_a_withdrawn_product(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    module.discover = lambda ctx, ing: _two_products()
+    _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+    module.discover = lambda ctx, ing: _two_products()[:1]
+    run_spc(ctx, db, store=store, notifier=notifier)
+    assert {nid: r["active"] for (_s, _i, nid), r in db.products.items()} == {"A": True, "B": False}
+
+
+def test_spc_empty_list_after_products_is_a_failed_discovery(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    module.discover = lambda ctx, ing: _two_products()
+    _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+    module.discover = lambda ctx, ing: []
+    read = _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+    assert all(r["active"] for r in db.products.values())
+    assert sorted(read) == ["A", "B"]
+    assert "listed no product; 2 listed before kept" in _spc_runs(store)[-1]["error"]
+    assert store.source["spc-cima"]["consecutive_failures"] == 1     # not an ok discovery
+
+
+def test_spc_failed_discovery_still_reads_the_known_labels(spc_world):
+    from collectors.spc.run import run_spc
+
+    store, db, ctx, notifier, module = spc_world
+    module.discover = lambda ctx, ing: _two_products()
+    _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+
+    def discover(ctx, ing):
+        raise FetchError(503, "https://cima.aemps.es/cima/rest/medicamentos?atc=M01AC05")
+
+    module.discover = discover
+    read = _read_by(module)
+    run_spc(ctx, db, store=store, notifier=notifier)
+    assert sorted(read) == ["A", "B"]
+    assert "HTTP 503" in _spc_runs(store)[-1]["error"]
+
+
+class ValidatorCtx(FakeCtx):
+    """Like FetchContext: a URL already read in this run answers 304, until ``forget`` asks for it in full."""
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self.validated: set[str] = set()
+
+    def get(self, url, **kwargs):
+        f = super().get(url, **kwargs)
+        if url in self.validated and f.status == 200:
+            return Fetched(304, url, b"", "")
+        if f.status == 200:
+            self.validated.add(url)
+        return f
+
+    def forget(self, url):
+        super().forget(url)
+        self.validated.discard(url)
+
+
+def test_a_label_shared_by_two_ingredients_is_read_in_full_for_both():
+    # 0079: one cold remedy is a product of paracetamol and of phenylephrine; the second read in the same run
+    # was a bare 304, stored as "no label text" for the second ingredient.
+    setid = "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
+    ctx = ValidatorCtx({f"{dailymed.API}/spls/{setid}.xml": "spc-dailymed/spl_445d7cbf.xml"})
+    first = dailymed.snapshot(ctx, {"national_id": setid})
+    second = dailymed.snapshot(ctx, {"national_id": setid})
+    assert first.sections and second.sections == first.sections
+
+
+def test_a_label_that_does_not_answer_is_an_error_not_no_text():
+    ctx = ValidatorCtx({})
+    with pytest.raises(SnapshotError):
+        dailymed.snapshot(ctx, {"national_id": "gone"})
+
+
+def test_pmda_code_page_that_does_not_answer_makes_a_partial_list(monkeypatch):
+    monkeypatch.setattr(pmda_pi, "code_sources", lambda ctx, ing: {"2190417": True, "1149036": True})
+
+    class Ctx(FakeCtx):
+        def get(self, url, **kwargs):
+            if url.endswith("1149036"):
+                self.requests.append(("GET", url, None))
+                return Fetched(304, url, b"", "")
+            return super().get(url, **kwargs)
+
+    found = pmda_pi.discover(Ctx({pmda_pi.GENERAL.format(code="2190417"):
+                                  "spc-pmda/general_list_2190417.html"}), {"inn_en": "x", "terms": {}})
+    assert found and not found.complete and "HTTP 304" in found.gaps[0]
+
+
+def test_cima_page_that_does_not_answer_fails_the_discovery():
+    class Ctx(FakeCtx):
+        def get(self, url, **kwargs):
+            if "pagina=2" in url:
+                return Fetched(304, url, b"", "")
+            return super().get(url, **kwargs)
+
+    data = json.loads(fixture("spc-cima/medicamentos.json"))
+    data.update(totalFilas=400, tamanioPagina=200, pagina=1)
+    ctx = Ctx({CIMA + "/medicamentos?*": json.dumps(data).encode()})
+    with pytest.raises(FetchError):
+        cima.discover(ctx, {"inn_en": "lornoxicam", "atc_code": "M01AC05", "terms": {}})
+
+
+def test_cima_searches_the_spanish_name_too_for_combinations():
+    ctx = FakeCtx({CIMA + "/medicamentos?*": "spc-cima/medicamentos.json"})
+    cima.discover(ctx, {"inn_en": "lornoxicam", "atc_code": "M01AC05", "terms": {"es": ["lornoxicam"]}})
+    urls = [r[1] for r in ctx.requests]
+    assert CIMA + "/medicamentos?practiv1=LORNOXICAM&pagina=1" in urls

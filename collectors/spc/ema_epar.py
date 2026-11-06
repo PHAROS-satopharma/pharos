@@ -27,7 +27,7 @@ import os
 from datetime import date, datetime
 
 from collectors.core.context import FetchError, ParseError
-from collectors.spc.common import Product, Snapshot, run_cache
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, run_cache
 from collectors.spc.sections import WATCHED_EU, cut_annex_i, split_numbered
 
 SOURCE_ID = "spc-ema-epar"
@@ -129,9 +129,10 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     url = pi_url(product)
     if not url:
         return None
-    f = ctx.get(url, accept="application/pdf")
+    f = fetch_label(ctx, url, accept="application/pdf")
     if f.status != 200 or not f.is_pdf:
-        return None
+        raise SnapshotError(f"EMA {product['national_id']} product information: HTTP {f.status}"
+                            f"{'' if f.status != 200 else ', not a PDF'}")
     from collectors.pdf import extract_text
 
     text, _method, _words = extract_text(f.content, LANG)

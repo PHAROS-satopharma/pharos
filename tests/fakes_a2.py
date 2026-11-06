@@ -171,6 +171,10 @@ class SpcDb:
         if q.startswith("select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot"):
             rows = [dict(r) for r in self.snapshots if r["spc_product_id"] == p["p"]]
             return list(reversed(rows))[:p.get("n", len(rows))]
+        if q.startswith("select id, ingredient_id, source_id, country_code, national_id") and "from spc_product" in q:
+            assert "and active" in q
+            return [dict(r) for (src, _ing, _nid), r in self.products.items()
+                    if src == p["s"] and r["ingredient_id"] == p["i"] and r.get("active")]
         if "from our_label" in q:
             assert "superseded_at is null" in q, "only the current version of our label is compared"
             return [{"id": r["id"], "lang": r["lang"], "sections": r["sections"]}

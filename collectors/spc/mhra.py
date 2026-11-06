@@ -28,7 +28,7 @@ from urllib.parse import quote
 
 from collectors.parsers._html_util import absolute, clean, node_text
 from collectors.parsers.base import ParseError, soup
-from collectors.spc.common import Product, Snapshot, terms_for
+from collectors.spc.common import Listing, Product, Snapshot, SnapshotError, fetch_label, terms_for
 from collectors.spc.sections import WATCHED_EU, split_numbered
 
 SOURCE_ID = "spc-mhra"
@@ -40,7 +40,8 @@ _DOC = re.compile(r"blob\.core\.windows\.net/docs/([A-Za-z0-9]+)")
 _SUBSTANCES = re.compile(r"Active substances?\s*:\s*(.+)", re.I)
 AGREE = "#agree-checkbox"
 RESULT_LINK = "a[href*='blob.core.windows.net']"
-MAX_PAGES = 5
+MAX_PAGES = 40          # per search: 6 Nov 2026 the old 5 pages of 2 names cut paracetamol's list
+MAX_TERMS = 4
 
 log = logging.getLogger(__name__)
 
@@ -92,27 +93,41 @@ def parse_results(html, base_url: str, terms: list[str] | None = None) -> list[P
             if not names_ingredient([s for line in lines for s in substances(line)], terms):
                 continue
         m_pl = _PL.search(text) or _PL.search(node_text(a))
-        nid = f"PL {m_pl.group(1)}/{m_pl.group(2)}" if m_pl else m_doc.group(1)
+        title = a.select_one("p.title")
+        name = clean(node_text(title)) if title is not None else ""
+        name = name or clean(re.sub(r"^\s*SPC\s*[-:]?\s*", "", node_text(a), flags=re.I))
+        # without a PL number, the product's name: the document id changes with every new PDF, and a
+        # revised SPC would read as a new product (and the old one as withdrawn)
+        nid = (f"PL {m_pl.group(1)}/{m_pl.group(2)}" if m_pl
+               else f"name:{name.casefold()}" if name else m_doc.group(1))
+        name = name or nid
         if nid in seen:
             continue
         seen.add(nid)
-        title = a.select_one("p.title")
-        name = clean(node_text(title)) if title is not None else ""
-        name = name or clean(re.sub(r"^\s*SPC\s*[-:]?\s*", "", node_text(a), flags=re.I)) or nid
         out.append(Product(national_id=nid, product_name=name, url=absolute(href, base_url),
                            country_code=COUNTRY, extra={"doc_id": m_doc.group(1)}))
     return out
 
 
-def discover(ctx, ingredient: dict) -> list[Product]:
+def discover(ctx, ingredient: dict) -> Listing:
+    """Every page of every English name's search, up to ``MAX_PAGES`` each.
+
+    The site draws its results by script, so a page past the last one and a page that did not load in
+    time look the same (the result links never appear). A page with fewer hits than the first is the
+    last one; after a full page, a page that does not show results is taken as the end, but the list
+    is then not known to be complete (``Listing.gaps``), and no product is switched off by it."""
     found: dict[str, Product] = {}
+    gaps: list[str] = []
     terms = terms_for(ingredient, "en")
-    for term in terms[:2]:
+    for n, term in enumerate(terms[:MAX_TERMS], start=1):
+        size = 0
         for page in range(1, MAX_PAGES + 1):
             try:
                 f = ctx.browser_get(SEARCH.format(q=quote(term), page=page),
                                     wait_selector=RESULT_LINK, before_wait=accept_disclaimer)
-            except ParseError:      # no (more) results: the selector never appeared
+            except ParseError:      # no results drawn: past the last page, or the page did not load
+                if page > 1:
+                    gaps.append(f"name {n} page {page}: no results shown after a full page")
                 break
             hits = parse_results(f, f.final_url)
             if not hits:
@@ -122,7 +137,13 @@ def discover(ctx, ingredient: dict) -> list[Product]:
                      SOURCE_ID, term, page, len(hits), len(mine))
             for p in mine:
                 found.setdefault(p.national_id, p)
-    return list(found.values())
+            links = len(set(_DOC.findall(f.text)))    # results on the page, before any dedupe
+            size = size or links
+            if links < size:
+                break               # a short page: the last one
+        else:
+            gaps.append(f"name {n}: more than {MAX_PAGES} pages")
+    return Listing(found.values(), gaps=gaps)
 
 
 def wanted(section: str) -> bool:
@@ -133,9 +154,10 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     url = product.get("url")
     if not url:
         return None
-    f = ctx.get(url, accept="application/pdf")
+    f = fetch_label(ctx, url, accept="application/pdf")
     if f.status != 200 or not f.is_pdf:
-        return None
+        raise SnapshotError(f"MHRA {product['national_id']} SPC: HTTP {f.status}"
+                            f"{'' if f.status != 200 else ', not a PDF'}")
     from collectors.pdf import extract_text
 
     text, _m, _w = extract_text(f.content, LANG)

@@ -30,7 +30,7 @@ from zoneinfo import ZoneInfo
 
 import logging
 
-from collectors.core.context import ParseError
+from collectors.core.context import FetchError, ParseError
 from collectors.parsers._html_util import block_text
 from collectors.parsers.base import soup
 from collectors.spc.common import Product, Snapshot, SnapshotError, get_reusing, terms_for
@@ -76,19 +76,22 @@ def products_from(data: dict, *, include_revoked: bool = False) -> list[Product]
 
 
 def discover(ctx, ingredient: dict) -> list[Product]:
+    # The ATC code finds the single-ingredient products; the Spanish INN (``practiv1``) also finds the
+    # combinations, filed under their own ATC codes (paracetamol with codeine, N02AJ06).
     queries = []
     if ingredient.get("atc_code"):
         queries.append(f"atc={ingredient['atc_code']}")
-    else:
-        queries += [f"practiv1={t.upper()}" for t in terms_for(ingredient, "es")]
+    queries += [f"practiv1={t.upper()}" for t in terms_for(ingredient, "es")[:3]]
     found: dict[str, Product] = {}
     for q in queries:
         page = 1
         while True:
-            f = get_reusing(ctx, f"{API}/medicamentos?{q}&pagina={page}",
-                            accept="application/json")
+            url = f"{API}/medicamentos?{q}&pagina={page}"
+            f = get_reusing(ctx, url, accept="application/json")
             if f.status != 200:
-                break
+                # a page that did not answer: the discovery fails, never a list cut short (which would
+                # switch off every product past it)
+                raise FetchError(f.status, url, f"CIMA product list page {page}: HTTP {f.status}")
             data = f.json()
             for p in products_from(data):
                 found.setdefault(p.national_id, p)
