@@ -316,3 +316,33 @@ def test_a_real_page_that_lost_its_list_is_still_a_parse_error():
     marked = b'<html><div id="results"></div><p>Security check</p></html>'
     with pytest.raises(ParseError):         # the healthy page's marker is there: the list itself changed
         require([], Fetched(200, "https://www.example.gov/b", marked, "text/html"), marker='id="results"')
+
+
+
+def test_a_page_that_lost_its_list_with_a_captcha_in_its_code_is_a_parse_error():
+    # #90 read "captcha" anywhere in the HTML: a small page whose list moved, with a reCAPTCHA script and
+    # widget on its contact form, was reported as a bot check (Sources: "Blocks automated reading").
+    from collectors.core.context import ParseError
+    from collectors.core.models import Fetched
+    from collectors.parsers._html_util import require
+
+    page = (b'<html><head><title>Safety alerts</title>'
+            b'<script src="https://www.google.com/recaptcha/api.js"></script></head><body>'
+            b'<h1>Safety alerts</h1><div class="new-layout"><article>Alert one</article></div>'
+            b'<form id="contact"><div class="g-recaptcha" data-sitekey="x"></div>'
+            b'<input name="captcha_token" type="hidden"></form></body></html>')
+    with pytest.raises(ParseError) as exc:
+        require([], Fetched(200, "https://www.example.gov/alerts", page, "text/html"), marker="div.views-row")
+    assert not isinstance(exc.value, SourceBlocked)
+
+
+def test_the_infarmed_firewall_captcha_still_reads_as_a_bot_check():
+    from pathlib import Path
+
+    from collectors.core.context import looks_like_block_page
+
+    html = (Path(__file__).parent / "fixtures/infarmed-circulares/firewall-captcha.html").read_text("utf-8", "replace")
+    assert looks_like_block_page(html)
+    wordy = ("<html><body><h1>News</h1>" + "<p>A notice about a medicine and its risks.</p>" * 60
+             + "<p>Please complete the captcha to subscribe.</p></body></html>")
+    assert not looks_like_block_page(wordy)     # a page with much more to say than a security page
