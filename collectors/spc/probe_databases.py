@@ -51,8 +51,10 @@ CHECKS = [
           "https://nedrug.mfds.go.kr/searchDrug?searchYn=true&page=1&ingrEngName=ivabradine", r"itemSeq=\d+",
           follow=(r"itemSeq=(\d+)", "https://nedrug.mfds.go.kr/pbp/cmn/xml/drb/{0}/NB", r"<ARTICLE|<PARAGRAPH")),
     Check("Korea nedrug history",
-          "https://nedrug.mfds.go.kr/pbp/CCBBB01/getItemChangeHistList?itemSeq=200805836&docType=NB&page=1",
-          r"data-docdata"),
+          "https://nedrug.mfds.go.kr/searchDrug?searchYn=true&page=1&ingrEngName=ivabradine", r"itemSeq=\d+",
+          follow=(r"itemSeq=(\d+)",
+                  "https://nedrug.mfds.go.kr/pbp/CCBBB01/getItemChangeHistList?itemSeq={0}&docType=NB&page=1",
+                  r"data-docdata")),
     Check("Health Canada DPD",
           "https://health-products.canada.ca/api/drug/activeingredient/?lang=en&type=json&ingredientname=ivabradine",
           r"drug_code",
@@ -145,14 +147,15 @@ def main(argv: list[str]) -> int:
     wanted = [a.casefold() for a in argv]
     checks = [c for c in CHECKS if not wanted or any(w in c.name.casefold() for w in wanted)]
     ctx = FetchContext(None, "probe-databases", archive=Archive(enabled=False), public_only=True,
-                       max_bytes=40_000_000)
+                       max_bytes=150_000_000)      # Belgium's documents file is larger than 40 MB
     results = []
     try:
         for c in checks:
             r = run_check(ctx, c)
             results.append(r)
             print(f"{r.name}: {r.status} in {r.seconds:.1f} s, {r.size} bytes, expected text "
-                  f"{'found' if r.found else 'not found'}{', label ' + r.label if r.label else ''}", flush=True)
+                  f"{'found' if r.found else 'not found'}{', label ' + r.label if r.label else ''}"
+                  f"{' (' + r.error + ')' if r.error else ''}", flush=True)
     finally:
         ctx.close()
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
