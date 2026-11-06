@@ -218,7 +218,7 @@ jobs:
           NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
         run: python -m collectors.coding --papers --labels || echo "::warning::Coding stopped with an error; the next day continues it."
 
-      # Legal open-access full text (collectors/fulltext.py, 0068): the DOI of each literature paper of the last year
+      # Legal open-access full text (collectors/fulltext.py, 0070): the DOI of each literature paper of the last year
       # that has none yet (PubMed, every 30 days at most), then Unpaywall for each paper with a DOI not asked yet, or
       # asked over 30 days ago without an open copy. At most 2,000 lookups and 11 minutes a run; what is left waits for
       # the next day. A failure warns and never fails the collection.
