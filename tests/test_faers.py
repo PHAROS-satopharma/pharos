@@ -134,6 +134,12 @@ class FakeFda:
             rows = {f"FILLDRUG {i:03}": 5 for i in range(96)}
             return 200, counted({"CODAMINE": 200, "CODAMINE HYDROCHLORIDE": 50, "BACKGROUNDOL": 120, "PARTNERINE": 6,
                                  **rows})
+        if count == faers.AGE:      # the rare thing's 3 reports: one woman of 61 or 62, reported three times
+            assert f"{faers.AGE_UNIT}:801" in s and '"RARE THING"' in s
+            return 200, counted({"61": 2, "62": 1, "1": 9})
+        if count == faers.SEX:
+            assert f"{faers.AGE}:[60 TO 62]" in s
+            return 200, counted({"2": 3})
         drug = "CODAMINE" in s
         if count == "receivedate":
             return 200, counted({"20250110": 80, "20260815": 120} if drug else {d: 10000 for d in QUARTER_DAYS},
@@ -174,7 +180,8 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
     # hepatitis: a=30, b=200-30, c=300-30, d=80000-200-270
     assert by["HEPATITIS"] == {"reaction": "HEPATITIS", "reports": 30, "all_reports": 300,
                                **asdict(disproportion(30, 170, 270, 79530)), "flagged": False,
-                               "co_drug": None, "co_reports": None, "co_all_reports": None}
+                               "co_drug": None, "co_reports": None, "co_all_reports": None,
+                               "series_reports": None, "series_age": None, "series_sex": None}
     # PRRs: hepatitis 44.3, nausea 1.2, rare thing 399 (3 of its 200 reports, 3 more among every other drug's
     # 79,800): the median is 44.3, so only the rare thing is at least twice it
     assert by["RARE THING"]["flagged"] and not by["HEPATITIS"]["flagged"] and not by["NAUSEA"]["flagged"]
@@ -184,10 +191,10 @@ def test_one_ingredient_counted_with_its_quarters_and_its_table():
         ("2026-07-01", "HEPATITIS", 20, 40), ("2026-07-01", "NAUSEA", 12, 250)]
     # 1 for every drug's days; the ingredient's days, whole period and its 2 quarters with reports; every drug's
     # whole period and those 2 quarters; 1 reaction alone; the drugs named with the 1 flagged reaction, and in all
-    # the ingredient's reports
-    assert api.requests == 11
+    # the ingredient's reports; its patients' ages, and the sexes of the largest group
+    assert api.requests == 13
     faers.count_ingredient(api, bg, "Codamine")
-    assert api.requests == 17                                            # every drug's counts are asked once a run
+    assert api.requests == 21                                            # every drug's counts are asked once a run
     assert all(p["limit"] == "100" for p in fake.asked if p.get("count") == faers.REACTION)
 
 
@@ -280,6 +287,48 @@ def test_the_drug_shown_with_a_reaction_is_over_represented_and_never_the_ingred
     assert faers.reaction_search("WERNICKE^S ENCEPHALOPATHY") == (
         'patient.reaction.reactionmeddrapt:"WERNICKE S ENCEPHALOPATHY"')
     assert faers.reaction_search("HEPATITIS") == 'patient.reaction.reactionmeddrapt.exact:"HEPATITIS"'
+
+
+def test_a_flag_standing_on_one_repeated_case_series_is_marked():
+    fake = FakeFda()
+    api = api_for(fake)
+    got = faers.count_ingredient(api, faers.Background(api, today=date(2026, 11, 6)), "Codamine")
+    by = {r["reaction"]: r for r in got["reactions"]}
+    # all 3 of the rare thing's reports: a woman aged 60 to 62 (the 9 babies aged 1 are no patient group); without
+    # them nothing is left to stand out
+    assert by["RARE THING"]["flagged"]
+    assert (by["RARE THING"]["series_reports"], by["RARE THING"]["series_age"], by["RARE THING"]["series_sex"]) == (
+        3, 61, "2")
+    for name in ("HEPATITIS", "NAUSEA"):                      # not flagged: never looked at
+        assert by[name]["series_reports"] is None and by[name]["series_age"] is None
+    assert not [p for p in fake.asked if p.get("count") in (faers.AGE, faers.SEX) and '"RARE THING"' not in p["search"]]
+
+
+def test_the_largest_group_that_could_be_one_patient():
+    answers: dict[str, dict] = {}
+
+    def get(params):
+        s, count = params["search"], params.get("count")
+        if "REFUSED" in s:
+            return 400, {"error": {"code": "BAD_REQUEST", "message": "Search not supported"}}
+        if count == faers.AGE:
+            return 200, counted(answers["ages"])
+        assert count == faers.SEX and f"{faers.AGE_UNIT}:801" in s
+        answers["band"] = s.split(f"{faers.AGE}:")[1]
+        return 200, counted(answers["sexes"])
+
+    api = api_for(get)
+    answers.update(ages={"43": 85, "44": 101, "45": 3, "70": 60, "0": 400, "41.5": 9},
+                   sexes={"0": 200, "2": 180, "1": 9})
+    assert faers.case_series(api, "X", 405) == (44, "2", 180)              # 43 to 45: 189 reports, 180 women
+    assert answers["band"] == "[43 TO 45]"
+    answers.update(ages={"55": 21, "54": 2, "72": 13})
+    assert faers.case_series(api, "X", 189) is None                         # 23 of 189: under a quarter
+    answers.update(ages={"55": 60, "56": 10}, sexes={"1": 30, "2": 40})
+    assert faers.case_series(api, "X", 189) is None                         # 70 of 189, but no sex holds a quarter
+    answers.update(ages={"1": 50, "0": 70})
+    assert faers.case_series(api, "X", 120) is None                         # babies share an age
+    assert faers.case_series(api, "REFUSED", 120) is None
 
 
 def test_no_report_is_a_zero_not_a_failure():

@@ -75,6 +75,9 @@ QUARTERS = 8
 KEEP = 100                     # reactions kept per ingredient
 CO_LIST = 25                   # drugs asked for with a flagged reaction
 CO_MIN, CO_LIFT = 3, 2.0       # a drug shown with a flag: in 3 of its reports, and twice its usual share
+AGE, AGE_UNIT, SEX = "patient.patientonsetage", "patient.patientonsetageunit", "patient.patientsex"
+YEARS = "801"                  # E2B's code for an age in years
+SERIES_SHARE = 0.25            # a group that could be one patient: at least a quarter of the reaction's reports
 FRESH_DAYS = 6
 WAITS = (5, 15, 35)            # seconds before asking again after 429, a server error or a dropped connection
 RETRY = {0, 429, 500, 502, 503, 504}
@@ -129,10 +132,17 @@ def outliers(reactions: list[dict]) -> list[bool]:
     median PRR of these reactions. A reaction without a PRR counts as the highest in the median."""
     if not reactions:
         return []
-    bar = 2 * statistics.median(math.inf if x["prr"] is None else x["prr"] for x in reactions)
-    return [x["reports"] >= 3 and (x["prr"] is None or (x["prr_low"] is not None and x["prr_low"] >= 2
-                                                        and x["prr"] >= bar))
-            for x in reactions]
+    bar = outlier_bar(reactions)
+    return [stands_out(x["reports"], x["prr"], x["prr_low"], bar) for x in reactions]
+
+
+def outlier_bar(reactions: list[dict]) -> float:
+    """Twice the median PRR of an ingredient's kept reactions."""
+    return 2 * statistics.median(math.inf if x["prr"] is None else x["prr"] for x in reactions)
+
+
+def stands_out(reports: int, prr: float | None, prr_low: float | None, bar: float) -> bool:
+    return reports >= 3 and (prr is None or (prr_low is not None and prr_low >= 2 and prr >= bar))
 
 
 # ───────────────────────────── quarters ─────────────────────────────
@@ -268,6 +278,11 @@ class OpenFda:
         rows = body.get("results") or []
         whole = len(rows) < min(limit, self.limit)
         return {str(r["term"]): int(r.get("count") or 0) for r in rows if r.get("term")}, whole
+
+    def terms(self, search: str, field: str, limit: int) -> dict[str, int]:
+        """Reports per value of a field, the most frequent first."""
+        body = self.ask(search=search, count=field, limit=str(limit)) or {}
+        return {str(r["term"]): int(r.get("count") or 0) for r in body.get("results") or [] if "term" in r}
 
     def total(self, search: str) -> int:
         body = self.ask(search=search, limit="1")
@@ -409,6 +424,40 @@ def co_drug(api: OpenFda, names: str, own: list[str], reaction: str, whole: str,
     return None, None, None
 
 
+def case_series(api: OpenFda, search: str, reports: int) -> tuple[int, str, int] | None:
+    """The largest group of a reaction's reports that could be one patient reported again and again (follow-ups, a
+    published case filed by every company selling the drug): one sex and an age in years within a year of one age
+    (a report gives the age the patient had then). Ages under 2 are left out: babies share an age without being one
+    patient. The middle age, the sex (E2B: 1 male, 2 female) and the reports, when they are at least SERIES_SHARE of
+    the reaction's; a search openFDA refuses gives none (0081)."""
+    try:
+        ages = api.terms(f"{search} AND {AGE_UNIT}:{YEARS}", AGE, api.limit)
+        years: dict[int, int] = {}
+        for t, n in ages.items():
+            try:
+                v = float(t)
+            except ValueError:
+                continue
+            if v.is_integer() and v >= 1:
+                years[int(v)] = years.get(int(v), 0) + n
+        bands = [(sum(years.get(a + d, 0) for d in (-1, 0, 1)), -a) for a in years if a >= 2]
+        if not bands:
+            return None
+        n, minus_age = max(bands)
+        age = -minus_age                                        # the most reports, then the youngest
+        if n < SERIES_SHARE * reports:
+            return None
+        sexes = api.terms(f"{search} AND {AGE_UNIT}:{YEARS} AND {AGE}:[{age - 1} TO {age + 1}]", SEX, 3)
+    except OpenFdaError as exc:
+        if exc.status != 400:
+            raise
+        return None                          # never lose the ingredient's counts over one reaction's lookup
+    known = sorted((-c, s) for s, c in sexes.items() if s in ("1", "2"))
+    if not known or -known[0][0] < SERIES_SHARE * reports:
+        return None
+    return age, known[0][1], -known[0][0]
+
+
 def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None = None) -> dict:
     """Everything kept for one ingredient: the reports per quarter, and its most frequent reactions with their
     quarters and their disproportion. ``us_name`` (RxNorm's) is searched too when it differs from the INN."""
@@ -435,13 +484,27 @@ def count_ingredient(api: OpenFda, bg: Background, inn: str, us_name: str | None
         b, c = n_drug - a, all_r - a
         stats = disproportion(a, b, c, max(n_all - n_drug - c, 0))
         reactions.append({"reaction": reaction, "reports": a, "all_reports": all_r, **asdict(stats),
-                          "co_drug": None, "co_reports": None, "co_all_reports": None})
+                          "co_drug": None, "co_reports": None, "co_all_reports": None,
+                          "series_reports": None, "series_age": None, "series_sex": None})
     usual = UsualDrugs(api, names, bg.whole)
+    bar = outlier_bar(reactions) if reactions else 0.0
     for x, flag in zip(reactions, outliers(reactions), strict=True):
         x["flagged"] = flag
-        if flag:
-            x["co_drug"], x["co_reports"], x["co_all_reports"] = co_drug(
-                api, names, searched_names(inn, us_name), x["reaction"], bg.whole, x["reports"], n_drug, usual)
+        if not flag:
+            continue
+        x["co_drug"], x["co_reports"], x["co_all_reports"] = co_drug(
+            api, names, searched_names(inn, us_name), x["reaction"], bg.whole, x["reports"], n_drug, usual)
+        series = case_series(api, f"{names} AND {reaction_search(x['reaction'])} AND {bg.whole}", x["reports"])
+        if series:
+            # without the group the reaction loses as many reports, the ingredient and every drug too: b, c and d
+            # are the same
+            age, sex, group = series
+            a = x["reports"]
+            m = min(group, a)                          # never more than the reaction's own (the lists can drift)
+            b, c = n_drug - a, x["all_reports"] - a
+            rest = disproportion(a - m, b, c, max(n_all - n_drug - c, 0))
+            if not stands_out(a - m, rest.prr, rest.prr_low, bar):
+                x["series_reports"], x["series_age"], x["series_sex"] = m, age, sex
     return {"searched": ", ".join(searched_names(inn, us_name)), "first_quarter": bg.quarters[0].isoformat(),
             "last_quarter": bg.quarters[-1].isoformat(), "reports": n_drug, "all_reports": n_all,
             "quarters": quarters, "reactions": reactions, "counts": counts}
@@ -487,13 +550,14 @@ def store(db: Any, ingredient: str, got: dict) -> None:
             db.execute(
                 """insert into faers_reaction (ingredient_id, reaction, reports, all_reports, prr, prr_low, prr_high,
                                                ror, ror_low, ror_high, chi2, flagged, co_drug, co_reports,
-                                               co_all_reports)
+                                               co_all_reports, series_reports, series_age, series_sex)
                    select %(i)s::uuid, x.reaction, x.reports, x.all_reports, x.prr, x.prr_low, x.prr_high, x.ror,
                           x.ror_low, x.ror_high, x.chi2, x.flagged, x.co_drug, x.co_reports,
-                          x.co_all_reports
+                          x.co_all_reports, x.series_reports, x.series_age, x.series_sex
                      from jsonb_to_recordset(%(r)s::jsonb) x(reaction text, reports int, all_reports int, prr float8,
                           prr_low float8, prr_high float8, ror float8, ror_low float8, ror_high float8, chi2 float8,
-                          flagged boolean, co_drug text, co_reports int, co_all_reports int)""",
+                          flagged boolean, co_drug text, co_reports int, co_all_reports int,
+                          series_reports int, series_age int, series_sex text)""",
                 {"i": ingredient, "r": json.dumps(got["reactions"])})
         if got["counts"]:
             db.execute(

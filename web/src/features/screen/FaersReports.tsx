@@ -29,6 +29,11 @@ interface FaersReaction {
   co_drug: string | null;
   co_reports: number | null;
   co_all_reports: number | null;
+  /** The flag stands only on these reports, which could be one patient reported again and again: one sex
+   *  (E2B: '1' male, '2' female) and an age within a year of series_age (0081). */
+  series_reports: number | null;
+  series_age: number | null;
+  series_sex: '1' | '2' | null;
 }
 
 interface FaersFetch {
@@ -220,6 +225,22 @@ export function FaersReports({ ingredientId }: { ingredientId: string }) {
                           >
                             Disproportionate
                           </Tag>
+                        ) : null}
+                        {r.flagged && r.series_reports && r.series_age != null && r.series_sex && r.reports ? (
+                          <>
+                            {' '}
+                            <Tag
+                              title={
+                                `${formatNumber(r.series_reports)} of the ${formatNumber(r.reports)} reports of ` +
+                                `${r.reaction} describe ${r.series_sex === '2' ? 'a woman' : 'a man'} aged ` +
+                                `${r.series_age - 1} to ${r.series_age + 1}: they could be one patient reported again ` +
+                                'and again (follow-ups, or a published case filed by each company). Without them the ' +
+                                'reaction would not stand out.'
+                              }
+                            >
+                              One case series?
+                            </Tag>
+                          </>
                         ) : null}
                         {r.flagged && r.co_drug && r.co_reports && r.co_all_reports && r.reports && f.reports ? (
                           <div
