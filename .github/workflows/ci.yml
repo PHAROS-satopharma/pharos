@@ -54,7 +54,7 @@ jobs:
           has() { [ "$files" = "ALL" ] || echo "$files" | grep -qE "$1"; }
           out() { if has "$2"; then echo "$1=true" >> "$GITHUB_OUTPUT"; else echo "$1=false" >> "$GITHUB_OUTPUT"; fi; }
           out py    '^(collectors/|tests/|pyproject\.toml)'
-          out report '^(collectors/report|collectors/requirements\.txt|tests/test_report_credit\.py)'
+          out report '^(collectors/report|collectors/requirements\.txt|tests/test_report_)'
           out web   '^web/'
           out sql   '^supabase/(migrations|tests)/'
           out deno  '^supabase/functions/'
@@ -81,8 +81,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r collectors/requirements.txt ruff pytest
-      # Chromium for the monthly report test that prints a real PDF and reads its footer on every page; only
-      # when the report changed (the test then fails, never skips, without it: REPORT_PDF below).
+      # Chromium for the report tests that print a real PDF and read its footer on every page; only
+      # when the report changed (the tests then fail, never skip, without it: REPORT_PDF below).
       - name: Playwright cache
         if: steps.changes.outputs.report == 'true' && hashFiles('collectors/requirements.txt') != ''
         id: pw-cache

@@ -1,39 +1,128 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { downloadArchived, errorMessage, unwrap } from '../../lib/api';
-import {
-  PHAROS_START_MONTH,
-  cairoThisMonth,
-  formatDateTime,
-  formatMonth,
-  formatNumber,
-  formatYearMonth,
-  isScreenedMonth,
-} from '../../lib/format';
+import { cairoToday, formatDateTime, formatMonth, formatNumber, isScreenedMonth } from '../../lib/format';
 import { CHANNEL_LABEL, KIND_LABEL } from '../../lib/labels';
 import type { MonthlyReport } from '../../lib/types';
 import { Button } from '../../ui/Button';
-import { Field, Input } from '../../ui/Input';
+import { Field } from '../../ui/Input';
+import { Select } from '../../ui/Select';
 import { Country } from '../../ui/Flag';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
 import { PageHead, SectionHead } from '../../ui/Text';
 import { Stat, StatRow } from '../../ui/Stat';
 import { useSources } from '../sources/queries';
-import { InspectionPack } from './InspectionPack';
-import { SignOff } from '../signoff/SignOff';
-import { useAuth } from '../../lib/auth';
+import {
+  type WeeklyReport,
+  lastCompleteWeek,
+  newestWeekFirst,
+  weekDays,
+  weekLabel,
+  weekOptions,
+  weeklyFileName,
+} from './weeks';
+import '../../styles/reports-weekly.css';
 
-/** "PHAROS-screening-2026-10.xlsx": the month the report covers, in the name the file is saved under. */
-function reportFileName(month: string, ext: 'xlsx' | 'pdf'): string {
+/** "PHAROS-screening-2026-10.xlsx": the month an old monthly report covers. */
+function monthlyFileName(month: string, ext: 'xlsx' | 'pdf'): string {
   return `PHAROS-screening-${month.slice(0, 7)}.${ext}`;
 }
 
+type Save = (key: string, filename: string) => Promise<void>;
+
+function useSave(): { error: string | null; save: Save } {
+  const [error, setError] = useState<string | null>(null);
+  async function save(key: string, filename: string) {
+    setError(null);
+    try {
+      await downloadArchived(key, filename);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
+  return { error, save };
+}
+
+/** The two files of one report: [archive key, the name it is saved under]. */
+function Files({ name, pdf, xlsx, save }: { name: string; pdf: [string, string]; xlsx: [string, string]; save: Save }) {
+  return (
+    <div className="button-row report-files">
+      <Button size="sm" onClick={() => void save(pdf[0], pdf[1])} aria-label={`Download the ${name} report as PDF`}>
+        PDF
+      </Button>
+      <Button size="sm" onClick={() => void save(xlsx[0], xlsx[1])} aria-label={`Download the ${name} report as Excel`}>
+        Excel
+      </Button>
+    </div>
+  );
+}
+
+function WeeklyReports() {
+  const { error, save } = useSave();
+  const reports = useQuery({
+    queryKey: ['weekly-reports'],
+    queryFn: async () =>
+      newestWeekFirst(
+        unwrap<WeeklyReport[] | null>(
+          await supabase.from('weekly_report').select('*').order('week_start', { ascending: false }),
+        ) ?? [],
+      ),
+  });
+
+  if (reports.isPending) return <Loading label="Reading the reports" />;
+  if (reports.isError) return <ErrorNote error={reports.error} onRetry={() => void reports.refetch()} />;
+  if (reports.data.length === 0) {
+    return (
+      <Empty title="No weekly report yet.">
+        <p>The report is made every Sunday at 05:00 Cairo time, for the week that has just ended.</p>
+      </Empty>
+    );
+  }
+  return (
+    <>
+      {error ? <Notice tone="error">The file could not be downloaded: {error}</Notice> : null}
+      <Table className="reports reports-weekly">
+        <thead>
+          <tr>
+            <th scope="col">Week</th>
+            <th scope="col" className="num">
+              Files
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {reports.data.map((r) => {
+            const name = weekLabel(r.week_start);
+            return (
+              <tr key={r.id} className="report-row">
+                <td>
+                  <span className="report-month">{name}</span>
+                  <span className="cell-sub">
+                    Made <span className="mono">{formatDateTime(r.made_at)}</span>
+                  </span>
+                </td>
+                <td className="num">
+                  <Files
+                    name={name}
+                    pdf={[r.pdf_r2_key, weeklyFileName(r.week_start, 'pdf')]}
+                    xlsx={[r.xlsx_r2_key, weeklyFileName(r.week_start, 'xlsx')]}
+                    save={save}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </Table>
+    </>
+  );
+}
+
+/** The monthly reports made before the weekly report replaced them; shown only when there are any. */
 function MonthlyReports() {
-  const { isAdmin } = useAuth();
-  const [openError, setOpenError] = useState<string | null>(null);
+  const { error, save } = useSave();
   const reports = useQuery({
     queryKey: ['monthly-reports'],
     // A report for a month before PHAROS started would read as "screened, nothing found"; it is not offered.
@@ -45,37 +134,17 @@ function MonthlyReports() {
       ).filter((r) => isScreenedMonth(r.month)),
   });
 
-  async function save(key: string, filename: string) {
-    setOpenError(null);
-    try {
-      await downloadArchived(key, filename);
-    } catch (e) {
-      setOpenError(errorMessage(e));
-    }
-  }
-
-  if (reports.isPending) return <Loading label="Reading the reports" />;
-  if (reports.isError) return <ErrorNote error={reports.error} onRetry={() => void reports.refetch()} />;
-  if (reports.data.length === 0) {
-    return (
-      <Empty title="No monthly report yet.">
-        <p>The first report is made on the 1st of next month, covering the month before.</p>
-      </Empty>
-    );
-  }
+  if (reports.isPending || reports.isError || reports.data.length === 0) return null;
   return (
-    <>
-      {openError ? <Notice tone="error">The file could not be downloaded: {openError}</Notice> : null}
+    <details className="reports-monthly">
+      <summary>
+        <span className="reports-monthly-title">Monthly reports (until November 2026)</span>
+        <span className="reports-monthly-sum">
+          {reports.data.length === 1 ? '1 report' : `${formatNumber(reports.data.length)} reports`}
+        </span>
+      </summary>
+      {error ? <Notice tone="error">The file could not be downloaded: {error}</Notice> : null}
       <Table className="reports">
-        <thead>
-          <tr>
-            <th scope="col">Month</th>
-            <th scope="col">Sign-off</th>
-            <th scope="col" className="num">
-              Files
-            </th>
-          </tr>
-        </thead>
         <tbody>
           {reports.data.map((r) => (
             <tr key={r.id} className="report-row">
@@ -85,32 +154,19 @@ function MonthlyReports() {
                   Made <span className="mono">{formatDateTime(r.generated_at)}</span>
                 </span>
               </td>
-              <td>
-                <SignOff kind="monthly_report" id={r.id} canSign={isAdmin} compact />
-              </td>
               <td className="num">
-                <div className="button-row report-files">
-                  <Button
-                    size="sm"
-                    onClick={() => void save(r.xlsx_r2_key, reportFileName(r.month, 'xlsx'))}
-                    aria-label={`Download the ${formatMonth(r.month)} report as Excel`}
-                  >
-                    Excel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => void save(r.pdf_r2_key, reportFileName(r.month, 'pdf'))}
-                    aria-label={`Download the ${formatMonth(r.month)} report as PDF`}
-                  >
-                    PDF
-                  </Button>
-                </div>
+                <Files
+                  name={formatMonth(r.month)}
+                  pdf={[r.pdf_r2_key, monthlyFileName(r.month, 'pdf')]}
+                  xlsx={[r.xlsx_r2_key, monthlyFileName(r.month, 'xlsx')]}
+                  save={save}
+                />
               </td>
             </tr>
           ))}
         </tbody>
       </Table>
-    </>
+    </details>
   );
 }
 
@@ -118,6 +174,8 @@ interface ScreeningRow {
   source_id: string;
   regulator: string;
   country: string;
+  country_code: string | null;
+  enabled: boolean;
   runs: number;
   ok_runs: number;
   failed_runs: number;
@@ -128,14 +186,18 @@ interface ScreeningRow {
 }
 
 function ScreeningLog() {
-  const [month, setMonth] = useState(cairoThisMonth());
+  const today = cairoToday();
+  const options = useMemo(() => weekOptions(today), [today]);
+  const [week, setWeek] = useState(() => lastCompleteWeek(today));
   const sources = useSources();
-  // Counted in the database for the Cairo calendar month (bigint counts arrive as numbers or strings).
+  // Counted in the database for the Cairo days of the week, both included (bigint counts arrive as numbers or
+  // strings). Every read counts, whatever started it.
   const log = useQuery({
-    queryKey: ['screening-log', month],
-    queryFn: async () =>
-      (
-        unwrap<ScreeningRow[] | null>(await supabase.rpc('monthly_screening_log', { p_month: `${month}-01` })) ?? []
+    queryKey: ['screening-log', week],
+    queryFn: async () => {
+      const { from, to } = weekDays(week);
+      return (
+        unwrap<ScreeningRow[] | null>(await supabase.rpc('screening_log', { p_from: from, p_to: to })) ?? []
       ).map((r) => ({
         ...r,
         runs: Number(r.runs),
@@ -144,7 +206,8 @@ function ScreeningLog() {
         items_seen: Number(r.items_seen),
         items_new: Number(r.items_new),
         items_matched: Number(r.items_matched),
-      })),
+      }));
+    },
   });
   const byId = useMemo(() => new Map((sources.data ?? []).map((s) => [s.id, s] as const)), [sources.data]);
 
@@ -163,17 +226,11 @@ function ScreeningLog() {
   return (
     <>
       <div className="inline-form">
-        <Field label="Month">
-          <Input
-            type="month"
-            value={month}
-            min={PHAROS_START_MONTH}
-            max={cairoThisMonth()}
-            onChange={(e) => e.target.value && isScreenedMonth(e.target.value) && setMonth(e.target.value)}
-          />
+        <Field label="Week">
+          <Select value={week} options={options} onChange={(e) => e.target.value && setWeek(e.target.value)} />
         </Field>
         <p className="small muted">
-          Every check of every source in {formatYearMonth(month)} (Cairo time), including checks that found nothing.
+          Every check of every source from Sunday to Saturday (Cairo time), including checks that found nothing.
         </p>
       </div>
       {log.isPending ? (
@@ -184,7 +241,7 @@ function ScreeningLog() {
         <Empty title="No sources are listed yet." />
       ) : (
         <>
-          <StatRow label={`Screening in ${formatYearMonth(month)}`}>
+          <StatRow label={`Screening, ${weekLabel(week)}`}>
             <Stat value={sum.runs} label="Checks" />
             <Stat value={sum.failed} label="Failed" tone={sum.failed ? 'danger' : 'quiet'} />
             <Stat value={sum.seen} label="Items read" />
@@ -216,13 +273,13 @@ function ScreeningLog() {
             <tbody>
               {log.data.map((r) => {
                 const s = byId.get(r.source_id);
-                const off = s ? !s.enabled : false;
+                const off = !r.enabled;
                 return (
                   <tr key={r.source_id} className={off ? 'is-off' : undefined}>
                     <td className="col-source">
                       <span className="cell-line">
                         <span className="source-name">{r.regulator}</span>
-                        <Country name={r.country} code={s?.regulator?.country_code ?? null} />
+                        <Country name={r.country} code={r.country_code ?? s?.regulator?.country_code ?? null} />
                       </span>
                       <span className="cell-sub">
                         {s ? `${KIND_LABEL[s.kind]} · ${CHANNEL_LABEL[s.channel]}` : '—'}
@@ -252,7 +309,7 @@ function ScreeningLog() {
                       </>
                     ) : (
                       <td colSpan={6} className={off ? 'muted small col-none' : 'accent-text small col-none'}>
-                        No check recorded this month
+                        No check recorded this week
                       </td>
                     )}
                   </tr>
@@ -288,35 +345,22 @@ function ScreeningLog() {
 }
 
 export function ReportsPage() {
-  const { isAdmin } = useAuth();
   return (
     <div className="page">
       <PageHead
         eyebrow="Evidence"
         title="Reports"
-        lede="The monthly report and the screening log: what was checked, when, and what it found."
+        lede="The weekly report and the screening log: what was checked, when, and what it found, Sunday to Saturday."
       />
       <section className="section">
-        <SectionHead index="01" title="Monthly reports" />
+        <SectionHead index="01" title="Weekly reports" />
+        <WeeklyReports />
         <MonthlyReports />
       </section>
       <section className="section">
         <SectionHead index="02" title="Screening log" />
         <ScreeningLog />
       </section>
-      <section className="section">
-        <SectionHead index="03" title="PSUR builder" aside={<Link to="/psur">Open the PSUR builder</Link>} />
-        <p className="soft">
-          For one ingredient and one reporting interval, set from EMA’s EURD list: the regulator actions, label changes,
-          literature and signals PHAROS found, ready to print or to take into Excel.
-        </p>
-      </section>
-      {isAdmin ? (
-        <section className="section">
-          <SectionHead index="04" title="Inspection pack" />
-          <InspectionPack />
-        </section>
-      ) : null}
     </div>
   );
 }
