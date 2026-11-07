@@ -3,7 +3,10 @@
 For every active ingredient (or the ones given) and every enabled ``kind: spc`` source:
 
 1. **discover** the products authorised in that country (``spc_product``: upsert on
-   ``(source_id, ingredient_id, national_id)``; products no longer listed are marked inactive). A label
+   ``(source_id, ingredient_id, national_id)``; products no longer listed are marked inactive — only when the
+   list was read to its end: a ``Listing`` with gaps, or an empty answer where products were listed before,
+   switches nothing off and is noted as a partial list, and a discovery that failed still reads the products
+   already known). A label
    that holds several watched ingredients (a cold remedy with paracetamol, guaifenesin and phenylephrine)
    is one product per ingredient: until 0079 the first ingredient to list it kept it, and the others never
    saw it (Japan's paracetamol inserts sat under ivabradine, 6 Nov 2026);
@@ -39,7 +42,10 @@ alert on the change. (SPC sources have no ``expected_max_gap_days``: labels may 
 same for years, so quiet is not a symptom; failures are.)
 
 Module per source: spc-cima → cima, spc-bdpm → bdpm, spc-ema-epar → ema_epar,
-spc-dailymed → dailymed, spc-mhra → mhra, spc-pmda → pmda_pi.
+spc-dailymed → dailymed, spc-mhra → mhra, spc-pmda → pmda_pi, spc-nedrug → nedrug (Korea),
+spc-hc-dpd → hc_dpd (Canada), spc-medsafe → medsafe (New Zealand), spc-cbg → cbg (Netherlands),
+spc-famhp → famhp (Belgium), spc-aifa → aifa (Italy), spc-mpa → mpa (Sweden), spc-infomed → infomed (Portugal),
+spc-hpra → hpra (Ireland), spc-basg → basg (Austria), spc-lyfja → lyfja (Iceland).
 """
 
 from __future__ import annotations
@@ -50,7 +56,7 @@ import logging
 import time
 import traceback
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
 from collectors.core.context import SourceBlocked, redact
@@ -67,9 +73,21 @@ MODULES = {
     "spc-dailymed": "dailymed",
     "spc-mhra": "mhra",
     "spc-pmda": "pmda_pi",
+    "spc-nedrug": "nedrug",
+    "spc-hc-dpd": "hc_dpd",
+    "spc-medsafe": "medsafe",
+    "spc-cbg": "cbg",
+    "spc-famhp": "famhp",
+    "spc-aifa": "aifa",
+    "spc-mpa": "mpa",
+    "spc-infomed": "infomed",
+    "spc-hpra": "hpra",
+    "spc-basg": "basg",
+    "spc-lyfja": "lyfja",
 }
 DEGRADED_AFTER = 2          # failed SPC runs in a row (weekly) before the source is 'degraded'
 RECENT_SNAPSHOTS = 10       # how far back a snapshot read the same way is looked for
+RECHECK_DAYS = 28           # a label at the version its last snapshot was read at is read again after this
 
 
 @dataclass
@@ -83,6 +101,8 @@ class SpcStats:
     errors: list[str] = field(default_factory=list)
     out_of_time: bool = False
     labels_left: int = 0         # products found but not read this run (out of time)
+    revised: int = 0             # labels read first: the regulator lists a new version
+    unchanged: int = 0           # labels not read: the regulator lists the version last read, read lately
     ingredients_left: int = 0    # ingredients not even looked up this run (out of time)
 
     def failed(self, ingredients: int) -> bool:
@@ -195,15 +215,72 @@ def deactivate_missing(db, source_id: str, ingredient_id: str, keep: list[str]) 
         {"s": source_id, "i": ingredient_id, "k": keep})
 
 
+def known_products(db, source_id: str, ingredient_id: str) -> list[dict]:
+    """The ingredient's active products from earlier runs: read all the same when this run's list of them
+    failed or broke off, so a list that did not answer never leaves their labels unread for the week."""
+    rows = db.fetchall(
+        """select id, ingredient_id, source_id, country_code, national_id, product_name, mah, url, extra,
+                  is_reference, checked_at
+             from spc_product where source_id = %(s)s and ingredient_id = %(i)s and active""",
+        {"s": source_id, "i": ingredient_id})
+    out = []
+    for r in rows:
+        r = dict(r)
+        r["id"] = str(r["id"])
+        r["extra"] = r.get("extra") or {}
+        out.append(r)
+    return out
+
+
 def mark_checked(db, product_id: str) -> None:
     """The label was read (or has no text): its turn comes round again after every other one."""
     db.execute("update spc_product set checked_at = now() where id = %(p)s", {"p": product_id})
 
 
 def _turn(product: dict) -> tuple:
-    """Reading order within a source: our reference products, then labels never read, then the oldest read."""
+    """Reading order within a source: our reference products, then labels the regulator lists at a new version,
+    then labels never read, then the oldest read."""
     checked = product.get("checked_at")
-    return (not product.get("is_reference"), checked is not None, checked or "")
+    return (not product.get("is_reference"), not product.get("_revised"), checked is not None, checked or "")
+
+
+def last_versions(db, product_ids: list[str]) -> dict[str, str | None]:
+    """The regulator's version each product's newest snapshot was read at (0086)."""
+    if not product_ids:
+        return {}
+    rows = db.fetchall(
+        """select distinct on (spc_product_id) spc_product_id, regulator_version from spc_snapshot
+            where spc_product_id = any(%(ids)s::uuid[]) order by spc_product_id, fetched_at desc""",
+        {"ids": product_ids})
+    return {str(r["spc_product_id"]): r.get("regulator_version") for r in rows}
+
+
+def _recent(checked, days: int = RECHECK_DAYS) -> bool:
+    if not isinstance(checked, datetime):
+        return False
+    when = checked if checked.tzinfo else checked.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - when < timedelta(days=days)
+
+
+def plan_reads(module, queue: list[tuple[dict, dict]], versions: dict[str, str | None],
+               stats: SpcStats) -> list[tuple[dict, dict]]:
+    """Mark each product revised (the regulator lists a version other than the one last read) and leave out the
+    ones the regulator lists at the version last read, when read within ``RECHECK_DAYS``. A source without
+    ``listed_version`` reads every label in turn, as before."""
+    listed = getattr(module, "listed_version", None)
+    if listed is None:
+        return queue
+    out = []
+    for product, ing in queue:
+        now_v, last_v = listed(product), versions.get(product["id"])
+        if now_v and last_v and now_v != last_v:
+            product["_revised"] = True
+            stats.revised += 1
+        elif now_v and last_v == now_v and _recent(product.get("checked_at")) and not product.get("is_reference"):
+            stats.unchanged += 1
+            continue
+        out.append((product, ing))
+    return out
 
 
 def last_snapshot(db, product_id: str) -> dict | None:
@@ -214,7 +291,7 @@ def last_snapshot(db, product_id: str) -> dict | None:
 
 def recent_snapshots(db, product_id: str, limit: int = RECENT_SNAPSHOTS) -> list[dict]:
     return db.fetchall(
-        """select id, sha256, r2_key, section_hashes, doc_date from spc_snapshot
+        """select id, sha256, r2_key, section_hashes, doc_date, regulator_version from spc_snapshot
             where spc_product_id = %(p)s order by fetched_at desc limit %(n)s""",
         {"p": product_id, "n": limit})
 
@@ -361,10 +438,17 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
         stats.no_label += 1
         return None
     stats.labels_read += 1
+    listed = getattr(module, "listed_version", None)
+    version = listed(product) if listed else None
     raw = canonical(snap)
     sha, key = ctx.archive(raw, "application/json")
     rows = recent_snapshots(db, product["id"])
     if rows and rows[0].get("sha256") == sha:
+        if version and rows[0].get("regulator_version") != version:
+            # a new version on the regulator's list with the same text: remember it, so the label is not
+            # taken as revised again next week
+            db.execute("update spc_snapshot set regulator_version = %(v)s where id = %(i)s",
+                       {"v": version, "i": rows[0]["id"]})
         return None
     prev, before = comparable(ctx, rows, snap.method)
     if rows and prev is None:
@@ -378,10 +462,11 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
                      snap.doc_date)
     with db.transaction():
         row = db.fetchone(
-            """insert into spc_snapshot (spc_product_id, doc_date, sha256, r2_key, section_hashes)
-               values (%(p)s, %(d)s, %(s)s, %(k)s, %(h)s) returning id""",
+            """insert into spc_snapshot (spc_product_id, doc_date, sha256, r2_key, section_hashes,
+                 regulator_version)
+               values (%(p)s, %(d)s, %(s)s, %(k)s, %(h)s, %(v)s) returning id""",
             {"p": product["id"], "d": snap.doc_date, "s": sha, "k": key,
-             "h": _json(hashes(snap.sections))})
+             "h": _json(hashes(snap.sections)), "v": version})
         snap_id = str(row["id"])
         stats.snapshots += 1
         if prev is None:
@@ -424,14 +509,40 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
         except Exception as exc:  # noqa: BLE001 - one ingredient failing never stops the rest
             stats.errors.append(redact(f"discover {ing['inn_en']}: {type(exc).__name__}: {exc}"))
             log.warning("SPC %s discover %s: %s", source_id, ing["inn_en"], redact(exc))
+            # its products from earlier runs are still read: a list that failed is not a week without labels
+            known = known_products(db, source_id, ing["id"])
+            stats.products += len(known)
+            queue += [(row, ing) for row in known]
             continue
-        stats.discover_ok += 1
-        stats.products += len(found)
+        gaps = list(getattr(found, "gaps", None) or [])
+        known = known_products(db, source_id, ing["id"])
+        if not found and known:
+            # an empty answer where products were listed before is a list that did not answer, not every
+            # product withdrawn at once: nothing is switched off, and it is a failed discovery
+            gaps.append(f"listed no product; {len(known)} listed before kept")
+        if gaps:
+            stats.errors.append(redact(f"discover {ing['inn_en']}: partial list: {'; '.join(gaps)}"[:500]))
+            log.warning("SPC %s discover %s: partial list (%s); no product switched off", source_id,
+                        ing["inn_en"], redact("; ".join(gaps)))
+        if found or not known:
+            stats.discover_ok += 1
         with db.transaction():
+            ids = set()
             for p in found:
-                queue.append((upsert_product(db, source_id, ing["id"], p), ing))
-            if found:
+                row = upsert_product(db, source_id, ing["id"], p)
+                ids.add(row["id"])
+                queue.append((row, ing))
+            if found and not gaps:
                 deactivate_missing(db, source_id, ing["id"], [p.national_id for p in found])
+            elif gaps:
+                # the products the list did not reach stay active, and their labels are read as usual
+                queue += [(row, ing) for row in known if row["id"] not in ids]
+        stats.products += len(found) + (len([r for r in known if r["id"] not in ids]) if gaps else 0)
+    queue = plan_reads(module, queue, last_versions(db, sorted({p["id"] for p, _i in queue})), stats)
+    if stats.revised or stats.unchanged:
+        # counts, not errors: the source_run's error column holds only what went wrong
+        log.info("SPC %s: %d label(s) revised by the regulator, read first; %d at the version last read, "
+                 "not read again", source_id, stats.revised, stats.unchanged)
     queue.sort(key=lambda pair: _turn(pair[0]))      # stable: ingredient and listing order otherwise
     for n, (product, ing) in enumerate(queue):
         if deadline is not None and clock() >= deadline:

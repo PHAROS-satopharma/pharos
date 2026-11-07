@@ -1,10 +1,18 @@
 """PHAROS — shared types for the SPC / label watch country modules.
 
-Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi) defines:
+Every module under ``collectors/spc/`` (cima, bdpm, ema_epar, dailymed, mhra, pmda_pi, nedrug, hc_dpd, medsafe,
+cbg, famhp, aifa, mpa, infomed, hpra, basg, lyfja) defines:
 
 * ``SOURCE_ID`` — its ``source`` row (``spc-cima`` …, ``kind: spc``), ``COUNTRY`` and ``LANG``;
 * ``discover(ctx, ingredient) -> list[Product]`` — the products authorised for one active
-  ingredient (``ingredient`` = ``{"id", "inn_en", "atc_code", "terms": {lang: [term, …]}}``);
+  ingredient (``ingredient`` = ``{"id", "inn_en", "atc_code", "terms": {lang: [term, …]}}``). A module
+  whose list can break off partway (a page, a code or a search term that did not answer) returns a
+  ``Listing`` with ``complete`` False: ``run.py`` then switches off no product it did not reach, and
+  says so, instead of reading the missing ones as withdrawn;
+* ``listed_version(product) -> str | None`` (optional) — the label's version as the regulator's list gives it
+  (DailyMed's SPL version, PMDA's package id, CIMA's document date, EMA's last update, MHRA's document id).
+  ``run.py`` reads a label whose listed version moved first, and does not read again, for up to
+  ``RECHECK_DAYS``, a label whose listed version is the one its last snapshot was read at;
 * ``snapshot(ctx, product) -> Snapshot | None`` — the product's current label split into sections
   (``product`` = the ``spc_product`` row as a dict); ``None`` when no label is published. A label
   that could not be read (an HTTP error, a missing section, an unknown shape) raises — never a
@@ -18,6 +26,8 @@ A module that can read one label two ways (CIMA: per-section API, else the full 
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -45,6 +55,26 @@ class Snapshot:
 
 class SnapshotError(Exception):
     """The label exists but could not be read completely: a failure of that product, not a change."""
+
+
+class Listing(list):
+    """``discover``'s products, and whether the list was read to its end (``gaps``: what was not)."""
+
+    def __init__(self, items=(), *, gaps: list[str] | None = None):
+        super().__init__(items)
+        self.gaps: list[str] = list(gaps or [])
+
+    @property
+    def complete(self) -> bool:
+        return not self.gaps
+
+
+def fetch_label(ctx, url: str, **kwargs: Any):
+    """``ctx.get`` for a label, always in full. Two ingredients may share one label (0079); the second
+    read in the same run would otherwise be a bare 304, read as "no label text" and never stored for it."""
+    if hasattr(ctx, "forget"):
+        ctx.forget(url)
+    return ctx.get(url, **kwargs)
 
 
 def run_cache(ctx, name: str) -> dict:
@@ -80,3 +110,70 @@ def terms_for(ingredient: dict, lang: str, *, fallback_en: bool = True) -> list[
             seen.add(t.casefold())
             out.append(t)
     return out
+
+
+# Month names of the label languages read (en, de, fr, it, es, pt, nl, sv, is), folded to plain letters.
+_MONTHS = {
+    1: "january januar janvier gennaio enero janeiro januari jan jän",
+    2: "february februar fevrier febbraio febrero fevereiro februari feb",
+    3: "march marz mars marzo marco maart mar",
+    4: "april avril aprile abril apr",
+    5: "may mai maggio mayo maio mei maj",
+    6: "june juni juin giugno junio junho jun",
+    7: "july juli juillet luglio julio julho jul",
+    8: "august aout agosto augustus augusti agust aug",
+    9: "september septembre settembre septiembre setembro sep sept",
+    10: "october oktober octobre ottobre octubre outubro oct okt",
+    11: "november novembre noviembre novembro nov",
+    12: "december dezember decembre dicembre diciembre dezembro desember dec dez",
+}
+_MONTH_OF = {name: n for n, names in _MONTHS.items() for name in names.split()}
+_D_M_Y = re.compile(r"\b(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*((?:19|20)\d{2})\b")
+_Y_M_D = re.compile(r"\b((?:19|20)\d{2})-(\d{1,2})-(\d{1,2})\b")
+_M_Y = re.compile(r"(?<![\d./-])(\d{1,2})\s*[./]\s*((?:19|20)\d{2})\b")
+_NAMED = re.compile(r"(?:\b(\d{1,2})\.?\s*(?:de\s+)?)?\b([a-z]{3,10})\.?\s*(?:de\s+)?((?:19|20)\d{2})\b")
+
+
+def _day(y: int, m: int, d: int) -> date | None:
+    try:
+        return date(y, m, d)
+    except ValueError:
+        return None
+
+
+def label_date(text: str | None) -> date | None:
+    """The first date in a label's revision line, as written: "17.03.2025", "2025-02-17", "25 de outubro de 2016",
+    "Juli 2026" (the 1st of the month), "12/2022" (likewise). Never a date it has to guess a day or year for:
+    ``parse_date`` would complete "12/2022" with today's day."""
+    for line in (text or "").splitlines():
+        if not re.search(r"\b(?:19|20)\d{2}\b", line):
+            continue
+        plain = unicodedata.normalize("NFKD", line).encode("ascii", "ignore").decode().lower()
+        for rx, order in ((_Y_M_D, "ymd"), (_D_M_Y, "dmy")):
+            m = rx.search(plain)
+            if m:
+                a, b, c = (int(g) for g in m.groups())
+                found = _day(a, b, c) if order == "ymd" else _day(c, b, a)
+                if found:
+                    return found
+        for m in _NAMED.finditer(plain):
+            month = _MONTH_OF.get(m.group(2))
+            if month:
+                found = _day(int(m.group(3)), month, int(m.group(1)) if m.group(1) else 1)
+                if found:
+                    return found
+        m = _M_Y.search(plain)
+        if m and 1 <= int(m.group(1)) <= 12:
+            return _day(int(m.group(2)), int(m.group(1)), 1)
+    return None
+
+
+_SECTION_10 = re.compile(r"^(?:smpc\d+:)?10$")
+
+
+def label_revision(sections: dict[str, str]) -> date | None:
+    """A label file's revision date: the latest ``label_date`` of the section 10 of each SmPC in it. One file can
+    hold two SmPCs and leave the first one's section 10 empty (Infomed 604022: the date is in the second's)."""
+    found = [d for k, v in sections.items() if _SECTION_10.match(k) and (d := label_date(v))]
+    return max(found) if found else None
+

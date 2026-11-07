@@ -550,6 +550,7 @@ def test_a_class_issue_revived_from_history_is_in_the_digest(store, tag):
     ("blocked: bot check at https://x", True), ("parse: the page changed shape", True),
     ("FetchError: every new item failed; first: x", True), ("ConnectError: timed out", True),
     ("no label read: no product found", True),
+    ("out of time: 212 label(s) left for the next run", False),   # 0084: the label watch read, then ran out
 ])
 def test_one_definition_of_a_failed_run(store, error, failed):
     got = store.db.fetchone("select source_run_failed(%(e)s) as f", {"e": error})["f"]

@@ -1,0 +1,68 @@
+[
+{
+"drug_code": 94728,
+"class_name": "Human",
+"drug_identification_number": "02459973",
+"brand_name": "LANCORA",
+"descriptor": "",
+"number_of_ais": "1",
+"ai_group_no": "0158730001",
+"company_name": "SERVIER CANADA INC",
+"last_update_date": "2025-06-26"
+},
+{
+"drug_code": 94729,
+"class_name": "Human",
+"drug_identification_number": "02459981",
+"brand_name": "LANCORA",
+"descriptor": "",
+"number_of_ais": "1",
+"ai_group_no": "0158730002",
+"company_name": "SERVIER CANADA INC",
+"last_update_date": "2025-06-26"
+},
+{
+"drug_code": 4204,
+"class_name": "Veterinary",
+"drug_identification_number": "00052124",
+"brand_name": "OXYTO-SURE",
+"descriptor": "",
+"number_of_ais": "1",
+"ai_group_no": "0106478001",
+"company_name": "VETOQUINOL N A INC",
+"last_update_date": "2025-03-22"
+},
+{
+"drug_code": 793,
+"class_name": "Human",
+"drug_identification_number": "00000809",
+"brand_name": "ALCON TEARS 0.5%",
+"descriptor": "",
+"number_of_ais": "1",
+"ai_group_no": "0108634001",
+"company_name": "ALCON CANADA INC",
+"last_update_date": "2025-03-22"
+},
+{
+"drug_code": 794,
+"class_name": "Human",
+"drug_identification_number": "00000817",
+"brand_name": "ALCON TEARS 1%",
+"descriptor": "",
+"number_of_ais": "1",
+"ai_group_no": "0108634002",
+"company_name": "ALCON CANADA INC",
+"last_update_date": "2025-03-22"
+},
+{
+"drug_code": 2375,
+"class_name": "Human",
+"drug_identification_number": "00000868",
+"brand_name": "ISOPTO CARPINE",
+"descriptor": "2%",
+"number_of_ais": "1",
+"ai_group_no": "0107358003",
+"company_name": "NOVARTIS PHARMACEUTICALS CANADA INC",
+"last_update_date": "2026-08-21"
+}
+]

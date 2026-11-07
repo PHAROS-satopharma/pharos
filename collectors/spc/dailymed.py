@@ -31,7 +31,7 @@ from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
 from collectors.core.context import FetchError
-from collectors.spc.common import Product, Snapshot, terms_for
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, terms_for
 from collectors.spc.sections import US_LOINC
 
 SOURCE_ID = "spc-dailymed"
@@ -44,6 +44,10 @@ HUMAN_OTC = "34390-5"  # LOINC document type: human OTC drug label
 # The OTC labels FDA approves one by one (DailyMed marketing categories): NDA, ANDA, NDA authorized generic.
 OTC_APPROVED = ("C73594", "C73584", "C73605")
 MAX_PAGES = 40       # 4,000 labels per list: a bound against a runaway answer, not a cut of a real list
+# Snapshot.method: since 7 Nov 2026 the old-format PRECAUTIONS and Recent Major Changes are read too. A snapshot
+# read with them is compared only with one read the same way: the first one is a new baseline, so a section
+# that was simply never read before never alerts as a label change.
+SECTIONS_2 = "spl-sections-2"
 
 
 def lists(q: str) -> list[tuple[str, str | None]]:
@@ -94,6 +98,11 @@ def _read_list(ctx, query: str, otc: str | None, found: dict[str, Product]) -> N
         page += 1
 
 
+def listed_version(product: dict) -> str | None:
+    v = (product.get("extra") or {}).get("spl_version")
+    return str(v) if v not in (None, "") else None
+
+
 def _text(node) -> str:
     parts = []
     for t in node.iter():
@@ -131,14 +140,14 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     url = f"{API}/spls/{product['national_id']}.xml"
     # DailyMed answers HTTP 406 to "Accept: application/xml" alone (6 Nov 2026: every US label of the day's
     # label watch); with a wildcard after it, it serves the same XML
-    f = ctx.get(url, accept="application/xml, */*;q=0.8")
+    f = fetch_label(ctx, url, accept="application/xml, */*;q=0.8")
     if f.status != 200 or not f.content:
-        return None
+        raise SnapshotError(f"DailyMed {product['national_id']}: HTTP {f.status}, empty label")
     try:
         sections, when = parse_spl(f.content)
-    except ET.ParseError:
-        return None
+    except ET.ParseError as exc:
+        raise SnapshotError(f"DailyMed {product['national_id']}: the label XML does not parse ({exc})") from None
     if not sections:
         return None
     return Snapshot(sections=sections, doc_date=when, lang=LANG, source_url=url,
-                    original_sha256=f.sha256)
+                    original_sha256=f.sha256, method=SECTIONS_2)

@@ -10,7 +10,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **4h** | every 4 h at :17 | Feeds, JSON, APIs, HTML lists, the PV mailbox over IMAP (Fimea, TGA, FDA, famhp and Health Canada mails) |
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
 | `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`) and literature monitoring list (`collectors/mlm.py`), up to 15 minutes of the check of the past, and the papers' free full texts from Unpaywall (`collectors/fulltext.py`) |
-| `collect.yml`, schedule **literature** | 10:41 and 18:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
+| `collect.yml`, schedule **literature** | 10:41, 18:41 and 22:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
 | `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `trials.yml` | Wednesday 04:11 | Clinical trials of the watched ingredients from ClinicalTrials.gov (`collectors/trials.py`); only new or updated studies are fetched |
@@ -22,7 +22,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source but the PV mailbox, flagged as backfill, no alerts |
 | pg_cron `pharos-kick-4h`, `-12h`, `-weekly`, `-monthly` | about 50 min after each slot | Asks GitHub for that slot's collection when no run of it started (0007) |
-| pg_cron `pharos-kick-readiness` | every hour at :29 | Asks GitHub again for the latest daily or literature slot (02:31, 10:41, 18:41 UTC) until one of its runs starts (0084) |
+| pg_cron `pharos-kick-readiness` | every hour at :29 | Asks GitHub again for the latest daily or literature slot (02:31, 10:41, 18:41, 22:41 UTC) until one of its runs starts (0084, 0090) |
 | `rematch.yml` | by hand | The check of the past for up to 45 minutes at once (after adding an ingredient) |
 
 `collect.yml`, `rematch.yml` and `audit.yml` share one concurrency group (`collectors`), so two of them never
@@ -385,7 +385,7 @@ preparation has got, and the weekly report repeats it in section 1 (migrations 0
   is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
   ingredient by the migration, so a new one is covered the moment it is saved.
 - Otherwise **Still preparing:** followed by what is still running or still to come, in order: *class words
-  waiting* (the next daily or literature run: 02:31, 10:41 or 18:41), *check of the past running* or *waiting*,
+  waiting* (the next daily or literature run: 02:31, 10:41, 18:41 or 22:41), *check of the past running* or *waiting*,
   *NCBI look-back running* or *waiting*, *Europe PMC look-back running* or *waiting*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
   03:23), *nobody receives its
   Telegram messages yet*.
@@ -509,6 +509,35 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   reference product every week. Before this, on 6 Nov 2026, paracetamol's products ran a hand-started watch to
   GitHub's two-hour timeout and the run was killed before it reached Japan; Monday's 90-minute run would have
   been killed the same way, for every ingredient.
+- **A list that breaks off never switches products off** (0084, 0085, 7 Nov 2026). A product is marked no
+  longer authorised only when the country's list for the ingredient was read to its end. When a page, a
+  Japanese code page or a UK search page did not answer, the run notes *partial list: …* and keeps every product
+  listed before, and their labels are read as usual. An empty answer where products were listed before is a
+  failed discovery (*listed no product; N listed before kept*), not every product withdrawn at once. A list that
+  failed outright still reads the labels already known. A label that does not answer (an HTTP error, a file that
+  is not a PDF) is an error on that product and is read first the next week; only a label that answered with no
+  section counts as *without label text*. A label two ingredients share is read in full for each of them. Spain
+  is searched by ATC code and by the Spanish name, so combinations are found; the UK search reads every page
+  (up to 40) of up to four English names, and a UK product without a PL number keeps its name as its id, so a
+  new SPC file is the same product. A run that only ran out of time shows as a note, not as Failed (0084). On
+  7 Nov 2026, 99 Japanese package inserts filed under ivabradine by codes it does not have (paracetamol's among
+  them) were switched off once (0085).
+- **The regulator's version decides what is read first** (0086, 7 Nov 2026). Each snapshot keeps the label's
+  version as the regulator's list gives it: DailyMed's SPL version, PMDA's package id, CIMA's document date,
+  EMA's last update, MHRA's document id (France's list names none). A label whose listed version moved is read
+  first, ahead of the labels read in turn; a label still listed at the version last read is not read again for
+  28 days (our reference product always is). The time saved goes to the labels that changed.
+- **Sections read** (7 Nov 2026). US labels: the old-format PRECAUTIONS (with pregnancy, nursing, paediatric and
+  geriatric use inside it) and Recent Major Changes are read and watched too; an OTC label's Warnings already
+  held "Do not use", "Ask a doctor" and "Stop use". An EPAR's product information is read one SmPC per strength
+  or form (the second one's sections are *smpc2:4.4* …); before, every SmPC after the first ran on inside the
+  first one's section 10. The first read of a US label or an EPAR this new way is a new baseline, never a change.
+- **Proven on a real revision** (7 Nov 2026). *PHAROS label change replay* (`replay.yml`, by hand: a DailyMed
+  set id and two versions) reads two published versions of one label the way the watch reads them and names the
+  sections that changed and those that would alert; nothing is stored and no message is sent. Corlanor
+  (ivabradine) versions 16 and 20, the April 2019 approval for children, alert in warnings and precautions,
+  contraindications, adverse reactions, interactions, specific populations and Recent Major Changes; versions 31
+  and 33 have the same safety sections and give no change. The pair is a CI test (`tests/test_spc_replay.py`).
 
 The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
 took its place.

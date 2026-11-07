@@ -82,6 +82,9 @@ _SECRET_PARAM = re.compile(
     r"client[_-]?secret)=)[^&#\s\"'<>]*", re.I)
 _URL_USERINFO = re.compile(r"(\b[a-z][a-z0-9+.-]*://)[^/@\s:]+:[^/@\s]*@", re.I)
 _BOT_TOKEN = re.compile(r"(/bot)\d+:[A-Za-z0-9_-]+")
+# An Azure Functions key (``?code=``) on the hosts whose page hands it out (HPRA's search); elsewhere ``code=`` is
+# an ordinary value (Health Canada's drug code) and stays readable.
+_FUNCTION_KEY = re.compile(r"(\bsfapi\.hpra\.ie/[^\s?\"'<>]*\?(?:[^\s#\"'<>]*&)?code=)[^&#\s\"'<>]*", re.I)
 REDACTED = "<redacted>"
 
 
@@ -89,6 +92,7 @@ def redact(text: Any) -> str:
     """``text`` (a URL, an error message, a traceback) with every secret replaced by <redacted>."""
     s = str(text)
     s = _SECRET_PARAM.sub(r"\1" + REDACTED, s)
+    s = _FUNCTION_KEY.sub(r"\1" + REDACTED, s)
     s = _URL_USERINFO.sub(r"\1" + REDACTED + "@", s)
     return _BOT_TOKEN.sub(r"\1" + REDACTED, s)
 
