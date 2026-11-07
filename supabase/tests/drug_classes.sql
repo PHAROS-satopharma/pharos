@@ -220,9 +220,11 @@ select pg_temp.dc_assert(:'dc_r_switch' like '42501%' and :'dc_r_group' like '42
 select pg_temp.dc_assert(:'dc_r_links'::int = 3, 'a reader sees the ingredient''s classes and their switches');
 
 -- ───────────── notices only: a class kept out of the literature search (0051) ─────────────
-select pg_temp.dc_assert((select bool_and(literature) from ingredient_class
+select pg_temp.dc_assert((select not bool_or(literature) from ingredient_class
                            where ingredient_id = '00000000-0000-0000-0000-0000000dc001'),
-  'every link starts in the literature search');
+  'every link starts out of the literature search: the literature is searched for names (0093)');
+update ingredient_class set literature = true
+ where ingredient_id = '00000000-0000-0000-0000-0000000dc001' and class_id = '00000000-0000-0000-0000-0000000dc002';
 update ingredient_class set changed_at = '2026-01-01 00:00+00'
  where ingredient_id = '00000000-0000-0000-0000-0000000dc001' and class_id = '00000000-0000-0000-0000-0000000dc002';
 select coalesce(max(changed_at)::text, 'none') as dc_lit_term_before from class_term

@@ -34,9 +34,9 @@ insert into class_term (id, class_id, lang, term) values
   ('00000000-0000-0000-0000-00000037d101', '00000000-0000-0000-0000-00000037d001', 'en', 'ci screenoids'),
   ('00000000-0000-0000-0000-00000037d102', '00000000-0000-0000-0000-00000037d001', 'de', 'CI-Screenoide'),
   ('00000000-0000-0000-0000-00000037d201', '00000000-0000-0000-0000-00000037d002', 'en', 'ci zparentoids');
-insert into ingredient_class (ingredient_id, class_id, relation, enabled) values
-  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d001', 'group', true),
-  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d002', 'parent', false);
+insert into ingredient_class (ingredient_id, class_id, relation, enabled, literature) values
+  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d001', 'group', true, true),
+  ('00000000-0000-0000-0000-00000037a001', '00000000-0000-0000-0000-00000037d002', 'parent', false, true);
 
 -- ───────────── authorities: four of hers, one country with two authorities, one other, one library ─────────────
 insert into regulator (id, country_code, country_name, name, languages, homepage) values

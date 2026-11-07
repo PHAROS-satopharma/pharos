@@ -780,9 +780,14 @@ packs and their files and cannot ask for one.
 
 ## NCBI literature (PubMed and PubMed Central)
 
-- **What is searched.** Every day (the daily run), for each active ingredient: its English name (INN) and each
-  English word of its drug classes, on PubMed and on PubMed Central (full texts). Each is typed exactly as a
-  person types it on the NCBI websites (no quotes, no field tag), so NCBI expands it the same way. The run reads
+- **What is searched.** Every day (the daily run), for each active ingredient: its English name (INN) together
+  with its other English names matched as words (synonyms and salts of mode stem, such as "acetaminophen" for
+  paracetamol; never a brand, a code or an exact-only acronym such as "APAP"), on PubMed and on PubMed Central.
+  Each name is a quoted phrase searched in titles and abstracts only (`"paracetamol"[tiab] OR
+  "acetaminophen"[tiab]`; owner, 7 Nov 2026). Before that, the unquoted words were searched in PMC's full texts
+  with every class word, about 140,000 papers in a 12-month look-back, most naming the ingredient in passing.
+  Class words are searched only for a class an administrator switches into the literature; every class is out of
+  it by default since migration 0093 (the words are still searched in the authorities' notices). The run reads
   by entry date, every page of results, and stores each paper once: under its PMID with both links when it is in
   both databases, under its PMC id when it is not in PubMed yet. A paper found only by a class word is
   class-only.
@@ -837,10 +842,11 @@ packs and their files and cannot ask for one.
 
 - **What is searched.** The source `europepmc` (`collectors/parsers/europepmc.py`, regulator EBI) runs after
   NCBI in the daily and literature runs and searches Europe PMC's REST API for the same words NCBI is searched
-  for: each active ingredient's English name and the English words of its classes in the literature search. Each
-  word is one exact phrase, `"word" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[from TO to]`, with
-  `synonym=false`, so it matches the title, the abstract and the full texts Europe PMC holds, plus preprints
-  (Research Square, medRxiv, bioRxiv …), which NCBI does not list.
+  for: each active ingredient's English names and the English words of any class switched into the literature.
+  Each name is a quoted phrase in the title or abstract, `(TITLE_ABS:"paracetamol" OR TITLE_ABS:"acetaminophen")
+  AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[from TO to]`, with `synonym=false`, as NCBI's `[tiab]`
+  (owner, 7 Nov 2026), so it finds the abstracts Europe PMC holds plus preprints (Research Square, medRxiv,
+  bioRxiv …), which NCBI does not list.
 - **One paper, one document.** Before storing, the run looks every hit up among the papers the other literature
   sources stored, by PMID, PMC id and DOI (case ignored). A paper NCBI already stored is not stored again: its
   `structured.found_in` and the search's `db` list gain `europepmc`. The NCBI run does the same the other way,

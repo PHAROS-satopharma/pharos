@@ -6,14 +6,16 @@
 //   → {ingredient: {id, inn_en}, from, to, checked_at,
 //      queries: [{label, kind: 'name'|'class', pubmed: {count, url, error?}, pmc: {count, url, error?}}]}
 //
-// The searches are the ones the daily literature watch runs (collectors/parsers/pubmed.py): the English INN,
-// then each English word of the ingredient's drug classes, typed as a person types them (no quotes, no field
-// tag). The watch reads by entry date; this answers by publication date, as the websites' date filters do.
+// The searches are the ones the daily literature watch runs (collectors/parsers/pubmed.py): the English INN with
+// its other English names matched as words (Store.literature_names: inn, salt or synonym, mode stem), then each
+// English word of the drug classes switched into the literature (none by default since 0093), each a quoted
+// phrase in titles and abstracts (ncbiTerm). The watch reads by entry date; this answers by publication date, as
+// the websites' date filters do.
 // A database that does not answer gives count null and an error; its link still opens the search.
 // Any signed-in team member may ask. Nothing is stored.
 import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
-import { count, type Db, parseDay, pause, websiteUrl } from "./ncbi.ts";
+import { count, type Db, ncbiTerm, parseDay, pause, websiteUrl } from "./ncbi.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_QUERIES = 20;
@@ -64,18 +66,38 @@ serve(async (req) => {
     classWords = (words ?? []).map((r) => String(r.term));
   }
 
+  // The name's other English names, searched with it (never a brand, a code or an exact-only word).
+  const { data: names, error: nErr } = await svc
+    .from("ingredient_term")
+    .select("term")
+    .eq("ingredient_id", id)
+    .eq("lang", "en")
+    .eq("mode", "stem")
+    .in("kind", ["inn", "salt", "synonym"]);
+  if (nErr) throw new Error(`name lookup failed: ${nErr.message}`);
+  const tidy = (w: string) => w.replaceAll('"', "").split(/\s+/).filter(Boolean).join(" ");
+  const inn = tidy(String(ing.inn_en ?? ""));
+  const also: string[] = [];
+  const alsoSeen = new Set([inn.toLowerCase()]);
+  for (const w of (names ?? []).map((r) => tidy(String(r.term))).sort((a, b) => a.localeCompare(b))) {
+    if (w && !alsoSeen.has(w.toLowerCase())) {
+      alsoSeen.add(w.toLowerCase());
+      also.push(w);
+    }
+  }
+
   // The name first, then each class word once (NCBI ignores case), as the daily watch searches them.
   const candidates: { word: string; kind: "name" | "class" }[] = [
-    { word: String(ing.inn_en ?? ""), kind: "name" },
+    { word: inn, kind: "name" },
     ...classWords.map((w) => ({ word: w, kind: "class" as const })),
   ];
   const seen = new Set<string>();
-  const searches: { label: string; kind: "name" | "class" }[] = [];
+  const searches: { label: string; kind: "name" | "class"; term: string }[] = [];
   for (const { word, kind } of candidates) {
-    const label = word.split(/\s+/).filter(Boolean).join(" ");
+    const label = tidy(word);
     if (!label || seen.has(label.toLowerCase())) continue;
     seen.add(label.toLowerCase());
-    searches.push({ label, kind });
+    searches.push({ label, kind, term: ncbiTerm(kind === "name" ? [label, ...also] : [label]) });
   }
 
   const queries: Record<string, unknown>[] = [];
@@ -85,9 +107,9 @@ serve(async (req) => {
     for (const db of DBS) {
       if (!first) await pause();
       first = false;
-      const hit: Hit = { count: null, url: websiteUrl(db, s.label, from, to) };
+      const hit: Hit = { count: null, url: websiteUrl(db, s.term, from, to) };
       try {
-        hit.count = await count(db, s.label, from, to);
+        hit.count = await count(db, s.term, from, to);
       } catch (e) {
         console.warn("literature-search", db, s.label, e);
         hit.error = `${NAMES[db]} did not answer. Open the link, or try again in a minute.`;

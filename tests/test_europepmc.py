@@ -34,7 +34,8 @@ _, SOURCES, _ = load_catalogue()
 SRC = next(s for s in SOURCES if s.id == "europepmc")
 TODAY = date.today()
 YEAR_AGO = pubmed.months_back(TODAY, 12)
-QUERY = re.compile(r'^"((?:[^"\\]|\\.)*)" AND \(SRC:MED OR SRC:PMC OR SRC:PPR\) AND '
+QUERY = re.compile(r'^\(TITLE_ABS:"((?:[^"\\]|\\.)*)"(?: OR TITLE_ABS:"(?:[^"\\]|\\.)*")*\) '
+                   r'AND \(SRC:MED OR SRC:PMC OR SRC:PPR\) AND '
                    r'FIRST_IDATE:\[(\d{4}-\d\d-\d\d) TO (\d{4}-\d\d-\d\d)\]$')
 ASKED = re.compile(r"\(SRC:([A-Z]{3}) AND EXT_ID:([A-Za-z0-9]+)\)")
 
@@ -126,7 +127,12 @@ def test_ncbis_words_once_each_as_a_quoted_phrase():
         ("beta blockers", "class", "europepmc"), ("NSAID", "class", "europepmc")]
     assert got[2].key == ("europepmc", "beta blockers")
     assert (europepmc.query(got[2], date(2026, 10, 20), date(2026, 11, 6))
-            == '"beta blockers" AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]')
+            == '(TITLE_ABS:"beta blockers") AND (SRC:MED OR SRC:PMC OR SRC:PPR) AND FIRST_IDATE:[2026-10-20 TO 2026-11-06]')
+    # a name with its other English names: each in the title or abstract, as NCBI's [tiab]
+    para = europepmc.searches(["paracetamol"], {}, {"paracetamol": ["acetaminophen"]})[0]
+    assert (para.key, para.also) == (("europepmc", "paracetamol"), ("acetaminophen",))
+    assert europepmc.query(para, date(2026, 11, 6), date(2026, 11, 6)).startswith(
+        '(TITLE_ABS:"paracetamol" OR TITLE_ABS:"acetaminophen") AND ')
     # a quote or a backslash cannot end the phrase early (a broken query is silently half-read by Europe PMC)
     assert europepmc.phrase('5-HT3 "setrons" \\ x') == '"5-HT3 \\"setrons\\" \\\\ x"'
 

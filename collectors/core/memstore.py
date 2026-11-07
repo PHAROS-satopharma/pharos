@@ -270,6 +270,17 @@ class MemoryStore:
                 out[row["inn_en"]] = sorted({*out.get(row["inn_en"], []), *words})
         return out
 
+    def literature_names(self, lang: str = "en") -> dict[str, list[str]]:
+        """As Store.literature_names: an ingredient's names searched with its INN (inn, salt or synonym, stem)."""
+        out: dict[str, list[str]] = {}
+        for t in sorted(self.terms, key=lambda x: x.term.lower()):
+            row = self.ingredient.get(t.ingredient_id or "")
+            if (row is None or not row.get("active", True) or t.is_class or t.lang != lang
+                    or t.kind not in ("inn", "salt", "synonym") or t.mode != "stem"):
+                continue
+            out.setdefault(row["inn_en"], []).append(t.term)
+        return out
+
     def ingredients_without_spc(self) -> list[str]:
         return [i for i, r in self.ingredient.items() if r.get("active", True) and i not in self.spc_mah]
 

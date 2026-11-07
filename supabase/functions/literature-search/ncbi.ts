@@ -1,8 +1,7 @@
 // NCBI E-utilities for literature-search: one count per search and database, by publication date, exactly as
-// the PubMed and PubMed Central websites count it. Checked on 6 November 2026 for levofloxacin, publication
-// dates 1-31 October 2026: esearch gave PubMed 89 / PMC 357 for "levofloxacin", 233 / 475 for
-// "fluoroquinolones" and 187 / 491 for "nonsteroidal anti-inflammatory", the same numbers both websites show for
-// the links built below.
+// the PubMed and PubMed Central websites count it for the links built below. Since 7 November 2026 a search is
+// its names as quoted phrases in titles and abstracts (ncbiTerm); entry dates 6 Nov 2025 to 7 Nov 2026 gave
+// PubMed 162 / PMC 94 for "carvedilol"[tiab], against 162 / 2,156 for the unquoted full-text word.
 
 const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
 const contact = Deno.env.get("CONTACT_EMAIL");
@@ -15,6 +14,12 @@ const RETRY_WAITS_MS = [1000, 3000];
 export type Db = "pubmed" | "pmc";
 
 const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** The search as the daily watch asks it (collectors/parsers/pubmed.py, term): each word a quoted phrase in
+ *  titles and abstracts, ORed: "paracetamol"[tiab] OR "acetaminophen"[tiab] (owner, 7 Nov 2026). */
+export function ncbiTerm(words: string[]): string {
+  return words.map((w) => `"${w.replaceAll('"', "")}"[tiab]`).join(" OR ");
+}
 
 /** "2026-10-01" → the same string when it is a real calendar day, else null. */
 export function parseDay(value: unknown): string | null {
@@ -31,15 +36,16 @@ export function ncbiDay(day: string): string {
   return day.replaceAll("-", "/");
 }
 
-/** The same search on the website: PubMed's publication-date filter, or PMC's [pdat] field. */
-export function websiteUrl(db: Db, query: string, from: string, to: string): string {
+/** The same search on the website: PubMed's publication-date filter, or PMC's [pdat] field. ``term`` is
+ *  ncbiTerm's; several names are bracketed before PMC's date is added, so the date applies to them all. */
+export function websiteUrl(db: Db, term: string, from: string, to: string): string {
   if (db === "pubmed") {
-    return `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(query)}` +
+    return `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(term)}` +
       `&filter=dates.${ncbiDay(from)}-${ncbiDay(to)}`;
   }
-  // Never wrap the words in brackets: "(nonsteroidal anti-inflammatory) AND …" counts 492, not 491.
+  const words = term.includes(" OR ") ? `(${term})` : term;
   return `https://pmc.ncbi.nlm.nih.gov/search/?term=` +
-    encodeURIComponent(`${query} AND ${ncbiDay(from)}:${ncbiDay(to)}[pdat]`);
+    encodeURIComponent(`${words} AND ${ncbiDay(from)}:${ncbiDay(to)}[pdat]`);
 }
 
 export function esearchUrl(db: Db, query: string, from: string, to: string): string {

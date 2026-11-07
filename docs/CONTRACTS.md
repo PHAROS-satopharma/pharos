@@ -596,7 +596,8 @@ ingredient_match_relation(p_ingredient uuid, p_document uuid) returns text
 ## Notices only: a class kept out of the literature search (0051)
 
 ```sql
--- ingredient_class: + literature boolean not null default true; audited; dated in changed_at like enabled
+-- ingredient_class: + literature boolean not null default true (default false and every link false since 0093:
+--   the literature is searched for names); audited; dated in changed_at like enabled
 --   (trigger ingredient_class_relation). Every link existing on 0051 stays in the literature.
 -- It counts only while enabled. enabled and literature = the class's English words are also searched on PubMed
 -- and PubMed Central; enabled and not literature = its words are matched in notices only (every language).

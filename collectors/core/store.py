@@ -308,6 +308,21 @@ class Store:
             out.setdefault(r["inn_en"], []).append(r["term"])
         return out
 
+    def literature_names(self, lang: str = "en") -> dict[str, list[str]]:
+        """Each active ingredient's other names in ``lang`` that the literature watch searches with its INN, by its
+        English INN: kind inn, salt or synonym matched as a word (mode stem). Never a brand, a code, or an
+        exact-only word (an acronym such as APAP, which titles also use for other things)."""
+        rows = self.db.fetchall(
+            """select i.inn_en, t.term
+                 from ingredient i
+                 join ingredient_term t on t.ingredient_id = i.id and t.lang = %(l)s
+                where i.active and t.kind in ('inn', 'salt', 'synonym') and t.mode = 'stem'
+                order by i.inn_en, lower(t.term)""", {"l": lang})
+        out: dict[str, list[str]] = {}
+        for r in rows:
+            out.setdefault(r["inn_en"], []).append(r["term"])
+        return out
+
     def ingredients_without_spc(self) -> list[str]:
         rows = self.db.fetchall(
             """select i.id from ingredient i
