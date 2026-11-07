@@ -411,6 +411,37 @@ def page_status(page: dict, sources: dict[str, dict]) -> dict:
     return {"state": state, "label": label, "note": note or None}
 
 
+def label_databases(pages: list[dict], sources: list[dict], log_by_source: dict[str, dict]) -> dict:
+    """Her database pages (regulator_page, kind 'database') in the week: **read** when a switched-on labels source
+    that reads the page completed a run in the week; **not read this week** when such a source exists but did not;
+    **not read by the app** when none does (blocked, behind a sign-in or terms; the Sources page says why). The
+    Ingredients page counts the same pages per ingredient (ingredient_readiness, 0095)."""
+    on = {s["id"] for s in sources if s.get("enabled") and s.get("kind") == "spc"}
+    total = read = missed = 0
+    for page in pages:
+        if page.get("kind") != "database":
+            continue
+        total += 1
+        readers = [sid for sid in page.get("read_by") or [] if sid in on]
+        if any(int((log_by_source.get(sid) or {}).get("ok_runs") or 0) > 0 for sid in readers):
+            read += 1
+        elif readers:
+            missed += 1
+    return {"total": total, "read": read, "missed": missed, "not_read": total - read - missed}
+
+
+def label_databases_text(d: dict, this: str = "this week") -> str:
+    """"19 of 27 pages · 8 not read by the app (reasons on the Sources page)"."""
+    if not d["total"]:
+        return "no database pages listed"
+    parts = [f"{d['read']} of {plural(d['total'], 'page', 'pages')}"]
+    if d["missed"]:
+        parts.append(f"{d['missed']} not read {this}")
+    if d["not_read"]:
+        parts.append(f"{d['not_read']} not read by the app (reasons on the Sources page)")
+    return " · ".join(parts)
+
+
 def source_label(s: dict, pages: list[dict]) -> str:
     """A source in plain words: the name of her page it reads, else what it reads and where."""
     page = next((p for p in pages if s["id"] in (p.get("read_by") or [])), None)
@@ -912,6 +943,9 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
         ("Of them, history (never alerted)", sum(1 for m in found.values() if m["history"])),
         ("Of them, no decision yet", sum(1 for m in found.values() if m["awaiting"])),
         ("Label changes", len(labels)),
+        *([("Label databases read", label_databases_text(
+            label_databases(raw["pages"], raw["sources"], log_by_source), week.this))]
+          if isinstance(week, Week) else []),
         ("Papers in PubMed, PubMed Central and Europe PMC", len(papers)),
         ("Possible case reports in the literature", sum(1 for p in papers.values() if p["case_report"])),
         ("Case reports with no decision yet",
@@ -962,7 +996,7 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                        "Reads that failed", "New items published")),
         ("What concerns our ingredients", ("Watched ingredients", "Notices naming our ingredients or their class",
                                            "Of them, history (never alerted)", "Of them, no decision yet",
-                                           "Label changes")),
+                                           "Label changes", "Label databases read")),
         ("Literature", ("Papers in PubMed, PubMed Central and Europe PMC", "Possible case reports in the literature",
                         "Case reports with no decision yet")),
         ("Decisions and the five-day clock", (f"Decisions taken {week.this}", f"Reported to the authority {week.this}",
