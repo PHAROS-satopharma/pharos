@@ -609,6 +609,42 @@ took its place.
 - **After the 0034 deployment** the words the 12-month backfill already covered are marked checked;
   everything added after it (levofloxacin, added 5 November 2026) is due, so the first daily run starts on it.
 
+## Completeness and the matching audit
+
+**What keeps a notice from being lost**
+- **UK.** MHRA is read from GOV.UK's search API, newest first. Paging stops at the first item already stored,
+  and a backfill reads the whole list (`collectors/parsers/govuk.py`, `mhra-alerts` and `mhra-dsu`). The Atom
+  feeds held only the newest 15–20 items.
+- **Filters.** What a source's keyword or category filter leaves out is kept in `filtered_item`, with its title
+  and the reason (0074). The Sources screen shows the count. A keyword filter never drops a notice that names a
+  watched ingredient.
+- **Gaps.** A run that lists only items never seen before, from a source that already has stored items, has moved
+  past the last read. The run logs "Possible gap" with the oldest date listed, and the admins get a health alert
+  (`possible_gap`, `collectors/run.py`; not for mailboxes, literature or labels).
+- **Matching.** The check of the past reads every stored notice for a new or changed word, whatever its date
+  (0072). The weekly matching audit (`audit.yml`, Sunday 00:53 UTC) then looks for stored notices that contain an
+  ingredient's own name but carry no link to it. It links each one it finds and lists the names RxNorm gives to
+  another substance (`match_audit`, 0075; shown on the Ingredients screen).
+
+**Proof, 7 Nov 2026, 07:41–08:10 Cairo** (live database, after the UK backfills, the check of the past and the
+first audit)
+- **UK:** 1,465 of GOV.UK's 1,465 drug and device alerts are stored, plus the 90 letters taken from the safety
+  roundups, and 871 of 871 Drug Safety Updates. Before: 130 and 100.
+- **Missed links:** 1 notice of 631 that contain paracetamol's name has no link to it (a PubMed paper on
+  electrochemical detection of paracetamol). Every other ingredient has 0. Before: 48, all older than 12 months,
+  for example MHRA's "Paracetamol and pregnancy" and Denmark's 2014 ivabradine letters.
+- **Names of other substances:** none of the nine is left (Ofloxacin, Floxin, Floxacin, ペントキシベリン, Buchenteer,
+  C10H14O4, C9H13NO2, "Canada og Japan", "acetaminophen i USA"). The four EMA ofloxacin PSUSAs are not linked to
+  levofloxacin, and Austria's "21900" table cell no longer matches ivabradine's code 2190039.
+- **Words:** all 312 watched words have been checked against every stored notice.
+- **Known false flag:** levofloxacin's stored RxNorm code is 1546009, "levofloxacin anhydrous" (a precise
+  ingredient), not 82122, the ingredient. So the audit flags six of its own names (L-ofloxacin, Levaquin,
+  Levofloxacin anhydrous, Levofloxacine, Levofloxacino, Levofloxacinum) as "RxNorm: levofloxacin". They are
+  right: never remove them. Lornoxicam has no stored code, while RxNorm's is 20890.
+- **Not automated:** a check of every source's full list against what is stored. The proof above was made by
+  hand for MHRA. EMA's DHPCs (172 human letters, the 4 veterinary ones filtered on purpose), BfArM and MFDS were
+  checked by hand on 6 Nov.
+
 ## Removed: Signals, Our labels, the PSUR builder, Oversight and the escalation
 
 Removed as screens in November 2026 (see *What was removed* above). For the record of what they did:
