@@ -538,6 +538,13 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   (ivabradine) versions 16 and 20, the April 2019 approval for children, alert in warnings and precautions,
   contraindications, adverse reactions, interactions, specific populations and Recent Major Changes; versions 31
   and 33 have the same safety sections and give no change. The pair is a CI test (`tests/test_spc_replay.py`).
+- **What was read, on screen** (0091, 7 Nov 2026). Under *Label changes* on the Ingredients screen, *Databases
+  read* lists every database page of her list for the ingredient: the products listed, the labels read and
+  those waiting their turn, each label that could not be read with its error (`spc_product.last_error`, cleared
+  when a read succeeds), the newest label date, the newest change found, and whether the list was read to its
+  end (`spc_listing`; a list that broke off says where). The pages needing a look come first; a page the app does
+  not read comes last with its reason. On the Sources page each database page read by the label watch has one
+  line with the same counts over every ingredient (`label_watch_sources()`).
 
 The Our labels screen of before November 2026 (`/labels`) stays removed; the panel on the Ingredients screen
 took its place.

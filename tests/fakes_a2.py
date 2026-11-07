@@ -116,6 +116,7 @@ class SpcDb:
         self.products: dict[tuple[str, str, str], dict] = {}     # (source, ingredient, national id), as 0079
         self.our_labels: list[dict] = []        # current versions of our label: id, ingredient_id, lang, sections
         self.gaps: list[dict] = []              # label_gap rows the change writer stored
+        self.listings: dict[tuple[str, str], dict] = {}   # spc_listing (0091): (source, ingredient) -> row
 
     @contextmanager
     def transaction(self):
@@ -203,10 +204,19 @@ class SpcDb:
                 if r["id"] == p["i"]:
                     r["regulator_version"] = p["v"]
         elif q.startswith("update spc_product set checked_at = now()"):
+            assert "last_error = null" in q, "a label read clears the error of an earlier read"
             self.clock_n = getattr(self, "clock_n", 0) + 1     # an ever-later "now"
             for row in self.products.values():
                 if row["id"] == p["p"]:
                     row["checked_at"] = self.clock_n
+                    row["last_error"] = None
+        elif q.startswith("update spc_product set last_error"):
+            for row in self.products.values():
+                if row["id"] == p["p"]:
+                    row["last_error"] = p["e"]
+        elif q.startswith("insert into spc_listing"):
+            assert "on conflict (source_id, ingredient_id) do update" in q
+            self.listings[(p["s"], p["i"])] = {"products": p["n"], "complete": p["c"], "gaps": p["g"]}
         elif q.startswith("update spc_product set active = false"):
             for (src, _ing, nid), row in self.products.items():
                 if src == p["s"] and row["ingredient_id"] == p["i"] and nid not in p["k"]:
