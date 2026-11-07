@@ -68,6 +68,7 @@ class MemoryStore:
         self.term_state: dict[str, dict] = {}
         self.rematch_job: dict[str, dict] = {}
         self.match_audit: list[dict] = []                 # the weekly matching audit's rows (0075)
+        self.list_check: list[dict] = []                  # the weekly list check's rows (0096)
         self.audit_name_rows: list[dict] = []             # what audit_names() returns
         self.filtered_item: dict[tuple[str, str], dict] = {}   # (source, title) -> reason, times_seen
         self.report_request: dict[str, dict] = {}         # id -> the row of 0048
@@ -786,6 +787,9 @@ class MemoryStore:
 
     def record_match_audit(self, rows: list[dict]) -> None:
         self.match_audit.extend(rows)
+
+    def record_list_check(self, rows: list[dict]) -> None:
+        self.list_check.extend(rows)
 
     def rematch_advance(self, job_id: str, *, cursor: str, checked: int = 0, reread: int = 0,
                         matched: int = 0, issues_created: int = 0) -> None:

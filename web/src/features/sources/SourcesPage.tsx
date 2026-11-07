@@ -27,6 +27,7 @@ import {
 } from './queries';
 import { AddSource } from './AddSource';
 import { useLabelWatchSources, watchLine } from './labelWatchLine';
+import { listLine, useListChecks, type ListCheckRow } from './listCheck';
 import {
   MAX_LOOKBACK_DAYS,
   OTHER_AUTHORITIES,
@@ -69,6 +70,8 @@ interface CardShared {
   hz: HorizontalData;
   /** What each source's filters left out (filtered_item); read only with the technical details on. */
   filtered: Map<string, FilteredSummary>;
+  /** Each source's latest weekly list check (list_check): its own list against what is stored. */
+  lists: Map<string, ListCheckRow>;
   totals: Map<string, RunTotals>;
   runsPending: boolean;
   isAdmin: boolean;
@@ -92,6 +95,7 @@ export function SourcesPage() {
   });
   const totals = useMemo(() => totalsBySource(runs.data ?? []), [runs.data]);
   const filtered = useFiltered(isAdmin && technical);
+  const lists = useListChecks();
 
   const toggle = useMutation({
     mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
@@ -115,6 +119,7 @@ export function SourcesPage() {
   const shared: CardShared = {
     hz,
     filtered: filtered.data ?? new Map(),
+    lists: lists.data ?? new Map(),
     totals,
     runsPending: runs.isPending,
     isAdmin,
@@ -418,6 +423,7 @@ function WeekFigures({
   week,
   totals,
   filtered,
+  lists,
   runsPending,
   isAdmin,
   technical,
@@ -491,6 +497,7 @@ function WeekFigures({
           const waitingSince = waitingForMail(s);
           const lastChecked = t?.lastRun ?? s.last_ok_at;
           const left = filtered.get(s.id);
+          const list = s.enabled ? listLine(lists.get(s.id)) : null;
           return (
             <li key={s.id} className={cx('hz-run', !s.enabled && 'is-off')}>
               <div className="hz-run-name">
@@ -543,6 +550,9 @@ function WeekFigures({
                 ) : null}
               </div>
               {why ? <p className="hz-why">{why}</p> : null}
+              {list && (list.needsLook || technical) ? (
+                <p className={cx('hz-why', list.needsLook && 'is-attention')}>{list.text}</p>
+              ) : null}
               {technical ? (
                 <p className="hz-tech">
                   {CHANNEL_LABEL[s.channel]} · {s.parser} · {SCHEDULE_LABEL[s.schedule]} · {HEALTH_LABEL[s.health].label}

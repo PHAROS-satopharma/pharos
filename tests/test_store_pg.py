@@ -773,6 +773,17 @@ def test_the_matching_audit_finds_candidates_in_the_database_and_keeps_its_row(s
     assert row["linked_now"] == 1 and row["flagged_names"][0]["term"] == "Ofloxacin"
 
 
+def test_the_list_check_keeps_one_row_per_source(store, tag):
+    src = _source(store, tag)
+    store.record_list_check([{"source_id": src.id, "listed": 12, "stored": 10, "older": 1, "missing": 1,
+                              "filtered": 2, "complete": True, "error": None,
+                              "missing_items": [{"external_id": "a1", "title": "Recall", "url": "https://x.test/a1",
+                                                 "published": "2026-11-01"}]}])
+    row = store.db.fetchone("select * from list_check where source_id = %(s)s", {"s": src.id})
+    assert (row["listed"], row["missing"], row["complete"]) == (12, 1, True)
+    assert row["missing_items"][0]["external_id"] == "a1"
+
+
 def test_what_a_filter_dropped_is_kept_once_per_title(store, tag):
     src = _source(store, tag)
     store.record_filtered(src.id, [("Veterinary letter: enrofloxacin", "category: veterinary"),
