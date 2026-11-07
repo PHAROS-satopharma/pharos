@@ -1,7 +1,7 @@
 // deno test --allow-env supabase/functions/
 // The term proposal with every outside source faked: no network is used.
 import { assert, assertEquals } from "jsr:@std/assert@1.0.13";
-import { isFormula, namesTheSubstance } from "./guard.ts";
+import { isFormula, namesTheSubstance, toIngredientCodes } from "./guard.ts";
 import { terms } from "./terms.ts";
 import { usableSynonym } from "./text.ts";
 
@@ -95,8 +95,9 @@ const LEVOFLOXACIN = { wikidata_qid: "Q424193", atc_code: "J01MA12", inn_en: "le
 const uri = (q: string) => ({ type: "uri", value: `http://www.wikidata.org/entity/${q}` });
 const lit = (value: string, lang?: string) => ({ type: "literal", value, ...(lang ? { "xml:lang": lang } : {}) });
 
-/** Wikidata as it stood on 6 November 2026 for levofloxacin, RxNav as it answers. */
-async function withLevofloxacin<T>(fn: () => Promise<T>): Promise<T> {
+/** Wikidata as it stood on 6 November 2026 for levofloxacin, RxNav as it answers. Wikidata's own RxNorm id for
+ *  levofloxacin is 1546009, "levofloxacin anhydrous" (a precise form); its ingredient is 82122. */
+async function withLevofloxacin<T>(fn: () => Promise<T>, wikidataRxcui = "82122"): Promise<T> {
   const real = globalThis.fetch;
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
@@ -115,7 +116,7 @@ async function withLevofloxacin<T>(fn: () => Promise<T>): Promise<T> {
       const item = uri("Q424193");
       const row = (kind: string, val: string, lang?: string) => ({ item, kind: lit(kind), val: lit(val, lang) });
       return Promise.resolve(reply({ results: { bindings: [
-        row("atc", "J01MA12"), row("rxcui", "82122"),
+        row("atc", "J01MA12"), row("rxcui", wikidataRxcui),
         row("label", "levofloxacin", "en"), row("label", "Levofloxacin", "de"), row("label", "levofloxacine", "nb"),
         row("alt", "Ofloxacin", "en"), row("alt", "Floxin", "en"), row("alt", "Floxacin", "en"),
         row("alt", "Levaquin", "en"), row("alt", "C18H20FN3O4", "fr"), row("alt", "Canada og Japan", "nb"),
@@ -123,7 +124,10 @@ async function withLevofloxacin<T>(fn: () => Promise<T>): Promise<T> {
     }
     if (url.host === "rxnav.nlm.nih.gov") {
       const ids: Record<string, string[]> = { Ofloxacin: ["7623"], Levaquin: ["217992"] };
-      const ins: Record<string, [string, string]> = { "7623": ["7623", "ofloxacin"], "217992": ["82122", "levofloxacin"] };
+      const ins: Record<string, [string, string]> = {
+        "7623": ["7623", "ofloxacin"], "217992": ["82122", "levofloxacin"],
+        "82122": ["82122", "levofloxacin"], "1546009": ["82122", "levofloxacin"],
+      };
       const m = url.pathname.match(/rxcui\/(\d+)\/related/);
       if (m) {
         const [rxcui, name] = ins[m[1]];
@@ -152,6 +156,20 @@ Deno.test("names of another substance are left out and named in a warning; its o
   assert(names.includes("levofloxacin") && names.includes("Levofloxacin"));
   const warning = r.warnings.find((w) => /another substance/.test(w)) ?? "";
   assert(/Ofloxacin \(a name of ofloxacin\)/.test(warning) && /Floxin/.test(warning), warning);
+});
+
+Deno.test("with Wikidata's code of a form (levofloxacin anhydrous), levofloxacin's own names still pass", async () => {
+  const r = await withLevofloxacin(() => terms(LEVOFLOXACIN), "1546009");
+  const names = r.terms.map((t) => t.term);
+  assert(names.includes("Levaquin"), `levofloxacin's own brand was left out: ${JSON.stringify(r.warnings)}`);
+  assert(!names.includes("Ofloxacin") && !names.includes("Floxin"));
+});
+
+Deno.test("the lookup offers the ingredient's RxNorm code, never the code of a form of it", async () => {
+  const items = [{ rxcui: "1546009" }, { rxcui: "82122" }, { rxcui: null }];
+  const ok = await withLevofloxacin(() => toIngredientCodes(items));
+  assertEquals(items.map((c) => c.rxcui), ["82122", "82122", null]);
+  assert(ok);
 });
 
 Deno.test("a name check that cannot be made is reported, never silently passed", async () => {

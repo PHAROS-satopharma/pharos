@@ -48,8 +48,14 @@ def flag_names(rows: list[dict], rxnav: Any) -> tuple[dict[str, list[dict]], dic
     """Per ingredient, the names RxNorm gives only to other ingredients, and how many could not be checked."""
     flagged: dict[str, list[dict]] = {}
     unchecked: dict[str, int] = {}
+    own: dict[str, set[str]] = {}
     for r in rows:
         try:
+            # the stored code with its ingredients: levofloxacin was stored as 1546009, "levofloxacin anhydrous"
+            # (a precise form), while its names resolve to the ingredient 82122 (7 November 2026)
+            stored = str(r["rxcui"])
+            if stored not in own:
+                own[stored] = {stored} | {c["rxcui"] for c in rxnav.ingredients(stored) if c.get("tty") in (None, "IN")}
             found: dict[str, str] = {}
             for code in rxnav.by_name(r["term"]):
                 for c in rxnav.ingredients(code):
@@ -60,7 +66,7 @@ def flag_names(rows: list[dict], rxnav: Any) -> tuple[dict[str, list[dict]], dic
             log.warning("%s: RxNorm could not check name %s (%s)", r["ingredient_id"], r["id"], type(exc).__name__)
             unchecked[r["ingredient_id"]] = unchecked.get(r["ingredient_id"], 0) + 1
             continue
-        if found and str(r["rxcui"]) not in found:
+        if found and not own[stored] & found.keys():
             flagged.setdefault(r["ingredient_id"], []).append(
                 {"term_id": r["id"], "term": r["term"], "why": "RxNorm: " + ", ".join(sorted(found.values()))})
     return flagged, unchecked

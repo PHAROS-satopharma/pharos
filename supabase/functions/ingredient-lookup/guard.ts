@@ -180,8 +180,32 @@ async function rxnormOthers(cands: Candidate[], own: Own): Promise<Map<string, s
   return out;
 }
 
+/** The RxNorm ingredients (IN) an RxNorm id belongs to; an ingredient's own id gives itself. */
+export async function ingredientsOf(rxcui: string): Promise<string[]> {
+  const rel = await fetchJson<{ relatedGroup?: { conceptGroup?: { conceptProperties?: { rxcui: string }[] }[] } }>(
+    `https://rxnav.nlm.nih.gov/REST/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=IN`,
+  );
+  const out = new Set<string>();
+  for (const g of rel.relatedGroup?.conceptGroup ?? []) for (const p of g.conceptProperties ?? []) out.add(p.rxcui);
+  return [...out];
+}
+
+/** Each RxNorm code replaced by its ingredient's (IN), when it is one ingredient's; false when RxNav failed. */
+export async function toIngredientCodes(items: { rxcui: string | null }[]): Promise<boolean> {
+  const got = await Promise.allSettled(items.map(async (it) => {
+    if (!it.rxcui) return;
+    const ins = await ingredientsOf(it.rxcui);
+    if (ins.length === 1) it.rxcui = ins[0];
+  }));
+  return got.every((r) => r.status === "fulfilled");
+}
+
 /** The candidates that name another substance, each with why (keyed by key(term)). Throws when a source fails. */
 export async function otherSubstances(cands: Candidate[], own: Own): Promise<Map<string, string>> {
+  // Wikidata gives levofloxacin 1546009, "levofloxacin anhydrous" (a precise form, PIN), while its names resolve
+  // to the ingredient 82122 (7 November 2026): the own ids are compared together with their ingredients.
+  const ins = await Promise.all(own.rxcui.map(ingredientsOf));
+  own = { ...own, rxcui: [...new Set([...own.rxcui, ...ins.flat()])] };
   const [wd, rx] = await Promise.all([wikidataOthers(cands, own), rxnormOthers(cands, own)]);
   for (const [k, v] of rx) if (!wd.has(k)) wd.set(k, v);
   return wd;

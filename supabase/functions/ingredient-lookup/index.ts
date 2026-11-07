@@ -29,6 +29,7 @@ import {
   type EmaSubstance,
   type WikidataItem,
 } from "./sources.ts";
+import { toIngredientCodes } from "./guard.ts";
 import { key, similarity } from "./text.ts";
 import { ATC_RE, settled, terms } from "./terms.ts";
 
@@ -165,6 +166,12 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
     .filter((c) => c.score >= 35)
     .sort((a, b) => b.score - a.score || a.inn_en.localeCompare(b.inn_en))
     .slice(0, 10);
+
+  // The code stored is the RxNorm ingredient (IN), never a precise form of it: Wikidata gives levofloxacin
+  // 1546009, "levofloxacin anhydrous" (7 November 2026). An id that is not one ingredient's is kept as it is.
+  if (!(await toIngredientCodes(candidates))) {
+    warnings.push("RxNorm did not answer; an RxNorm code shown may be a form of the ingredient, not the ingredient.");
+  }
   return { candidates, warnings };
 }
 

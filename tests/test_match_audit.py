@@ -80,3 +80,22 @@ def test_a_name_rxnorm_gives_only_to_another_substance_is_flagged():
     assert r["flagged_names"] == [{"term_id": "n1", "term": "Ofloxacin", "why": "RxNorm: ofloxacin"}]
     assert r["unchecked_names"] == 1                  # never silently passed
     assert any(t.id == "t-levo-en" for t in s.terms)  # nothing is removed by the audit
+
+
+def test_names_are_checked_against_the_ingredient_of_a_stored_form_code():
+    # levofloxacin was stored as 1546009, "levofloxacin anhydrous"; its names resolve to the ingredient 82122
+    s, _ = world()
+    watch_levofloxacin(s)
+    s.audit_name_rows = [
+        {"id": "n1", "ingredient_id": LEVO, "term": "Ofloxacin", "kind": "synonym", "source": "wikidata", "rxcui": "1546009"},
+        {"id": "n2", "ingredient_id": LEVO, "term": "Levaquin", "kind": "brand", "source": "wikidata", "rxcui": "1546009"},
+        {"id": "n3", "ingredient_id": LEVO, "term": "Levofloxacinum", "kind": "synonym", "source": "wikidata", "rxcui": "1546009"},
+    ]
+    rx = FakeRxNav({"Ofloxacin": ["7623"], "Levaquin": ["217992"], "Levofloxacinum": ["82122"]},
+                   {"7623": [{"rxcui": "7623", "name": "ofloxacin", "tty": "IN"}],
+                    "217992": [{"rxcui": "82122", "name": "levofloxacin", "tty": "IN"}],
+                    "82122": [{"rxcui": "82122", "name": "levofloxacin", "tty": "IN"}],
+                    "1546009": [{"rxcui": "82122", "name": "levofloxacin", "tty": "IN"}]})
+    r = next(x for x in match_audit.run(s, rx, fields=lambda _p: []) if x["ingredient_id"] == LEVO)
+    assert r["flagged_names"] == [{"term_id": "n1", "term": "Ofloxacin", "why": "RxNorm: ofloxacin"}]
+    assert r["unchecked_names"] == 0
