@@ -917,6 +917,16 @@ class Store:
                            %(linked_now)s, %(left_over)s::jsonb, %(flagged_names)s::jsonb, %(unchecked_names)s)""",
                 {**r, "left_over": json.dumps(r["left_over"]), "flagged_names": json.dumps(r["flagged_names"])})
 
+    def record_list_check(self, rows: list[dict]) -> None:
+        """The weekly list check's rows, one per source (list_check, 0096)."""
+        for r in rows:
+            self.db.execute(
+                """insert into list_check (source_id, listed, stored, older, missing, filtered, missing_items,
+                                           complete, error)
+                   values (%(source_id)s, %(listed)s, %(stored)s, %(older)s, %(missing)s, %(filtered)s,
+                           %(missing_items)s::jsonb, %(complete)s, %(error)s)""",
+                {**r, "missing_items": json.dumps(r["missing_items"])})
+
     def rematch_advance(self, job_id: str, *, cursor: str, checked: int = 0, reread: int = 0,
                         matched: int = 0, issues_created: int = 0) -> None:
         self.db.execute(

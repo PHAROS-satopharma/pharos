@@ -643,9 +643,20 @@ first audit)
   ingredient), not 82122, the ingredient. So the audit flags six of its own names (L-ofloxacin, Levaquin,
   Levofloxacin anhydrous, Levofloxacine, Levofloxacino, Levofloxacinum) as "RxNorm: levofloxacin". They are
   right: never remove them. Lornoxicam has no stored code, while RxNorm's is 20890.
-- **Not automated:** a check of every source's full list against what is stored. The proof above was made by
-  hand for MHRA. EMA's DHPCs (172 human letters, the 4 veterinary ones filtered on purpose), BfArM and MFDS were
-  checked by hand on 6 Nov.
+- **Before the list check:** the proof above was made by hand for MHRA. EMA's DHPCs (172 human letters, the 4
+  veterinary ones filtered on purpose), BfArM and MFDS were checked by hand on 6 Nov.
+
+**The weekly list check** (`collectors/completeness.py`, `audit.yml` after the matching audit, `list_check` 0096)
+- Every switched-on notice source's own list is read again whole, the way a backfill reads it, with the same parser
+  and filters. Nothing is stored or archived and no message is sent. Mailboxes, literature and the label databases
+  are not lists of notices and are not checked.
+- Each listed notice is **stored**, **older** than the kept history (`backfill_months`; EMA's `backfill_all`
+  sources keep all of it), or **missing**: listed, inside the kept history and not stored. What the filters left
+  out is counted apart (`filtered_item`).
+- The Sources screen shows one line per source: "Whole list checked …: all N notices listed are stored", or how
+  many are not stored with the newest one named. A list read only in part, or not at all, is never shown as
+  complete. With the technical details on, the line is shown for every source; otherwise only when it needs a look.
+- To store what is missing: run `backfill.yml` for that source.
 
 ## Removed: Signals, Our labels, the PSUR builder, Oversight and the escalation
 

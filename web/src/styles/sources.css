@@ -334,6 +334,9 @@
   color: var(--muted);
   font-size: 13px;
 }
+.hz-why.is-attention {
+  color: var(--text);
+}
 .hz-tech {
   grid-column: 1 / -1;
   margin: 0;
