@@ -658,6 +658,17 @@ first audit)
   complete. With the technical details on, the line is shown for every source; otherwise only when it needs a look.
 - To store what is missing: run `backfill.yml` for that source.
 
+**Proof, 7 Nov 2026, 22:56–23:05 Cairo** (`audit.yml` started by hand, the first live list check, and the matching
+audit after the RxNorm codes were fixed)
+- **List check:** 48 notice sources read whole. 10,050 notices listed: 9,694 stored and 356 older than the kept
+  history (WHO, HPRA, PMDA revisions, MFDS, NoMA, ANSM, EDA, MPA, Infarmed). **0 missing.** 191 left out by
+  filters, the same count as `filtered_item`. UK: 1,555 alerts (with the roundup letters) and 871 Drug Safety
+  Updates, all stored.
+- **Not checked here:** the five mailboxes (FDA, Health Canada, FAMHP, TGA and Fimea e-mail), PubMed and Europe PMC,
+  and the label databases.
+- **Matching audit:** 229 notices name one of the seven ingredients; 0 are unlinked and 0 names are flagged.
+  Levofloxacin now carries RxNorm 82122 and lornoxicam 20890 (0094), so the false flag above is gone.
+
 ## Removed: Signals, Our labels, the PSUR builder, Oversight and the escalation
 
 Removed as screens in November 2026 (see *What was removed* above). For the record of what they did:
