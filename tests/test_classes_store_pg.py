@@ -191,6 +191,8 @@ def test_a_parent_class_is_shown_but_not_searched_until_switched_on(store, tag):
         {"lang": "en", "term": f"parentword{tag}", "mode": "stem", "source": "wikidata"}])
     store.link_ingredient_class(ing, group)
     store.link_ingredient_class(ing, parent, relation="parent", enabled=False)
+    # both switched into the literature (off by default since 0093), so enabled alone decides here
+    store.db.execute("update ingredient_class set literature = true where ingredient_id = %(i)s", {"i": ing})
     links = store.db.fetchall(
         "select class_id, relation, enabled from ingredient_class where ingredient_id = %(i)s order by relation",
         {"i": ing})
@@ -220,7 +222,8 @@ def test_a_parent_class_is_shown_but_not_searched_until_switched_on(store, tag):
 
 def test_a_class_kept_out_of_the_literature_is_searched_in_notices_only(store, tag):
     """Migration 0051: ingredient_class.literature takes the class's words out of class_words (the PubMed and
-    PMC watch) and leaves them in load_terms (notices); every link starts in the literature."""
+    PMC watch) and leaves them in load_terms (notices). Every link starts out of the literature since 0093 (the
+    literature is searched for the ingredients' names) until an administrator switches it on."""
     code = _code()
     ing = _ingredient(store, tag, code + "01")
     group = store.create_drug_class(code=code, name_en=f"Group {tag}", wikidata_qid=None, terms=[
@@ -228,7 +231,10 @@ def test_a_class_kept_out_of_the_literature_is_searched_in_notices_only(store, t
     store.link_ingredient_class(ing, group)
     row = store.db.fetchone("select literature from ingredient_class where ingredient_id = %(i)s and class_id = %(c)s",
                             {"i": ing, "c": group})
-    assert row == {"literature": True}
+    assert row == {"literature": False}
+    assert f"testoxacin-{tag}" not in store.class_words("en")
+    store.db.execute("update ingredient_class set literature = true where ingredient_id = %(i)s and class_id = %(c)s",
+                     {"i": ing, "c": group})
     assert store.class_words("en")[f"testoxacin-{tag}"] == [f"litword{tag}"]
     store.db.execute("update ingredient_class set literature = false where ingredient_id = %(i)s and class_id = %(c)s",
                      {"i": ing, "c": group})

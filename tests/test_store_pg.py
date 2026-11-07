@@ -591,7 +591,8 @@ def test_class_words_and_known_paper_ids(store, tag):
     cls = str(store.db.fetchone(
         "insert into drug_class (code, name_en) values (%(c)s, %(n)s) returning id",
         {"c": f"T{tag}", "n": f"Testaminoids {tag}"})["id"])
-    store.db.execute("insert into ingredient_class (ingredient_id, class_id) values (%(i)s, %(c)s)",
+    # switched into the literature (off by default since 0093)
+    store.db.execute("insert into ingredient_class (ingredient_id, class_id, literature) values (%(i)s, %(c)s, true)",
                      {"i": ing, "c": cls})
     store.db.execute(
         """insert into class_term (class_id, lang, term) values
