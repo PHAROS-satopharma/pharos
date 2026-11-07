@@ -21,6 +21,12 @@ a fallback week and the week the API recovers are never label changes. A section
 cannot be read raises ``SnapshotError`` (a partial snapshot would read as removed sections).
 A product found for two ingredients is read twice in one run; the second read gets 304 from the
 context and reuses the first answer (``common.get_reusing``).
+
+Some products have no HTML ficha técnica, only its PDF (``urlHtml`` absent, ``url`` set): older
+national products and the parallel imports of centrally authorised medicines (``05317003IP``, ivabradine).
+The HTML address built from the number answers 404 for them (7 Nov 2026: 25 of ivabradine's 67 products,
+never read), so their PDF is read and split by section number (``method`` ``"pdf"``). A product with no
+ficha técnica in either form has no label text (``None``), never an error.
 """
 
 from __future__ import annotations
@@ -33,8 +39,8 @@ import logging
 from collectors.core.context import FetchError, ParseError
 from collectors.parsers._html_util import block_text
 from collectors.parsers.base import soup
-from collectors.spc.common import Product, Snapshot, SnapshotError, get_reusing, terms_for
-from collectors.spc.sections import WATCHED_EU, split_numbered
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, get_reusing, label_revision, terms_for
+from collectors.spc.sections import WATCHED_EU, eu_label_sections, missing_core, split_numbered
 
 SOURCE_ID = "spc-cima"
 COUNTRY = "ES"
@@ -43,6 +49,7 @@ API = "https://cima.aemps.es/cima/rest"
 PAGE_SIZE = 200
 SECTIONS = "sections"        # Snapshot.method: the per-section API
 FULL_HTML = "html"           # Snapshot.method: the full ficha técnica HTML split by number
+PDF = "pdf"                  # Snapshot.method: the ficha técnica PDF, for a product with no HTML of it
 
 log = logging.getLogger(__name__)
 
@@ -135,9 +142,34 @@ def segmented_sections(ctx, n: str) -> dict[str, str] | None:
     return sections or None
 
 
+def pdf_snapshot(ctx, n: str, url: str, doc_date: date | None) -> Snapshot:
+    """The ficha técnica PDF, split by section number: for a product CIMA has no HTML ficha técnica of."""
+    f = fetch_label(ctx, url, accept="application/pdf")
+    if f.status != 200 or not f.is_pdf:
+        raise SnapshotError(f"CIMA {n} ficha técnica PDF: HTTP {f.status}{'' if f.status != 200 else ', not a PDF'}")
+    from collectors.pdf import extract_text
+
+    text, _method, _words = extract_text(f.content, LANG)
+    sections = eu_label_sections(text)
+    missing = missing_core(sections)
+    if missing:
+        raise SnapshotError(f"CIMA {n} ficha técnica PDF: section {', '.join(missing)} not found")
+    return Snapshot(sections=sections, doc_date=doc_date or label_revision(sections), lang=LANG, method=PDF,
+                    source_url=url, original_sha256=f.sha256)
+
+
 def snapshot(ctx, product: dict) -> Snapshot | None:
     n = product["national_id"]
     extra = product.get("extra") or {}
+    doc_date = None
+    if extra.get("ft_date"):
+        try:
+            doc_date = date.fromisoformat(extra["ft_date"])
+        except ValueError:
+            doc_date = None
+    if "ft_html" in extra and not extra.get("ft_html") and not extra.get("segmented"):
+        # the product list gives no HTML ficha técnica: its PDF, or no label text at all
+        return pdf_snapshot(ctx, n, extra["ft_pdf"], doc_date) if extra.get("ft_pdf") else None
     method, source_url = SECTIONS, f"{API}/docSegmentado/secciones/1?nregistro={n}"
     sections = segmented_sections(ctx, n)
     if not sections:
@@ -152,11 +184,5 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
         sections = {k: v for k, v in split_numbered(block_text(soup(g))).items() if wanted(k)}
         if not sections:
             raise ParseError(f"CIMA {n}: no numbered section in the ficha técnica HTML")
-    doc_date = None
-    if extra.get("ft_date"):
-        try:
-            doc_date = date.fromisoformat(extra["ft_date"])
-        except ValueError:
-            doc_date = None
     return Snapshot(sections=sections, doc_date=doc_date, lang=LANG, method=method,
                     source_url=source_url)

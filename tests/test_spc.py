@@ -1130,3 +1130,28 @@ def test_the_snapshot_keeps_the_regulator_version_and_follows_it_on_the_same_tex
     assert db.snapshots[-1]["regulator_version"] == "2026-10-01"
     watch_product(db, ctx, Module(), "spc-cima", dict(product, extra={"v": "2026-11-02"}), INGREDIENT)
     assert len(db.snapshots) == 1 and db.snapshots[-1]["regulator_version"] == "2026-11-02"
+
+
+# A product CIMA has no HTML ficha técnica of (7 Nov 2026: 25 of ivabradine's 67, never read): the address built
+# from its number answers 404, and its PDF is what CIMA lists.
+FT_PDF_81853 = "https://cima.aemps.es/cima/pdfs/ft/81853/FT_81853.pdf"
+PDF_ONLY = {**PRODUCT, "national_id": "81853",
+            "extra": {"segmented": False, "ft_html": None, "ft_pdf": FT_PDF_81853, "ft_date": "2017-10-11"}}
+
+
+def test_cima_product_with_only_a_pdf_is_read_from_the_pdf():
+    ctx = FakeCtx({FT_PDF_81853: "spc-cima/FT_81853.pdf"})
+    snap = cima.snapshot(ctx, PDF_ONLY)
+    assert snap.method == "pdf" and snap.source_url == FT_PDF_81853
+    assert {"4.3", "4.4", "4.8", "10"} <= set(snap.sections)
+    assert "bradicardia" in snap.sections["4.8"].lower()
+    assert snap.doc_date == date(2017, 10, 11)
+    assert {r[1] for r in ctx.requests} == {FT_PDF_81853}        # never the HTML address that answers 404
+
+
+def test_cima_pdf_that_does_not_answer_is_an_error_and_no_pdf_is_no_label():
+    with pytest.raises(SnapshotError):
+        cima.snapshot(FakeCtx({}), PDF_ONLY)
+    none = {**PDF_ONLY, "national_id": "9432008010203", "extra": {**PDF_ONLY["extra"], "ft_pdf": None}}
+    ctx = FakeCtx({})
+    assert cima.snapshot(ctx, none) is None and not ctx.requests
