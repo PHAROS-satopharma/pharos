@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   countryList,
   isJapanCode,
+  labelPagesNote,
   readinessItems,
   readinessLine,
   readinessNotes,
@@ -132,6 +133,20 @@ describe('readiness on the ingredient row', () => {
       'Literature not monitored by EMA',
     ]);
     expect(readinessNotes({ ...fresh, eurd: { ...fresh.eurd, list_read: false } })).toContain('EURD list not read yet');
+  });
+
+  it('counts her database pages: read, waiting for the weekly run, not read', () => {
+    const pages = { total: 27, read: 17, waiting: 2, not_read: 8, waiting_pages: ['Iceland: Sérlyfjaskrá'] };
+    const r: Readiness = { ...ready, label_watch: { ...ready.label_watch, pages } };
+    expect(readinessNotes(r)[2]).toBe(
+      'Label databases: 17 of 27 pages read · 2 waiting for the weekly run · 8 not read (reasons on the Sources page)',
+    );
+    expect(labelPagesNote({ ...pages, read: 19, waiting: 0 })).toBe(
+      'Label databases: 19 of 27 pages read · 8 not read (reasons on the Sources page)',
+    );
+    expect(labelPagesNote(undefined)).toBeNull();
+    // what holds Ready is unchanged: pages waiting add no item to the line
+    expect(readinessItems(r)).toEqual(readinessItems(ready));
   });
 
   it('names the languages it has no name in, which never clear by themselves', () => {
