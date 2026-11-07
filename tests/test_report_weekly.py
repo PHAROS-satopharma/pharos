@@ -944,3 +944,34 @@ def test_every_weekly_pdf_page_prints_the_footer(tmp_path):
               "04 Literature", "05 Everything new", "06 To check by hand")
               if " ".join(p.split()).startswith(head)]
     assert len(starts) == 5
+
+
+def test_the_week_counts_her_label_database_pages():
+    # Her database pages (regulator_page, kind 'database') as the Ingredients page counts them (0095): read when a
+    # switched-on labels source reading the page completed a run in the week.
+    pages = [_page("EMA", ["ema-spc"], id="p1", kind="database"),
+             _page("AEMPS", ["spc-cima"], id="p2", kind="database"),      # its reader failed every run
+             _page("TGA", [], id="p3", kind="database"),                   # no reader: blocked
+             _page("CBG", ["spc-cbg"], id="p4", kind="database"),          # reader switched off
+             _page("EMA", ["ema-dhpc"], id="p5")]                          # a safety page, not counted
+    sources = [_source("ema-spc", "EMA", kind="spc"), _source("spc-cima", "AEMPS", kind="spc"),
+               _source("spc-cbg", "CBG", kind="spc", enabled=False), _source("ema-dhpc", "EMA")]
+    log = {"ema-spc": _log("ema-spc", "EMA", "European Union", "spc", 1),
+           "spc-cima": _log("spc-cima", "AEMPS", "Spain", "spc", 2, failed=2)}
+    d = rw.label_databases(pages, sources, log)
+    assert d == {"total": 4, "read": 1, "missed": 1, "not_read": 2}
+    assert rw.label_databases_text(d) == (
+        "1 of 4 pages · 1 not read this week · 2 not read by the app (reasons on the Sources page)")
+    assert rw.label_databases_text({"total": 27, "read": 19, "missed": 0, "not_read": 8}) == (
+        "19 of 27 pages · 8 not read by the app (reasons on the Sources page)")
+    assert rw.label_databases_text({"total": 0, "read": 0, "missed": 0, "not_read": 0}) == "no database pages listed"
+
+
+def test_the_weekly_summary_says_how_many_label_databases_were_read():
+    _, data = _data()
+    assert dict(data["summary"])["Label databases read"] == "no database pages listed"
+    ours = dict(data["summary_groups"])["What concerns our ingredients"]
+    assert [k for k, _ in ours][-1] == "Label databases read"
+    # the label watch runs weekly: the daily report does not count it
+    daily = rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5)
+    assert "Label databases read" not in dict(daily["summary"])

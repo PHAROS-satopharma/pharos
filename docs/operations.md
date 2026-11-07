@@ -500,6 +500,11 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
 - **The weekly report** lists the same changes under each ingredient (*Detected 3 Nov 2026*, the label's own
   date, product, holder, authority, sections) with one line on the gap: *Our label: 2 covered, 1 partly, 1
   missing*, *Not compared: different language*, *Not compared yet*, or *No label of ours uploaded*.
+- **Databases read.** The weekly summary also says how many of her label database pages were read that week, for
+  example *19 of 27 pages · 8 not read by the app (reasons on the Sources page)* (`label_databases`,
+  `collectors/report_weekly.py`). A page is read when a switched-on labels source that reads it completed a run in
+  the week. *Not read this week* means its source did not complete a run that week. *Not read by the app* means no
+  source reads the page at all. The daily report leaves this line out, because the label watch runs weekly.
 - **Days.** Section 03 and the report filter by the Cairo day the change was **detected**, not by the date printed
   on the label (a label dated 1 October found on 3 November appears in the week of 3 November).
 - **Time, and labels read in turn** (0063, 6 Nov 2026). The watch keeps to the run's time budget
