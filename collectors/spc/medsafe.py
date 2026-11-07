@@ -29,8 +29,8 @@ from datetime import date
 
 from collectors.core.context import FetchError, ParseError
 from collectors.parsers.base import parse_date
-from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, run_cache, terms_for
-from collectors.spc.sections import WATCHED_EU, missing_core, split_numbered
+from collectors.spc.common import Product, Snapshot, SnapshotError, fetch_label, label_revision, run_cache, terms_for
+from collectors.spc.sections import eu_label_sections, missing_core
 
 SOURCE_ID = "spc-medsafe"
 COUNTRY = "NZ"
@@ -133,16 +133,6 @@ def listed_version(product: dict) -> str | None:
     return (product.get("extra") or {}).get("updated") or None
 
 
-def wanted(key: str) -> bool:
-    parent = ".".join(key.split(".")[:2])
-    return key == "10" or key in WATCHED_EU or parent in WATCHED_EU
-
-
-def revision_date(section_10: str | None) -> date | None:
-    for line in (section_10 or "").splitlines():
-        if line.strip():
-            return parse_date(line.strip())
-    return None
 
 
 def snapshot(ctx, product: dict) -> Snapshot | None:
@@ -154,9 +144,9 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     from collectors.pdf import extract_text
 
     text, _method, _words = extract_text(f.content, LANG)
-    sections = {k: v for k, v in split_numbered(text).items() if wanted(k)}
+    sections = eu_label_sections(text)
     missing = missing_core(sections)
     if missing:
         raise SnapshotError(f"Medsafe {product['national_id']}: section {', '.join(missing)} not found")
-    return Snapshot(sections=sections, doc_date=revision_date(sections.get("10")), lang=LANG, source_url=url,
+    return Snapshot(sections=sections, doc_date=label_revision(sections), lang=LANG, source_url=url,
                     original_sha256=f.sha256)

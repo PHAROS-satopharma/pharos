@@ -1,12 +1,17 @@
 # PHAROS — replay a real past revision of a label through the label watch's change detector (dry run: nothing
-# stored, no message). collectors/spc/replay.py. Run by hand with a DailyMed set id and two versions, and a Korean
-# item code; a pull request that changes the replay runs the Corlanor 2019 paediatric revision (versions 16 and
-# 20) and the Procoralan 2017 revision in Korea (item 200906066) once.
+# stored, no message). collectors/spc/replay.py. Run by hand with a DailyMed set id and two versions, a Korean
+# item code and a Dutch RVG number; a pull request that changes the replay runs the Corlanor 2019 paediatric
+# revision (versions 16 and 20), the Procoralan 2017 revision in Korea (item 200906066) and the Carivalan 2024
+# revision in the Netherlands (RVG 117810) once. It then reads the European label databases live, the way the
+# weekly run does (collectors/spc/read_check.py, dry run as well).
 name: PHAROS label change replay
 
 on:
   pull_request:
-    paths: [collectors/spc/replay.py, collectors/spc/nedrug.py, .github/workflows/replay.yml]
+    paths: [collectors/spc/replay.py, collectors/spc/read_check.py, collectors/spc/nedrug.py, collectors/spc/cbg.py,
+            collectors/spc/famhp.py, collectors/spc/aifa.py, collectors/spc/mpa.py, collectors/spc/infomed.py,
+            collectors/spc/hpra.py, collectors/spc/basg.py, collectors/spc/lyfja.py, collectors/spc/sections.py,
+            .github/workflows/replay.yml]
   workflow_dispatch:
     inputs:
       setid:
@@ -25,6 +30,10 @@ on:
         description: Korean item code (nedrug 품목기준코드)
         type: string
         default: "200906066"
+      cbg_rvg:
+        description: Dutch RVG number (CBG)
+        type: string
+        default: "117810"
 
 permissions:
   contents: read
@@ -36,7 +45,7 @@ concurrency:
 jobs:
   replay:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
@@ -45,6 +54,11 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: collectors/requirements.txt
+
+      - uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
+        with:
+          packages: poppler-utils tesseract-ocr
+          version: "1"
 
       - run: pip install -r collectors/requirements.txt
 
@@ -63,3 +77,15 @@ jobs:
         run: |
           [[ "$ITEM" =~ ^[0-9]{6,12}$ ]] || { echo "not an item code"; exit 2; }
           python -m collectors.spc.replay nedrug "$ITEM"
+
+      - name: Replay the Netherlands
+        if: ${{ !cancelled() }}
+        env:
+          RVG: ${{ inputs.cbg_rvg || '117810' }}
+        run: |
+          [[ "$RVG" =~ ^[0-9]{3,7}$ ]] || { echo "not an RVG number"; exit 2; }
+          python -m collectors.spc.replay cbg "$RVG"
+
+      - name: Read the European label databases
+        if: ${{ !cancelled() }}
+        run: python -m collectors.spc.read_check

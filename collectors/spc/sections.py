@@ -374,6 +374,73 @@ def split_smpc_sections(text: str) -> dict[str, str]:
     return out
 
 
+def eu_wanted(key: str) -> bool:
+    """An EU-numbered section the label watch keeps: a watched one (4.1–4.9, sub-sections by their parent) or 10,
+    the revision date (recorded only), of any SmPC in the file (``smpc2:4.4``)."""
+    bare = _SMPC_PREFIX.sub("", key)
+    return bare == "10" or bare in WATCHED_EU or ".".join(bare.split(".")[:2]) in WATCHED_EU
+
+
+EDGE_LINES = 6            # lines at the top and at the bottom of a page where a running header or footer sits
+_DIGITS = re.compile(r"\d+")
+
+
+def _line_key(line: str) -> str:
+    return _DIGITS.sub("#", " ".join(line.split())).lower()
+
+
+def strip_running_lines(text: str) -> str:
+    """``text`` (pages joined with form feeds) without its running headers and footers: a line printed once on a
+    page, at its top or bottom, on at least half the pages, digits aside ("Sandoz B.V.   Page 5/22", "1311-V14b",
+    "Oktober 2025"), and a short line printed once on most pages wherever it falls (the CBG's "Oude versie" stamp).
+    They change with every new version of the file, and left in they would make every section of it look revised
+    (CBG Carvedilol Sandoz, December 2025 against July 2026: all of 4.2–4.9). A line printed more than once on a
+    page is the text's own (a table's "Vaak"). A file of fewer than four pages is left as it is."""
+    pages = text.split("\f")
+    if len(pages) < 4:
+        return text
+    lines = [p.splitlines() for p in pages]
+    edge: dict[str, int] = {}
+    anywhere: dict[str, int] = {}
+    seen: list[tuple[set[int], dict[str, int]]] = []
+    for page in lines:
+        filled = [i for i, ln in enumerate(page) if ln.strip()]
+        ends = set(filled[:EDGE_LINES] + filled[-EDGE_LINES:])
+        counts: dict[str, int] = {}
+        for i in filled:
+            k = _line_key(page[i])
+            counts[k] = counts.get(k, 0) + 1
+        seen.append((ends, counts))
+        for k in {_line_key(page[i]) for i in ends if len(page[i].strip()) <= 120}:
+            if counts[k] == 1:
+                edge[k] = edge.get(k, 0) + 1
+        for k, n in counts.items():
+            if n == 1 and len(k) <= 40:
+                anywhere[k] = anywhere.get(k, 0) + 1
+    many = len(pages)
+    at_edge = {k for k, n in edge.items() if n * 2 >= many}
+    stamps = {k for k, n in anywhere.items() if n * 5 >= many * 3}
+    if not at_edge and not stamps:
+        return text
+    out = []
+    for page, (ends, counts) in zip(lines, seen, strict=True):
+        kept = []
+        for i, ln in enumerate(page):
+            k = _line_key(ln)
+            if counts.get(k) == 1 and ((i in ends and k in at_edge) or k in stamps):
+                continue
+            kept.append(ln)
+        out.append("\n".join(kept))
+    return "\f".join(out)
+
+
+def eu_label_sections(text: str) -> dict[str, str]:
+    """The kept sections of a national SmPC file, each SmPC on its own: one file can hold two (Infomed's
+    Ivabradina Aurovitas: one per strength), and the second must not run on inside the first one's section 10.
+    The file's running headers and footers are taken out first (``strip_running_lines``)."""
+    return {k: v for k, v in split_smpc_sections(strip_running_lines(text)).items() if eu_wanted(k)}
+
+
 def cut_annex_i(text: str) -> str:
     """The SmPC part of an EPAR product-information PDF: Annex I up to Annex II."""
     m_start = re.search(r"(?im)^\s*(ANNEX I|ANHANG I|ANNEXE I|ALLEGATO I|ANEXO I|BIJLAGE I)\s*$",

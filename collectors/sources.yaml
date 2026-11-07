@@ -1239,3 +1239,91 @@ sources:
     languages: [en]
     schedule: weekly
     expected_max_gap_days: null
+
+  - id: spc-cbg
+    regulator: CBG
+    kind: spc
+    channel: html
+    url: https://www.geneesmiddeleninformatiebank.nl/metadata.csv
+    page: https://www.geneesmiddeleninformatiebank.nl/ords/f?p=111:1:0::NO:1:P0_DOMAIN,P0_LANG:H,NL
+    parser: spc_cbg
+    languages: [nl]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-famhp
+    regulator: FAMHP
+    kind: spc
+    channel: html
+    url: https://medicinesdatabase.be/download/documents
+    page: https://medicinesdatabase.be/human-use
+    parser: spc_famhp
+    languages: [fr, nl]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-aifa
+    regulator: AIFA
+    kind: spc
+    channel: api
+    url: https://api.aifa.gov.it/aifa-bdf-eif-be/1.0.0/formadosaggio/ricerca
+    page: https://medicinali.aifa.gov.it/it/
+    parser: spc_aifa
+    languages: [it]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-mpa
+    regulator: MPA
+    kind: spc
+    channel: api
+    url: https://www.lakemedelsverket.se/api/lmfrest/searchmedprod
+    page: https://www.lakemedelsverket.se/sv/sok-lakemedelsfakta?activeTab=1
+    parser: spc_mpa
+    languages: [sv]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-infomed
+    regulator: INFARMED
+    kind: spc
+    channel: html
+    url: https://extranet.infarmed.pt/INFOMED-fo/
+    page: https://extranet.infarmed.pt/INFOMED-fo/
+    parser: spc_infomed
+    languages: [pt]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-hpra
+    regulator: HPRA
+    kind: spc
+    channel: api
+    url: https://www.hpra.ie/find-a-medicine/for-human-use/authorised-medicines
+    page: https://www.hpra.ie/find-a-medicine/for-human-use/authorised-medicines
+    parser: spc_hpra
+    languages: [en]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-basg
+    regulator: BASG
+    kind: spc
+    channel: api
+    url: https://medikamente.basg.gv.at/
+    page: https://medikamente.basg.gv.at/
+    parser: spc_basg
+    languages: [de]
+    schedule: weekly
+    expected_max_gap_days: null
+
+  - id: spc-lyfja
+    regulator: IMA
+    kind: spc
+    channel: api
+    url: https://www.serlyfjaskra.is/api/searchMedicineWithAtc
+    page: https://www.serlyfjaskra.is/atc
+    parser: spc_lyfja
+    languages: [is]
+    schedule: weekly
+    expected_max_gap_days: null
