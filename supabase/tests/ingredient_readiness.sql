@@ -85,10 +85,10 @@ select pg_temp.ir_assert(
   'the check of the past: the name and both class words are due, no check is running');
 select pg_temp.ir_assert(
   (pg_temp.ir('new') -> 'ncbi' ->> 'searches')::int = 0
-    and (pg_temp.ir('new') -> 'ncbi' ->> 'expected')::int = 4
+    and (pg_temp.ir('new') -> 'ncbi' ->> 'expected')::int = 1
     and not (pg_temp.ir('new') -> 'ncbi' ->> 'look_back_done')::boolean
     and pg_temp.ir('new') -> 'ncbi' -> 'last_run' = 'null'::jsonb,
-  'NCBI: four searches expected (the name and the English class word, in PubMed and PMC), none run');
+  'NCBI: one search holds Ready (the name in PubMed, 0092), not run yet');
 select pg_temp.ir_assert(
   (pg_temp.ir('new') -> 'label_watch' ->> 'products')::int = 0
     and not (pg_temp.ir('new') -> 'label_watch' ->> 'first_snapshot')::boolean
@@ -126,11 +126,12 @@ insert into ingredient_term (id, ingredient_id, lang, term, rematched_at) values
 insert into ingredient_term (id, ingredient_id, lang, country_code, term, kind, mode, source, rematched_at) values
   ('00000000-0000-0000-0000-00000045c003', '00000000-0000-0000-0000-00000045a001', 'ja', 'JP', '1234567', 'code',
    'exact', 'pmda', now());
--- three of the four NCBI searches have finished their look-back
+-- NCBI: the name's PMC look-back finished; the name's PubMed one and both class words' are still running
 insert into literature_search (db, query, kind, look_back_from, history_until, look_back_done_at) values
-  ('pubmed', 'ci readyamine', 'name', current_date - 365, current_date, now()),
+  ('pubmed', 'ci readyamine', 'name', current_date - 365, current_date, null),
   ('pmc', 'ci readyamine', 'name', current_date - 365, current_date, now()),
-  ('pubmed', 'ci readyoids', 'class', current_date - 365, current_date, now());
+  ('pubmed', 'ci readyoids', 'class', current_date - 365, current_date, null),
+  ('pmc', 'ci readyoids', 'class', current_date - 365, current_date, null);
 -- the label watch read both countries and found one product, with its first snapshot
 insert into run (id, trigger) values ('00000000-0000-0000-0000-00000045f001', 'cron');
 insert into source_run (run_id, source_id, started_at, error) values
@@ -165,17 +166,17 @@ update drug_class set confirmed_at = now(), confirmed_by = (select id from perso
 select pg_temp.ir_read('almost');
 select pg_temp.ir_assert(
   not (pg_temp.ir('almost') ->> 'ready')::boolean
-    and (pg_temp.ir('almost') -> 'ncbi' ->> 'searches')::int = 3
+    and (pg_temp.ir('almost') -> 'ncbi' ->> 'searches')::int = 1
     and not (pg_temp.ir('almost') -> 'ncbi' ->> 'look_back_done')::boolean
     and (pg_temp.ir('almost') -> 'past_check' ->> 'done')::boolean
     and (pg_temp.ir('almost') -> 'past_check' ->> 'words_due')::int = 0,
-  'one NCBI search still to run keeps it from Ready, though the past is checked');
+  'the name''s PubMed look-back still running keeps it from Ready, though the past is checked');
 
-insert into literature_search (db, query, kind, look_back_from, history_until, look_back_done_at) values
-  ('pmc', 'ci readyoids', 'class', current_date - 365, current_date, now());
+update literature_search set look_back_done_at = now() where db = 'pubmed' and query = 'ci readyamine';
 select pg_temp.ir_read('ready');
 
-select pg_temp.ir_assert((pg_temp.ir('ready') ->> 'ready')::boolean, 'with everything run, the ingredient is Ready');
+select pg_temp.ir_assert((pg_temp.ir('ready') ->> 'ready')::boolean,
+  'with the name''s PubMed look-back done, it is Ready while the class words'' look-backs still fill in (0092)');
 select pg_temp.ir_assert(
   (pg_temp.ir('ready') -> 'names' ->> 'languages_with_a_name')::int = 2
     and not pg_temp.ir('ready') -> 'names' -> 'missing' ? 'de'
@@ -183,10 +184,10 @@ select pg_temp.ir_assert(
   'names: the German name counts, the Japan code does not');
 select pg_temp.ir_assert((pg_temp.ir('ready') -> 'class' ->> 'confirmed')::boolean, 'class: confirmed');
 select pg_temp.ir_assert(
-  (pg_temp.ir('ready') -> 'ncbi' ->> 'searches')::int = 4
+  (pg_temp.ir('ready') -> 'ncbi' ->> 'searches')::int = 1
     and (pg_temp.ir('ready') -> 'ncbi' ->> 'look_back_done')::boolean
     and (pg_temp.ir('ready') -> 'ncbi' ->> 'last_run') is not null,
-  'NCBI: all four searches ran and finished their look-back');
+  'NCBI: the name''s PubMed search ran and finished its look-back');
 select pg_temp.ir_assert(
   (pg_temp.ir('ready') -> 'label_watch' ->> 'products')::int = 1
     and (pg_temp.ir('ready') -> 'label_watch' ->> 'first_snapshot')::boolean
@@ -220,38 +221,31 @@ select pg_temp.ir_assert(
     and (pg_temp.ir('parent') -> 'class' ->> 'classes')::int = 2
     and (pg_temp.ir('parent') -> 'class' ->> 'words')::int = 2
     and (pg_temp.ir('parent') -> 'past_check' ->> 'words_due')::int = 0
-    and (pg_temp.ir('parent') -> 'ncbi' ->> 'expected')::int = 4,
-  'a class switched off is linked but not searched: its words wait for no check of the past and no NCBI search');
+    and (pg_temp.ir('parent') -> 'europepmc' ->> 'expected')::int = 2,
+  'a class switched off is linked but not searched: its words wait for no check of the past and are not searched');
 
--- ───────────── the Europe PMC watch switched on (0082): Ready waits for its look-back of every word ─────────────
+-- ───────────── the Europe PMC watch switched on (0082): its look-back fills in, and holds nothing (0092) ─────────────
 insert into source (id, regulator_id, kind, channel, url, parser, languages, enabled) values
   ('europepmc', 'CI-IR-A', 'literature', 'api', 'https://europepmc.example.test/search', 'europepmc', '{en}', true)
   on conflict (id) do update set enabled = true;
-select pg_temp.ir_read('epmc_waiting');
-select pg_temp.ir_assert(
-  not (pg_temp.ir('epmc_waiting') ->> 'ready')::boolean
-    and (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'watched')::boolean
-    and (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'searches')::int = 0
-    and (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'expected')::int = 2
-    and not (pg_temp.ir('epmc_waiting') -> 'europepmc' ->> 'look_back_done')::boolean
-    and (pg_temp.ir('epmc_waiting') -> 'ncbi' ->> 'look_back_done')::boolean,
-  'Europe PMC switched on: two searches expected (the name and the class word, once each), none run, so not Ready');
 insert into literature_search (db, query, kind, look_back_from, history_until, look_back_done_at) values
-  ('europepmc', 'ci readyamine', 'name', current_date - 365, current_date, now()),
-  ('europepmc', 'ci readyoids', 'class', current_date - 365, current_date, null);
+  ('europepmc', 'ci readyamine', 'name', current_date - 365, current_date, null);
 select pg_temp.ir_read('epmc_running');
 select pg_temp.ir_assert(
-  not (pg_temp.ir('epmc_running') ->> 'ready')::boolean
-    and (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'searches')::int = 2
+  (pg_temp.ir('epmc_running') ->> 'ready')::boolean
+    and (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'watched')::boolean
+    and not (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'holds_ready')::boolean
+    and (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'searches')::int = 1
+    and (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'expected')::int = 2
     and not (pg_temp.ir('epmc_running') -> 'europepmc' ->> 'look_back_done')::boolean,
-  'a Europe PMC look-back not finished for one word keeps it from Ready');
-update literature_search set look_back_done_at = now() where db = 'europepmc' and query = 'ci readyoids';
-select pg_temp.ir_read('epmc_done');
-select pg_temp.ir_assert(
-  (pg_temp.ir('epmc_done') ->> 'ready')::boolean
-    and (pg_temp.ir('epmc_done') -> 'europepmc' ->> 'look_back_done')::boolean
-    and (pg_temp.ir('epmc_done') -> 'europepmc' ->> 'last_run') is not null,
-  'Europe PMC: both searches finished their look-back, and it is Ready again');
+  'Europe PMC switched on, its look-back still running: still Ready, and it says it holds nothing');
+
+-- the name's PubMed look-back started again (a changed name): Ready waits for it once more
+update literature_search set look_back_done_at = null where db = 'pubmed' and query = 'ci readyamine';
+select pg_temp.ir_read('pubmed_again');
+select pg_temp.ir_assert(not (pg_temp.ir('pubmed_again') ->> 'ready')::boolean,
+  'the name''s PubMed look-back unfinished again: not Ready');
+update literature_search set look_back_done_at = now() where db = 'pubmed' and query = 'ci readyamine';
 
 -- ───────────── the label watch answered, and found nothing: still ready; a country not yet read: not ─────────────
 delete from spc_product where id = '00000000-0000-0000-0000-00000045b001';
@@ -278,7 +272,8 @@ select pg_temp.ir_assert(
   (pg_temp.ir('noatc') ->> 'ready')::boolean
     and not (pg_temp.ir('noatc') -> 'class' ->> 'atc')::boolean
     and (pg_temp.ir('noatc') -> 'class' ->> 'classes')::int = 0
-    and (pg_temp.ir('noatc') -> 'ncbi' ->> 'expected')::int = 2,
+    and (pg_temp.ir('noatc') -> 'ncbi' ->> 'expected')::int = 1
+    and (pg_temp.ir('noatc') -> 'europepmc' ->> 'expected')::int = 1,
   'without an ATC code there is no class to wait for, and only the name is searched');
 
 -- ───────────── who may ask ─────────────

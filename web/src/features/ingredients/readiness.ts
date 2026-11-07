@@ -15,11 +15,14 @@ export interface Readiness {
   names: { languages_with_a_name: number; of: number; missing: string[] };
   class: { atc: boolean; classes: number; words: number; confirmed: boolean };
   past_check: { done: boolean; words_due: number; job_running: boolean };
+  /** The ingredient's own name in PubMed (titles and abstracts) and its 12-month look-back: since 0092 the only
+   *  literature search Ready waits for. */
   ncbi: { searches: number; expected: number; look_back_done: boolean; last_run: string | null };
-  /** The Europe PMC watch (0082): the same words, once each; waited for only while it is switched on. Absent
-   *  before 0082 is applied. */
+  /** The Europe PMC watch (0082): the same words, once each. Since 0092 it fills in the background and
+   *  holds_ready is false; absent before 0082 is applied. */
   europepmc?: {
     watched: boolean;
+    holds_ready?: boolean;
     searches: number;
     expected: number;
     look_back_done: boolean;
@@ -75,9 +78,9 @@ export function readinessItems(r: Readiness): string[] {
   if (r.names.languages_with_a_name === 0) items.push('no name to look for yet');
   if (r.class.atc && r.class.classes === 0) items.push('class words waiting');
   if (!r.past_check.done) items.push(r.past_check.job_running ? 'check of the past running' : 'check of the past waiting');
-  if (!r.ncbi.look_back_done) items.push(r.ncbi.searches > 0 ? 'NCBI look-back running' : 'NCBI look-back waiting');
+  if (!r.ncbi.look_back_done) items.push(r.ncbi.searches > 0 ? 'PubMed look-back running' : 'PubMed look-back waiting');
   const epmc = r.europepmc;
-  if (epmc?.watched && !epmc.look_back_done) {
+  if (epmc?.watched && epmc.holds_ready !== false && !epmc.look_back_done) {
     items.push(epmc.searches > 0 ? 'Europe PMC look-back running' : 'Europe PMC look-back waiting');
   }
   if (r.label_watch.products === 0 && r.label_watch.waiting.length > 0) {

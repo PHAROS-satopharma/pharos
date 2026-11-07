@@ -539,7 +539,7 @@ def country_list(countries: list[str]) -> str:
 
 def readiness_items(r: dict) -> list[str]:
     """What is still running or still to come for an ingredient, in her words and in the order the days bring
-    it: exactly readinessItems() in web/src/features/ingredients/readiness.ts (ingredient_readiness, 0045, 0082)."""
+    it: exactly readinessItems() in web/src/features/ingredients/readiness.ts (ingredient_readiness, 0045, 0082, 0092)."""
     names, cls, past = r.get("names") or {}, r.get("class") or {}, r.get("past_check") or {}
     ncbi, labels, telegram = r.get("ncbi") or {}, r.get("label_watch") or {}, r.get("telegram") or {}
     epmc = r.get("europepmc") or {}
@@ -551,8 +551,8 @@ def readiness_items(r: dict) -> list[str]:
     if not past.get("done"):
         items.append("check of the past running" if past.get("job_running") else "check of the past waiting")
     if not ncbi.get("look_back_done"):
-        items.append("NCBI look-back running" if int(ncbi.get("searches") or 0) > 0 else "NCBI look-back waiting")
-    if epmc.get("watched") and not epmc.get("look_back_done"):
+        items.append("PubMed look-back running" if int(ncbi.get("searches") or 0) > 0 else "PubMed look-back waiting")
+    if epmc.get("watched") and epmc.get("holds_ready") is not False and not epmc.get("look_back_done"):
         items.append("Europe PMC look-back running" if int(epmc.get("searches") or 0) > 0
                      else "Europe PMC look-back waiting")
     waiting = list(labels.get("waiting") or [])
