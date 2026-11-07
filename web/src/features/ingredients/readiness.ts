@@ -35,6 +35,8 @@ export interface Readiness {
     empty: string[];
     first_snapshot: boolean;
     japan_code: boolean;
+    /** Her database pages for this ingredient (0095); absent before 0095 is applied. */
+    pages?: { total: number; read: number; waiting: number; not_read: number; waiting_pages: string[] };
   };
   eurd: {
     found: boolean;
@@ -112,6 +114,8 @@ export function readinessNotes(r: Readiness): string[] {
   } else if (lw.waiting.length === 0 && lw.empty.length > 0) {
     notes.push('No label found in any watched country');
   }
+  const pages = labelPagesNote(lw.pages);
+  if (pages) notes.push(pages);
   if (!lw.japan_code) notes.push('No Japan code yet, so Japan’s label watch cannot find its package inserts');
   if (r.eurd.found) {
     notes.push(
@@ -124,6 +128,15 @@ export function readinessNotes(r: Readiness): string[] {
   notes.push(r.ema_mlm.monitored ? 'Literature monitored by EMA' : 'Literature not monitored by EMA');
   if (r.telegram.people.length > 0) notes.push(`Telegram: ${r.telegram.people.join(', ')}`);
   return notes;
+}
+
+/** "Label databases: 19 of 27 pages read · 2 waiting for the weekly run · 6 not read (reasons on the Sources page)". */
+export function labelPagesNote(pages: Readiness['label_watch']['pages']): string | null {
+  if (!pages || pages.total === 0) return null;
+  const parts = [`${pages.read} of ${pages.total} ${pages.total === 1 ? 'page' : 'pages'} read`];
+  if (pages.waiting > 0) parts.push(`${pages.waiting} waiting for the weekly run`);
+  if (pages.not_read > 0) parts.push(`${pages.not_read} not read (reasons on the Sources page)`);
+  return `Label databases: ${parts.join(' · ')}`;
 }
 
 /** A PMDA code: the 7-character product code, or the 12-character YJ code that starts with it. */

@@ -62,6 +62,11 @@ insert into source (id, regulator_id, kind, channel, url, parser, languages, pag
   ('ci-ir-spc-off', 'CI-IR-B', 'spc', 'api', 'https://wait.example.test/old.json', 'ci', '{sv}', null, false);
 -- the Europe PMC watch switched off until its own case below (0082): nothing is waited for on it
 update source set enabled = false where id = 'europepmc';
+-- Her database pages (0095): one read by Readyland's source, one by Waitland's switched-off source only, one by none.
+insert into regulator_page (regulator_id, kind, sort, label, url, read_by, partial, note) values
+  ('CI-IR-A', 'database', 1, 'CI ready database', 'https://ready.example.test/products', '{ci-ir-spc-a}', false, null),
+  ('CI-IR-B', 'database', 1, 'CI old list', 'https://wait.example.test/old', '{ci-ir-spc-off}', false, null),
+  ('CI-IR-B', 'database', 2, 'CI register', 'https://wait.example.test/register', '{}', false, 'Not read: a sign-in.');
 
 select pg_temp.ir_read('new');
 
@@ -199,6 +204,31 @@ select pg_temp.ir_assert(
     and (pg_temp.ir('ready') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-a' ->> 'read')::boolean
     and (pg_temp.ir('ready') -> 'label_watch' -> 'by_source' -> 'ci-ir-spc-b' ->> 'read')::boolean,
   'label watch: one product with a snapshot; a read that only noted something counts as read; the Japan code is there');
+
+-- the database pages (0095): counted against her whole list, as the screen does
+create function pg_temp.ir_pages_without_reader() returns int language sql as $$
+  select count(*)::int from regulator_page p
+   where p.kind = 'database'
+     and not exists (select 1 from source s where s.kind = 'spc' and s.enabled and s.id = any(p.read_by))
+$$;
+select pg_temp.ir_assert(
+  (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'total')::int
+      = (select count(*) from regulator_page where kind = 'database')
+    and (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'not_read')::int = pg_temp.ir_pages_without_reader()
+    and pg_temp.ir('new') -> 'label_watch' -> 'pages' -> 'waiting_pages' ? 'CI Readyland: CI ready database'
+    and not pg_temp.ir('new') -> 'label_watch' -> 'pages' -> 'waiting_pages' ? 'CI Waitland: CI old list'
+    and (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'read')::int
+      + (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'waiting')::int
+      + (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'not_read')::int
+      = (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'total')::int,
+  'pages: a new ingredient waits on its read pages; a page read only by a switched-off source, or by none, is not read');
+select pg_temp.ir_assert(
+  not pg_temp.ir('ready') -> 'label_watch' -> 'pages' -> 'waiting_pages' ? 'CI Readyland: CI ready database'
+    and (pg_temp.ir('ready') -> 'label_watch' -> 'pages' ->> 'read')::int
+      = (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'read')::int + 1
+    and (pg_temp.ir('ready') -> 'label_watch' -> 'pages' ->> 'not_read')::int
+      = (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'not_read')::int,
+  'pages: once its source has run, the page is read');
 select pg_temp.ir_assert(
   (pg_temp.ir('ready') -> 'eurd' ->> 'found')::boolean
     and pg_temp.ir('ready') -> 'eurd' ->> 'frequency' = '7 years'
