@@ -12,7 +12,7 @@
 #                                        Canada recalls …) and NCBI literature (PubMed and PubMed Central); the
 #                                        EURD list; the check of the past (15 minutes); coding and the papers'
 #                                        open full text (Unpaywall)
-#   literature  10:41 and 18:41          the daily run's drug classes, NCBI literature (the enabled sources of
+#   literature  10:41, 18:41 and 22:41  the daily run's drug classes, NCBI literature (the enabled sources of
 #                                        kind literature) and check of the past again, so a new ingredient is
 #                                        ready within hours, not the next night; short when nothing is waiting
 #   weekly   Monday 03:23                SPC / label watch, EMA's literature monitoring list
@@ -27,7 +27,7 @@ on:
     - cron: "17 */4 * * *"
     - cron: "47 5,17 * * *"
     - cron: "31 2 * * *"
-    - cron: "41 10,18 * * *"
+    - cron: "41 10,18,22 * * *"
     - cron: "23 3 * * 1"
     - cron: "41 1 1 * *"
   # The database's back-up timers (supabase/migrations/0007, 0084) for a slot whose run never started.
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-24.04
     # daily and literature: 80, for the drug classes before the collection and the check of the past after it;
     # every run but the weekly one keeps 20 minutes for a pack asked for on Reports (the last step), so 60 by default
-    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.schedule == '41 10,18 * * *' || github.event.client_payload.schedule == 'daily' || github.event.client_payload.schedule == 'literature') && 80 || 60)) }}
+    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.schedule == '41 10,18,22 * * *' || github.event.client_payload.schedule == 'daily' || github.event.client_payload.schedule == 'literature') && 80 || 60)) }}
     env:
       # The collectors stop starting new notices and sources this many minutes in, so the run ends
       # cleanly (screening log, alerts, digest) instead of being killed by the timeout above.
@@ -89,7 +89,7 @@ jobs:
             "17 */4 * * *")  s=4h ;;
             "47 5,17 * * *") s=12h ;;
             "31 2 * * *")    s=daily ;;
-            "41 10,18 * * *") s=literature ;;
+            "41 10,18,22 * * *") s=literature ;;
             "23 3 * * 1")    s=weekly ;;
             "41 1 1 * *")    s=monthly ;;
             *)               s="${INPUT_SCHEDULE:-4h}" ;;
