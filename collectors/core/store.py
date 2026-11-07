@@ -676,6 +676,34 @@ class Store:
                 order by coalesce(i.current_since, i.created_at) desc""", {"s": since})
         return [str(r["id"]) for r in rows]
 
+    def case_reports_unchecked(self, limit: int) -> list[dict]:
+        """The literature papers flagged as possible case reports whose title and abstract have not been checked
+        for their ingredient's name yet (collectors/case_names.py), the oldest first: {id, structured}."""
+        rows = self.db.fetchall(
+            """select d.id::text as id, d.structured
+                 from document d
+                 join source s on s.id = d.source_id and s.kind = 'literature'
+                where jsonb_typeof(d.structured -> 'case_report') = 'object'
+                  and d.structured -> 'names_checked' is null
+                order by d.first_seen_at, d.id
+                limit %(n)s""", {"n": limit})
+        return [{"id": r["id"], "structured": _decode(r["structured"]) or {}} for r in rows]
+
+    def mark_case_names(self, kept: list[str], cleared: list[str], day: str) -> None:
+        """Record the check of collectors/case_names.py: ``kept`` name their ingredient and keep the flag;
+        ``cleared`` do not, so their flag is cleared (kept as ``case_report_was``). Both are marked checked."""
+        if kept:
+            self.db.execute(
+                """update document set structured = structured || jsonb_build_object('names_checked', %(d)s::text)
+                    where id = any(%(ids)s::uuid[])""", {"ids": kept, "d": day})
+        if cleared:
+            self.db.execute(
+                """update document
+                      set structured = structured || jsonb_build_object(
+                            'case_report', 'null'::jsonb, 'case_report_was', structured -> 'case_report',
+                            'names_checked', %(d)s::text)
+                    where id = any(%(ids)s::uuid[])""", {"ids": cleared, "d": day})
+
     def case_report_papers_since(self, since: datetime) -> list[dict]:
         """Papers naming one of our ingredients that look like case reports, found since ``since``, newest
         first: for the daily message (collectors/alerts.py). The flag is ``structured.case_report`` as the

@@ -444,6 +444,10 @@ paper_state(p_documents uuid[]) returns jsonb   -- security definer, screen_read
   --  day_zero, due_serious, due_nonserious}                -- Cairo day of first_seen_at, +15, +90
 mlm_monitored(p_ingredient uuid) returns boolean   -- a row in mlm_entry; same reader check
 -- 0044 also sets structured.case_report on every literature document stored before it. ingredient_screen()
+-- 0097: a flag is kept only when the title or abstract names the ingredient (collectors/case_names.py): else
+-- structured.case_report is JSON null, case_report_was the old flag, names_checked the Cairo day of the check;
+-- v_case_report follows structured.case_report too. Store.case_reports_unchecked(limit), mark_case_names(kept,
+-- cleared, day).
 -- reads ingredient_papers() by column position: never widen that function; add a function instead.
 ```
 
@@ -452,7 +456,7 @@ Collector: `structured.case_report` is set by `collectors/parsers/pubmed.py` (`c
 `Notifier.digest_if_due`); `collectors/mlm.py` fills `mlm_entry` daily. Web: `web/src/features/screen/papers.ts`
 (pure), `paperState.ts` (hooks), `styles/papers.css`. SQL test: `supabase/tests/case_reports_screen.sql`; Python:
 `tests/test_pubmed_ncbi.py`, `tests/test_alerts.py`, `tests/test_store_pg.py`, `tests/test_report_weekly.py`,
-`tests/test_mlm.py`.
+`tests/test_mlm.py`, `tests/test_case_names.py`.
 
 ## Any ingredient she adds is covered (0045)
 

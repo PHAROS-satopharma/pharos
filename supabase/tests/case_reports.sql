@@ -56,6 +56,19 @@ select pg_temp.cr_assert(:cr_cohort = 0, 'a cohort study is not a case report');
 select pg_temp.cr_assert(:cr_mlm = 1, 'a reader reads the monitoring list');
 select pg_temp.cr_assert(:cr_stranger = 0, 'someone not on the team sees no case report');
 
+-- 0097: the flag the run keeps or clears (collectors/case_names.py) decides, whatever the type and title say
+update document set structured = structured || '{"case_report": null, "case_report_was": {"reason": "pubtype"}}'
+ where id = '00000000-0000-0000-0000-00000006b001';
+update document set structured = structured || '{"case_report": {"reason": "pubtype"}}'
+ where id = '00000000-0000-0000-0000-00000006b003';
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', false);
+set role authenticated;
+select count(*) as cr_cleared from v_case_report where issue_id = '00000000-0000-0000-0000-00000006c001' \gset
+select flagged_by as cr_by3 from v_case_report where issue_id = '00000000-0000-0000-0000-00000006c003' \gset
+reset role;
+select pg_temp.cr_assert(:cr_cleared = 0, 'a paper whose flag was cleared (it does not name its ingredient) is not a case report');
+select pg_temp.cr_assert(:'cr_by3' = 'pubtype', 'a paper flagged by the run is a case report, with the reason it was flagged');
+
 delete from issue where id::text like '00000000-0000-0000-0000-00000006c00%';
 delete from document where id::text like '00000000-0000-0000-0000-00000006b00%';
 delete from ingredient where id::text like '00000000-0000-0000-0000-00000006a00%';
