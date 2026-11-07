@@ -7,3 +7,6 @@ CIMA REST (AEMPS, Spain), saved 4 November 2026:
   (served as text/html).
 * `FT_65059.html` — https://cima.aemps.es/cima/dochtml/ft/65059/FT_65059.html, the full ficha técnica
   HTML (the fallback when the section list does not answer), saved 5 November 2026.
+* `FT_81853.pdf`: `https://cima.aemps.es/cima/pdfs/ft/81853/FT_81853.pdf`, saved 7 November 2026 (ivabradine,
+  ficha técnica of March 2017). CIMA lists no HTML ficha técnica for this product; `dochtml/ft/81853/FT_81853.html`
+  answers 404.
