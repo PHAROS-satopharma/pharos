@@ -47,8 +47,9 @@ insert into drug_class (id, code, name_en, origin) values
 insert into class_term (id, class_id, lang, term) values
   ('00000000-0000-0000-0000-00000045d101', '00000000-0000-0000-0000-00000045d001', 'en', 'ci readyoids'),
   ('00000000-0000-0000-0000-00000045d102', '00000000-0000-0000-0000-00000045d001', 'de', 'CI-Readyoide');
-insert into ingredient_class (ingredient_id, class_id) values
-  ('00000000-0000-0000-0000-00000045a001', '00000000-0000-0000-0000-00000045d001');
+-- the class switched into the literature (off by default since 0093), so its English word is waited for too
+insert into ingredient_class (ingredient_id, class_id, literature) values
+  ('00000000-0000-0000-0000-00000045a001', '00000000-0000-0000-0000-00000045d001', true);
 -- Two countries with a label watch (one of them with a switched-off source too), and their languages.
 insert into regulator (id, country_code, country_name, name, languages, homepage) values
   ('CI-IR-A', 'XR', 'CI Readyland', 'CI Readyland Agency', '{en,de}', 'https://ready.example.test/'),

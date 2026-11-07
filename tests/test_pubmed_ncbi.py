@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
+import re
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -51,9 +52,13 @@ LEVO = {("pubmed", "levofloxacin"): LEVO_PUBMED, ("pmc", "levofloxacin"): "esear
         ("pubmed", "fluoroquinolones"): "esearch-pubmed-fluoroquinolones.json"}
 
 
+WORD = re.compile(r'^"([^"]*)"\[tiab\]')
+
+
 class Ncbi:
-    """E-utilities: esearch answers (db, term) with its saved answer (by retstart when paged), any other
-    search with the real "no result" answer; esummary answers each id with its saved record."""
+    """E-utilities: esearch answers (db, first word of the term) with its saved answer (by retstart when paged),
+    any other search with the real "no result" answer; esummary answers each id with its saved record. A call's
+    ``word`` is the first quoted word of its term (the word the search is remembered by)."""
 
     def __init__(self, searches: dict | None = None) -> None:
         self.searches = searches or {}
@@ -62,9 +67,13 @@ class Ncbi:
     def __call__(self, req: httpx.Request) -> httpx.Response:
         p = dict(req.url.params)
         what = req.url.path.rsplit("/", 1)[-1].split(".")[0]
+        if what == "esearch":
+            m = WORD.match(p["term"])
+            assert m, p["term"]
+            p["word"] = m[1]
         self.calls.append({"what": what, "url": str(req.url), **p})
         if what == "esearch":
-            f = self.searches.get((p["db"], p["term"]), "esearch-empty.json")
+            f = self.searches.get((p["db"], p["word"]), "esearch-empty.json")
             if isinstance(f, dict):
                 f = f.get(int(p["retstart"]), "esearch-empty.json")
             return httpx.Response(200, headers={"content-type": "application/json"},
@@ -77,7 +86,7 @@ class Ncbi:
 
     def esearches(self, db: str | None = None, term: str | None = None) -> list[dict]:
         return [c for c in self.calls if c["what"] == "esearch"
-                and (db is None or c["db"] == db) and (term is None or c["term"] == term)]
+                and (db is None or c["db"] == db) and (term is None or c["word"] == term)]
 
     def esummaries(self) -> list[dict]:
         return [c for c in self.calls if c["what"] == "esummary"]
@@ -126,18 +135,40 @@ def test_months_back():
     assert pubmed.months_back(date(2026, 1, 15), 2) == date(2025, 11, 15)
 
 
-def test_the_search_is_the_words_as_typed_on_both_databases(tmp_path):
+def test_the_search_is_a_quoted_phrase_in_titles_and_abstracts_on_both_databases(tmp_path):
     ncbi = Ncbi()
     ctx = context(tmp_path, ncbi)
     pubmed.list_items(ctx, source(terms=["non-steroidal anti-inflammatory"]))
     calls = ncbi.esearches()
     assert [c["db"] for c in calls] == ["pubmed", "pmc"]
     for c in calls:
-        assert "term=non-steroidal%20anti-inflammatory&" in c["url"] + "&"
-        assert "%22" not in c["url"] and "%5B" not in c["url"]           # no quotes, no [field] tag
-        assert c["term"] == "non-steroidal anti-inflammatory" and c["datetype"] == "edat"
+        assert "term=%22non-steroidal%20anti-inflammatory%22%5Btiab%5D&" in c["url"] + "&"
+        assert c["term"] == '"non-steroidal anti-inflammatory"[tiab]' and c["datetype"] == "edat"
         assert c["tool"] == "pharos" and c["retstart"] == "0"
     ctx.close()
+
+
+def test_a_name_search_carries_its_other_english_names_but_keeps_its_key():
+    got = pubmed.searches(["paracetamol"], {}, {"paracetamol": ["Paracetamol", "acetaminophen", 'N-acetyl "x"',
+                                                                 "Acetaminophen"]})
+    assert [(s.query, s.db, s.also) for s in got] == [
+        ("paracetamol", "pubmed", ("acetaminophen", "N-acetyl x")), ("paracetamol", "pmc", ("acetaminophen", "N-acetyl x"))]
+    assert got[0].key == ("pubmed", "paracetamol")
+    assert pubmed.term(got[0]) == '"paracetamol"[tiab] OR "acetaminophen"[tiab] OR "N-acetyl x"[tiab]'
+    # a class word carries no other names
+    cls = pubmed.searches(["paracetamol"], {"paracetamol": ["anilides"]}, {"paracetamol": ["acetaminophen"]})[2]
+    assert (cls.query, cls.kind, cls.also) == ("anilides", "class", ())
+
+
+def test_the_store_gives_the_names_matched_as_words_never_brands_codes_or_exact_words():
+    s = MemoryStore()
+    s.ingredient["ing-para"] = {"inn_en": "paracetamol", "active": True}
+    s.terms += [Term(id="a", term="paracetamol", lang="en", ingredient_id="ing-para", kind="inn"),
+                Term(id="b", term="acetaminophen", lang="en", ingredient_id="ing-para", kind="synonym"),
+                Term(id="c", term="APAP", lang="en", ingredient_id="ing-para", kind="synonym", mode="exact"),
+                Term(id="d", term="Panadol", lang="en", ingredient_id="ing-para", kind="brand"),
+                Term(id="e", term="Paracetamolo", lang="it", ingredient_id="ing-para", kind="inn")]
+    assert s.literature_names("en") == {"paracetamol": ["acetaminophen", "paracetamol"]}
 
 
 def test_every_page_is_read(tmp_path):

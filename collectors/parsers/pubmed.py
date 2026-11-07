@@ -1,12 +1,16 @@
 """NCBI literature watch (E-utilities): PubMed AND PubMed Central, daily, for every active ingredient.
 
-Searches. Per active ingredient, each typed exactly as a person types it into the NCBI search box (unquoted, no
-field tag, so NCBI's automatic term mapping expands it as its websites do):
-  name   the English INN (``ingredient.inn_en``)
+Searches. Per active ingredient, each in the titles and abstracts only (``"word"[tiab]``; owner, 7 Nov 2026: a
+full-text search of PMC found about 140,000 papers a year, most naming the ingredient in passing):
+  name   the English INN (``ingredient.inn_en``), OR its other English names matched as words (``ingredient_term``
+         in English, kind inn, salt or synonym, mode stem: "acetaminophen" for paracetamol; never a brand, a code
+         or an exact-only word such as "APAP", which titles also use for a sleep-apnoea device), each quoted
   class  each English word of the ingredient's drug classes (``class_term`` rows in English) that are searched
-         and in the literature (``ingredient_class.enabled`` and ``.literature``, 0049 and 0051)
-Each search runs on ``db=pubmed`` and on ``db=pmc`` (full texts), by Entrez (entry) date, so a paper added late
-with an old publication date is still found. esearch is paged with ``retstart`` until every id is in; a window
+         and in the literature (``ingredient_class.enabled`` and ``.literature``, 0049 and 0051; every class is
+         kept out of the literature from 0093, so a class word is searched only once someone switches it on)
+Each search runs on ``db=pubmed`` and on ``db=pmc``, by Entrez (entry) date, so a paper added late with an old
+publication date is still found. A search is remembered by its word (``literature_search.query``), whatever
+other names it carries. esearch is paged with ``retstart`` until every id is in; a window
 holding more ids than esearch serves for one search (9,999) is split in halves, and a single day over that is
 cut there and logged. esummary then reads the papers in batches of 200; a paper already stored is not read again,
 so ``items`` (and the screening log's "seen") are the papers new to PHAROS.
@@ -160,9 +164,10 @@ def _get_json(ctx: FetchContext, url: str) -> dict:
 
 @dataclass(frozen=True)
 class Search:
-    query: str        # exactly as typed into the search box
+    query: str        # the word it is remembered by: the English INN, or a class word
     kind: str         # name | class
     db: str           # pubmed | pmc
+    also: tuple[str, ...] = ()   # a name search's other English names, searched with it (not part of its key)
 
     @property
     def key(self) -> tuple[str, str]:
@@ -181,21 +186,30 @@ def _words(text: str) -> str:
     return " ".join(str(text or "").split())
 
 
-def searches(names: Iterable[str], class_words: dict[str, list[str]]) -> list[Search]:
-    """Name searches first, then the class words of those names: each word once (whatever its case), on
-    both databases."""
+def searches(names: Iterable[str], class_words: dict[str, list[str]],
+             other_names: dict[str, list[str]] | None = None) -> list[Search]:
+    """Name searches first (each with the ingredient's other English names), then the class words of those
+    names: each word once (whatever its case), on both databases."""
     out: list[Search] = []
     seen: set[str] = set()
 
-    def add(word: str, kind: str) -> None:
+    def add(word: str, kind: str, also: tuple[str, ...] = ()) -> None:
         q = _words(word)
         if q and q.lower() not in seen:
             seen.add(q.lower())
-            out.extend(Search(q, kind, db) for db in DBS)
+            out.extend(Search(q, kind, db, also) for db in DBS)
+
+    def others(n: str) -> tuple[str, ...]:
+        got: dict[str, str] = {}
+        for w in (other_names or {}).get(n) or []:
+            w = _words(w.replace('"', ""))
+            if w and w.lower() != n.lower():
+                got.setdefault(w.lower(), w)
+        return tuple(got.values())
 
     names = [_words(n) for n in names]
     for n in names:
-        add(n, "name")
+        add(n, "name", others(n))
     for n in names:
         for w in class_words.get(n) or []:
             add(w, "class")
@@ -268,10 +282,16 @@ def plan(ctx: FetchContext, search: Search, state: dict | None, opts: dict, toda
     return windows, row
 
 
+def term(search: Search) -> str:
+    """The search as NCBI is asked it: each of its words a quoted phrase in titles and abstracts, ORed
+    (``"paracetamol"[tiab] OR "acetaminophen"[tiab]``). PubMed and PMC both know [tiab]."""
+    return " OR ".join(f'"{w.replace(chr(34), "")}"[tiab]' for w in (search.query, *search.also))
+
+
 def _esearch_url(search: Search, start: date, end: date, retstart: int, retmax: int) -> str:
     return (f"{EUTILS}/esearch.fcgi?db={search.db}&retmode=json&datetype=edat"
             f"&mindate={start:%Y/%m/%d}&maxdate={end:%Y/%m/%d}&retstart={retstart}&retmax={retmax}"
-            f"&term={quote(search.query, safe='')}{_common()}")
+            f"&term={quote(term(search), safe='')}{_common()}")
 
 
 def esearch_ids(ctx: FetchContext, search: Search, start: date, end: date,
@@ -471,14 +491,18 @@ def _papers(records: dict[str, dict[str, dict]]) -> dict[tuple[str, str], Paper]
 
 # ───────────────────────────── the run ─────────────────────────────
 
-def _names_and_classes(ctx: FetchContext, source: SourceConfig) -> tuple[list[str], dict[str, list[str]]]:
+def _names_and_classes(ctx: FetchContext, source: SourceConfig
+                       ) -> tuple[list[str], dict[str, list[str]], dict[str, list[str]]]:
+    """The INNs, their class words and their other English names (each by INN)."""
     if source.options.get("terms"):
-        return list(source.options["terms"]), {}
+        return list(source.options["terms"]), {}, {}
     store = getattr(ctx, "store", None)
     names = list(getattr(ctx, "watchlist", None) or [])
     if not names and store is not None:
         names = [r["inn_en"] for r in store.active_ingredients()]
-    return names, (store.class_words("en") if store is not None else {})
+    others = getattr(store, "literature_names", None)
+    return (names, (store.class_words("en") if store is not None else {}),
+            (others("en") if callable(others) else {}))
 
 
 def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
@@ -487,7 +511,7 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
     _pace(ctx)
     store = getattr(ctx, "store", None)
     remembered = store is not None and not ctx.backfill
-    names, classes = _names_and_classes(ctx, source)
+    names, classes, others = _names_and_classes(ctx, source)
     state = store.literature_searches() if remembered else {}
     known = store.literature_known_ids(source.id) if store is not None else set()
     other = Elsewhere.load(store, source.id)       # the papers Europe PMC stored first
@@ -495,7 +519,7 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
 
     runs: list[dict[str, Any]] = []
     hits: dict[tuple[str, str], list[tuple[Search, bool]]] = {}      # (db, uid) → (search, normal)
-    for s in searches(names, classes):
+    for s in searches(names, classes, others):
         windows, row = plan(ctx, s, state.get(s.key), opts, today, remembered)
         uids: set[str] = set()
         for w in windows:

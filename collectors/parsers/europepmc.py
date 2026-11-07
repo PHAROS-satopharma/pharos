@@ -101,9 +101,11 @@ def _pace(ctx: FetchContext) -> None:
         ctx._host_gap.setdefault(HOST, GAP_S)
 
 
-def searches(names: list[str], class_words: dict[str, list[str]]) -> list[Search]:
-    """The NCBI watch's words, in its order, each once."""
-    return [dataclasses.replace(s, db=DB) for s in pubmed.searches(names, class_words) if s.db == "pubmed"]
+def searches(names: list[str], class_words: dict[str, list[str]],
+             other_names: dict[str, list[str]] | None = None) -> list[Search]:
+    """The NCBI watch's words, in its order, each once, with the same other names."""
+    return [dataclasses.replace(s, db=DB) for s in pubmed.searches(names, class_words, other_names)
+            if s.db == "pubmed"]
 
 
 def phrase(words: str) -> str:
@@ -112,7 +114,9 @@ def phrase(words: str) -> str:
 
 
 def query(search: Search, start: date, end: date) -> str:
-    return f"{phrase(search.query)} AND {SOURCES} AND FIRST_IDATE:[{start:%Y-%m-%d} TO {end:%Y-%m-%d}]"
+    """Each word a quoted phrase in the title or abstract (TITLE_ABS), as NCBI's [tiab] (owner, 7 Nov 2026)."""
+    words = " OR ".join(f"TITLE_ABS:{phrase(w)}" for w in (search.query, *search.also))
+    return f"({words}) AND {SOURCES} AND FIRST_IDATE:[{start:%Y-%m-%d} TO {end:%Y-%m-%d}]"
 
 
 def _get(ctx: FetchContext, params: dict[str, Any]) -> dict:
@@ -273,14 +277,14 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
     _pace(ctx)
     store = getattr(ctx, "store", None)
     remembered = store is not None and not ctx.backfill
-    names, classes = pubmed._names_and_classes(ctx, source)
+    names, classes, others = pubmed._names_and_classes(ctx, source)
     state = store.literature_searches() if remembered else {}
     known = store.literature_known_ids(source.id) if store is not None else set()
     other = Elsewhere.load(store, source.id)
     page = int(opts.get("page_size", PAGE_SIZE))
     budget_s = float(opts.get("search_budget_min", SEARCH_BUDGET_MIN)) * 60
 
-    planned = [(s, *plan(ctx, s, state.get(s.key), opts, today, remembered)) for s in searches(names, classes)]
+    planned = [(s, *plan(ctx, s, state.get(s.key), opts, today, remembered)) for s in searches(names, classes, others)]
     # the searches done before (a few days each) first, then the look-backs; sorted() keeps names before classes
     planned.sort(key=lambda p: any(w.history for w in p[1]))
     started = _clock()
