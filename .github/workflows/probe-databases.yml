@@ -1,0 +1,45 @@
+# PHAROS — can GitHub's network read each drug database the label watch is to read? Run by hand only, before a
+# database's reader is built. Plain requests, nothing stored, no secrets: collectors/spc/probe_databases.py.
+# The answer is the run's summary table. "Only" narrows it to the databases whose name contains that text.
+name: PHAROS drug databases probe
+
+on:
+  # a change to the list of checks runs it once on its pull request (no secrets on this job)
+  pull_request:
+    paths: [collectors/spc/probe_databases.py, .github/workflows/probe-databases.yml]
+  workflow_dispatch:
+    inputs:
+      only:
+        description: Only the databases whose name contains this (empty = all)
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: probe-databases
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - run: pip install -r collectors/requirements.txt
+
+      - name: Probe
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          if [ -n "$ONLY" ]; then python -m collectors.spc.probe_databases "$ONLY"
+          else python -m collectors.spc.probe_databases; fi
