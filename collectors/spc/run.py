@@ -233,8 +233,30 @@ def known_products(db, source_id: str, ingredient_id: str) -> list[dict]:
 
 
 def mark_checked(db, product_id: str) -> None:
-    """The label was read (or has no text): its turn comes round again after every other one."""
-    db.execute("update spc_product set checked_at = now() where id = %(p)s", {"p": product_id})
+    """The label was read (or has no text): its turn comes round again after every other one, and the error of
+    an earlier read that failed is cleared."""
+    db.execute("update spc_product set checked_at = now(), last_error = null, last_error_at = null "
+               "where id = %(p)s", {"p": product_id})
+
+
+def mark_unread(db, product_id: str, error: str) -> None:
+    """The label could not be read this run: the screen shows it as unread with this error (0091). It is not
+    marked read, so it is read first next run."""
+    db.execute("update spc_product set last_error = %(e)s, last_error_at = now() where id = %(p)s",
+               {"p": product_id, "e": error[:500]})
+
+
+def record_listing(db, source_id: str, ingredient_id: str, products: int, gaps: list[str]) -> None:
+    """The newest list of the ingredient's products from this source, and whether it was read to its end
+    (``spc_listing``, 0091): what the screen and the Sources page say about the list."""
+    db.execute(
+        """insert into spc_listing (source_id, ingredient_id, listed_at, products, complete, gaps)
+           values (%(s)s, %(i)s, now(), %(n)s, %(c)s, %(g)s)
+           on conflict (source_id, ingredient_id) do update
+              set listed_at = excluded.listed_at, products = excluded.products,
+                  complete = excluded.complete, gaps = excluded.gaps""",
+        {"s": source_id, "i": ingredient_id, "n": products, "c": not gaps,
+         "g": redact("; ".join(gaps))[:1000] if gaps else None})
 
 
 def _turn(product: dict) -> tuple:
@@ -511,6 +533,8 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
             log.warning("SPC %s discover %s: %s", source_id, ing["inn_en"], redact(exc))
             # its products from earlier runs are still read: a list that failed is not a week without labels
             known = known_products(db, source_id, ing["id"])
+            record_listing(db, source_id, ing["id"], len(known),
+                           [f"the list failed: {type(exc).__name__}: {exc}; {len(known)} listed before kept"])
             stats.products += len(known)
             queue += [(row, ing) for row in known]
             continue
@@ -537,7 +561,9 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
             elif gaps:
                 # the products the list did not reach stay active, and their labels are read as usual
                 queue += [(row, ing) for row in known if row["id"] not in ids]
-        stats.products += len(found) + (len([r for r in known if r["id"] not in ids]) if gaps else 0)
+        kept = len([r for r in known if r["id"] not in ids]) if gaps else 0
+        stats.products += len(found) + kept
+        record_listing(db, source_id, ing["id"], len(found) + kept, gaps)
     queue = plan_reads(module, queue, last_versions(db, sorted({p["id"] for p, _i in queue})), stats)
     if stats.revised or stats.unchanged:
         # counts, not errors: the source_run's error column holds only what went wrong
@@ -555,6 +581,7 @@ def _watch_source(ctx, db, module, source_id: str, ingredients: list[dict], stat
         except Exception as exc:  # noqa: BLE001 - recorded, next product; not marked read, so first next time
             stats.errors.append(redact(f"{product['national_id']}: {type(exc).__name__}: {exc}"))
             log.warning("SPC %s %s: %s", source_id, product["national_id"], redact(exc))
+            mark_unread(db, product["id"], redact(f"{type(exc).__name__}: {exc}"))
             continue
         mark_checked(db, product["id"])
         if issue:

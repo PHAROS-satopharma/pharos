@@ -26,6 +26,7 @@ import {
   type SourceWithRegulator,
 } from './queries';
 import { AddSource } from './AddSource';
+import { useLabelWatchSources, watchLine } from './labelWatchLine';
 import {
   MAX_LOOKBACK_DAYS,
   OTHER_AUTHORITIES,
@@ -275,6 +276,8 @@ function CountryCardView({ card, hz, ...rest }: CardShared & { card: Card }) {
 function PageLine({ page, sources }: { page: RegulatorPage; sources: Map<string, SourceWithRegulator> }) {
   const status = pageStatus(page, sources);
   const href = safeHref(page.url);
+  const watch = useLabelWatchSources();
+  const watched = page.kind === 'database' && watch.data ? watchLine(page.read_by, watch.data) : null;
   return (
     <li className={cx('hz-page', `is-${status.state}`)}>
       {href ? (
@@ -287,6 +290,7 @@ function PageLine({ page, sources }: { page: RegulatorPage; sources: Map<string,
       <span className="hz-page-kind">{PAGE_KIND_LABEL[page.kind]}</span>
       <span className="hz-read">{status.label}</span>
       {status.note ? <span className="hz-note">{status.note}</span> : null}
+      {watched ? <span className="hz-note">{watched}</span> : null}
     </li>
   );
 }

@@ -853,6 +853,13 @@ def test_a_label_that_failed_is_not_marked_read(spc_world):
     run_spc(ctx, db, store=store, notifier=notifier)
     checked = {row["national_id"]: row.get("checked_at") for row in db.products.values()}
     assert checked["A1"] is None and checked["B2"] and checked["C3"]
+    # the screen shows it as unread, with the error (0091) ...
+    errors = {row["national_id"]: row.get("last_error") for row in db.products.values()}
+    assert errors == {"A1": "SnapshotError: CIMA A1: HTTP 500", "B2": None, "C3": None}
+    # ... until a run reads it
+    module.snapshot = inner
+    run_spc(ctx, db, store=store, notifier=notifier)
+    assert all(row.get("last_error") is None for row in db.products.values())
 
 
 def test_each_source_gets_its_share_of_the_time_left(spc_world, monkeypatch):
@@ -912,6 +919,8 @@ def test_spc_partial_list_switches_nothing_off_and_still_reads_the_rest(spc_worl
     assert sorted(read) == ["A", "B"]                      # B, which the list did not reach, is read too
     run = _spc_runs(store)[-1]
     assert "partial list: page 2: HTTP 304" in run["error"] and run["items_seen"] == 2
+    # the screen says the list broke off, and where (spc_listing, 0091)
+    assert list(db.listings.values()) == [{"products": 2, "complete": False, "gaps": "page 2: HTTP 304"}]
 
 
 def test_spc_complete_list_still_switches_off_a_withdrawn_product(spc_world):
@@ -924,6 +933,7 @@ def test_spc_complete_list_still_switches_off_a_withdrawn_product(spc_world):
     module.discover = lambda ctx, ing: _two_products()[:1]
     run_spc(ctx, db, store=store, notifier=notifier)
     assert {nid: r["active"] for (_s, _i, nid), r in db.products.items()} == {"A": True, "B": False}
+    assert list(db.listings.values()) == [{"products": 1, "complete": True, "gaps": None}]
 
 
 def test_spc_empty_list_after_products_is_a_failed_discovery(spc_world):
@@ -958,6 +968,9 @@ def test_spc_failed_discovery_still_reads_the_known_labels(spc_world):
     run_spc(ctx, db, store=store, notifier=notifier)
     assert sorted(read) == ["A", "B"]
     assert "HTTP 503" in _spc_runs(store)[-1]["error"]
+    (listing,) = db.listings.values()
+    assert listing["products"] == 2 and not listing["complete"]
+    assert listing["gaps"].startswith("the list failed: FetchError") and "2 listed before kept" in listing["gaps"]
 
 
 class ValidatorCtx(FakeCtx):

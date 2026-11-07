@@ -13,6 +13,7 @@ import { SectionHead } from '../../ui/Text';
 import { cx } from '../../ui/cx';
 import { DecisionButtons } from './DecisionButtons';
 import { OurLabel } from './OurLabel';
+import { LabelWatch } from './LabelWatch';
 import { labelChangesKey, useLabelChanges } from './queries';
 import type { DiffSection, Findings, GapSection, GapStatus, LabelChange, Mention } from './types';
 import '../../styles/labels.css';
@@ -31,7 +32,8 @@ const STATUS: Record<GapStatus, { label: string; tone: 'success' | 'warning' | '
  * Section 03 of the Ingredients screen: the label changes of products with the ingredient DETECTED in the days
  * chosen (label_changes, 0043), the reference product first, then newest first; above them our own label. Each
  * change shows what the collector found against our label: every sentence the originator added, tagged as said,
- * partly said or not said by our label; the word changes; the notice and its decision.
+ * partly said or not said by our label; the word changes; the notice and its decision. Between our label and the
+ * changes, what the label watch read per database page (LabelWatch).
  */
 export function LabelChanges({ ingredientId, from, to }: { ingredientId: string; from: string; to: string }) {
   const q = useLabelChanges(ingredientId, from, to);
@@ -43,6 +45,7 @@ export function LabelChanges({ ingredientId, from, to }: { ingredientId: string;
     <section className="scr-section" aria-label="Label changes">
       <SectionHead index="03" title="Label changes" aside={q.data ? `${changes.length}` : undefined} />
       <OurLabel ingredientId={ingredientId} />
+      <LabelWatch ingredientId={ingredientId} />
       {q.isPending ? (
         <Loading label="Reading the label changes" />
       ) : q.isError ? (
