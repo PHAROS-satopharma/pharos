@@ -671,7 +671,7 @@ for name, atc, ready, notes_, opened in [
      "its package inserts  ·  PSUR every 3 years  ·  Literature not monitored by EMA  ·  Telegram: Sama Mosaad",
      False),
     ("Levofloxacin", "ATC J01MA12  ·  Fluoroquinolones",
-     "Still preparing: check of the past running  ·  NCBI look-back running  ·  label watch on Monday (Spain)",
+     "Still preparing: check of the past running  ·  PubMed look-back running  ·  label watch on Monday (Spain)",
      "3 label products in France, Japan, United Kingdom  ·  Not on the EURD list  ·  Literature not monitored by "
      "EMA  ·  Telegram: Sama Mosaad", True),
 ]:
@@ -735,13 +735,14 @@ y = legend(c, [("A", "The line", "Ready, or Still preparing."),
 
 y = label(c, "What the line says, and when it clears by itself", y)
 y = table(c, [
-    ("Ready", "Its names, its class words, the check of the past, the NCBI look-back and the label watch are all "
+    ("Ready", "Its names, its class words, the check of the past, the PubMed look-back and the label watch are all "
               "done, and someone receives its Telegram messages."),
     ("class words waiting", "It has an ATC code and no drug class yet. The next class run makes it (three a day)."),
     ("check of the past running, or waiting", "Its names are checked against every stored notice, whatever its "
                                               "date. It clears when every name is checked."),
-    ("NCBI look-back running, or waiting", "PubMed and PubMed Central are read 12 months back for its name and "
-                                           "class words. A large look-back takes a few days."),
+    ("PubMed look-back running, or waiting", "PubMed abstracts are read 12 months back for its name. It clears "
+                                             "after one to three literature runs; whole papers and class words "
+                                             "keep filling in after it is Ready."),
     ("label watch on Monday (Spain)", "The countries whose label watch has not read since it was added. Monday's "
                                       "run reads them; a country with no product of it is an answer too."),
     ("nobody receives its Telegram messages yet", "Nobody with Telegram is subscribed to it. Dr Sama Mosaad receives "

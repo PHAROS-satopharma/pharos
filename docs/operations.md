@@ -380,13 +380,14 @@ preparation has got, and the weekly report repeats it in section 1 (migrations 0
 `ingredient_readiness()`):
 
 - **Ready** when the ingredient has a name in at least one language, its drug class is made (or it has no ATC
-  code, so no class), its check of the past is done, NCBI's 12-month look-back has finished for every expected
-  search, so has Europe PMC's for every word while its watch is switched on (0082), every watched country's label watch has read since it was added (a watch that read and found no label
+  code, so no class), its check of the past is done, the 12-month PubMed look-back of its own name (titles and
+  abstracts) has finished (0092: PubMed Central, Europe PMC and the class words search whole papers, about 150,000 a
+  year for seven ingredients, so they fill in the background and hold nothing), every watched country's label watch has read since it was added (a watch that read and found no label
   is an answer), and at least one person with Telegram linked is subscribed to it. Dr Sama is subscribed to every
   ingredient by the migration, so a new one is covered the moment it is saved.
 - Otherwise **Still preparing:** followed by what is still running or still to come, in order: *class words
   waiting* (the next daily or literature run: 02:31, 10:41, 18:41 or 22:41), *check of the past running* or *waiting*,
-  *NCBI look-back running* or *waiting*, *Europe PMC look-back running* or *waiting*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
+  *PubMed look-back running* or *waiting*, *Europe PMC look-back running* or *waiting*, *label watch on Monday (Japan, Spain)* naming the countries not yet read (the weekly run, Monday
   03:23), *nobody receives its
   Telegram messages yet*.
 - Under the line: how many label products were found and where (or *No label found in any watched country*),

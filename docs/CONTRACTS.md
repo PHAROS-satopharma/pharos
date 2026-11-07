@@ -489,7 +489,7 @@ Her words, shared by `web/src/features/ingredients/readiness.ts` and `collectors
 (`readiness_items`, `readiness_text`; `tests/test_report_weekly.py` holds both to the same phrases): `Ready`, or
 `Still preparing: ` + items joined by ` · ` in this order: `no name to look for yet`, `class words waiting`
 (an ATC code and no class yet),
-`check of the past running` | `waiting`, `NCBI look-back running` | `waiting`, `Europe PMC look-back running` |
+`check of the past running` | `waiting`, `PubMed look-back running` | `waiting`, `Europe PMC look-back running` |
 `waiting` (only while it is watched), `label watch on Monday (A, B)`
 (up to three country names, else `n countries`), `nobody receives its Telegram messages yet`.
 

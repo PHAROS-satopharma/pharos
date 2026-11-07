@@ -59,17 +59,17 @@ describe('readiness on the ingredient row', () => {
     expect(readinessItems(fresh)).toEqual([
       'class words waiting',
       'check of the past waiting',
-      'NCBI look-back waiting',
+      'PubMed look-back waiting',
       'label watch on Monday (Japan, Spain)',
       'nobody receives its Telegram messages yet',
     ]);
     expect(readinessLine(fresh)).toBe(
-      'Still preparing: class words waiting · check of the past waiting · NCBI look-back waiting · ' +
+      'Still preparing: class words waiting · check of the past waiting · PubMed look-back waiting · ' +
         'label watch on Monday (Japan, Spain) · nobody receives its Telegram messages yet',
     );
   });
 
-  it('says "running" once the check of the past or the NCBI look-back has started', () => {
+  it('says "running" once the check of the past or the PubMed look-back has started', () => {
     const running: Readiness = {
       ...fresh,
       class: { atc: true, classes: 1, words: 17, confirmed: false },
@@ -79,12 +79,12 @@ describe('readiness on the ingredient row', () => {
     };
     expect(readinessItems(running)).toEqual([
       'check of the past running',
-      'NCBI look-back running',
+      'PubMed look-back running',
       'label watch on Monday (Japan, Spain)',
     ]);
   });
 
-  it('waits for the Europe PMC look-back only while its watch is switched on', () => {
+  it('waits for the Europe PMC look-back only while its watch is on and it holds Ready', () => {
     const epmc = { watched: true, searches: 0, expected: 2, look_back_done: false, last_run: null };
     expect(readinessItems({ ...ready, europepmc: epmc })).toEqual(['Europe PMC look-back waiting']);
     expect(readinessItems({ ...ready, europepmc: { ...epmc, searches: 1 } })).toEqual([
@@ -92,6 +92,8 @@ describe('readiness on the ingredient row', () => {
     ]);
     expect(readinessItems({ ...ready, europepmc: { ...epmc, watched: false } })).toEqual([]);
     expect(readinessItems({ ...ready, europepmc: { ...epmc, searches: 2, look_back_done: true } })).toEqual([]);
+    // 0092: it fills in the background and holds nothing
+    expect(readinessItems({ ...ready, europepmc: { ...epmc, holds_ready: false } })).toEqual([]);
   });
 
   it('is Ready when everything that follows by itself has run', () => {
