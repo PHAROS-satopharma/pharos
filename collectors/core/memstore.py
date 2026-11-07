@@ -282,6 +282,26 @@ class MemoryStore:
             out.setdefault(row["inn_en"], []).append(t.term)
         return out
 
+    def case_reports_unchecked(self, limit: int) -> list[dict]:
+        """As Store.case_reports_unchecked."""
+        out = []
+        for d in sorted(self.document.values(), key=lambda x: (x["first_seen_at"], x["id"])):
+            s = d.get("structured") or {}
+            if (isinstance(s.get("case_report"), dict) and "names_checked" not in s
+                    and (self.source.get(d["source_id"]) or {}).get("kind") == "literature"):
+                out.append({"id": d["id"], "structured": dict(s)})
+        return out[:limit]
+
+    def mark_case_names(self, kept: list[str], cleared: list[str], day: str) -> None:
+        """As Store.mark_case_names."""
+        for i in kept:
+            d = self.document[i]
+            d["structured"] = {**(d.get("structured") or {}), "names_checked": day}
+        for i in cleared:
+            d = self.document[i]
+            s = d.get("structured") or {}
+            d["structured"] = {**s, "case_report": None, "case_report_was": s.get("case_report"), "names_checked": day}
+
     def ingredients_without_spc(self) -> list[str]:
         return [i for i, r in self.ingredient.items() if r.get("active", True) and i not in self.spc_mah]
 

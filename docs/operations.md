@@ -942,6 +942,13 @@ November 2026): a valid serious case reaches the Egyptian Drug Authority within 
   series" or "a case of" (the words of `v_case_report`, 0031). Migration 0044 flagged the papers stored before
   it with the same words. A paper found only by a class word is flagged too but, like a class-wide notice, is
   not in the daily message.
+- **It must name the ingredient** (owner, 8 Nov 2026). After its searches each literature run checks every
+  flagged paper once (`collectors/case_names.py`): it keeps its flag only when its title or abstract names an
+  ingredient whose name search found it (the English INN or another English name matched as words), asked of
+  PubMed (`"name"[tiab]`) or, with no PMID, of Europe PMC (`TITLE_ABS`). Otherwise the flag is cleared
+  (`structured.case_report` null, the old one kept as `case_report_was`; `names_checked` is the day). A paper
+  only class words found is cleared without asking (migration 0097 cleared those at once). A paper not answered
+  (NCBI or Europe PMC down) waits for the next run. On 7 Nov 2026 this left 420 of 2,516 flagged papers.
 - **The daily message.** The papers naming an ingredient that look like case reports and were found since the
   last message are a block, *Possible case reports (N)*, at the end of the daily class digest (`class_digest`
   subscribers, `collectors/alerts.py`): title, journal, day zero with the 15-day date, and a link to the

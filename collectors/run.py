@@ -30,6 +30,7 @@ from pathlib import PurePosixPath
 from types import ModuleType
 from typing import Any
 from urllib.parse import unquote, urlsplit
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -49,6 +50,7 @@ from collectors.parsers.base import html_text
 
 log = logging.getLogger("collectors.run")
 
+CASE_NAMES_MIN = 8   # minutes for the case report name check after a literature run's searches
 SCHEDULES = ("4h", "12h", "daily", "literature", "weekly", "monthly", "all")
 MAX_ATTACHMENTS = 8
 MAX_NEW_ITEMS = 400            # per source per normal run; the rest wait for the next run
@@ -569,6 +571,16 @@ def main(argv: list[str] | None = None) -> int:
                                          args.backfill)
                 log.info("run %s: %d source(s)", run_id, len(sources))
                 ok = runner.run(sources)
+                if db is not None and not args.backfill and any(s.kind == "literature" for s in sources):
+                    try:
+                        # a possible case report must name its ingredient in its title or abstract
+                        from collectors import case_names
+
+                        # its own few minutes after the searches, which use the whole time budget
+                        case_names.check(ctx, store, datetime.now(ZoneInfo("Africa/Cairo")).date(),
+                                         deadline=time.monotonic() + CASE_NAMES_MIN * 60)
+                    except Exception:  # noqa: BLE001 - checked again on the next run
+                        log.warning("case report name check failed: %s", traceback.format_exc())
             spc_ids: list[str] | None = None
             run_spc_now = False
             if args.spc_ingredient:

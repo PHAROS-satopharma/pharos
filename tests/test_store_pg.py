@@ -632,6 +632,26 @@ def test_a_paper_another_literature_source_stored_is_marked_found(store, tag):
     store.literature_found_also({}, "europepmc")                                      # nothing: no error
 
 
+def test_case_reports_are_read_once_and_a_flag_that_names_nothing_is_cleared(store, tag):
+    # collectors/case_names.py (0097): a flagged paper is checked once; a cleared flag is kept as case_report_was
+    src = _source(store, tag)
+    store.db.execute("update source set kind = 'literature' where id = %(s)s", {"s": src.id})
+    keep, drop, plain = (store.insert_document(_doc(src.id, f"cn{n}{tag}", doc_type="literature", structured=st))
+                         for n, st in enumerate(({"case_report": {"reason": "pubtype"}},
+                                                 {"case_report": {"reason": "title"}}, {"case_report": None})))
+    waiting = {r["id"]: r["structured"] for r in store.case_reports_unchecked(100_000)}
+    assert keep in waiting and drop in waiting and plain not in waiting
+    assert waiting[drop]["case_report"] == {"reason": "title"}
+    store.mark_case_names([keep], [drop], "2026-11-08")
+    rows = {str(r["id"]): r["structured"] for r in store.db.fetchall(
+        "select id, structured from document where id = any(%(i)s::uuid[])", {"i": [keep, drop]})}
+    assert rows[keep]["case_report"] == {"reason": "pubtype"} and rows[keep]["names_checked"] == "2026-11-08"
+    assert rows[drop]["case_report"] is None and rows[drop]["case_report_was"] == {"reason": "title"}
+    assert rows[drop]["names_checked"] == "2026-11-08"
+    assert not {keep, drop} & {r["id"] for r in store.case_reports_unchecked(100_000)}
+    store.mark_case_names([], [], "2026-11-08")                                         # nothing: no error
+
+
 def test_issues_of_papers_are_never_merge_candidates(store, tag):
     src = _source(store, tag)
     ing = _ingredient(store, tag)

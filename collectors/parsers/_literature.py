@@ -43,6 +43,11 @@ def found_also(structured: dict | None, db: str, queries: dict[str, str]) -> dic
             by_word[word.casefold()] = q
         q["db"] = sorted({*(q.get("db") or []), db})
     s["queries"] = sorted(have, key=lambda q: str(q.get("query") or "").casefold())
+    # a flag cleared because no name search had found the paper (collectors/case_names.py) is checked again
+    # once one does
+    if "name" in queries.values() and s.get("case_report") is None and isinstance(s.get("case_report_was"), dict):
+        s["case_report"] = s.pop("case_report_was")
+        s.pop("names_checked", None)
     return s
 
 
