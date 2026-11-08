@@ -95,3 +95,50 @@ def test_first_applied_then_staged_then_activated(db):
     # A third release dropping a concept stages its retirement.
     third = _release("CI-3", [c for c in second.concepts.values() if c.code != "OAE_9100003"])
     assert "0 added, 0 changed, 1 retired" in base.load(db, third, min_concepts=1)
+
+
+
+LOGGED = ["test logged rash", "qqzzxv wwyyk"]     # the second shares no letters' trigrams with any test concept
+
+
+def _logged(db, sql: str) -> list[dict]:
+    return db.fetchall(sql + " where text = any(%s) order by id", (LOGGED,))
+
+
+def test_every_search_is_logged_and_only_admins_read_the_log(db):
+    first = _release("CI-LOG", [base.Concept(code="OAE_9200001", name="test logged rash AE")])
+    assert "loaded (the first release)" in base.load(db, first, min_concepts=1)
+    db.execute("delete from term_search_log where text = any(%s)", (LOGGED,))
+    try:
+        hits = _read(db, "select code from term_find(%s, array['oae'], 12, 'proposal')", (LOGGED[0],))
+        assert [r["code"] for r in hits][:1] == ["OAE_9200001"]          # the same answers as term_search()
+        assert _read(db, "select code from term_find(%s, array['oae'])", (LOGGED[1],)) == []
+
+        rows = _logged(db, "select person_id::text as person_id, place, results, sources from term_search_log")
+        reader = db.fetchone("select id::text as id from person where auth_user_id = %s", (READER,))["id"]
+        assert [(r["person_id"], r["place"], r["sources"]) for r in rows] == [
+            (reader, "proposal", ["oae"]), (reader, "typed", ["oae"])]
+        assert rows[0]["results"] >= 1 and rows[1]["results"] == 0
+
+        # Someone who is not a PHAROS person finds nothing and leaves no row.
+        db.execute("select set_config('request.jwt.claims', %s, false)",
+                   ('{"sub": "00000000-0000-0000-0000-00000000ffff", "role": "authenticated"}',))
+        try:
+            assert db.fetchall("select code from term_find(%s)", (LOGGED[0],)) == []
+        finally:
+            db.execute("select set_config('request.jwt.claims', '', false)")
+        assert len(_logged(db, "select id from term_search_log")) == 2
+
+        # A reader gets no counts; an administrator gets today's, by person and place.
+        assert _read(db, "select * from term_search_counts(%s)", (None,)) == []
+        db.execute("select set_config('request.jwt.claims', %s, false)",
+                   ('{"sub": "%s", "role": "authenticated"}' % ADMIN,))
+        try:
+            counts = db.fetchall("select place, searches, found_nothing from term_search_counts() "
+                                 "where person = %s order by place", ("CI Reader",))
+        finally:
+            db.execute("select set_config('request.jwt.claims', '', false)")
+        assert [(c["place"], c["searches"], c["found_nothing"]) for c in counts] == [
+            ("proposal", 1, 0), ("typed", 1, 1)]
+    finally:
+        db.execute("delete from term_search_log where text = any(%s)", (LOGGED,))

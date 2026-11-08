@@ -64,6 +64,20 @@ MeSH goes into the same tables after its own load on the 2nd (migration 0061).
   release, and who chose it and when. Choosing a MeSH concept also fills the reaction's MeSH code. The credit of
   each source used appears under the reactions.
 
+## The search log
+
+Every search is logged (migration 0106): who searched, when, the words, the source chips, how many concepts came
+back, and whether a person **typed** it (the Terminology screen, or the search box on a case) or it was a reaction's
+three automatic **proposals**. The screen searches 300 ms after typing stops, so a word typed slowly can count more
+than once. Only administrators can read it; nobody can change it. Searches a day (Cairo) and person:
+
+```sql
+select * from term_search_counts();                          -- today
+select * from term_search_counts('2026-11-01', '2026-11-30'); -- a period
+```
+
+`found_nothing` counts searches that found no concept: the words people look for that no free source has.
+
 ## What MedDRA does that these cannot
 
 - **It is the regulatory standard.** ICH E2B(R3), EMA, FDA and the Egyptian Drug Authority require MedDRA

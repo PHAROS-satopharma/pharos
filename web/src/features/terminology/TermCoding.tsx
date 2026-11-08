@@ -39,7 +39,7 @@ export function TermCoding({
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const proposals = useTermSearch(editable && !term ? words : '', null, 3);
+  const proposals = useTermSearch(editable && !term ? words : '', null, 3, 'proposal');
 
   async function choose(h: TermHit) {
     setBusy(true);
