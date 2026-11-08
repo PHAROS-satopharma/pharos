@@ -21,6 +21,7 @@ import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
 import {
   emaIndex,
+  herbalNames,
   pubchemAutocomplete,
   rxnavSuggest,
   wikidataByAtc,
@@ -70,9 +71,13 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
   const pcNames = settled(pc, "PubChem", warnings, []).map(key);
 
   // Fuzzy match against every EMA substance name (this is what turns "laura noxicam" into lornoxicam and
-  // tenoxicam), or exact ATC match when an ATC code was typed.
+  // tenoxicam), or exact ATC match when an ATC code was typed. A herbal substance answers to each of its names:
+  // "ivy leaves", "ivy leaf", "Hederae helicis folium" and "Hedera helix" all find Ivy leaf (8 November 2026).
   const emaHits = [...emaRes.index.values()]
-    .map((s) => ({ s, sim: atcQuery ? (s.atc.has(atcQuery) ? 1 : 0) : similarity(q, s.name) }))
+    .map((s) => ({
+      s,
+      sim: atcQuery ? (s.atc.has(atcQuery) ? 1 : 0) : Math.max(...herbalNames(s).map((n) => similarity(q, n))),
+    }))
     .filter((h) => h.sim >= 0.55)
     .sort((a, b) => b.sim - a.sim)
     .slice(0, 6);
@@ -96,9 +101,15 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
   const byKey = new Map<string, Candidate>();
   const nameKeys = (c: Candidate) => [key(c.inn_en), ...Object.values(c.labels).map(key)];
 
-  // Wikidata items that are medicines (have an ATC code, an RxNorm id or a PubChem id).
+  // Wikidata items that are medicines (have an ATC code, an RxNorm id or a PubChem id). An item with none of
+  // them (a painting, a ship, or the herbal substance "ivy leaf") is kept aside: a herbal substance from EMA's
+  // list takes the item whose names include its Latin name, for the names in other languages.
+  const plain: WikidataItem[] = [];
   for (const it of details.values()) {
-    if (!it.atc.length && !it.rxcui.length && !it.cid.length) continue;
+    if (!it.atc.length && !it.rxcui.length && !it.cid.length) {
+      plain.push(it);
+      continue;
+    }
     const en = it.labels.en ?? Object.values(it.labels)[0];
     if (!en) continue;
     const c: Candidate = {
@@ -122,13 +133,18 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
       for (const l of s.lists) if (!existing.sources.includes(l)) existing.sources.push(l);
       if (!existing.atc_code && s.atc.size) existing.atc_code = [...s.atc][0];
     } else {
-      byKey.set(`ema:${k}`, {
+      const latin = s.herbal ? key(s.herbal.latin) : null;
+      const item = latin
+        ? plain.find((it) => [...Object.values(it.labels), ...Object.values(it.alt).flat()].some((n) => key(n) === latin))
+        : undefined;
+      if (item && byKey.has(item.qid)) continue;
+      byKey.set(item ? item.qid : `ema:${k}`, {
         inn_en: s.name,
         atc_code: s.atc.size ? [...s.atc][0] : null,
-        wikidata_qid: null,
+        wikidata_qid: item?.qid ?? null,
         rxcui: null,
-        labels: { en: s.name },
-        sources: [...s.lists],
+        labels: { ...(item?.labels ?? {}), en: s.name },
+        sources: item ? [...s.lists, "wikidata"] : [...s.lists],
         score: 0,
       });
     }
@@ -149,9 +165,10 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
 
   // Rank: closeness to what was typed first, then how many independent sources agree, then an ATC code.
   for (const c of byKey.values()) {
+    const herbal = emaRes.index.get(key(c.inn_en));
     const sim = atcQuery && c.atc_code === atcQuery
       ? 1
-      : Math.max(...[c.inn_en, ...Object.values(c.labels)].map((n) => similarity(q, n)));
+      : Math.max(...[c.inn_en, ...Object.values(c.labels), ...(herbal ? herbalNames(herbal) : [])].map((n) => similarity(q, n)));
     let score = 55 * sim;
     if (sim === 1) score += 15;
     if (c.atc_code) score += 12;

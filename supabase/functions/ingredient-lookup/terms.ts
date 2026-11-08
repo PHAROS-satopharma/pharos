@@ -4,6 +4,7 @@ import { HttpError } from "../_shared/cors.ts";
 import {
   EEA_LANGS,
   emaIndex,
+  herbalNames,
   LANGS,
   pubchemSynonyms,
   wikidataByAtc,
@@ -111,6 +112,13 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
         push({ lang, country_code: null, term: alt, kind: looksLikeCode(alt) ? "code" : "synonym", source: "wikidata" });
       }
     }
+  }
+
+  // A herbal substance (EMA's HMPC list) is written in the papers by its plural, its Latin name and its plant:
+  // "ivy leaves", "Hederae helicis folium", "Hedera helix" for Ivy leaf (8 November 2026).
+  const herbal = innEn ? emaRes.index.get(key(innEn)) : undefined;
+  if (herbal?.herbal) {
+    for (const n of herbalNames(herbal)) push({ lang: "en", country_code: null, term: n, kind: "synonym", source: "ema-herbal" });
   }
 
   // EU-wide brand names from the EMA medicines and DHPC lists (matched by INN or by ATC code).
