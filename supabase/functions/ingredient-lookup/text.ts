@@ -1,5 +1,15 @@
 // Text helpers for ingredient lookup: normalisation, similarity, and the match mode a term should use.
 
+/**
+ * A Wikidata label without the bracket Wikidata adds to tell items apart, which no notice ever writes
+ * (8 November 2026, ginkgo): "Ginkgo biloba (farmacología)" → Ginkgo biloba, "Ginkgo (feuille de)" → Ginkgo.
+ * A label that is nothing but a bracket is kept as it is.
+ */
+export function plainLabel(s: string): string {
+  const t = s.replace(/\s*\([^()]*\)\s*$/u, "").trim();
+  return t || s.trim();
+}
+
 /** NFKC, case-folded, accents stripped, spaces and hyphens removed — for comparing names, never for storage. */
 export function squash(s: string): string {
   return s
