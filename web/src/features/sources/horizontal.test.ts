@@ -101,6 +101,15 @@ describe('countryCards', () => {
   it('lists the other countries that have a source, and only those', () => {
     expect(others.map((c) => c.country)).toEqual(['Egypt']);
   });
+
+  it('gives the literature databases no card: they are under Literature references', () => {
+    const lit = countryCards(
+      [...REGULATORS, reg('NLM', 'National Library of Medicine', 'International (literature)', 'XL')],
+      PAGES,
+      [...SOURCES, src('pubmed', 'NLM', { kind: 'literature', channel: 'api' })],
+    );
+    expect(lit.others.map((c) => c.country)).toEqual(['Egypt']);
+  });
 });
 
 const item = (document_id: string, regulator_id: string, first_seen_at: string, extra: Partial<NewItem> = {}): NewItem => ({

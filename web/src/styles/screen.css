@@ -486,3 +486,15 @@
     width: 100%;
   }
 }
+
+/* Literature references, reference by reference (0101): words, not figures, in the two right columns. */
+.scr-refs td {
+  font-family: inherit;
+}
+.scr-refs .scr-refs-how {
+  color: var(--muted);
+}
+.scr-refs .scr-refs-none {
+  color: var(--sea);
+  font-weight: 600;
+}

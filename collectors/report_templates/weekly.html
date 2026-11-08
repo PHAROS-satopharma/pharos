@@ -257,6 +257,19 @@ not read {{ week.this }} is to be checked by hand.</p>
     <td class="num">{{ a.literature.runs }}</td><td class="num">{{ a.literature.failed }}</td><td class="num">{{ a.literature.seen }}</td></tr>
   </tbody>
 </table>
+{% if a.literature_refs %}
+<h3>Literature references, Global and Local</h3>
+<table class="fixed">
+  <colgroup><col style="width: 16mm"><col style="width: 62mm"><col></colgroup>
+  <thead><tr><th>List</th><th>Reference</th><th>Screened {{ week.this }}</th></tr></thead>
+  <tbody>
+  {% for r in a.literature_refs %}
+  <tr><td>{{ r.scope }}</td><td>{{ link(r.url, r.name) if r.url else r.name }}</td>
+    <td>{% if r.gap %}<strong>{{ r.screened }}</strong>{% else %}{{ r.screened }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 </section>
 
 <section class="part">
@@ -336,6 +349,19 @@ serious, 90 if not.</p>
 {% set l = i.literature %}
 <h3>{{ i.name }}<span class="sub">{{ l.papers }} {{ "paper" if l.papers == 1 else "papers" }} · {{ l.by_name }} by name · {{ l.by_class }} by class · {{ l.case_reports }} possible case {{ "report" if l.case_reports == 1 else "reports" }}</span></h3>
 {% if l.mlm %}<p class="comment">{{ l.mlm }}</p>{% endif %}
+{% if l.refs %}
+<h4>Literature references</h4>
+<table class="fixed">
+  <colgroup><col style="width: 16mm"><col style="width: 56mm"><col><col style="width: 34mm"></colgroup>
+  <thead><tr><th>List</th><th>Reference</th><th>Screened</th><th>Found</th></tr></thead>
+  <tbody>
+  {% for r in l.refs %}
+  <tr><td>{{ r.scope }}</td><td>{{ link(r.url, r.name) if r.url else r.name }}</td><td>{{ r.screened }}</td>
+    <td>{% if r.found == "Nothing found" %}<strong>Nothing found</strong>{% else %}{{ r.found }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 <h4>Searches</h4>
 <table class="fixed">
   <colgroup><col><col style="width: 30mm"><col style="width: 22mm"><col style="width: 28mm"><col style="width: 24mm"></colgroup>

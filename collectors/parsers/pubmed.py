@@ -526,7 +526,8 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
             for uid in esearch_ids(ctx, s, w.start, w.end, page):
                 uids.add(uid)
                 hits.setdefault((s.db, uid), []).append((s, not w.history))
-        runs.append({"search": s, "row": row, "uids": uids})
+        runs.append({"search": s, "row": row, "uids": uids, "hits": len(uids),
+                     "from": min(w.start for w in windows), "to": max(w.end for w in windows)})
 
     def elsewhere(key: tuple[str, str]) -> str | None:
         """The document of the paper another literature source stored under this PMID or PMC id."""
@@ -615,11 +616,18 @@ def after_store(ctx: FetchContext, source: SourceConfig, items: list[Item], stor
     ctx.literature_runs = None
     if not runs or store is None:
         return
-    rows = []
+    rows, log_rows = [], []
     for run in runs:
         s, row = run["search"], run["row"]
         done = row["done"] or all(eid and (eid in stored or any(a in stored for a in al))
                                   for eid, al in run["wait"])
         rows.append({"db": s.db, "query": s.key[1], "kind": s.kind, "look_back_from": row["look_back_from"],
                      "history_until": row["history_until"], "done": done})
+        if run.get("from") is not None:
+            log_rows.append({"db": s.db, "query": s.key[1], "kind": s.kind, "window_from": run["from"],
+                             "window_to": run["to"], "hits": int(run.get("hits") or 0)})
     store.save_literature_searches(rows)
+    # Every search sent, with what the database returned, 0 included (0101): her negative result, week by week.
+    log_searches = getattr(store, "log_literature_searches", None)
+    if log_rows and callable(log_searches):
+        log_searches(getattr(ctx, "run_id", None), source.id, log_rows)

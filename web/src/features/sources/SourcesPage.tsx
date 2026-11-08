@@ -27,6 +27,7 @@ import {
 } from './queries';
 import { AddSource } from './AddSource';
 import { AddAuthority, PageForm, RemovePage } from './PageEdit';
+import { LiteratureRefs } from './LiteratureRefs';
 import { ChangeSource, RemoveSource } from './SourceEdit';
 import { useLabelWatchSources, watchLine } from './labelWatchLine';
 import { listLine, useListChecks, type ListCheckRow } from './listCheck';
@@ -145,7 +146,7 @@ export function SourcesPage() {
             <>
               <Toggle checked={technical} onChange={setTechnical} label="Technical details" />
               {!addingLocal ? (
-                <Button onClick={() => setAddingLocal(true)}>Add a local reference</Button>
+                <Button onClick={() => setAddingLocal(true)}>Add an authority</Button>
               ) : null}
               {!adding ? (
                 <Button variant="primary" onClick={() => setAdding(true)}>
@@ -175,6 +176,8 @@ export function SourcesPage() {
       ) : null}
       {toggle.isError ? <Notice tone="error">Not changed: {errorMessage(toggle.error)}</Notice> : null}
       {runs.isError ? <Notice tone="error">This week's checks could not be read: {errorMessage(runs.error)}</Notice> : null}
+
+      <LiteratureRefs weekStart={hz.weekStart} />
 
       {failed ? (
         <ErrorNote

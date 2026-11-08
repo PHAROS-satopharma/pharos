@@ -176,10 +176,29 @@ class PsurDb:
                                                             "pmc": 0}]}}}
         if "label_changes(" in sql:
             return {"changes": [LABEL_CHANGES[0]] if chunk == CHUNK1 else []}
+        if "literature_refs_week(" in sql:
+            # Her literature references (0101), chunk by chunk: PubMed searched, nothing of the ingredient found
+            # in the second chunk; Medscape and Al-Azhar checked by hand.
+            return {"refs": [
+                {"id": "r-pubmed", "scope": "global", "name": "PubMed (NCBI)", "url": "https://pubmed.ncbi.nlm.nih.gov/",
+                 "by_hand": False, "searches": 300 if chunk == CHUNK1 else 65, "hits": 4,
+                 "last_searched": "2025-11-06T04:00:00Z" if chunk == CHUNK1 else "2026-11-06T04:00:00Z",
+                 "found": 2 if chunk == CHUNK1 else 0, "check": None},
+                {"id": "r-cochrane", "scope": "global", "name": "Cochrane Database of Systematic Reviews",
+                 "url": "javascript:alert(1)", "by_hand": False, "searches": 3, "hits": 0,
+                 "last_searched": "2025-11-06T04:00:00Z", "found": 0, "check": None},
+                {"id": "r-medscape", "scope": "global", "name": "Medscape", "url": "https://www.medscape.com/",
+                 "by_hand": True, "searches": 0, "hits": 0, "last_searched": None, "found": None, "check": None},
+                {"id": "r-azhar", "scope": "local", "name": "Al-Azhar Medical Journal",
+                 "url": "https://amj.journals.ekb.eg/", "by_hand": True, "searches": 0, "hits": 0,
+                 "last_searched": None, "found": None, "check": None}]}
         raise AssertionError(f"unexpected query: {sql}")
 
     def fetchall(self, sql, params=None):
         self.sql.append((sql, params))
+        if "from literature_check" in sql:
+            assert params == {"f": CHUNK1[0], "t": CHUNK2[1]}
+            return [{"ref_id": "r-medscape", "checks": 52, "found": 1, "last_at": "2026-11-04T08:00:00Z"}]
         if "ingredient_papers(" in sql:
             return PAPERS[self._chunk(params)]
         if "screening_log(" in sql:
@@ -251,6 +270,25 @@ def test_a_psur_pack_answers_sections_3_4_11_and_15_16():
     assert [e["step"] for e in s["steps"]] == ["Opened the signal", "Validated"]
     assert s["findings"] == ["Notice d-1", "Tavanic 500 mg — 4.4, 4.8"]
     assert data["eurd"][0]["interval"] == "2 Dec 2023 – 1 Dec 2026"
+
+
+def test_the_psur_pack_gives_each_literature_reference_its_negative_result():
+    # Dr Sama, 8 Nov 2026 (0101): each Global and Local reference over the pack's days, "Nothing found" in words.
+    _, data = _psur()
+    refs = {r["name"]: r for r in data["literature"]["refs"]}
+    assert refs["PubMed (NCBI)"]["screened"] == "Searched by the app 365 times in these days, last 6 Nov 2026, 06:00"
+    assert refs["PubMed (NCBI)"]["found"] == "2 papers"
+    assert refs["Cochrane Database of Systematic Reviews"]["found"] == "Nothing found"
+    assert refs["Cochrane Database of Systematic Reviews"]["url"] is None              # no javascript: link
+    assert refs["Medscape"]["screened"] == "Checked by hand 52 times in these days, last 4 Nov 2026, 10:00"
+    assert refs["Medscape"]["found"] == "Found something in 1 check"
+    assert refs["Al-Azhar Medical Journal"]["screened"] == "Not checked by hand in these days"
+    assert refs["Al-Azhar Medical Journal"]["scope"] == "Local"
+    html = rp.render_pack_html(data)
+    assert "Literature references, Global and Local" in html and "<strong>Nothing found</strong>" in html
+    rows = list(load_workbook(io.BytesIO(rp.build_psur_xlsx(data)))["§11 References"].iter_rows(values_only=True))
+    assert rows[0] == ("List", "Reference", "Link", "Screened", "Found")
+    assert rows[4][:2] == ("Local", "Al-Azhar Medical Journal")
 
 
 def test_findings_that_do_not_concern_us_are_counted_and_listed_apart():

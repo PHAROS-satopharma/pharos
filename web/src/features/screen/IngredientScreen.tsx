@@ -22,6 +22,7 @@ import { ClinicalTrials } from './ClinicalTrials';
 import { CodedReactions } from './CodedReactions';
 import { FaersReports } from './FaersReports';
 import { LabelChanges } from './LabelChanges';
+import { LiteratureRefsTable } from './LiteratureRefsTable';
 import { distinctWords } from './words';
 import { PAPER_PAGE, screenKey, useIngredientScreen, useMorePapers } from './queries';
 import { caseReportLabel, dueLine, mlmLabel, openAccessTag, orderPapers, withPaperDecision } from './papers';
@@ -420,6 +421,8 @@ function Literature({
           <span className="scr-mlm-explain">{mlm.explain}</span>
         </p>
       ) : null}
+
+      <LiteratureRefsTable ingredientId={ing.id} from={from} to={to} />
 
       {lit.by_query.length ? (
         <table className="scr-queries">

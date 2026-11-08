@@ -410,6 +410,38 @@ def test_a_new_ingredient_looks_back_12_months_once_then_reads_daily(tmp_path):
     assert ncbi.esummaries() == []
 
 
+def test_every_search_is_logged_with_what_the_database_returned_zero_included(tmp_path):
+    # Her negative result, reference by reference (0101): one row per search sent, with its count, 0 included.
+    store = live_like_store()
+    add_levofloxacin(store)
+    stats = run_pubmed(store, tmp_path, Ncbi(LEVO))
+    assert not stats.failed, stats.error
+    log = {(r["db"], r["query"]): r for r in store.literature_search_log}
+    assert len(log) == len(store.literature_search_log)                     # each search once
+    assert set(log) == set(store.literature_searches())                      # every search sent is logged
+    assert log[("pubmed", "levofloxacin")]["hits"] == 5
+    assert log[("pmc", "levofloxacin")]["hits"] == 59
+    assert log[("pubmed", "lornoxicam")]["hits"] == 0 and log[("pmc", "lornoxicam")]["hits"] == 0
+    assert log[("pmc", "levofloxacin")]["window_from"] == YEAR_AGO
+    assert all(r["window_to"] == TODAY and r["source_id"] == "pubmed" and r["run_id"] for r in log.values())
+
+    run_pubmed(store, tmp_path, Ncbi(LEVO))                                  # the next day: logged again
+    assert len(store.literature_search_log) == 2 * len(log)
+
+
+def test_a_backfill_logs_no_search(tmp_path):
+    store = live_like_store()
+    add_levofloxacin(store)
+    run_id = store.create_run("backfill", "test-sha", "daily")
+    ctx = context(tmp_path, Ncbi(LEVO), run_id)
+    ctx.backfill = True
+    settings = {**store.settings(), "alert_max_age_days": 100_000}
+    Runner(store, ctx, Notifier(store, settings, telegram=ExplodingTelegram()), settings).run_source(
+        source(page_size=2))
+    ctx.close()
+    assert store.literature_search_log == []
+
+
 def test_a_look_back_cut_short_continues_on_the_next_run(tmp_path):
     store = live_like_store()
     add_levofloxacin(store)

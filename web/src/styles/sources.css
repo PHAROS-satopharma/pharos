@@ -434,3 +434,13 @@
   display: flex;
   gap: 4px;
 }
+
+/* Literature references, Global and Local (0101): the two lists side by side, one under the other on a phone. */
+.lit-scopes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 0 24px;
+}
+.lit-explain {
+  margin: -4px 0 8px;
+}

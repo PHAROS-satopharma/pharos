@@ -88,7 +88,7 @@
 
 <section class="part">
 <h2><span class="n">04</span>§11 Literature</h2>
-<p class="lede">{{ data.literature.papers | length }} papers in PubMed and PubMed Central{% if data.literature.case_reports %}, {{ data.literature.case_reports }} of them possible case reports (listed first){% endif %}.{% if data.literature.mlm %} {{ data.literature.mlm }}.{% endif %}</p>
+<p class="lede">{{ data.literature.papers | length }} papers in PubMed, PubMed Central and Europe PMC{% if data.literature.case_reports %}, {{ data.literature.case_reports }} of them possible case reports (listed first){% endif %}.{% if data.literature.mlm %} {{ data.literature.mlm }}.{% endif %}</p>
 {% if data.literature.papers %}
 <table>
   <thead><tr><th>Date</th><th>Paper</th><th>Case report</th><th>Decision</th></tr></thead>
@@ -97,7 +97,7 @@
   <tr>
     <td>{{ p.day }}</td>
     <td><span class="title-orig" lang="{{ p.lang or '' }}">{{ p.title }}</span>{% if p.by_class %} <span class="tag">By class</span>{% endif %}{% if p.history %} <span class="tag">History</span>{% endif %}
-      <div class="what">{{ p.journal }}</div>{% if p.pubmed %}{{ link(p.pubmed, 'PubMed ' ~ p.pubmed_id) }}{% endif %}{% if p.pmc %}{% if p.pubmed %} · {% endif %}{{ link(p.pmc, p.pmc_id) }}{% endif %}</td>
+      <div class="what">{{ p.journal }}</div>{% if p.pubmed %}{{ link(p.pubmed, 'PubMed ' ~ p.pubmed_id) }}{% endif %}{% if p.pmc %}{% if p.pubmed %} · {% endif %}{{ link(p.pmc, p.pmc_id) }}{% endif %}{% if p.europepmc %}{% if p.pubmed or p.pmc %} · {% endif %}{{ link(p.europepmc, 'Europe PMC ' ~ p.europepmc_id) }}{% endif %}{% if p.preprint %} <span class="tag">Preprint</span>{% endif %}</td>
     <td>{% if p.case_report %}Possible: {{ p.case_reason }}<br><span class="comment">Day zero {{ p.day_zero }} · 15 days {{ p.due_serious }} · 90 days {{ p.due_nonserious }}</span>{% endif %}</td>
     <td>{{ decision(p) }}</td>
   </tr>
@@ -107,13 +107,25 @@
 {% else %}
 <div class="empty">No paper in these days.</div>
 {% endif %}
+{% if data.literature.refs %}
+<h4>Literature references, Global and Local</h4>
+<table>
+  <thead><tr><th>List</th><th>Reference</th><th>Screened</th><th>Found</th></tr></thead>
+  <tbody>
+  {% for r in data.literature.refs %}
+  <tr><td>{{ r.scope }}</td><td>{{ link(r.url, r.name) if r.url else r.name }}</td><td>{{ r.screened }}</td>
+    <td>{% if r.found == "Nothing found" %}<strong>Nothing found</strong>{% else %}{{ r.found }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 {% if data.literature.searches %}
 <h4>Searches</h4>
 <table>
-  <thead><tr><th>Search</th><th>Searched as</th><th class="num">PubMed</th><th class="num">PubMed Central</th></tr></thead>
+  <thead><tr><th>Search</th><th>Searched as</th><th class="num">PubMed</th><th class="num">PubMed Central</th><th class="num">Europe PMC</th></tr></thead>
   <tbody>
   {% for s in data.literature.searches %}
-  <tr><td>{{ s.query }}</td><td class="comment">{{ s.kind }}</td><td class="num">{{ s.pubmed }}</td><td class="num">{{ s.pmc }}</td></tr>
+  <tr><td>{{ s.query }}</td><td class="comment">{{ s.kind }}</td><td class="num">{{ s.pubmed }}</td><td class="num">{{ s.pmc }}</td><td class="num">{{ s.europepmc }}</td></tr>
   {% endfor %}
   </tbody>
 </table>

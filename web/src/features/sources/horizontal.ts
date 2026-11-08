@@ -98,7 +98,8 @@ export function cairoWeekStart(now: Date = new Date()): Date {
 
 /**
  * One card per country: the countries of her list first, A to Z (the European Union among them), then every
- * other country that has a source, under "Other authorities".
+ * other country that has a source, under "Other authorities". The literature databases (NLM, EBI) have no card:
+ * they are under "Literature references" (0101).
  */
 export function countryCards<S extends CardSource>(
   regulators: CardRegulator[],
@@ -133,7 +134,9 @@ export function countryCards<S extends CardSource>(
   const byName = (a: CountryCard<S>, b: CountryCard<S>) => a.country.localeCompare(b.country);
   return {
     hers: cards.filter((c) => c.pages.length > 0).sort(byName),
-    others: cards.filter((c) => c.pages.length === 0 && c.sources.length > 0).sort(byName),
+    others: cards
+      .filter((c) => c.pages.length === 0 && c.sources.some((s) => s.kind !== 'literature'))
+      .sort(byName),
   };
 }
 

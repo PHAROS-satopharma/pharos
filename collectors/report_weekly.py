@@ -497,7 +497,10 @@ def gather_week(db: Any, week: Week | Day) -> dict:
         mlm = db.fetchall("select mlm_monitored(%(i)s::uuid) as monitored", {"i": ing["id"]})
         # How far the ingredient is prepared, as the Ingredients page reads it (ingredient_readiness, 0045).
         ready = db.fetchone("select ingredient_readiness(%(i)s::uuid) as readiness", {"i": ing["id"]}) or {}
+        # Her literature references (0101): how each was screened for the ingredient in these days, and what it found.
+        refs = db.fetchone("select literature_refs_week(%(i)s::uuid, %(f)s, %(t)s) as refs", p) or {}
         screens.append({"screen": row.get("screen") or {}, "papers": papers, "searches": searches,
+                        "refs": refs.get("refs") or [],
                         "label_changes": changes.get("changes") or [],
                         "states": states, "mlm": bool(mlm[0]["monitored"]) if mlm else None,
                         "readiness": ready.get("readiness") or {}})
@@ -518,6 +521,9 @@ def gather_week(db: Any, week: Week | Day) -> dict:
                 where cl.looked_at >= %(a)s and cl.looked_at < %(b)s
                 group by r.country_name, p.full_name""", {"a": a, "b": b}),
         "regulators": db.fetchall("select id, name, country_name, country_code, homepage from regulator"),
+        # Her literature references for the period, every search counted (0101).
+        "literature_refs": (db.fetchone("select literature_refs_week(null, %(f)s, %(t)s) as refs", days)
+                            or {}).get("refs") or [],
         "pages": db.fetchall(
             """select id::text as id, regulator_id, kind::text as kind, sort, label, url, read_by, partial, note
                  from regulator_page"""),
@@ -772,6 +778,33 @@ def _paper(p: dict, state: dict | None = None) -> dict:
             "awaiting": not st.get("issue_id") or status in (None, "new", "reviewed")}
 
 
+SCOPE_TITLE = {"global": "Global", "local": "Local"}
+
+
+def literature_ref_row(r: dict, this: str = "this week") -> dict:
+    """One of her literature references (0101), as the Sources page and the Ingredients screen word it: how it was
+    screened in the period, and what was found, "Nothing found" in words."""
+    by_hand = bool(r.get("by_hand"))
+    searches = int(r.get("searches") or 0)
+    check = r.get("check") or None
+    if by_hand:
+        if not check:
+            screened, found = f"Checked by hand — not checked {this}", "Not checked"
+        else:
+            screened = f"Checked by hand — {check.get('checked_by') or ''}, {cairo_time(check.get('checked_at'))}"
+            found = "Nothing found" if check.get("result") == "nothing" else (
+                "Found" + (f" — {check['note']}" if check.get("note") else ""))
+    else:
+        screened = (f"Searched by the app — no search recorded {this}" if not searches else
+                    f"Searched by the app — {plural(searches, 'search', 'searches')} {this}" +
+                    (f", last {cairo_time(r['last_searched'])}" if r.get("last_searched") else ""))
+        n = r.get("found")
+        found = "" if n is None else ("Nothing found" if int(n) == 0 else plural(int(n), "paper", "papers"))
+    return {"scope": SCOPE_TITLE.get(r.get("scope"), r.get("scope") or ""), "name": r.get("name") or "",
+            "url": safe_link(r.get("url")), "by_hand": by_hand, "screened": screened, "found": found,
+            "gap": (by_hand and not check) or (not by_hand and not searches)}
+
+
 def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> dict:
     """Everything the PDF and the Excel file show, worked out once so the two files say the same."""
     made_at = made_at or datetime.now(timezone.utc)
@@ -804,7 +837,8 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                 "seen": sum(int(r["items_seen"]) for r in rows)}
 
     authorities = {"hers": [reads_of(c) for c in hers], "others": [reads_of(c) for c in others],
-                   "label_watch": reads_of_kind("spc"), "literature": reads_of_kind("literature")}
+                   "label_watch": reads_of_kind("spc"), "literature": reads_of_kind("literature"),
+                   "literature_refs": [literature_ref_row(r, week.this) for r in raw.get("literature_refs") or []]}
 
     # 3 and 4. Our ingredients, each exactly as its Ingredients screen answers for the week.
     findings = raw.get("findings") or {}
@@ -850,6 +884,7 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
                               "europepmc": int((counts.get(s["query"]) or {}).get("europepmc") or 0)}
                              for s in searches],
                 "list": listed,
+                "refs": [literature_ref_row(r, week.this) for r in entry.get("refs") or []],
                 "case_reports": sum(1 for x in listed if x["case_report"]),
                 "mlm": MLM_TEXT.get(entry.get("mlm"), ""),
             },
@@ -1012,8 +1047,8 @@ def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> di
 
 # ───────────────────────────── Excel ─────────────────────────────
 
-SHEETS = ("Summary", "Findings", "Decisions", "Authorities read", "Ingredients by country", "Literature searches",
-          "Literature papers",
+SHEETS = ("Summary", "Findings", "Decisions", "Authorities read", "Ingredients by country", "Literature references",
+          "Literature searches", "Literature papers",
           "Everything new", "To check by hand")
 
 
@@ -1074,6 +1109,11 @@ def build_weekly_xlsx(data: dict) -> bytes:
                 "Language", "Link", "Authority", "Type", "Words matched", "By class", "History", "Decision",
                 "Decided by", "Decided (Cairo)", "Reason"],
                rows, [18, 20, 18, 34, 22, 14, 60, 12, 50, 26, 16, 34, 9, 9, 22, 22, 18, 44], links=True)
+    xlsx_sheet(wb, "Literature references",
+               ["Ingredient", "List", "Reference", "Link", "Screened", "Found"],
+               [[i["name"], r["scope"], r["name"], r["url"] or "", r["screened"], r["found"]]
+                for i in data["ingredients"] for r in i["literature"]["refs"]],
+               [18, 10, 36, 40, 60, 30], links=True)
     xlsx_sheet(wb, "Literature searches",
                ["Ingredient", "Search", "Searched as", "PubMed", "PubMed Central", "Europe PMC"],
                [[i["name"], s["query"], s["kind"], s["pubmed"], s["pmc"], s["europepmc"]]
