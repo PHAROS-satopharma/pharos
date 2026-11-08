@@ -268,3 +268,11 @@ def test_the_cli_says_why_a_terminology_failed_without_the_database_message(monk
     assert cli.terminology(object(), "ncit", None) == 1
     out = capsys.readouterr().out
     assert "the load stopped (Boom)" in out and "secret words" not in out
+
+
+def test_arabic_vowel_marks_make_one_spelling_as_in_the_database():
+    assert base.norm("الكُوليرا") == base.norm("الكوليرا") == "الكوليرا"
+    assert base.norm("Test-Cholera ") == "test cholera"
+    c = base.Concept(code="9A00", name="Test cholera", names=[("الكُوليرا", "ar", True), ("الكوليرا", "ar", False)])
+    base.clean_names(c)
+    assert [n[1] for n in c.names] == ["en", "ar"]          # one Arabic row, or the database key would refuse two

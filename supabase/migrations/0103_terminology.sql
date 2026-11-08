@@ -20,6 +20,12 @@
 
 create extension if not exists pg_trgm;
 
+-- Words compared as coding_norm() compares them (0061), and Arabic without its vowel marks and tatweel: WHO writes
+-- "الكُوليرا" and a reporter types "الكوليرا".
+create function term_norm(p text) returns text language sql immutable parallel safe as $$
+  select coding_norm(regexp_replace(coalesce(p, ''), '[\u0640\u064B-\u065F\u0670]', '', 'g'))
+$$;
+
 create table term_source (
   id          text primary key check (id in ('ncit','oae','icd11','mesh')),
   name        text not null,
@@ -89,7 +95,7 @@ create table term_name (
   source    text not null,
   code      text not null,
   name      text not null,
-  norm      text generated always as (coding_norm(name)) stored,
+  norm      text generated always as (term_norm(name)) stored,
   lang      text not null default 'en',
   preferred boolean not null default false,
   primary key (source, code, norm, lang),
@@ -140,7 +146,7 @@ create function term_search(p_text text, p_sources text[] default null, p_limit 
 returns table (source text, code text, name text, found_as text, status text, match text, subsets text[],
                chosen_before int, score real)
 language sql stable security invoker set search_path = public as $$
-  with q as (select coding_norm(left(p_text, 300)) as n, btrim(coalesce(left(p_text, 300), '')) as raw),
+  with q as (select term_norm(left(p_text, 300)) as n, btrim(coalesce(left(p_text, 300), '')) as raw),
   chosen as (
     select r -> 'term' ->> 'source' as source, r -> 'term' ->> 'code' as code, count(distinct c.id)::int as cases
       from safety_case c, q,
@@ -148,7 +154,7 @@ language sql stable security invoker set search_path = public as $$
                                      then c.data -> 'reactions' else '[]'::jsonb end) r
      where c.status in ('confirmed','sent')
        and jsonb_typeof(r -> 'term') = 'object'
-       and q.n <> '' and q.n in (coding_norm(r ->> 'verbatim'), coding_norm(r ->> 'english'))
+       and q.n <> '' and q.n in (term_norm(r ->> 'verbatim'), term_norm(r ->> 'english'))
      group by 1, 2),
   hit as (
     select c.source, c.code, c.name as found, 'code'::text as match, 4::real as score
@@ -278,7 +284,7 @@ begin
       insert into term_name (source, code, name, lang, preferred)
       select r.source, ch.code, x ->> 0, coalesce(x ->> 1, 'en'), coalesce((x ->> 2)::boolean, false)
         from jsonb_array_elements(coalesce(ch.after -> 'names', '[]'::jsonb)) x
-       where coding_norm(x ->> 0) <> ''
+       where term_norm(x ->> 0) <> ''
       on conflict do nothing;
       delete from term_parent where source = r.source and code = ch.code;
     end if;
@@ -311,10 +317,10 @@ begin
   end if;
 end $$;
 
-revoke all on function term_search(text, text[], int), term_lookup(text, text), term_children(text, text),
+revoke all on function term_norm(text), term_search(text, text[], int), term_lookup(text, text), term_children(text, text),
                        term_path(text, text), term_related(text, text), activate_term_release(bigint),
                        reject_term_release(bigint, text) from public, anon;
-grant execute on function term_search(text, text[], int), term_lookup(text, text), term_children(text, text),
+grant execute on function term_norm(text), term_search(text, text[], int), term_lookup(text, text), term_children(text, text),
                           term_path(text, text), term_related(text, text), activate_term_release(bigint),
                           reject_term_release(bigint, text) to authenticated;
 revoke insert, update, delete, truncate on term_source, term_release, term_concept, term_name, term_parent,

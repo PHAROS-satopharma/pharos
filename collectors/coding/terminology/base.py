@@ -65,10 +65,18 @@ class Release:
     mime: str = "application/zip"
 
 
+ARABIC_MARKS = re.compile("[\u0640\u064B-\u065F\u0670]")
+
+
+def norm(text: str | None) -> str:
+    """Words compared as term_norm() compares them (0103): coding_norm(), and Arabic without its vowel marks."""
+    from collectors.coding.norm import norm as coding_norm
+
+    return coding_norm(ARABIC_MARKS.sub("", text or ""))
+
+
 def clean_names(c: Concept) -> None:
     """One name per spelling and language (the database's key), the concept's own name first and preferred."""
-    from collectors.coding.norm import norm
-
     own = (norm(c.name), c.lang)
     seen: set[tuple[str, str]] = set()
     out: list[tuple[str, str, bool]] = []

@@ -64,6 +64,8 @@ select pg_temp.ci_assert((select count(*) from term_search('test insomnai', arra
                          'a misspelling is found by likeness');
 select pg_temp.ci_assert((select code from term_search('أرق تجريبي') limit 1) = '9Z99',
                          'an Arabic ICD-11 title is found');
+select pg_temp.ci_assert((select (code, match) = ('9Z99', 'exact') from term_search('أَرَقٌ تَجْرِيبِيّ') limit 1),
+                         'Arabic vowel marks are not needed, nor in the way, to find a title exactly');
 select pg_temp.ci_assert((select count(*) from term_search('test sleeplessness', array['icd11'])) = 0,
                          'a source filter keeps to that source');
 select pg_temp.ci_assert((select count(*) from term_search('%')) = 0 and (select count(*) from term_search('')) = 0,
