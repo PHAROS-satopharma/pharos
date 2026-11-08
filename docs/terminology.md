@@ -39,8 +39,8 @@ set to one source or *all*. It runs `python -m collectors.coding --terminology a
 1. downloads the release and skips it if PHAROS has seen the same file before (same SHA-256);
 2. checks it: well-formed codes, a name on every concept, enough concepts, and no more than 20% of concepts
    retired at once;
-3. refuses it if the database would pass **330 MB** (the Supabase free plan stops at 500 MB). The four sources
-   together take about 180 MB;
+3. refuses it if the database would pass **400 MB** (the Supabase free plan stops at 500 MB). The four sources
+   together take about 180 MB; the database held 190 MB before them (9 November 2026). The watchdog warns at 420 MB;
 4. keeps the original, write-once, in the R2 archive;
 5. applies the **first** release of a source at once. A **later** release is *staged*: its differences (added,
    changed and retired concepts) wait on the Terminology screen until an administrator presses **Activate** or
