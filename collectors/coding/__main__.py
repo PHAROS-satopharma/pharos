@@ -10,6 +10,9 @@
     python -m collectors.coding --papers    keep the MeSH headings of the literature papers (0062)
     python -m collectors.coding --labels [--force]
                                          find the MeSH names in our labels and the reference labels (0062)
+    python -m collectors.coding --terminology ncit [--file Thesaurus.FLAT.zip]
+                                         load the newest release of a free terminology (0103): the first one at
+                                         once, a later one staged for an administrator's review; "all" loads each
 """
 
 from __future__ import annotations
@@ -21,12 +24,16 @@ import sys
 
 log = logging.getLogger("collectors.coding")
 
+TERMINOLOGIES = ("ncit",)     # collectors/coding/terminology/<name>.py, each with run()
+
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.coding", description=__doc__.split("\n\n")[0])
     p.add_argument("--mesh", action="store_true", help="load the newest MeSH release")
     p.add_argument("--meddra", action="store_true", help="load the newest MedDRA upload asked for")
-    p.add_argument("--file", help="with --mesh or --meddra: load this saved release instead")
+    p.add_argument("--terminology", choices=["all", *TERMINOLOGIES],
+                   help="load the newest release of a free terminology (or all of them)")
+    p.add_argument("--file", help="with --mesh, --meddra or one --terminology: load this saved release instead")
     p.add_argument("--force", action="store_true",
                    help="with --mesh: load even when the same release is loaded; with --labels: code every label")
     p.add_argument("--case", help="suggest the codes of this case")
@@ -35,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--labels", action="store_true", help="find the MeSH names in the labels")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    if args.terminology == "all" and args.file:
+        p.error("--file takes one terminology, not all")
     if args.case and not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", args.case):
         p.error("--case takes a case id")
 
@@ -65,6 +74,10 @@ def main(argv: list[str] | None = None) -> int:
                                          url=args.file.replace("\\", "/").rsplit("/", 1)[-1], force=args.force))
             else:
                 print("mesh:", mesh.load(db, force=args.force))
+        if args.terminology:
+            failed = terminology(db, args.terminology, args.file)
+            if failed:
+                return 1
         if args.case or args.waiting:
             print("coding:", coder.code_waiting(db, case_id=args.case, make_reader=coder.default_reader))
         if args.papers:
@@ -74,6 +87,33 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         db.close()
     return 0
+
+
+def terminology(db, which: str, file: str | None) -> int:
+    """Each terminology asked for; how many could not be loaded (each is tried even when one fails)."""
+    import importlib
+
+    from collectors.coding.terminology.base import TerminologyError, default_notify
+    from collectors.core.archive import Archive
+
+    archive, notify = Archive(), default_notify(db)
+    failed = 0
+    for name in TERMINOLOGIES if which == "all" else (which,):
+        module = importlib.import_module(f"collectors.coding.terminology.{name}")
+        data = None
+        if file:
+            with open(file, "rb") as fh:
+                data = fh.read()
+        try:
+            print(f"{name}:", module.run(db, data=data, archive=archive, notify=notify))
+        except TerminologyError as exc:
+            print(f"::error::{name}: {exc}")
+            failed += 1
+        except Exception as exc:
+            # Never the database's own message: a COPY error quotes the line, and the run log is public.
+            print(f"::error::{name}: the load stopped ({type(exc).__name__})")
+            failed += 1
+    return failed
 
 
 if __name__ == "__main__":
