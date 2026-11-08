@@ -46,6 +46,7 @@ import {
   type DrugSuggestion,
   suggestionsFor,
 } from './caseForm';
+import { ciomsHtml, ciomsProblems } from './cioms';
 import { CodingSource, DrugCoding, MeshCoding } from './Coding';
 import { Listed } from './Listed';
 import { ProductPick, pickedProduct, type PickState } from '../products/ProductPick';
@@ -128,6 +129,13 @@ function useEvents(id: string, updatedAt: string | undefined) {
       ),
     enabled: Boolean(updatedAt),
   });
+}
+
+/** Opens a page made here (the CIOMS I form) in a new tab, from which it is printed or saved as PDF. */
+function openPage(html: string) {
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  window.open(url, '_blank', 'noopener,noreferrer');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 async function openArchived(key: string) {
@@ -296,6 +304,7 @@ export function CaseView() {
   const missing = caseMissing(draft);
   const due = caseDue(record.day_zero, serious);
   const e2bIssues = e2bProblems(draft, serious, status);
+  const ciomsIssues = ciomsProblems(draft, serious, status);
   const seen = record.updated_at;
   const busy = act.isPending;
 
@@ -797,7 +806,7 @@ export function CaseView() {
         <p className="case-hint">
           The file the authority's gateway takes, made from the confirmed form. MedDRA codes are typed by you from the
           MedDRA browser; PHAROS never invents one. Until the first file has passed the authority's gateway test, treat it
-          as a prepared draft and check it before sending.
+          as a prepared draft and check it before sending. Without MedDRA codes, send the CIOMS I form below instead.
         </p>
         {record.e2b_status === 'queued' ? <Notice>The file is being made.</Notice> : null}
         {record.e2b_status === 'failed' && record.e2b_error ? <Notice tone="error">{record.e2b_error}</Notice> : null}
@@ -828,7 +837,42 @@ export function CaseView() {
       </section>
 
       <section className="panel">
-        <SectionHead index={canReview ? '05' : '04'} title="History" />
+        <SectionHead index={canReview ? '05' : '04'} title="CIOMS I form" />
+        <p className="case-hint">
+          The one-page report authorities take by e-mail, made from the confirmed form. The reactions go in the
+          reporter's words, so it needs no MedDRA code. It opens in a new tab: save it as PDF from there and attach it.
+        </p>
+        {canReview && (status === 'confirmed' || status === 'sent') ? (
+          <>
+            {ciomsIssues.length > 0 ? <Notice tone="error">The form needs: {ciomsIssues.join('; ')}.</Notice> : null}
+            <div className="case-actions">
+              <Button
+                disabled={ciomsIssues.length > 0 || dirty}
+                title={dirty ? 'Save the case first' : undefined}
+                onClick={() =>
+                  openPage(
+                    ciomsHtml({
+                      form: draft,
+                      ref: record.ref,
+                      dayZero: record.day_zero,
+                      serious,
+                      followUp: (events.data ?? []).some((e) => e.step === 'reopened'),
+                      today,
+                    }),
+                  )
+                }
+              >
+                Open the CIOMS I form
+              </Button>
+            </div>
+          </>
+        ) : canReview ? (
+          <p className="case-sub">Confirm the case first: the form is made from the confirmed form.</p>
+        ) : null}
+      </section>
+
+      <section className="panel">
+        <SectionHead index={canReview ? '06' : '05'} title="History" />
         {events.isPending ? (
           <Loading />
         ) : events.isError ? (
