@@ -3,11 +3,14 @@
 # and loads a release only when it is new (same SHA-256: nothing to do). Run it by hand after the first deploy of
 # migration 0061, or with "force" to load the same release again. After the load, the labels and the papers are
 # coded (0062): a new release codes every label again, and a run by hand fills the Ingredients screen at once.
+# MedDRA (0102, collectors/coding/meddra.py) comes from the company's own MSSO subscription: an administrator uploads
+# the release on the Cases screen, and the meddra job loads it within two hours (nothing waiting: nothing to do).
 name: PHAROS dictionaries
 
 on:
   schedule:
-    - cron: "40 1 2 * *"     # 03:40 Cairo, the 2nd of the month
+    - cron: "40 1 2 * *"     # 03:40 Cairo, the 2nd of the month: MeSH
+    - cron: "25 */2 * * *"   # every two hours: a MedDRA upload waiting
   workflow_dispatch:
     inputs:
       force:
@@ -24,6 +27,7 @@ concurrency:
 
 jobs:
   mesh:
+    if: github.event_name != 'schedule' || github.event.schedule == '40 1 2 * *'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -54,3 +58,27 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
         run: python -m collectors.coding --labels --papers || echo "::warning::Coding stopped with an error; the daily collection continues it."
+
+  meddra:
+    if: github.event_name != 'schedule' || github.event.schedule == '25 */2 * * *'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - name: Python packages
+        run: pip install -r collectors/requirements.txt
+
+      # The log names only the version and the counts: MedDRA's terms are licensed and this repository is public.
+      - name: MedDRA
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m collectors.coding --meddra

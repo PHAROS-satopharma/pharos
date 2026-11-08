@@ -207,12 +207,14 @@ export function DrugCoding({
 }
 
 /** What the coding stands on, as NLM's terms ask. */
-export function CodingSource({ mesh }: { mesh: string | null | undefined }) {
+export function CodingSource({ mesh, meddra }: { mesh: string | null | undefined; meddra?: string | null }) {
   return (
     <p className="code-source">
       Codes: {mesh ?? 'MeSH'} and RxNorm, publicly available data of the U.S. National Library of Medicine (NLM);
-      UNII from the U.S. FDA. NLM does not endorse PHAROS. MedDRA is not licensed here: its code and version are
-      typed from the authority’s or a partner’s coding.
+      UNII from the U.S. FDA. NLM does not endorse PHAROS.{' '}
+      {meddra
+        ? `${meddra}, under Sato Pharma’s MSSO subscription. MedDRA® is a registered trademark of ICH.`
+        : 'MedDRA is not loaded yet: its code and version are typed from the authority’s or a partner’s coding.'}
     </p>
   );
 }

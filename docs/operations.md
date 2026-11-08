@@ -1146,6 +1146,19 @@ the case page. The chosen codes are saved and confirmed with the form, and kept 
 MedDRA only); the reviewer types them when the authority or a partner has coded the case. MeSH codes do not go
 into the E2B file.
 
+**MedDRA from the subscription (migration 0102).** The PSMF inspection noted that the company had no MedDRA
+subscription. Once MSSO sends the release, an administrator uploads it in *03 MedDRA* on the Cases screen: the zip
+as MSSO sends it (`MedDRA_xx_x_English.zip`, a zip inside it is opened too), or the `.asc` files of its `MedAscii`
+folder when the zip is locked with a password. The files go to the private storage bucket `meddra` (administrators
+only) under `uploads/<UTC time>/`; *PHAROS dictionaries* (job `meddra`, every two hours) loads the newest upload
+asked for in one transaction (`meddra_pt` with each PT's primary HLT, HLGT and SOC; `meddra_llt` with currency) and
+writes its answer on the upload, which the panel shows. On the case page each reaction then has *MedDRA code*:
+"Search MedDRA" (words or an 8-digit code; the LLT chosen before for the same words first, a non-current LLT
+last), and "Use" writes the LLT code and the loaded version into the form. A typed code is named from the
+dictionary, and a code not in it, a non-current LLT or another version is flagged. MedDRA's files and terms never
+go into this repository or a run log (the log names the version and counts only); the tests use invented codes.
+A new release (MSSO publishes in March and September) is uploaded the same way and replaces the old one.
+
 **What the coded terms say (migration 0062).** Section *05 Reactions by MeSH* of the Ingredients screen counts, for
 the days chosen and the same number of days just before:
 
