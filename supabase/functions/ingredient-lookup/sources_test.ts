@@ -1,7 +1,8 @@
 // deno test --allow-env supabase/functions/
 // The names of a herbal substance from EMA's HMPC list (8 November 2026: "ivy leaves" found nothing).
 import { assertEquals } from "jsr:@std/assert@1.0.13";
-import { botanicalNames, type EmaSubstance, herbalNames } from "./sources.ts";
+import { assertRejects } from "jsr:@std/assert@1.0.13";
+import { botanicalNames, type EmaSubstance, herbalNames, pubchemSynonyms } from "./sources.ts";
 import { similarity } from "./text.ts";
 
 const herbal = (name: string, latin: string, plants: string[]): EmaSubstance => ({
@@ -37,4 +38,21 @@ Deno.test("ivy leaf answers to its plural, its Latin name and its plant", () => 
 Deno.test("a substance that is not herbal keeps its one name", () => {
   const s: EmaSubstance = { name: "lornoxicam", atc: new Set(), lists: new Set(["ema-psusa"]), brands: new Set() };
   assertEquals(herbalNames(s), ["lornoxicam"]);
+});
+
+async function withPubchem<T>(status: number, fn: () => Promise<T>): Promise<T> {
+  const real = globalThis.fetch;
+  globalThis.fetch = (() =>
+    Promise.resolve(new Response(status === 200 ? JSON.stringify({ InformationList: { Information: [{ Synonym: ["Coreg"] }] } }) : "{}", { status }))) as typeof fetch;
+  try {
+    return await fn();
+  } finally {
+    globalThis.fetch = real;
+  }
+}
+
+Deno.test("PubChem with no compound for a herb is no synonyms, not a failure", async () => {
+  assertEquals(await withPubchem(404, () => pubchemSynonyms("Ivy leaf")), []);
+  assertEquals(await withPubchem(200, () => pubchemSynonyms("carvedilol")), ["Coreg"]);
+  await assertRejects(() => withPubchem(503, () => pubchemSynonyms("carvedilol")));
 });

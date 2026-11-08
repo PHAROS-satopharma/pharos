@@ -281,8 +281,19 @@ export async function pubchemAutocomplete(q: string): Promise<string[]> {
   return data.dictionary_terms?.compound ?? [];
 }
 
+/** PubChem answers 404 for a name it has no compound for (a herb such as Ivy leaf): that is no synonyms, not a
+ * failure, so the form does not say "PubChem did not answer" (8 November 2026). */
 export async function pubchemSynonyms(name: string): Promise<string[]> {
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/synonyms/JSON`;
-  const data = await getJson<{ InformationList?: { Information?: { Synonym?: string[] }[] } }>(url, 8000);
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA, Accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (res.status === 404) {
+    await res.body?.cancel();
+    return [];
+  }
+  if (!res.ok) throw new Error(`${new URL(url).host} answered ${res.status}`);
+  const data = (await res.json()) as { InformationList?: { Information?: { Synonym?: string[] }[] } };
   return data.InformationList?.Information?.[0]?.Synonym ?? [];
 }
