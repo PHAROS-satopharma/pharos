@@ -238,12 +238,12 @@ def test_a_release_that_retires_too_much_is_refused_and_the_admins_told():
 
 
 def test_a_release_past_the_space_allowed_is_refused_and_nothing_written():
-    db, told, archive = FakeDb(size=329 * 1024 * 1024), [], FakeArchive()
+    db, told, archive = FakeDb(size=399 * 1024 * 1024), [], FakeArchive()
     names = {f"C{i}": f"Name {i}" for i in range(2000)}
-    with pytest.raises(base.TerminologyError, match="past the 330 MB"):
+    with pytest.raises(base.TerminologyError, match="past the 400 MB"):
         base.load(db, _release(**names), min_concepts=1, archive=archive, notify=told.append)
     assert not db.inserted and not db.copied and not archive.put_calls
-    assert "past the 330 MB" in told[0]
+    assert "past the 400 MB" in told[0]
 
 
 def test_a_message_that_cannot_go_never_stops_the_load():
