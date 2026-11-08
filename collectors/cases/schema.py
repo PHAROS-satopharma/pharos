@@ -20,6 +20,7 @@ OUTCOME = ["recovered", "recovering", "not_recovered", "recovered_with_sequelae"
 CRITERION = ["death", "life_threatening", "hospitalisation", "disability", "congenital_anomaly",
              "other_medically_important"]
 REPORT_TYPE = ["spontaneous", "literature", "study", "other"]
+UNIT = ["mg", "g", "µg", "mL", "IU", "%"]   # product_strength_part.unit (0099)
 
 
 # No field is nullable: the API caps how many union-typed fields a schema may have, and this form has dozens. A
@@ -71,9 +72,20 @@ REPORTER = _obj({
     "phone": _str("The reporter's telephone number."),
 })
 
+# Each active ingredient of a product with its amount (migration 0099): a combination product names several. The
+# same shape as ``ProductIngredient`` in web/src/features/cases/caseForm.ts; the E2B file writes one G.k.2.3.r each.
+INGREDIENT = _obj({
+    "name": _str("The active ingredient (INN), in English."),
+    "amount": _num("Its amount in one unit of the product (one tablet, capsule, 5 mL…), e.g. 6.25."),
+    "unit": _enum(UNIT, "The unit of amount."),
+})
+
 PRODUCT = _obj({
-    "name": _str("The product name as written (brand or generic)."),
-    "active_ingredient": _str("The active ingredient (INN), in English."),
+    "name": _str("The product name as written (brand or generic), with its strength when written."),
+    "active_ingredient": _str("The active ingredient (INN), in English; for a combination, every one, comma-separated."),
+    "ingredients": {"type": "array", "items": INGREDIENT,
+                    "description": "Each active ingredient of the product with its amount, as the document or the "
+                                   "company's product list gives it; empty when not stated."},
     "role": _enum(ROLE, "suspect, concomitant or interacting, as the document presents the product."),
     "dose": _str("Dose and frequency as written, e.g. '8 mg twice daily'."),
     "route": _str("Route of administration as written."),
@@ -148,7 +160,9 @@ prolongation, persistent disability, a congenital anomaly, or another medically 
 - Write "narrative" in English, in the third person, from the facts only."""
 
 INSTRUCTION = ("Fill in the case form from this document. The ingredients the company watches are: {ingredients}. "
-               "Mark a product as suspect when the document presents it as a possible cause of the reaction.")
+               "The company's own products are: {products}. "
+               "Mark a product as suspect when the document presents it as a possible cause of the reaction. For each "
+               "product, list every active ingredient with the amount the document gives.")
 
 
 def _text(v: Any) -> str:
@@ -173,7 +187,7 @@ def missing(data: dict | None) -> list[str]:
     return out
 
 
-NUMBERS = {"age_value", "weight_kg"}
+NUMBERS = {"age_value", "weight_kg", "amount"}
 YES_NO = {"pregnant", "serious"}
 
 

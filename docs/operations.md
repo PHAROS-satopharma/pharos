@@ -233,10 +233,12 @@ asks for the administrator role only, so this holds for any administrator:
 
 ## The app: three tabs, and the phone
 
-"We only do screening here" (Dr Sama, November 2026). PHAROS has three tabs, in the order of her two passes and
-the report:
+"We only do screening here" (Dr Sama, November 2026). PHAROS has three screening tabs, in the order of her two passes and
+the report, with the product list beside Ingredients:
 
 - **Ingredients**: the vertical pass. One ingredient across every source for the days she chooses (below).
+- **Products**: our products, each with its active ingredients and strengths (*Products and cases by product*,
+  below). Everyone sees the list; an administrator adds and changes it.
 - **Sources**: the horizontal pass. Each country's pages and everything its authorities newly published (below).
 - **Reports**: the weekly reports, the PSUR and inspection packs made on request (*Packs on request*), and the
   screening log, with each file's SHA-256 and its signatures (*Inspection evidence*).
@@ -1038,8 +1040,8 @@ account and its data terms. Nothing else from the database is sent.
 **Checking and confirming.** The case page shows the document (**Open the document**), the four minimum criteria
 of a valid case (an identifiable patient, an identifiable reporter, a suspect product, a reaction) as *Present* or
 *Missing*, the clock, and the form with the quotes under each part. A reviewer corrects the form against the
-document, decides seriousness, chooses the ingredient, and presses **Save** or **Confirm the case**. The database
-refuses a confirmation without the four criteria, the ingredient and the seriousness decision. **Not a valid
+document, decides seriousness, chooses the product and its strength or the ingredient, and presses **Save** or **Confirm the case**. The database
+refuses a confirmation without the four criteria, a product or an ingredient, and the seriousness decision. **Not a valid
 case** needs a comment. Two people changing one case at once: the second is told to reload.
 
 **The clock.** Day zero plus 15 days, or plus 90 once a reviewer says the case is not serious; until then it
@@ -1059,6 +1061,33 @@ row in `case_event`, append-only, with the person (or PHAROS) and a copy of the 
 confirmation.
 
 **Actions minutes.** One reading is one short run of `case-read.yml` (about two minutes with the package cache).
+
+## Products and cases by product
+
+Dr Sama's feedback of 8 November 2026: a case is reported against a **product**, and one of ours may combine
+several active ingredients (carvedilol + ivabradine), each in its own amount per strength (6.25 mg / 5 mg). The
+**Products** tab (migration 0099) holds that list; the literature, the label watch, the weekly report and the
+readiness stay per ingredient, and a product is watched through each of its ingredients.
+
+- **Adding a product** (administrators): *Products → Add a product*: the name, the marketing authorisation holder,
+  the dosage form, the ingredients (ticked from the watched ingredients; an ingredient must be on the watchlist
+  first), and one or more strengths, each with an amount and unit (mg, g, µg, mL, IU or %) for every ingredient.
+  A strength left unnamed is named from its amounts ("6.25 mg / 5 mg"). **Change** reopens a product.
+- **Taking a product off the list**: a product a case names is **archived** (kept on that case, no longer offered
+  on new cases; tick *On the list* to bring it back); one no case names is deleted. A strength a case names cannot
+  be removed.
+- **New case** and the case page: the first choice is *Product or ingredient* (our products first, then the single
+  ingredients). Picking a product shows *Strength* (a product with one strength takes it at once) and fills the
+  suspect drug line: the product's name and strength, and each ingredient with its amount. What the reviewer wrote
+  on that line (dose, dates, batch) stays. A case is confirmed with a product or an ingredient.
+- **The reader** receives the product list with the document. A case opened for a product keeps it; otherwise
+  PHAROS picks the product the suspect drug names, by its brand or by all of its ingredients (its strength only
+  when the brand is named), for the reviewer to check.
+- **Signals**: a case of a product counts on the page of each of its ingredients.
+- **The E2B file** writes each ingredient of the product with its amount (G.k.2.3.r).
+
+Deploying: apply migration 0099 before the new app, the `case-intake` function and the collectors (the reader
+reads the product list, and the case functions take the product).
 
 ## Medical coding (MeSH and RxNorm)
 

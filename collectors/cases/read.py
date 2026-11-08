@@ -12,8 +12,12 @@ the reviewer sees with a "Read again" button. A case left in ``reading`` by a ru
 ``STUCK_MINUTES``.
 
 Sign-in: federation in the workflows, or ``ANTHROPIC_API_KEY`` by hand (``collectors.core.claude``). Only the
-document goes to the API; the ingredient names the company watches go with it so the reader can tell the suspect
-product.
+document goes to the API; the ingredient names the company watches and its product list (0099: each product with
+its ingredients and strengths) go with it so the reader can tell the suspect product.
+
+The product (0099): a case opened for a product keeps it; otherwise ``guess_product()`` takes the product of ours
+the suspect lines name, by its brand or by all of its ingredients. The suspect line of that product then carries
+each ingredient, with its amount when the case names the strength.
 """
 
 from __future__ import annotations
@@ -85,6 +89,47 @@ def watched_ingredients(db: Any) -> list[dict]:
              "names": sorted({r["inn_en"].lower(), *[t for t in r["terms"] if t]})} for r in rows]
 
 
+PRODUCTS_SQL = """
+select p.id, p.name,
+       coalesce((select array_agg(pi.ingredient_id::text order by i.inn_en)
+                   from product_ingredient pi join ingredient i on i.id = pi.ingredient_id
+                  where pi.product_id = p.id), '{}') as ingredient_ids,
+       coalesce((select jsonb_agg(jsonb_build_object(
+                          'id', s.id, 'label', s.label,
+                          'parts', coalesce((select jsonb_agg(jsonb_build_object('ingredient_id', sp.ingredient_id,
+                                                                                 'amount', sp.amount, 'unit', sp.unit))
+                                               from product_strength_part sp where sp.strength_id = s.id), '[]'::jsonb))
+                          order by s.sort, s.label)
+                   from product_strength s where s.product_id = p.id), '[]'::jsonb) as strengths
+  from product p
+ where p.active or p.id = %(current)s::uuid
+ order by p.name"""
+
+
+def watched_products(db: Any, ingredients: list[dict], current: str | None = None) -> list[dict]:
+    """Our products on the list (and the one the case names), each with its ingredients (as ``watched_ingredients``
+    gives them) and strengths."""
+    by_id = {i["id"]: i for i in ingredients}
+    out = []
+    for r in db.fetchall(PRODUCTS_SQL, {"current": current}):
+        ings = [by_id[str(i)] for i in r["ingredient_ids"] or [] if str(i) in by_id]
+        strengths = r["strengths"] if isinstance(r["strengths"], list) else json.loads(r["strengths"] or "[]")
+        out.append({"id": str(r["id"]), "name": r["name"], "ingredients": ings,
+                    "strengths": [{"id": str(s["id"]), "label": s["label"], "parts": s.get("parts") or []}
+                                  for s in strengths]})
+    return out
+
+
+def products_line(products: list[dict]) -> str:
+    """The product list as the prompt gives it: "Carvexa (carvedilol + ivabradine; 6.25 mg / 5 mg, 12.5 mg / 7.5 mg)"."""
+    if not products:
+        return "(none listed)"
+    return "; ".join(
+        f"{p['name']} ({' + '.join(i['inn_en'] for i in p['ingredients']) or 'ingredients not listed'}"
+        + (f"; {', '.join(s['label'] for s in p['strengths'])}" if p["strengths"] else "") + ")"
+        for p in products)
+
+
 def _words(text: str) -> str:
     return " " + re.sub(r"[^\w]+", " ", (text or "").lower()) + " "
 
@@ -98,7 +143,78 @@ def guess_ingredient(form: dict, ingredients: list[dict]) -> str | None:
     return hits.pop() if len(hits) == 1 else None
 
 
-def call_reader(blocks: list[dict], ingredients: list[dict], client: Any = None) -> tuple[dict, str]:
+def _suspect_text(form: dict) -> str:
+    return "".join(
+        _words(f"{p.get('name') or ''} {p.get('active_ingredient') or ''} "
+               + " ".join(str(x.get("name") or "") for x in p.get("ingredients") or []))
+        for p in form.get("products") or [] if p.get("role") == "suspect")
+
+
+def _named(names: list[str], said: str) -> bool:
+    return any(n and _words(n).strip() and _words(n) in said for n in names)
+
+
+def guess_product(form: dict, products: list[dict]) -> dict | None:
+    """The one product of ours the suspect lines name: by its brand name, else by every one of its ingredients (by
+    INN or any known name; the product with the most ingredients wins, so carvedilol + ivabradine is the
+    combination, not a carvedilol-only product). None when none matches or two match equally: the reviewer
+    chooses."""
+    said = _suspect_text(form)
+    if not said.strip():
+        return None
+    by_brand = [p for p in products if _named([p["name"].lower()], said)]
+    if len(by_brand) == 1:
+        return by_brand[0]
+    if len(by_brand) > 1:
+        return None
+    by_all = [p for p in products if p["ingredients"]
+              and all(_named(i["names"], said) for i in p["ingredients"])]
+    if not by_all:
+        return None
+    most = max(len(p["ingredients"]) for p in by_all)
+    best = [p for p in by_all if len(p["ingredients"]) == most]
+    return best[0] if len(best) == 1 else None
+
+
+def _amount(v: Any) -> Any:
+    try:
+        n = float(v)
+    except (TypeError, ValueError):
+        return None
+    return int(n) if n.is_integer() else n
+
+
+def fill_product_line(form: dict, product: dict, strength: dict | None) -> dict:
+    """The form with the suspect line of the product carrying each of its ingredients (with its amount when the
+    strength is known), as the app fills it (withSuspect() in web/src/features/products/productForm.ts). The line
+    keeps the document's words for the product's name; a form with no suspect line gets the product's."""
+    parts = {str(x.get("ingredient_id")): x for x in (strength or {}).get("parts") or []}
+    ingredients = [{"name": i["inn_en"],
+                    "amount": _amount(parts[i["id"]].get("amount")) if i["id"] in parts else None,
+                    "unit": parts[i["id"]].get("unit") if i["id"] in parts else None}
+                   for i in product["ingredients"]]
+    names = ", ".join(i["inn_en"] for i in product["ingredients"])
+    products = list(form.get("products") or [])
+
+    def names_it(p: dict) -> bool:
+        said = _suspect_text({"products": [p]})
+        return _named([product["name"].lower()], said) or any(_named(i["names"], said) for i in product["ingredients"])
+
+    suspects = [k for k, p in enumerate(products) if p.get("role") == "suspect"]
+    at = next((k for k in suspects if names_it(products[k])), suspects[0] if suspects else None)
+    if at is None:
+        label = f"{product['name']} {strength['label']}" if strength else product["name"]
+        products.insert(0, {"name": label, "active_ingredient": names, "role": "suspect", "ingredients": ingredients})
+    else:
+        line = dict(products[at])
+        line["ingredients"] = ingredients
+        line["active_ingredient"] = line.get("active_ingredient") or names
+        products[at] = line
+    return {**form, "products": products}
+
+
+def call_reader(blocks: list[dict], ingredients: list[dict], client: Any = None,
+                products: list[dict] | None = None) -> tuple[dict, str]:
     """The reader's answer (parsed JSON) and the model that gave it."""
     import anthropic
 
@@ -112,7 +228,8 @@ def call_reader(blocks: list[dict], ingredients: list[dict], client: Any = None)
             max_tokens=MAX_TOKENS,
             system=schema.SYSTEM,
             messages=[{"role": "user",
-                       "content": [*blocks, {"type": "text", "text": schema.INSTRUCTION.format(ingredients=names)}]}],
+                       "content": [*blocks, {"type": "text", "text": schema.INSTRUCTION.format(
+                           ingredients=names, products=products_line(products or []))}]}],
             output_config={"effort": "high", "format": {"type": "json_schema", "schema": schema.CASE_SCHEMA}},
         ) as stream:
             message = stream.get_final_message()
@@ -159,9 +276,27 @@ def _fail(db: Any, case: dict, exc: ReadFailed) -> str:
     return status
 
 
-def store_reading(db: Any, case: dict, reading: dict, model: str, ingredients: list[dict]) -> None:
+def store_reading(db: Any, case: dict, reading: dict, model: str, ingredients: list[dict],
+                  products: list[dict] | None = None) -> None:
     form = schema.form_from_reading(reading)
+    products = products or []
+    product_id = str(case["product_id"]) if case.get("product_id") else None
+    strength_id = str(case["product_strength_id"]) if case.get("product_strength_id") else None
+    product = next((p for p in products if p["id"] == product_id), None) if product_id else None
+    if product_id is None:
+        product = guess_product(form, products)
+        if product is not None:
+            product_id = product["id"]
+            # Its only strength, when the document names the product itself: a document naming only the
+            # ingredients may be about another company's product, in other amounts.
+            by_brand = _named([product["name"].lower()], _suspect_text(form))
+            strength_id = product["strengths"][0]["id"] if by_brand and len(product["strengths"]) == 1 else None
+    strength = next((s for s in (product or {}).get("strengths") or [] if s["id"] == strength_id), None)
+    if product is not None:
+        form = fill_product_line(form, product, strength)
     ingredient = case.get("ingredient_id") or guess_ingredient(form, ingredients)
+    if ingredient is None and product is not None and len(product["ingredients"]) == 1:
+        ingredient = product["ingredients"][0]["id"]
     missing = schema.missing(form)
     note = "Read" + (f"; still missing: {', '.join(missing)}" if missing else "; the four minimum criteria are there")
     if reading.get("is_case") is False:
@@ -169,10 +304,11 @@ def store_reading(db: Any, case: dict, reading: dict, model: str, ingredients: l
     with db.transaction():
         db.execute(
             """update safety_case set status = 'to_confirm', extracted = %(x)s, data = %(d)s,
-                      ingredient_id = %(ing)s, reader_model = %(m)s, read_at = now(), read_error = null,
-                      updated_at = clock_timestamp()
+                      ingredient_id = %(ing)s, product_id = %(prod)s, product_strength_id = %(str)s,
+                      reader_model = %(m)s, read_at = now(), read_error = null, updated_at = clock_timestamp()
                 where id = %(id)s and status = 'reading'""",
-            {"x": jsonb(reading), "d": jsonb(form), "ing": ingredient, "m": model, "id": case["id"]})
+            {"x": jsonb(reading), "d": jsonb(form), "ing": ingredient, "prod": product_id, "str": strength_id,
+             "m": model, "id": case["id"]})
         db.execute("""insert into case_event (case_id, step, from_status, to_status, comment, data)
                       values (%(id)s, 'read', 'reading', 'to_confirm', %(c)s, %(d)s)""",
                    {"id": case["id"], "c": note, "d": jsonb(form)})
@@ -196,10 +332,11 @@ def read_case(db: Any, archive: Archive, case: dict, *, reader: Callable[..., tu
 
             blocks += paper.attached_pdf_blocks(data, archive)   # the open-access PDF its text file names
         ingredients = watched_ingredients(db)
-        reading, model = reader(blocks, ingredients)
+        products = watched_products(db, ingredients, str(case["product_id"]) if case.get("product_id") else None)
+        reading, model = reader(blocks, ingredients, products=products)
     except ReadFailed as exc:
         return _fail(db, case, exc)
-    store_reading(db, case, reading, model, ingredients)
+    store_reading(db, case, reading, model, ingredients, products)
     log.info("case %s read: %s", case["ref"], ", ".join(schema.missing(schema.form_from_reading(reading)))
              or "all four minimum criteria")
     return "to_confirm"

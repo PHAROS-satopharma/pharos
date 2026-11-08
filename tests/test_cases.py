@@ -152,9 +152,10 @@ def _json(v):
 class CaseDb:
     """One case, its events and the ingredients, in memory; answers the SQL read.py sends."""
 
-    def __init__(self, case: dict):
+    def __init__(self, case: dict, products: list[dict] | None = None):
         self.case = case
         self.events: list[dict] = []
+        self.products = products or []
 
     def transaction(self):
         import contextlib
@@ -162,6 +163,8 @@ class CaseDb:
         return contextlib.nullcontext(self)
 
     def fetchall(self, sql, params=None):
+        if "from product p" in sql:
+            return self.products
         assert "from ingredient" in sql
         return [{"id": "ing-1", "inn_en": "Lornoxicam", "terms": ["casoxicam", "xefo"]},
                 {"id": "ing-2", "inn_en": "Carvedilol", "terms": []}]
@@ -179,7 +182,8 @@ class CaseDb:
         s = " ".join(sql.split())
         if s.startswith("update safety_case set status = 'to_confirm'"):
             self.case.update(status="to_confirm", extracted=_json(params["x"]), data=_json(params["d"]),
-                             ingredient_id=params["ing"], reader_model=params["m"])
+                             ingredient_id=params["ing"], product_id=params["prod"],
+                             product_strength_id=params["str"], reader_model=params["m"])
         elif s.startswith("update safety_case set status = %(s)s"):
             self.case.update(status=params["s"], read_error=params["e"])
         elif s.startswith("insert into case_event"):
@@ -202,7 +206,7 @@ def test_a_reading_waits_for_the_reviewer_with_its_ingredient(stored):
     db, archive = stored
     given = {}
 
-    def reader(blocks, ingredients):
+    def reader(blocks, ingredients, products=None):
         given["blocks"], given["names"] = blocks, [i["inn_en"] for i in ingredients]
         return {"is_case": True, "serious": "yes", **json.loads(json.dumps(FULL, default=str)),
                 "products": [{"name": "Casoxicam 8 mg", "active_ingredient": "", "role": "suspect"}],
@@ -227,7 +231,7 @@ def test_a_tampered_original_is_never_read(stored):
 def test_a_passing_failure_waits_for_the_next_run_and_the_third_fails(stored):
     db, archive = stored
 
-    def down(*a):
+    def down(*a, **k):
         raise read.ReadFailed("The reader could not be reached (APIConnectionError).", passing=True)
 
     assert read.read_waiting(db, archive, reader=down) == {"queued": 1}     # tried once this run, not three times
@@ -246,6 +250,89 @@ def test_the_ingredient_is_left_to_the_reviewer_when_two_are_named():
     assert read.guess_ingredient(one, ings) == "a"
     assert read.guess_ingredient(two, ings) is None
     assert read.guess_ingredient(part, ings) is None
+
+
+# ───────────────────────────── the product list (0099) ─────────────────────────────
+
+CARV = {"id": "ing-c", "inn_en": "carvedilol", "names": ["carvedilol", "dilatrend"]}
+IVAB = {"id": "ing-i", "inn_en": "ivabradine", "names": ["ivabradine", "procoralan"]}
+CARVEXA = {"id": "prod-1", "name": "Carvexa", "ingredients": [CARV, IVAB],
+           "strengths": [{"id": "str-1", "label": "6.25 mg / 5 mg",
+                          "parts": [{"ingredient_id": "ing-c", "amount": 6.25, "unit": "mg"},
+                                    {"ingredient_id": "ing-i", "amount": 5, "unit": "mg"}]},
+                         {"id": "str-2", "label": "12.5 mg / 7.5 mg",
+                          "parts": [{"ingredient_id": "ing-c", "amount": 12.5, "unit": "mg"},
+                                    {"ingredient_id": "ing-i", "amount": 7.5, "unit": "mg"}]}]}
+CARVE_ONLY = {"id": "prod-2", "name": "Carvisato", "ingredients": [CARV],
+              "strengths": [{"id": "str-3", "label": "25 mg",
+                             "parts": [{"ingredient_id": "ing-c", "amount": 25, "unit": "mg"}]}]}
+
+
+def test_the_product_is_picked_by_its_brand_or_by_all_its_ingredients():
+    products = [CARVEXA, CARVE_ONLY]
+    brand = {"products": [{"name": "CARVEXA tablets", "role": "suspect"}]}
+    both = {"products": [{"name": "Tablets", "active_ingredient": "carvedilol, ivabradine", "role": "suspect"}]}
+    by_known_names = {"products": [{"name": "Dilatrend", "role": "suspect"}, {"name": "Procoralan", "role": "suspect"}]}
+    one = {"products": [{"name": "Carvedilol 25 mg", "role": "suspect"}]}
+    half = {"products": [{"name": "Ivabradine", "role": "suspect"}]}
+    concomitant = {"products": [{"name": "Carvexa", "role": "concomitant"}]}
+    assert read.guess_product(brand, products) is CARVEXA
+    assert read.guess_product(both, products) is CARVEXA          # the combination, not the carvedilol-only product
+    assert read.guess_product(by_known_names, products) is CARVEXA
+    assert read.guess_product(one, products) is CARVE_ONLY
+    assert read.guess_product(half, products) is None              # ivabradine alone is not Carvexa
+    assert read.guess_product(concomitant, products) is None       # only the suspect lines count
+    assert read.guess_product(brand, [CARVEXA, {**CARVEXA, "id": "prod-3"}]) is None   # two by one name: she picks
+
+
+def test_the_product_list_goes_in_the_prompt():
+    assert read.products_line([CARVEXA, CARVE_ONLY]) == (
+        "Carvexa (carvedilol + ivabradine; 6.25 mg / 5 mg, 12.5 mg / 7.5 mg); Carvisato (carvedilol; 25 mg)")
+    assert read.products_line([]) == "(none listed)"
+    assert "{products}" in schema.INSTRUCTION
+
+
+def test_a_case_opened_for_a_product_gets_each_ingredient_with_its_amount(stored):
+    db, archive = stored
+    db.products = [{"id": "prod-1", "name": "Carvexa", "ingredient_ids": ["ing-c", "ing-i"],
+                    "strengths": CARVEXA["strengths"]}]
+    db.case.update(product_id="prod-1", product_strength_id="str-1")
+    seen = {}
+
+    def ingredients_with_ids(sql, params=None):
+        if "from product p" in sql:
+            seen["current"] = params["current"]
+            return db.products
+        return [{"id": "ing-c", "inn_en": "carvedilol", "terms": []},
+                {"id": "ing-i", "inn_en": "ivabradine", "terms": ["procoralan"]}]
+
+    db.fetchall = ingredients_with_ids
+
+    def reader(blocks, ingredients, products=None):
+        seen["products"] = products
+        return {"is_case": True, **json.loads(json.dumps(FULL, default=str)),
+                "products": [{"name": "Carvexa", "active_ingredient": "", "role": "suspect", "dose": "1 tablet",
+                              "ingredients": []}],
+                "evidence": []}, "claude-opus-5-5"
+
+    assert read.read_waiting(db, archive, reader=reader) == {"to_confirm": 1}
+    assert seen["current"] == "prod-1" and seen["products"][0]["name"] == "Carvexa"
+    line = db.case["data"]["products"][0]
+    assert line["name"] == "Carvexa" and line["dose"] == "1 tablet"               # the document's words stay
+    assert line["active_ingredient"] == "carvedilol, ivabradine"
+    assert line["ingredients"] == [{"name": "carvedilol", "amount": 6.25, "unit": "mg"},
+                                   {"name": "ivabradine", "amount": 5, "unit": "mg"}]
+    assert db.case["product_id"] == "prod-1" and db.case["product_strength_id"] == "str-1"
+    assert db.case["ingredient_id"] is None                                        # two ingredients: the product says it
+
+
+def test_a_guessed_product_is_set_but_its_strength_only_by_its_own_name():
+    form = {"products": [{"name": "Tablets", "active_ingredient": "carvedilol", "role": "suspect"}]}
+    filled = read.fill_product_line(form, CARVE_ONLY, None)
+    assert filled["products"][0]["ingredients"] == [{"name": "carvedilol", "amount": None, "unit": None}]
+    no_suspect = read.fill_product_line({"products": []}, CARVEXA, CARVEXA["strengths"][1])
+    assert no_suspect["products"][0]["name"] == "Carvexa 12.5 mg / 7.5 mg"
+    assert [x["amount"] for x in no_suspect["products"][0]["ingredients"]] == [12.5, 7.5]
 
 
 def test_the_api_call_asks_for_the_form_and_checks_why_it_stopped(monkeypatch):
@@ -398,6 +485,50 @@ def test_the_e2b_file_is_refused_without_meddra_or_seriousness():
     with pytest.raises(e2b.CannotMake, match="not confirmed"):
         e2b.build_xml({**CONFIRMED, "status": "to_confirm"})
     assert e2b.problems(CONFIRMED) == []
+
+
+COMBINATION = {**CONFIRMED, "data": {**FULL, "products": [
+    {"name": "Carvexa 6.25 mg / 5 mg", "active_ingredient": "carvedilol, ivabradine", "role": "suspect",
+     "ingredients": [{"name": "carvedilol", "amount": 6.25, "unit": "mg"},
+                     {"name": "ivabradine", "amount": 5, "unit": "mg"}]},
+    {"name": "Paracetamol", "active_ingredient": "paracetamol", "role": "concomitant"}]}}
+
+
+def test_the_e2b_file_carries_each_ingredient_of_a_combination_with_its_strength():
+    root = etree.fromstring(e2b.build_xml(COMBINATION))
+    products = root.findall(".//h:kindOfProduct", NS)
+    assert [p.findtext("h:name", namespaces=NS) for p in products] == ["Carvexa 6.25 mg / 5 mg", "Paracetamol"]
+    carvexa = products[0].findall("h:ingredient", NS)
+    assert [i.get("classCode") for i in carvexa] == ["ACTI", "ACTI"]                # one G.k.2.3.r per component
+    assert [i.findtext("h:ingredientSubstance/h:name", namespaces=NS) for i in carvexa] == ["carvedilol", "ivabradine"]
+    nums = [i.find("h:quantity/h:numerator", NS) for i in carvexa]
+    assert [(n.get("value"), n.get("unit")) for n in nums] == [("6.25", "mg"), ("5", "mg")]   # G.k.2.3.r.3a/3b
+    assert all(i.find("h:quantity/h:denominator", NS).get("value") == "1" for i in carvexa)
+    # quantity comes before the substance, as the HL7 schema orders an ingredient's children
+    assert [etree.QName(c).localname for c in carvexa[0]] == ["quantity", "ingredientSubstance"]
+    # a product without its ingredients listed keeps its one active ingredient, with no quantity
+    para = products[1].findall("h:ingredient", NS)
+    assert len(para) == 1 and para[0].find("h:quantity", NS) is None
+    assert para[0].findtext("h:ingredientSubstance/h:name", namespaces=NS) == "paracetamol"
+    assert e2b.problems(COMBINATION) == []
+
+
+def test_the_e2b_file_is_refused_when_an_ingredient_amount_has_no_unit_it_knows():
+    bad = {**COMBINATION, "data": {**COMBINATION["data"], "products": [
+        {**COMBINATION["data"]["products"][0],
+         "ingredients": [{"name": "", "amount": 6.25, "unit": "mg"},
+                         {"name": "ivabradine", "amount": 5, "unit": "tablets"},
+                         {"name": "other", "amount": -1, "unit": "mg"},
+                         {"name": "named only", "amount": None, "unit": None}]}]}}
+    assert e2b.problems(bad) == [
+        "product 1 ingredient 1 needs its name",
+        "product 1 ingredient 2 needs its unit (mg, g, µg, mL, IU or %)",
+        "product 1 ingredient 3: the amount is not a number above zero",
+    ]
+    with pytest.raises(e2b.CannotMake, match="product 1 ingredient 2 needs its unit"):
+        e2b.build_xml(bad)
+    assert e2b.amount_text(12.50) == "12.5" and e2b.amount_text("10") == "10" and e2b.amount_text("x") is None
+    assert e2b.UCUM_UNIT["µg"] == "ug" and e2b.UCUM_UNIT["IU"] == "[iU]"
 
 
 def test_partial_dates_keep_their_precision():

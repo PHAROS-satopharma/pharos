@@ -89,12 +89,12 @@ select updated_at as seen1 from safety_case where id = :'up' \gset
 -- Confirming needs the four minimum criteria, the ingredient and the seriousness.
 \set full '''{"patient": {"initials": "A.M.", "sex": "female"}, "reporter": {"qualification": "physician"}, "products": [{"name": "Casoxicam 8 mg", "role": "suspect"}], "reactions": [{"verbatim": "jaundice"}]}'''
 set role authenticated;
-select pg_temp.refused(format($q$select confirm_case(%L, %L, '{"patient": {"initials": "A.M."}, "products": [{"name": "Casoxicam 8 mg", "role": "suspect"}]}', true, '00000000-0000-0000-0000-00000053a001')$q$, :'up', :'seen1')) as r_invalid \gset
-select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, true, null)$q$, :'up', :'seen1', :full)) as r_noing \gset
-select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, null, '00000000-0000-0000-0000-00000053a001')$q$, :'up', :'seen1', :full)) as r_noserious \gset
-select save_case(:'up', :'seen1', :full, false, '00000000-0000-0000-0000-00000053a001', 'Checked the narrative') as seen2 \gset
-select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, false, '00000000-0000-0000-0000-00000053a001')$q$, :'up', :'seen1', :full)) as r_stale \gset
-select confirm_case(:'up', :'seen2', :full, false, '00000000-0000-0000-0000-00000053a001') as seen3 \gset
+select pg_temp.refused(format($q$select confirm_case(%L, %L, '{"patient": {"initials": "A.M."}, "products": [{"name": "Casoxicam 8 mg", "role": "suspect"}]}', true, '00000000-0000-0000-0000-00000053a001', null, null, null)$q$, :'up', :'seen1')) as r_invalid \gset
+select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, true, null, null, null, null)$q$, :'up', :'seen1', :full)) as r_noing \gset
+select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, null, '00000000-0000-0000-0000-00000053a001', null, null, null)$q$, :'up', :'seen1', :full)) as r_noserious \gset
+select save_case(:'up', :'seen1', :full, false, '00000000-0000-0000-0000-00000053a001', 'Checked the narrative', null, null) as seen2 \gset
+select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, false, '00000000-0000-0000-0000-00000053a001', null, null, null)$q$, :'up', :'seen1', :full)) as r_stale \gset
+select confirm_case(:'up', :'seen2', :full, false, '00000000-0000-0000-0000-00000053a001', null, null, null) as seen3 \gset
 reset role;
 select pg_temp.ci_assert(:'r_invalid' like '%Not a valid case yet: reporter, reaction missing%',
   'a case without a reporter and a reaction is not valid, and says what is missing');
@@ -113,7 +113,7 @@ select ask_case_e2b(:'up', :'seen3') as seen4 \gset
 select pg_temp.refused(format($q$select ask_case_e2b(%L, %L)$q$, :'up', :'seen4')) as r_e2b_twice \gset
 select pg_temp.refused(format($q$select case_sent(%L, %L, case_cairo_today(), '  ')$q$, :'up', :'seen4')) as r_noref \gset
 select case_sent(:'up', :'seen4', case_cairo_today(), 'EDA-ICSR-2026-77') as seen5 \gset
-select pg_temp.refused(format($q$select save_case(%L, %L, '{}', true, null)$q$, :'up', :'seen5')) as r_sent_edit \gset
+select pg_temp.refused(format($q$select save_case(%L, %L, '{}', true, null, null, null, null)$q$, :'up', :'seen5')) as r_sent_edit \gset
 select reopen_case(:'up', :'seen5', 'Follow-up from the physician', case_cairo_today()) as seen6 \gset
 reset role;
 select pg_temp.ci_assert(:'r_e2b_twice' like '%already being made%', 'the E2B file is asked for once at a time');

@@ -254,3 +254,14 @@
   font-size: 12px;
   max-width: 80ch;
 }
+
+/* each active ingredient of a product with its amount (0099) */
+.case-ingredients {
+  margin: 8px 0 4px;
+  padding-left: 12px;
+  border-left: 1px solid var(--rule);
+}
+.case-ingredient {
+  align-items: end;
+  margin-top: 0;
+}

@@ -48,6 +48,9 @@ import {
 } from './caseForm';
 import { CodingSource, DrugCoding, MeshCoding } from './Coding';
 import { Listed } from './Listed';
+import { ProductPick, pickedProduct, type PickState } from '../products/ProductPick';
+import { UNITS, suspectLine, withSuspect } from '../products/productForm';
+import { useProducts } from '../products/useProducts';
 
 interface CaseRecord {
   id: string;
@@ -55,6 +58,8 @@ interface CaseRecord {
   origin: CaseOrigin;
   status: CaseStatus;
   ingredient_id: string | null;
+  product_id: string | null;
+  product_strength_id: string | null;
   document_id: string | null;
   file_name: string | null;
   mime: string | null;
@@ -152,6 +157,35 @@ function TextField({
   );
 }
 
+/** A number field that keeps what is being typed ("6." on the way to 6.25) and stores the number. */
+function AmountField({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: number | null | undefined;
+  onChange: (v: number | null) => void;
+  disabled: boolean;
+}) {
+  const [text, setText] = useState(value == null ? '' : String(value));
+  useEffect(() => {
+    if (numberOrNull(text) !== (value ?? null)) setText(value == null ? '' : String(value));
+  }, [value, text]);
+  return (
+    <TextField
+      label={label}
+      value={text}
+      onChange={(v) => {
+        setText(v);
+        onChange(numberOrNull(v));
+      }}
+      disabled={disabled}
+    />
+  );
+}
+
 function Choice({
   label,
   value,
@@ -217,10 +251,11 @@ export function CaseView() {
   const c = useCase(id);
   const events = useEvents(id, c.data?.updated_at);
   const ingredients = useIngredients();
+  const productList = useProducts();
 
   const [draft, setDraft] = useState<CaseForm>({});
   const [serious, setSerious] = useState<boolean | null>(null);
-  const [ingredient, setIngredient] = useState<string>('');
+  const [pick, setPick] = useState<PickState>({ product: null, strength: null, ingredient: null });
   const [dirty, setDirty] = useState(false);
   const [comment, setComment] = useState('');
   const [sentOn, setSentOn] = useState(today);
@@ -233,7 +268,7 @@ export function CaseView() {
     if (!record || dirty) return;
     setDraft(record.data ?? {});
     setSerious(record.serious);
-    setIngredient(record.ingredient_id ?? '');
+    setPick({ product: record.product_id, strength: record.product_strength_id, ingredient: record.ingredient_id });
   }, [record, dirty]);
 
   const act = useMutation({
@@ -277,6 +312,17 @@ export function CaseView() {
   const setReporter = (k: string, v: unknown) => edit({ ...draft, reporter: { ...reporter, [k]: v } });
   const setProduct = (i: number, k: keyof Product, v: unknown) =>
     edit({ ...draft, products: products.map((p, j) => (j === i ? { ...p, [k]: v } : p)) });
+  const setIngredientLine = (i: number, k: number, field: 'name' | 'amount' | 'unit', v: unknown) =>
+    setProduct(
+      i,
+      'ingredients',
+      (products[i].ingredients ?? []).map((x, j) => (j === k ? { ...x, [field]: v } : x)),
+    );
+  // The ingredients whose label a coded reaction is checked against: the case's own, else each of its product's.
+  const picked = pickedProduct(productList.data, pick);
+  const listedFor: { id: string; who: string | null }[] = pick.ingredient
+    ? [{ id: pick.ingredient, who: null }]
+    : (picked.product?.ingredients ?? []).map((x) => ({ id: x.id, who: x.inn_en }));
   const setReaction = (i: number, k: keyof Reaction, v: unknown) =>
     edit({ ...draft, reactions: reactions.map((r, j) => (j === i ? { ...r, [k]: v } : r)) });
 
@@ -315,8 +361,10 @@ export function CaseView() {
     p_seen: seen,
     p_data: draft,
     p_serious: serious,
-    p_ingredient: ingredient || null,
+    p_ingredient: pick.product ? null : pick.ingredient,
     p_comment: orNull(comment),
+    p_product: pick.product,
+    p_strength: pick.product ? pick.strength : null,
   };
 
   return (
@@ -400,18 +448,19 @@ export function CaseView() {
               ]}
             />
           </Field>
-          <Field label="Ingredient">
-            <Select
-              value={ingredient}
-              onChange={(e) => {
-                setIngredient(e.target.value);
-                setDirty(true);
-              }}
-              placeholder="Choose the ingredient"
-              options={(ingredients.data ?? []).map((i) => ({ value: i.id, label: i.inn_en }))}
-              disabled={!editable}
-            />
-          </Field>
+          <ProductPick
+            value={pick}
+            ingredients={ingredients.data ?? []}
+            current={record.product_id}
+            placeholder="Choose the product or the ingredient"
+            disabled={!editable}
+            onChange={(next, product, strength) => {
+              setPick(next);
+              setDirty(true);
+              // A product fills the suspect drug line: its name and strength, each ingredient with its amount.
+              if (product) edit(withSuspect(draft, suspectLine(product, strength)));
+            }}
+          />
           <Choice label="Type of report" value={draft.report_type} options={REPORT_TYPE} onChange={(v) => edit({ ...draft, report_type: v })} disabled={!editable} />
           <TextField label="Country (two letters)" value={draft.country} onChange={(v) => edit({ ...draft, country: orNull(v)?.toUpperCase().slice(0, 2) ?? null })} disabled={!editable} />
         </div>
@@ -502,6 +551,39 @@ export function CaseView() {
                 <Choice label="Action taken" value={p.action_taken} options={ACTION} onChange={(v) => setProduct(i, 'action_taken', v)} disabled={!editable} />
                 <TextField label="Batch" value={p.batch} onChange={(v) => setProduct(i, 'batch', orNull(v))} disabled={!editable} />
               </div>
+              <div className="case-ingredients">
+                {(p.ingredients ?? []).map((x, k) => (
+                  <div key={k} className="form-grid case-ingredient">
+                    <TextField label={`Ingredient ${k + 1}`} value={x.name} onChange={(v) => setIngredientLine(i, k, 'name', orNull(v))} disabled={!editable} />
+                    <AmountField label="Amount" value={x.amount} onChange={(v) => setIngredientLine(i, k, 'amount', v)} disabled={!editable} />
+                    <Choice
+                      label="Unit"
+                      value={x.unit}
+                      options={UNITS.map((u) => ({ value: u, label: u }))}
+                      onChange={(v) => setIngredientLine(i, k, 'unit', v)}
+                      disabled={!editable}
+                    />
+                    {editable ? (
+                      <Button
+                        size="sm"
+                        variant="quiet"
+                        onClick={() => setProduct(i, 'ingredients', (p.ingredients ?? []).filter((_, j) => j !== k))}
+                      >
+                        Remove this ingredient
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+                {editable ? (
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    onClick={() => setProduct(i, 'ingredients', [...(p.ingredients ?? []), { name: null, amount: null, unit: 'mg' }])}
+                  >
+                    Add an ingredient with its amount
+                  </Button>
+                ) : null}
+              </div>
               <DrugCoding
                 rxcui={p.rxcui}
                 name={p.rxnorm_name}
@@ -560,7 +642,9 @@ export function CaseView() {
                   edit({ ...draft, reactions: reactions.map((x, j) => (j === i ? { ...x, mesh_ui: ui, mesh_term: name } : x)) })
                 }
               />
-              <Listed ingredientId={record.ingredient_id} ui={r.mesh_ui} />
+              {listedFor.map((x) => (
+                <Listed key={x.id} ingredientId={x.id} ui={r.mesh_ui} who={x.who} />
+              ))}
               <div className="case-criteria-pick">
                 {CRITERIA.map((k) => (
                   <Toggle
@@ -632,7 +716,7 @@ export function CaseView() {
               <Button
                 variant="primary"
                 busy={busy}
-                disabled={missing.length > 0 || serious === null || !ingredient}
+                disabled={missing.length > 0 || serious === null || !(pick.ingredient || pick.product)}
                 title={missing.length > 0 ? `Missing ${missing.map((m) => MISSING_LABEL[m]).join(', ')}` : undefined}
                 onClick={() => rpc('confirm_case', formArgs, 'Confirmed. The case is ready for the authority.')}
               >

@@ -51,9 +51,18 @@ export interface Reporter {
   phone?: string | null;
 }
 
+/** One active ingredient of a product with its amount (0099): from the product list, or as the document says. */
+export interface ProductIngredient {
+  name?: string | null;
+  amount?: number | null;
+  unit?: string | null;
+}
+
 export interface Product {
   name?: string | null;
   active_ingredient?: string | null;
+  /** Each active ingredient with its amount (0099); the same shape as collectors/cases/schema.py INGREDIENT. */
+  ingredients?: ProductIngredient[] | null;
   role?: string | null;
   dose?: string | null;
   route?: string | null;
@@ -314,11 +323,46 @@ export function isOpen(status: CaseStatus): boolean {
   return status === 'queued' || status === 'reading' || status === 'to_confirm' || status === 'failed' || status === 'confirmed';
 }
 
+/** An ingredient's unit as UCUM writes it in the E2B file (G.k.2.3.r.3b), the same map as collectors/cases/e2b.py. */
+export const UCUM: Record<string, string> = {
+  mg: 'mg',
+  g: 'g',
+  'µg': 'ug',
+  mcg: 'ug',
+  ug: 'ug',
+  mL: 'mL',
+  ml: 'mL',
+  IU: '[iU]',
+  '%': '%',
+};
+
+/** What an ingredient line of a product lacks for the E2B file (the same checks as e2b.py problems()). */
+export function ingredientProblems(products: Product[] | null | undefined): string[] {
+  const out: string[] = [];
+  (products ?? []).forEach((p, k) => {
+    if (!filled(p.name)) return;
+    (p.ingredients ?? []).forEach((x, j) => {
+      const said = `product ${k + 1} ingredient ${j + 1}`;
+      const hasAmount = filled(x.amount);
+      if (!filled(x.name)) {
+        if (hasAmount) out.push(`${said} needs its name`);
+        return;
+      }
+      if (!hasAmount) return;
+      const n = Number(String(x.amount).trim());
+      if (!Number.isFinite(n) || n <= 0) out.push(`${said}: the amount is not a number above zero`);
+      if (!Object.prototype.hasOwnProperty.call(UCUM, String(x.unit ?? '').trim())) out.push(`${said} needs its unit (mg, g, µg, mL, IU or %)`);
+    });
+  });
+  return out;
+}
+
 /** Why the E2B file cannot be made yet (the same checks as collectors/cases/e2b.py problems()). */
 export function e2bProblems(form: CaseForm, serious: boolean | null, status: CaseStatus): string[] {
   const out = caseMissing(form).map((m) => `the case has no ${m} yet`);
   if (serious === null) out.push('seriousness is not decided');
   if (status !== 'confirmed' && status !== 'sent') out.push('the case is not confirmed');
+  out.push(...ingredientProblems(form.products));
   (form.reactions ?? []).forEach((r, i) => {
     if (!filled(r.verbatim)) return;
     if (!/^\d{8}$/.test(String(r.meddra_llt_code ?? '').trim())) {
