@@ -665,6 +665,23 @@ row of the Ingredients page, administrators; `set_japan_codes`; invalidates `['i
 `sameJapanCodes`, `pmdaGeneralListUrl`). SQL tests: `supabase/tests/japan_code.sql`, `supabase/tests/japan_codes.sql`;
 web: `japanCode.test.ts`.
 
+## Removing an ingredient or a source (0100)
+
+```sql
+remove_ingredient(p_id uuid) returns jsonb   -- {outcome: 'deleted' | 'paused', name, reasons: [text]}
+  -- security definer; administrators only (42501); P0002 when it is not there. Deleted (its terms, classes and
+  -- gathered figures cascade) only when no match, issue_ingredient, signal, safety_case, report_request,
+  -- spc_product, spc_listing, our_label or product_ingredient row names it; else active = false and the reasons.
+remove_source(p_id text) returns jsonb       -- {outcome: 'deleted' | 'switched_off'}
+  -- security definer; administrators only (42501); P0002 when it is not there; 22023 for origin 'catalogue'.
+  -- Deleted with its source_run rows (filtered_item and list_check cascade) when no document, inbound_email,
+  -- spc_product or spc_listing row names it; else enabled = false.
+```
+
+Web: `RemoveIngredient.tsx` and `removeIngredient.ts` (the answer's words) under `features/ingredients/`;
+`SourceEdit.tsx` (`ChangeSource`: kind, schedule, notes of an origin 'user' source; `RemoveSource`) under
+`features/sources/`. SQL test: `supabase/tests/remove_ingredient_and_source.sql`.
+
 ## Environment / secrets
 
 | Secret | Used by |

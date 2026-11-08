@@ -21,6 +21,7 @@ import { AddIngredient } from './AddIngredient';
 import { EditIngredient } from './EditIngredient';
 import { JapanCodeEdit } from './JapanCodeEdit';
 import { localTerms } from './japanCode';
+import { RemoveIngredient } from './RemoveIngredient';
 import { Readiness } from './Readiness';
 import { MatchAudit } from './MatchAudit';
 import { SearchProfile } from './SearchProfile';
@@ -345,6 +346,9 @@ export function IngredientsPage() {
                               <TermsList terms={i.ingredient_term} />
                             </>
                           )}
+                          {isAdmin && editing !== i.id ? (
+                            <RemoveIngredient key={`rm-${i.id}`} id={i.id} name={i.inn_en} />
+                          ) : null}
                         </td>
                       </tr>
                     ) : null}

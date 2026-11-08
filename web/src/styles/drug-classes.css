@@ -223,3 +223,18 @@
 .names-head {
   align-items: center;
 }
+
+/* Remove an ingredient (0100): at the foot of its opened row */
+.ing-remove {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ing-remove p {
+  margin: 0 0 4px;
+}
+.ing-remove-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

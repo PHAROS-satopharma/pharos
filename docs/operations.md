@@ -218,6 +218,19 @@ people can change the column; to give another administrator the same limits:
 update person set manages_people = false where email = '<their email>';
 ```
 
+What she adds, changes and removes (owner, 8 Nov 2026: "anything in the system except people"); every write
+asks for the administrator role only, so this holds for any administrator:
+
+- **Ingredients**: add one, confirm it, change and remove its names, classes and search settings, pause it
+  (*Watched*), and **Remove this ingredient** on its opened row (migration 0100). One with nothing recorded against
+  it is deleted with its names; one with notices, messages, a signal, a case, a report, its label watch, our own
+  leaflet or a product is paused instead and kept, and the app says why.
+- **Products**: add, change and take off the list (*Products and cases by product*, migration 0099).
+- **Sources**: add a source, switch any source on or off, add, change and remove her links, add a local reference
+  (0098). A source she added has **Change** (what it publishes, how often, notes) and **Remove** (0100): deleted
+  when it has found nothing, switched off and kept when it has. The app's own sources are switched off, not
+  removed: the collector writes them back on every run.
+
 ## The app: three tabs, and the phone
 
 "We only do screening here" (Dr Sama, November 2026). PHAROS has three tabs, in the order of her two passes and
