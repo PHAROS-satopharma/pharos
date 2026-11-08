@@ -131,6 +131,31 @@
   font-size: 12.5px;
 }
 
+/* Her own edits (8 Nov 2026): change or remove a link, add one, add a local reference. */
+.hz-page-tools {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  margin-left: -8px;
+}
+.hz-edit {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+.hz-edit .form-grid {
+  margin-top: 4px;
+}
+.hz-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.hz-remove p {
+  margin: 0;
+  font-size: 13.5px;
+}
+
 /* New since you last looked */
 .hz-new-head {
   display: flex;

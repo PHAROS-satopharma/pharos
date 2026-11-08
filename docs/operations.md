@@ -272,6 +272,13 @@ first (A to Z, the European Union among them), then *Other authorities*. Each ca
 - **The pages you check**: her list (`regulator_page`, 0032), each marked *Read by the app*, *Partly read by
   the app*, *Read by the app, by e-mail subscription* or *Not read by the app — open it yourself*. A page
   counts as read only while one of its sources is switched on. A page not read says why in its note.
+  An admin changes this list on the card itself (0098): **Add a link**, and on each link **Change** and
+  **Remove** (asked twice; the audit log keeps the old row). A link added here is not read by the app. Changing
+  the address of a page the app reads moves only the link in her list, and the form says so.
+- **Add a local reference** (page head, admins): an authority she checks by hand — one PHAROS lists without
+  pages of hers (Saudi Arabia, the UAE, Egypt …) or a new one — with its first link. Its country then joins her
+  list, the ingredient screen and the weekly report. To stop the app reading a source, switch it off under
+  *This week's reading*; a source is never deleted, as its history stays with it.
 - **New since you last looked (N)**: every item the country's authorities published since the person last
   pressed **Mark as looked at** on that card, or since Sunday 00:00 Cairo when they never did, and never more
   than 31 days back. Matched items carry *Matches a watched ingredient*. An item that came by e-mail with no
