@@ -13,7 +13,7 @@ import {
   type WikidataItem,
 } from "./sources.ts";
 import { type Candidate, namesTheSubstance, otherSubstances } from "./guard.ts";
-import { key, looksLikeCode, modeFor, usableSynonym } from "./text.ts";
+import { key, looksLikeCode, modeFor, plainLabel, usableSynonym } from "./text.ts";
 
 export interface Term {
   lang: string;
@@ -104,7 +104,7 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
     : [innEn];
   if (item) {
     for (const lang of LANGS) {
-      const label = item.labels[lang];
+      const label = item.labels[lang] ? plainLabel(item.labels[lang]) : "";
       if (label) push({ lang, country_code: null, term: label, kind: "inn", source: "wikidata" });
       for (const alt of item.alt[lang] ?? []) {
         if (!usableSynonym(alt) && !looksLikeCode(alt)) continue;

@@ -3,7 +3,7 @@
 import { assertEquals } from "jsr:@std/assert@1.0.13";
 import { assertRejects } from "jsr:@std/assert@1.0.13";
 import { botanicalNames, type EmaSubstance, herbalNames, pubchemSynonyms } from "./sources.ts";
-import { similarity } from "./text.ts";
+import { plainLabel, similarity } from "./text.ts";
 
 const herbal = (name: string, latin: string, plants: string[]): EmaSubstance => ({
   name,
@@ -55,4 +55,12 @@ Deno.test("PubChem with no compound for a herb is no synonyms, not a failure", a
   assertEquals(await withPubchem(404, () => pubchemSynonyms("Ivy leaf")), []);
   assertEquals(await withPubchem(200, () => pubchemSynonyms("carvedilol")), ["Coreg"]);
   await assertRejects(() => withPubchem(503, () => pubchemSynonyms("carvedilol")));
+});
+
+Deno.test("Wikidata's telling-apart bracket is taken off a label (ginkgo, 8 November 2026)", () => {
+  assertEquals(plainLabel("Ginkgo biloba (farmacología)"), "Ginkgo biloba");
+  assertEquals(plainLabel("Ginkgo (feuille de)"), "Ginkgo");
+  assertEquals(plainLabel("Efeublätter"), "Efeublätter");
+  assertEquals(plainLabel("vitamin B12 (cobalamin) tablets"), "vitamin B12 (cobalamin) tablets");
+  assertEquals(plainLabel("(R)"), "(R)");
 });
