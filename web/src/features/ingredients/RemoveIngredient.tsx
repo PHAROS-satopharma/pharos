@@ -1,6 +1,7 @@
-// Removing an ingredient (administrators, 0100 remove_ingredient): one with nothing recorded against it is deleted;
-// one with a record (a linked notice, a message, a signal, a case, a report, its label watch, our leaflet, a
-// product) is paused instead and kept, and the answer says why.
+// Removing an ingredient (administrators, 0100 remove_ingredient): only a fresh mistake, never screened, is deleted;
+// one with a record (screened since it was added, a linked notice, a message, a signal, a case, a report, its label
+// watch, our leaflet, a product, its matching checks, clinical trials) is paused instead and kept, and the answer
+// says why. A deleted ingredient's row leaves the list, so the page shows that answer (onDeleted).
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
@@ -10,14 +11,23 @@ import { Notice } from '../../ui/States';
 import '../../styles/drug-classes.css';
 import { removedIngredientText, type RemoveIngredientResult } from './removeIngredient';
 
-export function RemoveIngredient({ id, name }: { id: string; name: string }) {
+export function RemoveIngredient({
+  id,
+  name,
+  onDeleted,
+}: {
+  id: string;
+  name: string;
+  onDeleted: (text: string) => void;
+}) {
   const qc = useQueryClient();
   const [asking, setAsking] = useState(false);
   const remove = useMutation({
     mutationFn: async () =>
       unwrap<RemoveIngredientResult>(await supabase.rpc('remove_ingredient', { p_id: id })),
-    onSuccess: async () => {
+    onSuccess: async (r) => {
       setAsking(false);
+      if (r.outcome === 'deleted') onDeleted(removedIngredientText(r));
       await qc.invalidateQueries({ queryKey: ['ingredients'] });
     },
   });
@@ -29,7 +39,8 @@ export function RemoveIngredient({ id, name }: { id: string; name: string }) {
       {asking ? (
         <>
           <p className="small">
-            Remove <strong>{name}</strong>? With nothing recorded against it, it is deleted with its names. With
+            Remove <strong>{name}</strong>? Added just now and never screened, it is deleted, and with it go its
+            names, its classes, people&apos;s alerts on it and the figures gathered for it. Once screened, or with
             notices, messages, a signal, a case, a report, a label watch or a product, it is paused instead and
             everything is kept.
           </p>

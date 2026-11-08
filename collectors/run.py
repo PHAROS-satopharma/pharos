@@ -282,7 +282,16 @@ class Runner:
         parser_base.WATCHED = self._watched
         # a copy: set_source_state below must not change what "the previous health" was
         prev = dict(self.store.get_source(src.id) or {})
-        sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
+        try:
+            sr_id = self.store.start_source_run(self.ctx.run_id, src.id)
+        except Exception:
+            # Removed on Sources since this run listed it (0100: only a source never read is deleted): the
+            # rest of the run goes on without it.
+            if self.store.get_source(src.id) is None:
+                log.warning("source %s was removed during the run; skipped", src.id)
+                parser_base.WATCHED = None
+                return stats
+            raise
         self.ctx.begin_source()
         self.ctx.last_ok_at = prev.get("last_ok_at")
         t0 = time.monotonic()

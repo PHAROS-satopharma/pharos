@@ -1,12 +1,13 @@
-// A source a person added (origin 'user'): change what it publishes, how often it is read and its notes, or remove
-// it (0100 remove_source: deleted when it has found nothing, switched off and kept when it has). The app's own
-// sources are switched on and off only: the collector writes them back on every run.
+// A source a person added (origin 'user'): change how often it is read and its notes, or remove it (0100
+// remove_source: deleted when it has never been read; once read, switched off and kept with its reads). What it
+// publishes is not changed here: that would re-file what it has already found. The app's own sources are switched
+// on and off only: the collector writes them back on every run.
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { errorMessage, unwrap, unwrapChanged } from '../../lib/api';
-import { KIND_LABEL, SCHEDULE_LABEL } from '../../lib/labels';
-import { SOURCE_KINDS, SOURCE_SCHEDULES, type Source, type SourceKind, type SourceSchedule } from '../../lib/types';
+import { SCHEDULE_LABEL } from '../../lib/labels';
+import { SOURCE_SCHEDULES, type Source, type SourceSchedule } from '../../lib/types';
 import { Button } from '../../ui/Button';
 import { Field, Textarea } from '../../ui/Input';
 import { Select } from '../../ui/Select';
@@ -14,7 +15,6 @@ import { Notice } from '../../ui/States';
 
 export function ChangeSource({ source, label, onDone }: { source: Source; label: string; onDone: () => void }) {
   const qc = useQueryClient();
-  const [kind, setKind] = useState<SourceKind>(source.kind);
   const [schedule, setSchedule] = useState<SourceSchedule>(source.schedule);
   const [notes, setNotes] = useState(source.notes ?? '');
   const save = useMutation({
@@ -22,7 +22,7 @@ export function ChangeSource({ source, label, onDone }: { source: Source; label:
       unwrapChanged(
         await supabase
           .from('source')
-          .update({ kind, schedule, notes: notes.trim() || null })
+          .update({ schedule, notes: notes.trim() || null })
           .eq('id', source.id)
           .eq('origin', 'user')
           .select('id'),
@@ -38,13 +38,6 @@ export function ChangeSource({ source, label, onDone }: { source: Source; label:
   return (
     <div className="hz-edit" role="group" aria-label={`Change ${label}`}>
       <div className="form-grid">
-        <Field label="What it publishes">
-          <Select
-            value={kind}
-            onChange={(e) => setKind(e.target.value as SourceKind)}
-            options={SOURCE_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
-          />
-        </Field>
         <Field label="How often to read it">
           <Select
             value={schedule}
@@ -56,7 +49,9 @@ export function ChangeSource({ source, label, onDone }: { source: Source; label:
       <Field label="Notes (optional)">
         <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </Field>
-      <p className="small muted">To read a different link, add it as a new source and remove this one.</p>
+      <p className="small muted">
+        To read a different link, or one that publishes something else, add it as a new source and remove this one.
+      </p>
       {save.isError ? <Notice tone="error">Not saved: {errorMessage(save.error)}</Notice> : null}
       <div className="hz-edit-actions">
         <Button size="sm" variant="primary" busy={save.isPending} onClick={() => save.mutate()}>
@@ -86,7 +81,8 @@ export function RemoveSource({ source, label, onDone }: { source: Source; label:
       {remove.data?.outcome === 'switched_off' ? (
         <>
           <Notice tone="ok">
-            Switched off and kept: it has already found notices, and they stay in the record. It is no longer read.
+            Switched off and kept: it has already been read, and its reads stay in the screening log. It is no longer
+            read.
           </Notice>
           <div className="hz-edit-actions">
             <Button size="sm" variant="quiet" onClick={onDone}>
@@ -97,8 +93,8 @@ export function RemoveSource({ source, label, onDone }: { source: Source; label:
       ) : (
         <>
           <p>
-            Remove <strong>{label}</strong>? If it has found nothing yet it is deleted. If it has found notices it is
-            switched off and kept, with what it found.
+            Remove <strong>{label}</strong>? If it has never been read it is deleted; once read, it is switched off
+            and kept with its reads.
           </p>
           {remove.isError ? <Notice tone="error">Not removed: {errorMessage(remove.error)}</Notice> : null}
           <div className="hz-edit-actions">

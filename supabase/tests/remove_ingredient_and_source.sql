@@ -21,11 +21,14 @@ end $$;
 
 update person set manages_people = false where auth_user_id = '00000000-0000-0000-0000-0000000000d4';
 
--- A misspelt ingredient with only its names; one with a notice linked; one in a product.
+-- A misspelt ingredient added just now, with only its names; one with a notice linked; one in a product; one added
+-- two days ago and screened since (a run yesterday), with nothing found.
 insert into ingredient (id, inn_en) values
   ('00000000-0000-0000-0000-000000100a01', 'CI carvedilolx'),
   ('00000000-0000-0000-0000-000000100a02', 'CI linkoxicam'),
   ('00000000-0000-0000-0000-000000100a03', 'CI prodoxicam');
+insert into ingredient (id, inn_en, created_at) values
+  ('00000000-0000-0000-0000-000000100a04', 'CI oldoxicam', '2026-11-06 10:00+02');
 insert into ingredient_term (ingredient_id, term, lang, kind) values
   ('00000000-0000-0000-0000-000000100a01', 'ci carvedilolx', 'en', 'inn');
 insert into regulator (id, country_code, country_name, name, languages, homepage) values
@@ -33,8 +36,10 @@ insert into regulator (id, country_code, country_name, name, languages, homepage
 insert into source (id, regulator_id, kind, channel, url, parser, languages, enabled, origin) values
   ('ci-rm-catalogue', 'CI-RM', 'safety', 'rss', 'https://rm.example.test/feed', 'feed', '{en}', true, 'catalogue'),
   ('user-ci-rm-empty', 'CI-RM', 'safety', 'rss', 'https://rm.example.test/empty', 'feed', '{en}', true, 'user'),
-  ('user-ci-rm-found', 'CI-RM', 'safety', 'rss', 'https://rm.example.test/found', 'feed', '{en}', true, 'user');
-insert into run (id, trigger) values ('00000000-0000-0000-0000-000000100c01', 'manual');
+  ('user-ci-rm-found', 'CI-RM', 'safety', 'rss', 'https://rm.example.test/found', 'feed', '{en}', true, 'user'),
+  ('user-ci-rm-never', 'CI-RM', 'safety', 'rss', 'https://rm.example.test/never', 'feed', '{en}', true, 'user');
+-- A run before this test's ingredients were added (now() is the transaction's start), after CI oldoxicam was.
+insert into run (id, trigger, started_at) values ('00000000-0000-0000-0000-000000100c01', 'manual', now() - interval '1 day');
 insert into source_run (run_id, source_id) values ('00000000-0000-0000-0000-000000100c01', 'user-ci-rm-empty');
 insert into document (id, source_id, external_id, url, title_orig) values
   ('00000000-0000-0000-0000-000000100b01', 'user-ci-rm-found', 'rm1', 'https://rm.example.test/1', 'CI linkoxicam notice');
@@ -52,7 +57,7 @@ select pg_temp.rm_refused($$select remove_ingredient('00000000-0000-0000-0000-00
 reset role;
 select pg_temp.rm_assert(:'rm_r_ing' = '42501', 'a reader cannot remove an ingredient');
 select pg_temp.rm_assert(:'rm_r_src' = '42501', 'a reader cannot remove a source');
-select pg_temp.rm_assert((select count(*) = 3 from ingredient where id::text like '00000000-0000-0000-0000-000000100a0%'),
+select pg_temp.rm_assert((select count(*) = 4 from ingredient where id::text like '00000000-0000-0000-0000-000000100a0%'),
   'every ingredient is still there');
 
 -- ───────────── the QPPV, an administrator without the People screen ─────────────
@@ -61,9 +66,14 @@ set role authenticated;
 select not i_manage_people() as rm_q_not_people \gset
 select remove_ingredient('00000000-0000-0000-0000-000000100a01') as rm_q_ing1,
        remove_ingredient('00000000-0000-0000-0000-000000100a02') as rm_q_ing2,
-       remove_ingredient('00000000-0000-0000-0000-000000100a03') as rm_q_ing3 \gset
+       remove_ingredient('00000000-0000-0000-0000-000000100a03') as rm_q_ing3,
+       remove_ingredient('00000000-0000-0000-0000-000000100a04') as rm_q_ing4 \gset
 select pg_temp.rm_refused($$select remove_source('ci-rm-catalogue')$$) as rm_q_cat \gset
-select remove_source('user-ci-rm-empty') as rm_q_src1, remove_source('user-ci-rm-found') as rm_q_src2 \gset
+select remove_source('user-ci-rm-empty') as rm_q_src1, remove_source('user-ci-rm-found') as rm_q_src2,
+       remove_source('user-ci-rm-never') as rm_q_src3 \gset
+-- The two functions are the only way to delete: an administrator's direct delete is refused.
+select pg_temp.rm_refused($$delete from source where id = 'user-ci-rm-found'$$) as rm_q_direct_src,
+       pg_temp.rm_refused($$delete from ingredient where id = '00000000-0000-0000-0000-000000100a02'$$) as rm_q_direct_ing \gset
 select pg_temp.rm_refused($$select remove_ingredient('00000000-0000-0000-0000-000000100a01')$$) as rm_q_again \gset
 reset role;
 
@@ -88,11 +98,22 @@ select pg_temp.rm_assert((:'rm_q_ing3')::jsonb -> 'reasons' = '["a product: CI P
 select pg_temp.rm_assert(exists (select 1 from product_ingredient where ingredient_id = '00000000-0000-0000-0000-000000100a03'),
   'the product keeps it');
 
+select pg_temp.rm_assert((:'rm_q_ing4')::jsonb ->> 'outcome' = 'paused'
+                         and (:'rm_q_ing4')::jsonb -> 'reasons' = '["been screened since 6 Nov 2026"]'::jsonb,
+  'an ingredient screened since it was added is paused, even with nothing found');
+select pg_temp.rm_assert(:'rm_q_direct_src' = '42501' and :'rm_q_direct_ing' = '42501',
+  'an administrator cannot delete a source or an ingredient directly');
+select pg_temp.rm_assert(exists (select 1 from ingredient where id = '00000000-0000-0000-0000-000000100a02'),
+  'the ingredient is still there');
+
 select pg_temp.rm_assert(:'rm_q_cat' = '22023', 'a source from the app''s own list is refused (switch it off instead)');
 select pg_temp.rm_assert(exists (select 1 from source where id = 'ci-rm-catalogue'), 'the catalogue source is kept');
-select pg_temp.rm_assert((:'rm_q_src1')::jsonb ->> 'outcome' = 'deleted', 'a source she added that found nothing is deleted');
-select pg_temp.rm_assert(not exists (select 1 from source where id = 'user-ci-rm-empty'), 'it is gone');
-select pg_temp.rm_assert(not exists (select 1 from source_run where source_id = 'user-ci-rm-empty'), 'with its run log');
+select pg_temp.rm_assert((:'rm_q_src3')::jsonb ->> 'outcome' = 'deleted', 'a source she added that was never read is deleted');
+select pg_temp.rm_assert(not exists (select 1 from source where id = 'user-ci-rm-never'), 'it is gone');
+select pg_temp.rm_assert((:'rm_q_src1')::jsonb ->> 'outcome' = 'switched_off',
+  'a source read once, with nothing found, is switched off');
+select pg_temp.rm_assert(exists (select 1 from source_run where source_id = 'user-ci-rm-empty'),
+  'its reads stay in the screening log');
 select pg_temp.rm_assert((:'rm_q_src2')::jsonb ->> 'outcome' = 'switched_off', 'a source that found something is switched off');
 select pg_temp.rm_assert((select not enabled from source where id = 'user-ci-rm-found'), 'it is kept, off');
 select pg_temp.rm_assert(exists (select 1 from document where source_id = 'user-ci-rm-found'), 'with what it found');

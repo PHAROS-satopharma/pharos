@@ -65,6 +65,9 @@ export const DOC_TYPES: DocType[] = [
 ];
 export const SOURCE_CHANNELS: SourceChannel[] = ['rss', 'atom', 'json', 'api', 'html', 'browser', 'email'];
 export const SOURCE_KINDS: SourceKind[] = ['safety', 'recall', 'spc', 'literature'];
+/** What a source a person adds may publish: never 'spc', which only the label watch's own sources read
+ *  (collectors/run.py leaves spc sources to collectors/spc). */
+export const USER_SOURCE_KINDS: SourceKind[] = SOURCE_KINDS.filter((k) => k !== 'spc');
 export const SOURCE_SCHEDULES: SourceSchedule[] = ['4h', '12h', 'daily', 'weekly', 'monthly'];
 export const TERM_KINDS: TermKind[] = ['inn', 'salt', 'brand', 'code', 'synonym'];
 export const MATCH_MODES: MatchMode[] = ['stem', 'exact', 'substring'];

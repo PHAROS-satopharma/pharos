@@ -75,6 +75,8 @@ export function IngredientsPage() {
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [edited, setEdited] = useState<string | null>(null);
+  // A deleted ingredient's row leaves the list: its "Deleted …" answer is shown here instead.
+  const [removedNote, setRemovedNote] = useState<string | null>(null);
 
   const list = useQuery({
     queryKey: ['ingredients'],
@@ -177,6 +179,7 @@ export function IngredientsPage() {
         />
       ) : null}
       {saved && !adding ? <Notice tone="ok">The watchlist is up to date.</Notice> : null}
+      {removedNote ? <Notice tone="ok">{removedNote}</Notice> : null}
       {setActive.isError ? <Notice tone="error">Not changed: {errorMessage(setActive.error)}</Notice> : null}
       {confirm.isError ? <Notice tone="error">Not confirmed: {errorMessage(confirm.error)}</Notice> : null}
 
@@ -347,7 +350,12 @@ export function IngredientsPage() {
                             </>
                           )}
                           {isAdmin && editing !== i.id ? (
-                            <RemoveIngredient key={`rm-${i.id}`} id={i.id} name={i.inn_en} />
+                            <RemoveIngredient
+                              key={`rm-${i.id}`}
+                              id={i.id}
+                              name={i.inn_en}
+                              onDeleted={setRemovedNote}
+                            />
                           ) : null}
                         </td>
                       </tr>
