@@ -22,7 +22,8 @@ from typing import Any, Callable
 
 log = logging.getLogger("collectors.coding.terminology")
 
-MAX_DB_BYTES = 330 * 1024 * 1024      # what the database may reach with a new release; the plan's cap is 500 MB
+MAX_DB_BYTES = 400 * 1024 * 1024      # what the database may reach with a new release; the plan's cap is 500 MB.
+                                      # 190 MB before the four sources (9 Nov 2026) + their 176 MB = 366 MB
 BYTES_PER_CONCEPT = 900               # the row, its definition and its keys, measured on NCIt (2026-11)
 BYTES_PER_NAME = 260                  # the row and its trigram and prefix indexes
 MAX_RETIRED_SHARE = 0.2               # a release that retires more than this is a broken file, not a release…

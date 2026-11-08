@@ -18,7 +18,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `report.yml` | Every day, 07:00 Cairo | Daily report (XLSX + PDF) of the day before, Cairo midnight to midnight |
 | `db-backup.yml`, backup | nightly 00:13 | `pg_dump` → gzip → age → R2 `backups/<date>.sql.gz.age` (plain `.sql.gz` with a warning while `BACKUP_AGE_RECIPIENT` is unset) |
 | `db-backup.yml`, verify-archive | Sunday 00:43 | Re-hashes 50 random originals and 10 report files (`reports/`, `reports/packs/`); checks the bucket lock |
-| pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 350 MB |
+| pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 420 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source but the PV mailbox, flagged as backfill, no alerts |
 | pg_cron `pharos-kick-4h`, `-12h`, `-weekly`, `-monthly` | about 50 min after each slot | Asks GitHub for that slot's collection when no run of it started (0007) |
@@ -155,7 +155,7 @@ default), they are only logged in `ops_alert_log` and `notification`.
 |---|---|---|---|
 | "No collector run has checked a source successfully for N hours" | Watchdog | No run has read even one source without an error for 6 hours or more: an Actions outage, a disabled workflow, a secret that expired, minutes used up, or every source failing | Open *Actions → PHAROS collect* and read the last run |
 | "No collector run has checked a source successfully yet" | Watchdog | Collection has never run (normal only before the first deploy) | Run *PHAROS collect* once by hand |
-| "The database is N MB" | Watchdog | Over 350 MB of the free plan's 500 MB | Ask the lead to prune text or move to a paid plan before 500 MB |
+| "The database is N MB" | Watchdog | Over 420 MB of the free plan's 500 MB | Ask the lead to prune text or move to a paid plan before 500 MB |
 | Source down | Collectors | A source failed 3 runs in a row | See Source health above |
 | Backfill summary | Backfill | How many documents and issues the backfill found | Review the backfill issues in the app |
 
@@ -913,7 +913,7 @@ packs and their files and cannot ask for one.
   months are about 8,000 papers (PubMed 1,105 and PMC 7,838 on 6 November 2026), the NSAID class words about
   20,000. To fill a look-back in one go, run `backfill.yml` with `source: pubmed` (up to 285 minutes, about
   17,000 papers, name papers first, everything as history); the next daily run then finds them stored.
-- **Capacity.** About 3 KB of database per paper: 50,000 papers is about 150 MB. The watchdog warns at 350 MB.
+- **Capacity.** About 3 KB of database per paper: 50,000 papers is about 150 MB. The watchdog warns at 420 MB.
   Watch the database size while the first look-backs fill, and keep class words specific (each class word adds
   thousands of papers a year).
 - **Etiquette.** `tool=pharos`; at most 3 requests a second, or 10 with `NCBI_API_KEY` (a free key from an NCBI
