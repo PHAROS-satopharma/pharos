@@ -48,6 +48,7 @@ import {
 } from './caseForm';
 import { ciomsHtml, ciomsProblems } from './cioms';
 import { CodingSource, DrugCoding, MeshCoding } from './Coding';
+import { MeddraCoding, useMeddraDictionary } from './Meddra';
 import { Listed } from './Listed';
 import { ProductPick, pickedProduct, type PickState } from '../products/ProductPick';
 import { UNITS, suspectLine, withSuspect } from '../products/productForm';
@@ -260,6 +261,7 @@ export function CaseView() {
   const events = useEvents(id, c.data?.updated_at);
   const ingredients = useIngredients();
   const productList = useProducts();
+  const meddraDictionary = useMeddraDictionary();
 
   const [draft, setDraft] = useState<CaseForm>({});
   const [serious, setSerious] = useState<boolean | null>(null);
@@ -336,6 +338,7 @@ export function CaseView() {
     edit({ ...draft, reactions: reactions.map((r, j) => (j === i ? { ...r, [k]: v } : r)) });
 
   const coding = record.coding;
+  const meddraLoaded = !!meddraDictionary.data;
   const historyCodes = patient.history_codes ?? [];
   const chooseDrug = (i: number, d: DrugSuggestion | null) =>
     edit({
@@ -635,12 +638,24 @@ export function CaseView() {
               <div className="form-grid">
                 <TextField label="As the reporter wrote it" value={r.verbatim} onChange={(v) => setReaction(i, 'verbatim', orNull(v))} disabled={!editable} />
                 <TextField label="In English" value={r.english} onChange={(v) => setReaction(i, 'english', orNull(v))} disabled={!editable} />
-                <TextField label="MedDRA LLT code" value={r.meddra_llt_code} onChange={(v) => setReaction(i, 'meddra_llt_code', orNull(v))} disabled={!editable} hint="8 digits, from the MedDRA browser" />
+                <TextField label="MedDRA LLT code" value={r.meddra_llt_code} onChange={(v) => setReaction(i, 'meddra_llt_code', orNull(v))} disabled={!editable} hint={meddraLoaded ? '8 digits; or search MedDRA below' : '8 digits, from the MedDRA browser'} />
                 <TextField label="MedDRA version" value={r.meddra_version} onChange={(v) => setReaction(i, 'meddra_version', orNull(v))} disabled={!editable} hint="e.g. 28.1" />
                 <TextField label="Started" value={r.onset_date} onChange={(v) => setReaction(i, 'onset_date', orNull(v))} disabled={!editable} />
                 <TextField label="Ended" value={r.end_date} onChange={(v) => setReaction(i, 'end_date', orNull(v))} disabled={!editable} />
                 <Choice label="Outcome" value={r.outcome} options={OUTCOME} onChange={(v) => setReaction(i, 'outcome', v)} disabled={!editable} />
               </div>
+              <MeddraCoding
+                code={r.meddra_llt_code}
+                version={r.meddra_version}
+                words={r.english || r.verbatim || ''}
+                editable={editable}
+                onChoose={(code, version) =>
+                  edit({
+                    ...draft,
+                    reactions: reactions.map((x, j) => (j === i ? { ...x, meddra_llt_code: code, meddra_version: version } : x)),
+                  })
+                }
+              />
               <MeshCoding
                 label="Reaction code"
                 ui={r.mesh_ui}
@@ -698,7 +713,7 @@ export function CaseView() {
               </Button>
             ) : null}
           </div>
-          <CodingSource mesh={coding?.mesh} />
+          <CodingSource mesh={coding?.mesh} meddra={meddraDictionary.data?.version} />
         </Group>
 
         <Group title="Narrative and assessment">
@@ -804,8 +819,8 @@ export function CaseView() {
       <section className="panel">
         <SectionHead index={canReview ? '04' : '03'} title="E2B(R3) file" />
         <p className="case-hint">
-          The file the authority's gateway takes, made from the confirmed form. MedDRA codes are typed by you from the
-          MedDRA browser; PHAROS never invents one. Until the first file has passed the authority's gateway test, treat it
+          The file the authority's gateway takes, made from the confirmed form. Each reaction's MedDRA code is chosen by you
+          (searched in the loaded MedDRA, or typed); PHAROS never invents one. Until the first file has passed the authority's gateway test, treat it
           as a prepared draft and check it before sending. Without MedDRA codes, send the CIOMS I form below instead.
         </p>
         {record.e2b_status === 'queued' ? <Notice>The file is being made.</Notice> : null}

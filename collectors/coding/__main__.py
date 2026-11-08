@@ -2,6 +2,9 @@
 
     python -m collectors.coding --mesh [--file desc2026.gz] [--force]
                                          load the newest MeSH release (the "PHAROS dictionaries" workflow)
+    python -m collectors.coding --meddra    load the newest MedDRA upload asked for on the Cases screen (0102)
+    python -m collectors.coding --meddra --file MedDRA_28_1_English.zip
+                                         load a saved release (its zip, or a MedAscii folder) directly
     python -m collectors.coding --case ID   suggest the codes of one case now
     python -m collectors.coding --waiting   suggest the codes of every case asked for or read since last coded
     python -m collectors.coding --papers    keep the MeSH headings of the literature papers (0062)
@@ -22,7 +25,8 @@ log = logging.getLogger("collectors.coding")
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.coding", description=__doc__.split("\n\n")[0])
     p.add_argument("--mesh", action="store_true", help="load the newest MeSH release")
-    p.add_argument("--file", help="with --mesh: load this saved release instead of downloading it")
+    p.add_argument("--meddra", action="store_true", help="load the newest MedDRA upload asked for")
+    p.add_argument("--file", help="with --mesh or --meddra: load this saved release instead")
     p.add_argument("--force", action="store_true",
                    help="with --mesh: load even when the same release is loaded; with --labels: code every label")
     p.add_argument("--case", help="suggest the codes of this case")
@@ -37,11 +41,21 @@ def main(argv: list[str] | None = None) -> int:
     from collectors.core.context import install_log_redaction
 
     install_log_redaction()   # the run logs are public: no request address (a product's name) is printed
-    from collectors.coding import coder, labels, mesh, papers
+    from collectors.coding import coder, labels, meddra, mesh, papers
     from collectors.core.db import Db
 
     db = Db()
     try:
+        if args.meddra:
+            if args.file:
+                from pathlib import Path
+
+                src = Path(args.file)
+                paths = sorted(src.iterdir()) if src.is_dir() else [src]
+                print("meddra:", meddra.load_files(db, {p.name: p.read_bytes() for p in paths if p.is_file()},
+                                                   source=src.name))
+            else:
+                print("meddra:", meddra.load_waiting(db))
         if args.mesh:
             if args.file:
                 with open(args.file, "rb") as fh:

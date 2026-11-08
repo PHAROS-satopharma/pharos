@@ -12,6 +12,7 @@ import { Select } from '../../ui/Select';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
 import { ProductPick, type PickState } from '../products/ProductPick';
+import { MeddraPanel } from './Meddra';
 import { Tag } from '../../ui/Tag';
 import { PageHead, SectionHead } from '../../ui/Text';
 import {
@@ -163,7 +164,7 @@ function statusTag(row: CaseRow) {
 }
 
 export function CasesPage() {
-  const { canReview } = useAuth();
+  const { canReview, isAdmin } = useAuth();
   const today = cairoToday();
   const [show, setShow] = useState<'open' | 'all'>('open');
   const cases = useQuery({
@@ -260,6 +261,12 @@ export function CasesPage() {
           </Table>
         )}
       </section>
+      {canReview ? (
+        <section className="panel">
+          <SectionHead index="03" title="MedDRA" />
+          <MeddraPanel isAdmin={isAdmin} />
+        </section>
+      ) : null}
     </div>
   );
 }

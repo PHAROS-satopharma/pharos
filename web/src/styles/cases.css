@@ -265,3 +265,21 @@
   align-items: end;
   margin-top: 0;
 }
+
+/* MedDRA (0102): what is loaded, and the administrator's upload. */
+.meddra-panel {
+  display: grid;
+  gap: 10px;
+}
+.meddra-panel p {
+  margin: 0;
+}
+.meddra-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.meddra-upload input[type='file'] {
+  max-width: 100%;
+}
