@@ -463,3 +463,21 @@ def test_mesh_descriptors_become_concepts_with_tree_parents():
     rel = base.Release(source="mesh", version="MeSH 2099", url="x", data=b"x", concepts=got)
     base.validate("mesh", rel.concepts, min_concepts=1)
     assert [n[0] for n in got["D000002"].names] == ["Test Insomnia", "Test Sleeplessness"]
+
+
+# ───────────── no free code reaches the E2B file ─────────────
+def test_a_free_code_never_reaches_the_e2b_file_nor_stands_in_for_meddra():
+    from collectors.cases import e2b
+    from tests.test_cases import CONFIRMED
+
+    term = {"source": "ncit", "code": "C9000002", "name": "Test Insomnia", "version": "2099-10-28",
+            "coded_by": "CI Reviewer", "coded_at": "2099-11-08T10:00:00Z"}
+    reaction = {**CONFIRMED["data"]["reactions"][0], "term": term}
+    case = {**CONFIRMED, "data": {**CONFIRMED["data"], "reactions": [reaction]}}
+    xml = e2b.build_xml(case).decode("utf-8")
+    assert "C9000002" not in xml and "Test Insomnia" not in xml and "ncit" not in xml.lower()
+
+    only_free = {**case, "data": {**case["data"], "reactions": [{**reaction, "meddra_llt_code": "",
+                                                                  "meddra_version": ""}]}}
+    with pytest.raises(e2b.CannotMake, match="reaction 1 needs its MedDRA LLT code"):
+        e2b.build_xml(only_free)

@@ -265,6 +265,11 @@ export function CasesPage() {
         <section className="panel">
           <SectionHead index="03" title="MedDRA" />
           <MeddraPanel isAdmin={isAdmin} />
+          <p className="code-source">
+            Until MedDRA is loaded, a reaction can be named and grouped with the free terminologies (NCI Thesaurus,
+            OAE, ICD-11, MeSH): <Link to="/terminology">Terminology</Link>. They are not MedDRA, and the case stays on
+            CIOMS I.
+          </p>
         </section>
       ) : null}
     </div>

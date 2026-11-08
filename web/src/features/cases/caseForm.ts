@@ -4,6 +4,8 @@
  * (caseDue = case_due()), and the words for each status and step.
  */
 
+import type { ReactionTerm } from '../terminology/terms';
+
 export type CaseStatus = 'queued' | 'reading' | 'to_confirm' | 'confirmed' | 'sent' | 'not_valid' | 'failed';
 export type CaseOrigin = 'upload' | 'paper' | 'email';
 export type CaseStep =
@@ -88,6 +90,8 @@ export interface Reaction {
   /** The MeSH descriptor chosen by a reviewer (0061). */
   mesh_ui?: string | null;
   mesh_term?: string | null;
+  /** A free terminology's concept chosen by a reviewer (0103). Not MedDRA: never in the E2B file. */
+  term?: ReactionTerm | null;
   onset_date?: string | null;
   end_date?: string | null;
   outcome?: string | null;
@@ -357,7 +361,8 @@ export function ingredientProblems(products: Product[] | null | undefined): stri
   return out;
 }
 
-/** Why the E2B file cannot be made yet (the same checks as collectors/cases/e2b.py problems()). */
+/** Why the E2B file cannot be made yet (the same checks as collectors/cases/e2b.py problems()). A free code
+ *  (reaction.term) never stands in for the MedDRA LLT. */
 export function e2bProblems(form: CaseForm, serious: boolean | null, status: CaseStatus): string[] {
   const out = caseMissing(form).map((m) => `the case has no ${m} yet`);
   if (serious === null) out.push('seriousness is not decided');
