@@ -8,6 +8,7 @@ contain SQL themselves.
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import date, datetime
 from typing import Any, Iterable
 
@@ -223,6 +224,24 @@ class Store:
             {"rows": jsonb([{**r, "look_back_from": r["look_back_from"].isoformat(),
                              "history_until": r["history_until"].isoformat(), "done": bool(r["done"])}
                             for r in rows])})
+
+    def log_literature_searches(self, run_id: str | None, source_id: str, rows: list[dict]) -> None:
+        """Every search this run sent, with the number of papers the database returned (migration 0101)."""
+        if not rows:
+            return
+        try:
+            run_id = str(uuid.UUID(str(run_id))) if run_id else None
+        except ValueError:
+            run_id = None
+        self.db.execute(
+            """insert into literature_search_log (run_id, source_id, db, query, kind, window_from, window_to, hits)
+               select (select id from run where id = %(run)s::uuid), %(src)s, x.db, x.query, x.kind,
+                      x.window_from, x.window_to, x.hits
+                 from jsonb_to_recordset(%(rows)s) as x(db text, query text, kind text, window_from date,
+                                                        window_to date, hits int)""",
+            {"run": run_id, "src": source_id,
+             "rows": jsonb([{**r, "window_from": r["window_from"].isoformat(),
+                             "window_to": r["window_to"].isoformat()} for r in rows])})
 
     def insert_document(self, doc: dict) -> str | None:
         row = self.db.fetchone(

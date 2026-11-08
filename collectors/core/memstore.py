@@ -63,6 +63,7 @@ class MemoryStore:
         self.notification: list[dict] = []
         self.probe_result: dict[str, dict] = {}
         self.literature_search: dict[tuple[str, str], dict] = {}
+        self.literature_search_log: list[dict] = []
         self.drug_class: dict[str, dict] = {}              # id -> {code, name_en, origin, wikidata_qid}
         # term id -> {"changed_at", "rematched_at"}; a term without an entry was already checked against the past
         self.term_state: dict[str, dict] = {}
@@ -210,6 +211,10 @@ class MemoryStore:
             self.literature_search[(r["db"], r["query"])] = {
                 "db": r["db"], "query": r["query"], "kind": r["kind"], "look_back_from": r["look_back_from"],
                 "history_until": r["history_until"], "look_back_done_at": done_at, "last_searched_at": now}
+
+    def log_literature_searches(self, run_id: str | None, source_id: str, rows: list[dict]) -> None:
+        now = _now()
+        self.literature_search_log.extend({**r, "run_id": run_id, "source_id": source_id, "searched_at": now} for r in rows)
 
     def insert_document(self, doc: dict) -> str | None:
         if doc["external_id"] in self.known_external_ids(doc["source_id"]):

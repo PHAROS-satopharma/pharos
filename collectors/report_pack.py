@@ -249,8 +249,15 @@ def _log_chunks(db: Any, period: Period, check: Callable[[], None]) -> list[list
 
 
 PAPERS_SQL = """select document_id::text as document_id, title, lang, journal, day, pubmed_url, pmc_url,
-                       by_class, is_backfill, first_seen_at
+                       europepmc_url, preprint, by_class, is_backfill, first_seen_at
                   from ingredient_papers(%(i)s::uuid, %(f)s, %(t)s)"""
+
+# Every hand check of her literature references in the days (0101), counted per reference.
+CHECKS_SQL = """select c.ref_id::text as ref_id, count(*) as checks, count(*) filter (where c.result = 'found') as found,
+                       max(c.checked_at) as last_at
+                  from literature_check c
+                 where (c.checked_at at time zone 'Africa/Cairo')::date between %(f)s and %(t)s
+                 group by c.ref_id"""
 
 EURD_SQL = """select eurd_id, substance, combination, frequency, dlp, submission_date, next_dlp,
                      next_submission_date, generics_psur_required, procedure, next_procedure, lead_ms,
@@ -270,8 +277,9 @@ def gather_psur(db: Any, req: dict, check: Callable[[], None] = _no_check) -> di
     regulators: dict[str, dict] = {}
     papers: dict[str, dict] = {}
     changes: dict[str, dict] = {}
-    literature = {"papers": 0, "by_name": 0, "by_class": 0, "pubmed": 0, "pmc": 0}
+    literature = {"papers": 0, "by_name": 0, "by_class": 0, "pubmed": 0, "pmc": 0, "europepmc": 0}
     by_query: dict[str, dict] = {}
+    refs: dict[str, dict] = {}
     logs = []
     for f, t in chunks(period.start, period.end):
         check()
@@ -283,9 +291,21 @@ def gather_psur(db: Any, req: dict, check: Callable[[], None] = _no_check) -> di
         for k in literature:
             literature[k] += int(lit.get(k) or 0)
         for q in lit.get("by_query") or []:
-            have = by_query.setdefault(q.get("query"), {"query": q.get("query"), "pubmed": 0, "pmc": 0})
-            have["pubmed"] += int(q.get("pubmed") or 0)
-            have["pmc"] += int(q.get("pmc") or 0)
+            have = by_query.setdefault(q.get("query"), {"query": q.get("query"), "pubmed": 0, "pmc": 0,
+                                                        "europepmc": 0})
+            for k in ("pubmed", "pmc", "europepmc"):
+                have[k] += int(q.get(k) or 0)
+        # her literature references (0101): the searches of each chunk, and the papers each database found
+        for r in (db.fetchone("select literature_refs_week(%(i)s::uuid, %(f)s, %(t)s) as refs", p) or {}).get(
+                "refs") or []:
+            have = refs.setdefault(str(r.get("id")), {**r, "searches": 0, "name_searches": 0, "hits": 0,
+                                                      "failed_reads": 0, "last_searched": None, "found": None})
+            for key in ("searches", "name_searches", "hits", "failed_reads"):
+                have[key] += int(r.get(key) or 0)
+            if r.get("last_searched") and str(r["last_searched"]) > str(have["last_searched"] or ""):
+                have["last_searched"] = r["last_searched"]
+            if r.get("found") is not None:
+                have["found"] = int(have["found"] or 0) + int(r["found"])
         for row in db.fetchall(PAPERS_SQL, p):
             papers.setdefault(str(row["document_id"]), row)
         for c in (db.fetchone("select label_changes(%(i)s::uuid, %(f)s, %(t)s) as changes", p) or {}).get(
@@ -303,6 +323,9 @@ def gather_psur(db: Any, req: dict, check: Callable[[], None] = _no_check) -> di
             "eurd": db.fetchall(EURD_SQL, {"i": i}),
             "regulators": regulators, "papers": list(papers.values()), "states": states,
             "label_changes": list(changes.values()), "literature": literature, "by_query": by_query,
+            "refs": list(refs.values()),
+            "ref_checks": {str(c["ref_id"]): c for c in db.fetchall(
+                CHECKS_SQL, {"f": period.start, "t": period.end})},
             "searches": db.fetchall(SEARCHES_SQL, {"i": i}), "findings": findings,
             "mlm": bool(mlm[0]["monitored"]) if mlm else None, "log": sum_screening_logs(logs)}
 
@@ -555,6 +578,9 @@ def assemble_psur(raw: dict, made_at: datetime | None = None) -> dict:
     searches = sorted(raw.get("searches") or [], key=lambda s: (s["kind"] != "name", s["query"]))
     by_query = raw.get("by_query") or {}
 
+    checks = raw.get("ref_checks") or {}
+    refs = [_ref_row(r, checks.get(str(r.get("id")))) for r in raw.get("refs") or []]
+
     signals = _signals(findings, titles)
     eurd = _eurd(raw.get("eurd") or [])
     annex = _annex(raw["log"])
@@ -575,7 +601,7 @@ def assemble_psur(raw: dict, made_at: datetime | None = None) -> dict:
         ("Of them, no decision yet", sum(1 for m in mentions if m["awaiting"])),
         ("Sent to the authority", sum(1 for m in mentions + labels if m["sent_text"])),
         ("§4 Label changes", len(labels)),
-        ("§11 Papers in PubMed and PubMed Central", len(papers)),
+        ("§11 Papers in PubMed, PubMed Central and Europe PMC", len(papers)),
         ("Of them, possible case reports", sum(1 for p in papers if p["case_report"])),
         ("§15–16 Signals", len(signals)),
         ("Of them, still open", sum(1 for s in signals if not s["closed"])),
@@ -590,16 +616,50 @@ def assemble_psur(raw: dict, made_at: datetime | None = None) -> dict:
             "asked": _asked(raw["request"]), "summary": summary, "figures": figures, "eurd": eurd,
             "countries": countries, "actions": actions, "labels": labels,
             "literature": {"papers": papers, "case_reports": sum(1 for p in papers if p["case_report"]),
-                           "counts": lit, "mlm": rw.MLM_TEXT.get(raw.get("mlm"), ""),
+                           "counts": lit, "mlm": rw.MLM_TEXT.get(raw.get("mlm"), ""), "refs": refs,
                            "searches": [{"query": s["query"],
                                          "kind": "name" if s["kind"] == "name" else "class word",
                                          "pubmed": int((by_query.get(s["query"]) or {}).get("pubmed") or 0),
-                                         "pmc": int((by_query.get(s["query"]) or {}).get("pmc") or 0)}
+                                         "pmc": int((by_query.get(s["query"]) or {}).get("pmc") or 0),
+                                         "europepmc": int((by_query.get(s["query"]) or {}).get("europepmc") or 0)}
                                         for s in searches]},
             "signals": signals, "not_relevant": not_relevant,
             "not_relevant_counts": [(k, nr_counts[k]) for k in ("§3 Regulatory actions", "§4 Label changes",
                                                                  "§11 Literature")],
             "annex": annex}
+
+
+def _ref_row(r: dict, checks: dict | None) -> dict:
+    """One of her literature references over the pack's days (0101): the app's searches and what they found, or
+    the hand checks recorded; "Nothing found" in words."""
+    if r.get("by_hand"):
+        n = int((checks or {}).get("checks") or 0)
+        found_n = int((checks or {}).get("found") or 0)
+        screened = (f"Checked by hand {rw.plural(n, 'time', 'times')} in these days, "
+                    f"last {cairo_time((checks or {}).get('last_at'))}" if n else "Not checked by hand in these days")
+        found = "Not checked" if not n else ("Nothing found" if not found_n else
+                                             f"Found something in {rw.plural(found_n, 'check', 'checks')}")
+    else:
+        # as the weekly report: "Nothing found" only when the name was searched and no read failed
+        s = int(r.get("searches") or 0)
+        named = int(r.get("name_searches") if r.get("name_searches") is not None else s)
+        failed = int(r.get("failed_reads") or 0)
+        screened = (f"Searched by the app {rw.plural(s, 'time', 'times')} in these days"
+                    + (f", last {cairo_time(r['last_searched'])}" if r.get("last_searched") else "")
+                    if s else "Not searched by the app in these days")
+        if failed:
+            screened += f"; {rw.plural(failed, 'read', 'reads')} failed"
+        n = r.get("found")
+        if n is not None and int(n) > 0:
+            found = rw.plural(int(n), "paper", "papers")
+        elif not s or not named:
+            found = "Not searched — check by hand"
+        elif failed:
+            found = "Not fully searched — check by hand"
+        else:
+            found = "" if n is None else "Nothing found"
+    return {"scope": rw.SCOPE_TITLE.get(r.get("scope"), r.get("scope") or ""), "name": r.get("name") or "",
+            "url": rw.safe_link(r.get("url")), "screened": screened, "found": found}
 
 
 def _record_text(s: dict) -> str:
@@ -714,7 +774,7 @@ def assemble_inspection(raw: dict, made_at: datetime | None = None) -> dict:
 # ───────────────────────────── Excel ─────────────────────────────
 
 PSUR_SHEETS = ("Summary", "EURD", "§3 Regulatory actions", "§3 Countries", "§4 Label changes", "§11 Literature",
-               "§11 Searches", "§15-16 Signals", "Not relevant", "Screening annex")
+               "§11 References", "§11 Searches", "§15-16 Signals", "Not relevant", "Screening annex")
 INSPECTION_SHEETS = ("Summary", "Coverage", "Screening log", "Decisions", "Signatures", "Authority reports",
                      "Weekly reports", "Archive checks", "Audit log", "People and roles")
 
@@ -764,17 +824,24 @@ def build_psur_xlsx(data: dict) -> bytes:
                  *_decision_cells(m), m["sent_text"], m["signal"]] for m in data["labels"]],
                [18, 16, 22, 30, 24, 10, 14, 24, 28, 34, 50, 44, 20, 20, 18, 40, 34, 40], links=True)
     xlsx_sheet(wb, "§11 Literature",
-               ["Date", "Title", "Journal", "PubMed", "PubMed Central", "By class", "History", "Possible case report",
-                "Day zero", "15 days", "90 days", "Decision", "Decided by", "Decided (Cairo)", "Reason"],
-               [[p["day"], p["title"], p["journal"], p["pubmed"] or "", p["pmc"] or "", "yes" if p["by_class"] else "",
+               ["Date", "Title", "Journal", "PubMed", "PubMed Central", "Europe PMC", "By class", "History",
+                "Possible case report", "Day zero", "15 days", "90 days", "Decision", "Decided by", "Decided (Cairo)",
+                "Reason"],
+               [[p["day"], p["title"], p["journal"], p["pubmed"] or "", p["pmc"] or "", p["europepmc"] or "",
+                 "yes" if p["by_class"] else "",
                  "yes" if p["history"] else "", f"yes, {p['case_reason']}" if p["case_report"] else "",
                  p["day_zero"] if p["case_report"] else "", p["due_serious"] if p["case_report"] else "",
                  p["due_nonserious"] if p["case_report"] else "", *_decision_cells(p)]
                 for p in data["literature"]["papers"]],
-               [14, 70, 30, 40, 46, 9, 9, 30, 14, 14, 14, 20, 20, 18, 40], links=True)
-    xlsx_sheet(wb, "§11 Searches", ["Search", "Searched as", "PubMed", "PubMed Central"],
-               [[s["query"], s["kind"], s["pubmed"], s["pmc"]] for s in data["literature"]["searches"]],
-               [36, 14, 10, 16])
+               [14, 70, 30, 40, 46, 46, 9, 9, 30, 14, 14, 14, 20, 20, 18, 40], links=True)
+    xlsx_sheet(wb, "§11 References", ["List", "Reference", "Link", "Screened", "Found"],
+               [[r["scope"], r["name"], r["url"] or "", r["screened"], r["found"]]
+                for r in data["literature"]["refs"]],
+               [10, 36, 40, 60, 30], links=True)
+    xlsx_sheet(wb, "§11 Searches", ["Search", "Searched as", "PubMed", "PubMed Central", "Europe PMC"],
+               [[s["query"], s["kind"], s["pubmed"], s["pmc"], s["europepmc"]]
+                for s in data["literature"]["searches"]],
+               [36, 14, 10, 16, 12])
     xlsx_sheet(wb, "§15-16 Signals",
                ["Signal", "Title", "Opened (Cairo)", "Opened by", "Stage", "Priority", "Outcome", "Next step due",
                 "Late", "Owner", "Findings", "Steps"],

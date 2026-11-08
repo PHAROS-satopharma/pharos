@@ -265,6 +265,25 @@ SIGNAL = {"id": "sig-1", "ref": "SIG-2026-001", "title": "Rote-Hand-Brief zu Flu
                      "person": "Sama Hassan", "at": "2026-11-05T10:12:00Z", "comment": None}]}
 
 
+def _ref(name, scope, *, by_hand=False, searches=0, found=None, check=None, last=None):
+    return {"id": name, "scope": scope, "name": name, "url": f"https://{name.split()[0].lower()}.example.test/",
+            "note": None, "by_hand": by_hand, "searched_in": [] if by_hand else ["pubmed"], "journal_like": None,
+            "searches": searches, "last_searched": last, "hits": 0, "found": found, "check": check}
+
+
+NOTHING = {"result": "nothing", "note": None, "checked_at": "2026-11-04T08:00:00Z", "checked_by": "Sama Hassan"}
+REFS_ING = [_ref("PubMed (NCBI)", "global", searches=7, found=0, last="2026-11-07T04:00:00Z"),
+            _ref("Europe PMC", "global", searches=7, found=1, last="2026-11-07T04:00:00Z"),
+            _ref("Medscape", "global", by_hand=True, check=NOTHING),
+            _ref("Al-Azhar Medical Journal", "local", by_hand=True),
+            # never searched this week (the log starts with 0101), and searched but with a failed read
+            _ref("PubMed Central (NCBI)", "global", searches=0, found=0),
+            {**_ref("Cochrane Database of Systematic Reviews", "global", searches=7, found=0), "failed_reads": 2},
+            # its class words were searched, its own name was not
+            {**_ref("Europe PMC (class words only)", "global", searches=3, found=0), "name_searches": 0}]
+REFS_WEEK = [{**r, "found": None} for r in REFS_ING]
+
+
 class FakeDb:
     """Answers each query the report makes, and keeps every statement to be read back."""
 
@@ -297,7 +316,14 @@ class FakeDb:
             # How far the ingredient is prepared, as the Ingredients page reads it (0045).
             assert params == {"i": SCREEN["ingredient"]["id"]}
             return {"readiness": READINESS}
+        if "literature_refs_week(null" in sql:
+            # Her literature references for the week, every search counted (0101).
+            assert params == self.days
+            return {"refs": REFS_WEEK}
         assert params == {**self.days, "i": SCREEN["ingredient"]["id"]}
+        if "literature_refs_week(" in sql:
+            # ... and for the ingredient, with what each found.
+            return {"refs": REFS_ING}
         if "label_changes(" in sql:
             # Our label under "Label changes" (0043): the changes of the week with the gap against our label.
             return {"changes": LABEL_CHANGES}
@@ -683,6 +709,36 @@ def test_the_excel_file_has_a_sheet_per_section_and_her_words():
     assert decisions[1][6:9] == ("10 Nov 2026", "6 Nov 2026 · EDA/2026/0042", "SIG-2026-001 · Validation · due 5 Dec 2026")
     summary = list(wb["Summary"].iter_rows(values_only=True))
     assert ("Signals open", "2 (1 step late)") in [tuple(r[:2]) for r in summary]
+
+
+def test_every_literature_reference_has_its_negative_result_in_words():
+    # Dr Sama, 8 Nov 2026 (0101): each Global and Local reference, how it was screened, and "Nothing found".
+    _, data = _data()
+    refs = {r["name"]: r for r in data["ingredients"][0]["literature"]["refs"]}
+    assert refs["PubMed (NCBI)"]["screened"] == "Searched by the app — 7 searches this week, last 7 Nov 2026, 06:00"
+    assert refs["PubMed (NCBI)"]["found"] == "Nothing found" and refs["Europe PMC"]["found"] == "1 paper"
+    assert refs["Medscape"]["screened"] == "Checked by hand — Sama Hassan, 4 Nov 2026, 10:00"
+    assert refs["Medscape"]["found"] == "Nothing found"
+    assert refs["Al-Azhar Medical Journal"]["found"] == "Not checked" and refs["Al-Azhar Medical Journal"]["gap"]
+    assert refs["Al-Azhar Medical Journal"]["scope"] == "Local"
+    # "Nothing found" only when the name was searched and no read failed (risk review of PR 223)
+    assert refs["PubMed Central (NCBI)"]["screened"] == "Not searched by the app this week"
+    assert refs["PubMed Central (NCBI)"]["found"] == "Not searched — check by hand" and refs["PubMed Central (NCBI)"]["gap"]
+    cochrane = refs["Cochrane Database of Systematic Reviews"]
+    assert cochrane["screened"].endswith("; 2 reads failed")
+    assert cochrane["found"] == "Not fully searched — check by hand" and cochrane["gap"]
+    assert refs["Europe PMC (class words only)"]["found"] == "Not searched — check by hand"
+    week = {r["name"]: r for r in data["authorities"]["literature_refs"]}
+    assert week["PubMed (NCBI)"]["found"] == "" and not week["PubMed (NCBI)"]["gap"]
+
+    html = rw.render_weekly_html(data)
+    assert "Literature references, Global and Local" in html
+    assert "<strong>Nothing found</strong>" in html
+    assert "Checked by hand — not checked this week" in html
+    rows = list(load_workbook(io.BytesIO(rw.build_weekly_xlsx(data)))["Literature references"].iter_rows(values_only=True))
+    assert rows[0] == ("Ingredient", "List", "Reference", "Link", "Screened", "Found")
+    assert ("levofloxacin", "Global", "PubMed (NCBI)") == rows[1][:3] and rows[1][5] == "Nothing found"
+    assert rows[4][1:3] == ("Local", "Al-Azhar Medical Journal") and rows[4][5] == "Not checked"
 
 
 def test_make_weekly_report_archives_records_and_never_overwrites(tmp_path, monkeypatch):

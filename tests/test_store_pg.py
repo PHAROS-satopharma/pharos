@@ -586,6 +586,26 @@ def test_literature_searches_remember_their_look_back(store, tag):
     store.save_literature_searches([])                                  # nothing to save: no error
 
 
+def test_every_literature_search_is_logged_with_its_count(store, tag):
+    # 0101: one row per search sent, with what the database returned, 0 included, tied to its run.
+    src = _source(store, tag)
+    run_id = store.create_run("manual", "test-sha")
+    q = f"testamine-{tag}"
+    rows = [{"db": "pubmed", "query": q, "kind": "name", "window_from": date(2026, 11, 1),
+             "window_to": date(2026, 11, 3), "hits": 4},
+            {"db": "pmc", "query": q, "kind": "name", "window_from": date(2026, 11, 1),
+             "window_to": date(2026, 11, 3), "hits": 0}]
+    store.log_literature_searches(run_id, src.id, rows)
+    store.log_literature_searches("not-a-run", src.id, rows[:1])         # a test run id: logged without a run
+    store.log_literature_searches(run_id, src.id, [])                    # nothing to log: no error
+    got = store.db.fetchall(
+        "select run_id::text as run_id, db, hits, window_from, window_to from literature_search_log "
+        "where query = %(q)s order by id", {"q": q})
+    assert [(r["db"], r["hits"]) for r in got] == [("pubmed", 4), ("pmc", 0), ("pubmed", 4)]
+    assert [r["run_id"] for r in got] == [str(run_id), str(run_id), None]
+    assert got[1]["window_from"] == date(2026, 11, 1) and got[1]["window_to"] == date(2026, 11, 3)
+
+
 def test_class_words_and_known_paper_ids(store, tag):
     ing = _ingredient(store, tag)
     cls = str(store.db.fetchone(

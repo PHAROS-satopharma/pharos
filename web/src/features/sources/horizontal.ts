@@ -98,7 +98,8 @@ export function cairoWeekStart(now: Date = new Date()): Date {
 
 /**
  * One card per country: the countries of her list first, A to Z (the European Union among them), then every
- * other country that has a source, under "Other authorities".
+ * other country that has a source, under "Other authorities" (the literature databases' own card among them: its
+ * reads, failures and switches; what they searched for each reference is under "Literature references", 0101).
  */
 export function countryCards<S extends CardSource>(
   regulators: CardRegulator[],

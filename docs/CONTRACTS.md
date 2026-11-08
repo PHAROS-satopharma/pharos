@@ -216,9 +216,50 @@ keeps her address in its note. `tests/test_regulator_pages.py` applies 0038 over
 Since 0098 (her feedback, 8 Nov 2026) an admin also writes her pages from the Sources screen
 (`web/src/features/sources/PageEdit.tsx`, rules in `pageRules.ts`): **Add a link** and **Change** write `regulator_id`,
 `kind`, `label`, `url` and `note` only, never `read_by` or `partial`, so a link she adds is one she opens herself;
-**Remove** deletes the row. **Add a local reference** inserts a `regulator` (id from its short name, `languages`
-`{en}`) and its first page. `regulator` is audited from 0098 (`audit_regulator_write`, and `audit_regulator_change`
+**Remove** deletes the row. **Add an authority** (called "Add a local reference" until 0101) inserts a `regulator`
+(id from its short name, `languages` `{en}`) and its first page. `regulator` is audited from 0098 (`audit_regulator_write`, and `audit_regulator_change`
 only when a row really changes, so the collector's catalogue upsert logs nothing); `supabase/tests/sources_she_edits.sql`.
+
+**Literature references, Global and Local** (0101, Dr Sama 8 Nov 2026; `web/src/features/sources/LiteratureRefs.tsx`,
+rules in `literatureRefs.ts`; `supabase/tests/literature_refs.sql`):
+
+```
+literature_ref (id, scope 'global'|'local', name, url http(s), searched_in text[] ⊆ {pubmed,pmc,europepmc}
+                (empty = checked by hand), journal_like, note, sort, active, created_by, created_at)
+  -- team reads, admins write (RLS), audit_literature_ref; one active name and one active address per scope.
+  -- Seeded: PubMed {pubmed}, PubMed Central {pmc}, Europe PMC {europepmc}, Cochrane {pubmed,europepmc} with
+  -- journal_like 'cochrane database', Medscape {} ; Local: Al-Azhar and Ain Shams medical journals {}.
+  -- The screen never deletes one: Remove sets active = false (a reference with a check is FK-restricted).
+literature_search_log (id, run_id → run, source_id → source, db, query, kind, window_from, window_to, hits,
+                       searched_at)
+  -- one row per search the collector sent (collectors/parsers/pubmed.py after_store, shared by europepmc.py,
+  -- via Store.log_literature_searches); hits = distinct records the database returned, 0 included.
+  -- Not written on a backfill. authenticated: select only. literature_evidence_immutable() refuses every update,
+  -- delete and truncate, for every role (owner and service key included), as sign_off (0030).
+literature_check (id, ref_id → literature_ref, result 'nothing'|'found', note, checked_by → person, checked_at)
+  -- written only by record_literature_check(p_ref, p_result, p_note) (reviewer or admin; 'found' needs a note);
+  -- audited on insert; never updated, deleted or truncated (literature_evidence_immutable(), every role).
+literature_refs_week(p_ingredient uuid | null, p_from date, p_to date) → jsonb array, one per active reference
+  and per removed one with a hand check in those days:
+  id, scope, name, url, note, active, by_hand, searched_in, journal_like,
+  searches / last_searched / hits   -- log rows in the Cairo days, for the ingredient's words (all words if null);
+                                    -- hits sums overlapping windows: never a paper count
+  name_searches                     -- of them, for the ingredient's own name
+  failed_reads                      -- failed reads (source_run_failed) of the sources whose parser reads these dbs
+  found                             -- the ingredient's literature papers FIRST FOUND in those days whose found_in
+                                    -- meets searched_in (and journal ILIKE journal_like); null with no ingredient
+  checks, found_checks, check {result, note, checked_at, checked_by (name)}
+                                    -- check: the latest that found something, else the latest; null if none
+```
+
+"Nothing found" for a reference the app searches is written only when `name_searches > 0` and `failed_reads = 0`
+(as `answer_of()` for the authorities); otherwise "Not searched — check by hand" or "Not fully searched — check by
+hand". Same rule in `report_weekly.literature_ref_row`, `report_pack._ref_row` and `literatureRefs.ts refFound`.
+
+The Sources screen shows it first (the week, no ingredient); the Ingredients screen, the weekly and daily report
+(PDF section 04 and the "Literature references" sheet) and the PSUR pack (§11, sheet "§11 References", checks
+counted with `CHECKS_SQL`) show it per ingredient, "Nothing found" in words. The literature sources' own card
+("International (literature)") stays under *Other authorities*, with their reads, failures and switches.
 
 The feed rule (`(\.(xml|json|rss|atom)([?#]|$)|/(rss|feed|atom)(/|[?#]|$)|^https?://api\.)`, case-blind) is
 the same in `new_items()`, `web/src/features/sources/horizontal.ts` and `tests/test_regulator_pages.py`;

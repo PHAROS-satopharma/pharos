@@ -191,7 +191,8 @@ export function RemovePage({ page, onDone }: { page: RegulatorPage; onDone: () =
 const NEW_AUTHORITY = '__new__';
 
 /**
- * A local reference: an authority PHAROS lists without pages of yours (Saudi Arabia, the UAE, Egypt …), or a
+ * An authority (until 0101 called a "local reference"; that name is now her Egyptian journals, under Literature
+ * references): an authority PHAROS lists without pages of yours (Saudi Arabia, the UAE, Egypt …), or a
  * new one, with its first link. Once it has a link its country joins your list, the ingredient screen and the
  * weekly report.
  */
@@ -248,7 +249,7 @@ export function AddAuthority({
     <section className="panel add-panel" aria-labelledby="add-authority-title">
       <div className="panel-head">
         <h2 id="add-authority-title" className="panel-title">
-          Add a local reference
+          Add an authority
         </h2>
         <Button size="sm" variant="quiet" onClick={onDone}>
           Cancel
@@ -318,7 +319,7 @@ export function AddAuthority({
         {save.isError ? <Notice tone="error">Not saved: {errorMessage(save.error)}</Notice> : null}
         <div className="hz-edit-actions">
           <Button type="submit" variant="primary" busy={save.isPending}>
-            Add the local reference
+            Add the authority
           </Button>
         </div>
       </form>

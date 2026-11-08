@@ -227,8 +227,8 @@ asks for the administrator role only, so this holds for any administrator:
   screened since it was added, or with notices, messages, a signal, a case, a report, its label watch, our own
   leaflet, a product, its matching checks or clinical trials, is paused instead and kept, and the app says why.
 - **Products**: add, change and take off the list (*Products and cases by product*, migration 0099).
-- **Sources**: add a source, switch any source on or off, add, change and remove her links, add a local reference
-  (0098). A source she added has **Change** (how often it is read, notes) and **Remove** (0100): if it has never
+- **Sources**: add a source, switch any source on or off, add, change and remove her links, add an authority
+  (0098), and add, change and remove literature references, Global and Local (0101). A source she added has **Change** (how often it is read, notes) and **Remove** (0100): if it has never
   been read it is deleted; once read, it is switched off and kept with its reads, so past weeks and PSUR intervals
   still show them. To read a different link, or one that publishes something else, add a new source. The app's own
   sources are switched off, not removed: the collector writes them back on every run.
@@ -292,7 +292,20 @@ first (A to Z, the European Union among them), then *Other authorities*. Each ca
   An admin changes this list on the card itself (0098): **Add a link**, and on each link **Change** and
   **Remove** (asked twice; the audit log keeps the old row). A link added here is not read by the app. Changing
   the address of a page the app reads moves only the link in her list, and the form says so.
-- **Add a local reference** (page head, admins): an authority she checks by hand — one PHAROS lists without
+- **Literature references** (first section, 0101): where the literature is screened, in two lists. *Global*:
+  PubMed (NCBI), PubMed Central, Europe PMC and Cochrane are searched by the app every day (Cochrane's reviews are
+  in PubMed and Europe PMC, so they are counted from those searches); Medscape is checked by hand. *Local*: the
+  Egyptian medical journals the Egyptian Drug Authority asks for (Al-Azhar, Ain Shams …), checked by hand. Each line
+  says *Searched by the app — N searches this week*, or *Checked by hand — who, when: nothing found*, or *not
+  checked this week*. Reviewers and admins press **Checked: nothing found** (asked twice) or **Checked: found
+  something** (with what was found) once a week on each hand-checked line; the check is kept and cannot be changed,
+  and a check that found something speaks for the week even if a later one found nothing. A reference the app
+  searches says *Nothing found* only when the ingredient's name was searched and no read failed; otherwise *Not
+  searched* or *Not fully searched — check by hand*. Admins have
+  **Add a global reference**, **Add a local reference**, and **Change** / **Remove** on each line (Remove switches
+  it off; its checks stay). The Ingredients screen, the weekly and daily reports and the PSUR pack show the same
+  references for each ingredient, with *Nothing found* written out.
+- **Add an authority** (page head, admins; called "Add a local reference" before 0101): an authority she checks by hand — one PHAROS lists without
   pages of hers (Saudi Arabia, the UAE, Egypt …) or a new one — with its first link. Its country then joins her
   list, the ingredient screen and the weekly report. To stop the app reading a source, switch it off under
   *This week's reading*; a source is never deleted, as its history stays with it.

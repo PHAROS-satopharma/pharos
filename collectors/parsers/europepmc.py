@@ -302,7 +302,8 @@ def list_items(ctx: FetchContext, source: SourceConfig) -> list[Item]:
                 keys.add(h.key)
                 hit_of.setdefault(h.key, h)
                 hits.setdefault(h.key, []).append((s, not w.history))
-        runs.append({"search": s, "row": row, "keys": keys})
+        runs.append({"search": s, "row": row, "keys": keys, "hits": len(keys),
+                     "from": min(w.start for w in windows), "to": max(w.end for w in windows)})
 
     def mine(h: Hit) -> bool:
         return any(x in known for x in (h.id, h.pmid, h.pmcid) if x)
