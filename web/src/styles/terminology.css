@@ -1,0 +1,77 @@
+/* The free terminologies (0103): the search's source chips, the concept page and the release review. */
+.term-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.term-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.term-chip.is-on {
+  border-color: var(--text);
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.term-concept {
+  max-width: 90ch;
+}
+.term-name {
+  margin: 0 0 6px;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.term-path {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.term-definition {
+  margin: 10px 0;
+}
+.term-h {
+  margin: 18px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.term-names,
+.term-credits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.term-names li,
+.term-credits li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+.term-staged {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.term-review {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.term-review .input,
+.term-review input {
+  flex: 1 1 220px;
+  min-height: 44px;
+}
+.term-review .btn {
+  min-height: 44px;
+}

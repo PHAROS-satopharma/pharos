@@ -48,6 +48,8 @@ import {
 } from './caseForm';
 import { ciomsHtml, ciomsProblems } from './cioms';
 import { CodingSource, DrugCoding, MeshCoding } from './Coding';
+import { NeedsMeddra, TermCoding } from '../terminology/TermCoding';
+import { sourcesUsed, withTerm } from '../terminology/terms';
 import { MeddraCoding, useMeddraDictionary } from './Meddra';
 import { Listed } from './Listed';
 import { ProductPick, pickedProduct, type PickState } from '../products/ProductPick';
@@ -635,6 +637,11 @@ export function CaseView() {
         >
           {reactions.map((r, i) => (
             <div key={i} className="case-item">
+              {r.verbatim ? (
+                <p className="case-item-tags">
+                  <NeedsMeddra reaction={r} />
+                </p>
+              ) : null}
               <div className="form-grid">
                 <TextField label="As the reporter wrote it" value={r.verbatim} onChange={(v) => setReaction(i, 'verbatim', orNull(v))} disabled={!editable} />
                 <TextField label="In English" value={r.english} onChange={(v) => setReaction(i, 'english', orNull(v))} disabled={!editable} />
@@ -665,6 +672,12 @@ export function CaseView() {
                 onChoose={(ui, name) =>
                   edit({ ...draft, reactions: reactions.map((x, j) => (j === i ? { ...x, mesh_ui: ui, mesh_term: name } : x)) })
                 }
+              />
+              <TermCoding
+                term={r.term}
+                words={r.english || r.verbatim || ''}
+                editable={editable}
+                onChoose={(t) => edit({ ...draft, reactions: reactions.map((x, j) => (j === i ? withTerm(x, t) : x)) })}
               />
               {listedFor.map((x) => (
                 <Listed key={x.id} ingredientId={x.id} ui={r.mesh_ui} who={x.who} />
@@ -713,7 +726,7 @@ export function CaseView() {
               </Button>
             ) : null}
           </div>
-          <CodingSource mesh={coding?.mesh} meddra={meddraDictionary.data?.version} />
+          <CodingSource mesh={coding?.mesh} meddra={meddraDictionary.data?.version} terms={sourcesUsed(reactions)} />
         </Group>
 
         <Group title="Narrative and assessment">

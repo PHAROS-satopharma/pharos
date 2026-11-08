@@ -283,3 +283,8 @@
 .meddra-upload input[type='file'] {
   max-width: 100%;
 }
+
+/* a reaction's tags above its form: "Needs official MedDRA coding" until it has an LLT (0103) */
+.case-item-tags {
+  margin: 0 0 8px;
+}

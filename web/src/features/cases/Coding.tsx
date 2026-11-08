@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { Tag } from '../../ui/Tag';
 import { SUGGESTION_FROM, type DrugSuggestion, type MeshSuggestion } from './caseForm';
+import { SOURCE_CREDIT, type TermSource } from '../terminology/terms';
 
 /**
  * Coding on the case page (migration 0061): the code chosen, the coder's suggestions with their reasons, and a
@@ -206,8 +207,17 @@ export function DrugCoding({
   );
 }
 
-/** What the coding stands on, as NLM's terms ask. */
-export function CodingSource({ mesh, meddra }: { mesh: string | null | undefined; meddra?: string | null }) {
+/** What the coding stands on, as NLM's terms ask, and the credit of each free terminology a reaction was coded
+ *  from (0103), which is never MedDRA. */
+export function CodingSource({
+  mesh,
+  meddra,
+  terms = [],
+}: {
+  mesh: string | null | undefined;
+  meddra?: string | null;
+  terms?: TermSource[];
+}) {
   return (
     <p className="code-source">
       Codes: {mesh ?? 'MeSH'} and RxNorm, publicly available data of the U.S. National Library of Medicine (NLM);
@@ -215,6 +225,9 @@ export function CodingSource({ mesh, meddra }: { mesh: string | null | undefined
       {meddra
         ? `${meddra}, under Sato Pharma’s MSSO subscription. MedDRA® is a registered trademark of ICH.`
         : 'MedDRA is not loaded yet: its code and version are typed from the authority’s or a partner’s coding.'}
+      {terms.length
+        ? ` Free terminology: ${terms.map((t) => SOURCE_CREDIT[t]).join('; ')}. Not MedDRA, and never sent in the E2B file.`
+        : null}
     </p>
   );
 }
