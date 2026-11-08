@@ -323,7 +323,7 @@ def test_the_reader_receives_the_record_and_the_open_pdf(tmp_path):
     open_ctx, _ = pdf_ctx()
     given = {}
 
-    def reader(blocks, ingredients):
+    def reader(blocks, ingredients, products=None):
         given["blocks"] = blocks
         return {"is_case": True, "serious": "yes", **json.loads(json.dumps(FULL, default=str)),
                 "evidence": []}, "claude-opus-5-5"

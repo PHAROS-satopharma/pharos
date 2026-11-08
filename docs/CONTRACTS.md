@@ -665,6 +665,71 @@ row of the Ingredients page, administrators; `set_japan_codes`; invalidates `['i
 `sameJapanCodes`, `pmdaGeneralListUrl`). SQL tests: `supabase/tests/japan_code.sql`, `supabase/tests/japan_codes.sql`;
 web: `japanCode.test.ts`.
 
+## The product list and cases by product (0099)
+
+A product of ours combines one or more watched ingredients, each in its own amount per strength (Carvexa:
+carvedilol + ivabradine, 6.25 mg / 5 mg and 12.5 mg / 7.5 mg). A case is reported against a product and its
+strength; the literature, the label watch, the weekly report and the readiness stay per ingredient.
+
+```sql
+product (+ dosage_form text, active boolean not null default true, created_by uuid → person)
+  -- unique on lower(trim(name)); 0001's policies (team read, admin write) and audit trigger
+product_strength (id, product_id → product on delete cascade, label text, sort int, unique (product_id, label))
+product_strength_part (strength_id, product_id, ingredient_id, amount numeric > 0,
+                       unit text default 'mg' in ('mg','g','µg','mL','IU','%'))
+  -- pk (strength_id, ingredient_id); fk (strength_id, product_id) → product_strength (id, product_id) and
+  -- fk (product_id, ingredient_id) → product_ingredient: the ingredient is one of the product's.
+  -- Both tables: RLS team read, admin write; audited.
+product_strength_label(p_strength uuid) returns text
+  -- "6.25 mg / 5 mg": trim_scale(amount) || ' ' || unit in the order of the ingredients' inn_en, joined ' / '.
+save_product(p jsonb) returns jsonb   -- {id, outcome: 'saved' | 'archived' | 'deleted'}
+  -- security definer; administrators only (42501). p = {id?, name, mah?, dosage_form?, active?,
+  -- ingredients: [ingredient id], strengths: [{id?, label?, parts: [{ingredient_id, amount, unit?}]}]}, or
+  -- {id, remove: true}. 22023: no name, no ingredient, an ingredient not on the watchlist, no strength, a
+  -- strength without exactly one amount above zero per ingredient, an unknown unit, a strength left off the list
+  -- that a case names. 23505: a name already on the list, two strengths with one label. A strength without a
+  -- label is named by product_strength_label(). Remove: archived (active = false) when a case names the
+  -- product, else deleted with its strengths.
+
+safety_case (+ product_id uuid → product, product_strength_id uuid; fk (product_strength_id, product_id) →
+             product_strength (id, product_id); check product_strength_id is null or product_id is not null)
+create_upload_case(p_file_name, p_mime, p_sha256, p_bytes, p_day_zero, p_ingredient uuid default null,
+                   p_product uuid default null, p_strength uuid default null) returns uuid
+save_case(p_case, p_seen, p_data, p_serious, p_ingredient, p_comment,
+          p_product uuid, p_strength uuid) returns timestamptz   -- no defaults: an old tab's call fails, never clears the product
+confirm_case(… the same …) returns timestamptz
+  -- 0059's rules, and: a strength needs its product; a product must be on the list (an archived one only when
+  -- the case already names it); the strength must be the product's; an ingredient given with a product must be
+  -- in it. The case keeps the ingredient given, else the product's own when it has a single ingredient.
+  -- confirm_case needs a product OR an ingredient ('Choose the ingredient or the product the case is about.').
+case_check_form(p_data, p_ingredient) also refuses a products[] element that is not an object, or whose
+  ingredients is not an array.
+v_case_table (+ product_id, product_strength_id, product text)   -- product = name || ' ' || strength label
+ingredient_coded_terms(p_ingredient)
+  -- a case counts for the ingredient when safety_case.ingredient_id is it OR the case's product contains it.
+```
+
+The case form: each `products[]` element gains `ingredients: [{name, amount, unit}]` beside the kept
+`active_ingredient` (`caseForm.ts` `ProductIngredient`, `collectors/cases/schema.py` `INGREDIENT`, checked by
+`case_check_form`). The minimum criterion "a suspect product" is unchanged: a suspect line with a name. The
+E2B(R3) file writes one `ingredient` (G.k.2.3.r) per element under the product's `kindOfProduct`, with
+`quantity/numerator` value and UCUM unit (G.k.2.3.r.3a/3b: mg, g, ug, mL, [iU], %) and `ingredientSubstance/name`
+(G.k.2.3.r.1); a product without `ingredients` keeps its one `active_ingredient`. `e2b.py problems()` and
+`caseForm.ts e2bProblems()` refuse an ingredient line with an amount but no name, an amount that is not a number
+above zero, or a unit outside the map.
+
+Edge function `case-intake` `upload`: `product_id?`, `strength_id?` (uuids; a strength without a product is 400).
+Reader (`collectors/cases/read.py`): the active products (and the case's own) go in the prompt
+(`products_line()`); `guess_product()` takes the one product the suspect lines name by brand, else by every one of
+its ingredients (the product with the most ingredients wins; a tie is left to the reviewer); its only strength is
+taken only when the brand is named. `fill_product_line()` puts each ingredient with its amount on the suspect line.
+
+Web: `web/src/features/products/` — `productForm.ts` (`toProduct`, `strengthLabel`, the draft, `toPayload`, the pick
+`p:<id>`/`i:<id>`, `suspectLine`, `withSuspect`), `useProducts.ts` (`['products']`), `ProductPick.tsx` (the
+"Product or ingredient" and "Strength" choices, on New case and the case page), `ProductsPage.tsx` (the Products
+tab, `/products`, beside Ingredients). SQL test: `supabase/tests/product_list.sql`; web: `productForm.test.ts`,
+`caseForm.test.ts`; Python: `tests/test_cases.py`.
+
 ## Environment / secrets
 
 | Secret | Used by |

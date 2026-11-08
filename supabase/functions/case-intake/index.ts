@@ -1,6 +1,7 @@
 // case-intake — individual case reports (0059).
-//   {action: "upload", file_name, data (base64), day_zero, ingredient_id?} → {case_id}
-//       stores the document in the archive under sha256/ (never overwritten) and opens the case;
+//   {action: "upload", file_name, data (base64), day_zero, ingredient_id?, product_id?, strength_id?} → {case_id}
+//       stores the document in the archive under sha256/ (never overwritten) and opens the case, for a single
+//       ingredient or for a product of ours and its strength (0099);
 //   {action: "paper", document_id}          → {case_id}   opens a case from a literature paper;
 //   {action: "read",  case_id, seen}        → {case_id}   reads the document again;
 //   {action: "e2b",   case_id, seen}        → {case_id}   makes the E2B(R3) file of a confirmed case.
@@ -23,6 +24,8 @@ interface Body {
   data?: string;
   day_zero?: string;
   ingredient_id?: string | null;
+  product_id?: string | null;
+  strength_id?: string | null;
   document_id?: string;
   case_id?: string;
   seen?: string;
@@ -117,6 +120,9 @@ serve(async (req) => {
     const day = String(body.day_zero ?? "");
     if (!DAY_RE.test(day)) throw new HttpError(400, "Choose day zero: the day the company received the report.");
     const ingredient = body.ingredient_id ? uuidOf(body.ingredient_id, "ingredient") : null;
+    const product = body.product_id ? uuidOf(body.product_id, "product") : null;
+    const strength = body.strength_id ? uuidOf(body.strength_id, "strength") : null;
+    if (strength && !product) throw new HttpError(400, "Choose the product of this strength.");
     const bytes = decodeBase64(String(body.data ?? ""));
     if (bytes.length === 0) throw new HttpError(400, "The file is empty.");
     if (bytes.length > MAX_BYTES) throw new HttpError(413, "A case document is at most 10 MB.");
@@ -128,6 +134,7 @@ serve(async (req) => {
     await archive(bytes, sha, mime);
     const { data, error } = await caller.db.rpc("create_upload_case", {
       p_file_name: name, p_mime: mime, p_sha256: sha, p_bytes: bytes.length, p_day_zero: day, p_ingredient: ingredient,
+      p_product: product, p_strength: strength,
     });
     if (error || !data) dbError(error);
     const caseId = String(data);
