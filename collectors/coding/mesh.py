@@ -96,8 +96,44 @@ def newest(get: Any, today: date | None = None) -> tuple[int, bytes, str]:
     raise RuntimeError("NLM serves no MeSH release of the last two years")
 
 
-def load(db: Any, data: bytes | None = None, *, year: int | None = None, url: str = "", force: bool = False) -> str:
-    """Load the newest release (or ``data``); what was done, in words."""
+def terms(records: list[dict]) -> dict:
+    """The descriptors as term_concept records (migration 0103): a descriptor's parents are the descriptors at
+    its tree numbers' parents (C06.552.380 → the one at C06.552), its tree numbers kept as its subsets."""
+    from collectors.coding.terminology.base import Concept
+
+    at = {t: r["ui"] for r in records for t in r["trees"]}
+    out = {}
+    for r in records:
+        parents = sorted({at[t.rsplit(".", 1)[0]] for t in r["trees"] if "." in t and t.rsplit(".", 1)[0] in at})
+        out[r["ui"]] = Concept(code=r["ui"], name=r["name"], definition=r["scope_note"],
+                               names=[(t, "en", p) for t, p in r["terms"]], parents=parents,
+                               subsets=list(r["trees"]), uri=f"http://id.nlm.nih.gov/mesh/{r['ui']}")
+    return out
+
+
+def to_terms(db: Any, records: list[dict], data: bytes, *, version: str, url: str,
+             notify: Any = None) -> str:
+    """The same release into the free-terminology tables, so one search covers every source. A failure there
+    never undoes the MeSH load: it is said, and tried again on the next run."""
+    from collectors.coding.terminology.base import Release, TerminologyError
+    from collectors.coding.terminology.base import load as load_terms
+
+    rel = Release(source="mesh", version=version.removeprefix("MeSH").strip() or version, url=url, data=data,
+                  concepts=terms(records),
+                  mime="application/gzip")
+    try:
+        return load_terms(db, rel, min_concepts=1000, notify=notify)
+    except TerminologyError as exc:
+        return f"not in the terminology search ({exc})"
+    except Exception as exc:
+        log.warning("MeSH into term_*: stopped (%s)", type(exc).__name__)
+        return f"not in the terminology search (stopped: {type(exc).__name__})"
+
+
+def load(db: Any, data: bytes | None = None, *, year: int | None = None, url: str = "", force: bool = False,
+         notify: Any = None) -> str:
+    """Load the newest release (or ``data``); what was done, in words. The release also goes into term_*
+    (0103), once: a release already there is skipped by its SHA-256."""
     from collectors.core.archive import sha256_hex
 
     if data is None:
@@ -109,6 +145,12 @@ def load(db: Any, data: bytes | None = None, *, year: int | None = None, url: st
     version = f"MeSH {year}" if year else "MeSH"
     row = db.fetchone("select version, sha256 from coding_dictionary where name = 'mesh'")
     if row and row["sha256"] == sha and not force:
-        return f"{row['version']} is already loaded"
-    counts = store(db, list(parse(data)), version=version, url=url, sha=sha)
-    return f"{version}: {counts['descriptors']} descriptors, {counts['terms']} names"
+        said = f"{row['version']} is already loaded"
+        if not db.fetchone("select 1 from term_release where source = 'mesh' and sha256 = %s", (sha,)):
+            said += "; terminology search: " + to_terms(db, list(parse(data)), data, version=row["version"],
+                                                         url=url, notify=notify)
+        return said
+    records = list(parse(data))
+    counts = store(db, records, version=version, url=url, sha=sha)
+    said = f"{version}: {counts['descriptors']} descriptors, {counts['terms']} names"
+    return said + "; terminology search: " + to_terms(db, records, data, version=version, url=url, notify=notify)

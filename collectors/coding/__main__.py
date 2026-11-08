@@ -10,7 +10,7 @@
     python -m collectors.coding --papers    keep the MeSH headings of the literature papers (0062)
     python -m collectors.coding --labels [--force]
                                          find the MeSH names in our labels and the reference labels (0062)
-    python -m collectors.coding --terminology ncit [--file Thesaurus.FLAT.zip]
+    python -m collectors.coding --terminology ncit|oae|icd11|all [--file …]
                                          load the newest release of a free terminology (0103): the first one at
                                          once, a later one staged for an administrator's review; "all" loads each
 """
@@ -24,7 +24,7 @@ import sys
 
 log = logging.getLogger("collectors.coding")
 
-TERMINOLOGIES = ("ncit",)     # collectors/coding/terminology/<name>.py, each with run()
+TERMINOLOGIES = ("ncit", "oae", "icd11")     # collectors/coding/terminology/<name>.py, each with run()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -66,14 +66,17 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print("meddra:", meddra.load_waiting(db))
         if args.mesh:
+            from collectors.coding.terminology.base import default_notify
+
             if args.file:
                 with open(args.file, "rb") as fh:
                     data = fh.read()
-                year = re.search(r"(\d{4})", args.file)
+                year = re.search(r"(\d{4})", args.file.replace("\\", "/").rsplit("/", 1)[-1])
                 print("mesh:", mesh.load(db, data, year=int(year.group(1)) if year else None,
-                                         url=args.file.replace("\\", "/").rsplit("/", 1)[-1], force=args.force))
+                                         url=args.file.replace("\\", "/").rsplit("/", 1)[-1], force=args.force,
+                                         notify=default_notify(db)))
             else:
-                print("mesh:", mesh.load(db, force=args.force))
+                print("mesh:", mesh.load(db, force=args.force, notify=default_notify(db)))
         if args.terminology:
             failed = terminology(db, args.terminology, args.file)
             if failed:

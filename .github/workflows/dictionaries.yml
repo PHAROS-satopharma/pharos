@@ -23,7 +23,7 @@ on:
       terminology:
         description: Free terminology to load now (none, or one, or all)
         type: choice
-        options: [none, all, ncit]
+        options: [none, all, ncit, oae, icd11]
         default: none
 
 permissions:
