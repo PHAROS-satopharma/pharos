@@ -64,6 +64,7 @@ class Release:
     data: bytes                     # the original as downloaded: hashed and archived
     concepts: dict[str, Concept]
     mime: str = "application/zip"
+    extra: list[tuple[bytes, str]] = field(default_factory=list)   # more originals of the same release (ICD-11 ar)
 
 
 ARABIC_MARKS = re.compile("[\u0640\u064B-\u065F\u0670]")
@@ -249,7 +250,7 @@ def load(db: Any, rel: Release, *, min_concepts: int, archive: Any = None,
     from collectors.core.archive import sha256_hex
 
     label = f"{NAMES.get(rel.source, rel.source)} {rel.version}"
-    sha = sha256_hex(rel.data)
+    sha = sha256_hex(rel.data + b"".join(body for body, _ in rel.extra))
     seen = db.fetchone("select version, status from term_release where source = %s and sha256 = %s",
                        (rel.source, sha))
     if seen:
@@ -287,6 +288,8 @@ def load(db: Any, rel: Release, *, min_concepts: int, archive: Any = None,
     if archive is not None:
         _, key = archive.put(rel.data, rel.mime, meta={"source": rel.source, "version": rel.version,
                                                      "url": rel.url})
+        for body, mime in rel.extra:
+            archive.put(body, mime, meta={"source": rel.source, "version": rel.version, "url": rel.url})
     if first:
         counts = apply_first(db, rel, sha=sha, key=key)
         db.execute("analyze term_concept, term_name, term_parent")   # else the search plans for empty tables
