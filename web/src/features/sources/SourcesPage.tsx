@@ -27,6 +27,7 @@ import {
 } from './queries';
 import { AddSource } from './AddSource';
 import { AddAuthority, PageForm, RemovePage } from './PageEdit';
+import { ChangeSource, RemoveSource } from './SourceEdit';
 import { useLabelWatchSources, watchLine } from './labelWatchLine';
 import { listLine, useListChecks, type ListCheckRow } from './listCheck';
 import {
@@ -494,6 +495,8 @@ function WeekFigures({
   toggling,
 }: Omit<CardShared, 'hz'> & { card: Card; week: NewItem[] }) {
   const [opened, setOpened] = useState<Opened>(null);
+  // A source a person added: changed or removed here (0100). The app's own are switched on and off only.
+  const [editing, setEditing] = useState<{ id: string; what: 'change' | 'remove' } | null>(null);
   const homepage = new Map(card.regulators.map((r) => [r.id, r.homepage]));
   const labels = sourceLabels(card.sources, card.pages);
   const rows = card.sources.map((s) => {
@@ -611,7 +614,23 @@ function WeekFigures({
                     label={s.enabled ? 'Read' : 'Off'}
                   />
                 ) : null}
+                {isAdmin && s.origin === 'user' && editing?.id !== s.id ? (
+                  <span className="hz-run-edit">
+                    <Button size="sm" variant="quiet" onClick={() => setEditing({ id: s.id, what: 'change' })}>
+                      Change
+                    </Button>
+                    <Button size="sm" variant="quiet" onClick={() => setEditing({ id: s.id, what: 'remove' })}>
+                      Remove
+                    </Button>
+                  </span>
+                ) : null}
               </div>
+              {editing?.id === s.id && editing.what === 'change' ? (
+                <ChangeSource source={s} label={label} onDone={() => setEditing(null)} />
+              ) : null}
+              {editing?.id === s.id && editing.what === 'remove' ? (
+                <RemoveSource source={s} label={label} onDone={() => setEditing(null)} />
+              ) : null}
               {why ? <p className="hz-why">{why}</p> : null}
               {list && (list.needsLook || technical) ? (
                 <p className={cx('hz-why', list.needsLook && 'is-attention')}>{list.text}</p>

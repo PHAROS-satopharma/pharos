@@ -9,7 +9,7 @@ import { safeHref } from '../../lib/safeHref';
 import { CHANNEL_LABEL, KIND_LABEL, SCHEDULE_LABEL, hostOf, languageName } from '../../lib/labels';
 import {
   SOURCE_CHANNELS,
-  SOURCE_KINDS,
+  USER_SOURCE_KINDS,
   SOURCE_SCHEDULES,
   type ProbeResult,
   type SourceChannel,
@@ -328,7 +328,7 @@ export function AddSource({ onDone }: { onDone: () => void }) {
               <Select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as SourceKind)}
-                options={SOURCE_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+                options={USER_SOURCE_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
               />
             </Field>
             <Field label="How often to read it">

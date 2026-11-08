@@ -450,3 +450,33 @@ def test_an_attachment_behind_a_bot_check_is_skipped_not_the_source(tmp_path):
     atts = runner._attachments(item, "fr")
     assert [a["url"] for a in atts] == ["https://ansm.sante.fr/uploads/lettre.html"]
     assert "Lornoxicam" in atts[0]["text"]
+
+
+def test_a_source_removed_during_the_run_is_skipped_and_the_run_goes_on(tmp_path):
+    # 0100: a source never read can be removed on Sources while a run that listed it is going. Postgres then
+    # refuses its source_run row (the foreign key); the runner skips it instead of stopping the run.
+    server = Server()
+    store, ctx, runner, ing_id = setup(tmp_path, server)
+    del store.source[SRC.id]
+    real = store.start_source_run
+
+    def refused(run_id, source_id):
+        if source_id not in store.source:
+            raise RuntimeError('insert or update on table "source_run" violates foreign key constraint')
+        return real(run_id, source_id)
+
+    store.start_source_run = refused
+    stats = runner.run_source(SRC)
+    assert not stats.failed and stats.seen == 0
+    assert not store.source_run                                   # nothing written for it
+    assert runner.run([SRC]) is True                              # the run is not failed by it
+
+    # A refusal for any other reason still stops the source as before.
+    sync_catalogue(store)
+
+    def broken(run_id, source_id):
+        raise RuntimeError("database down")
+
+    store.start_source_run = broken
+    with pytest.raises(RuntimeError, match="database down"):
+        runner.run_source(SRC)

@@ -428,3 +428,9 @@
     padding: 4px 0;
   }
 }
+
+/* A source a person added: Change and Remove beside its switch (0100) */
+.hz-run-edit {
+  display: flex;
+  gap: 4px;
+}
