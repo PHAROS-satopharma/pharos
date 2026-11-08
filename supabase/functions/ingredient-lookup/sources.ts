@@ -114,10 +114,40 @@ SELECT ?item ?kind ?val WHERE {
 // ───────────────────────────── EMA substance lists (cached per instance) ─────────────────────────────
 
 export interface EmaSubstance {
-  name: string;                 // as EMA writes it, e.g. "lornoxicam"
+  name: string;                 // as EMA writes it, e.g. "lornoxicam", "Ivy leaf"
   atc: Set<string>;
-  lists: Set<string>;           // ema-psusa, ema-dhpc, ema-medicines
+  lists: Set<string>;           // ema-psusa, ema-dhpc, ema-medicines, ema-herbal
   brands: Set<string>;          // centrally authorised medicine names (ema-medicines, ema-dhpc)
+  herbal?: Herbal;              // an HMPC herbal substance (ema-herbal)
+}
+
+/** A herbal substance from EMA's HMPC list: "Ivy leaf" is Hederae helicis folium, from Hedera helix L. */
+export interface Herbal {
+  latin: string;                // Hederae helicis folium
+  plants: string[];             // Hedera helix (the botanical names without their authors)
+}
+
+/** "Hedera helix L." → Hedera helix; "Fragaria vescaL.;Fragaria x ananassa (Weston) Duchesne" → both plants. */
+export function botanicalNames(s: string | undefined): string[] {
+  const out = new Set<string>();
+  for (const part of (s ?? "").split(";")) {
+    const w = part.trim().split(/\s+/);
+    const hybrid = w[1] === "x" || w[1] === "×";
+    const genus = w[0] ?? "";
+    // the epithet, cut where an author's name is written against it ("vescaL." → vesca)
+    const epithet = (hybrid ? w[2] : w[1])?.match(/^[a-z][a-z-]+/)?.[0] ?? "";
+    if (!/^[A-Z][a-z]+$/.test(genus) || epithet.length < 3) continue;
+    out.add(hybrid ? `${genus} x ${epithet}` : `${genus} ${epithet}`);
+  }
+  return [...out];
+}
+
+/** Every name a herbal substance goes by: the common name (and its plural), the Latin name and the plants. */
+export function herbalNames(s: EmaSubstance): string[] {
+  if (!s.herbal) return [s.name];
+  const plural = s.name.replace(/\bleaf$/i, (m) => (m[0] === "L" ? "Leaves" : "leaves"))
+    .replace(/\b(root|flower|fruit|seed|herb)$/i, "$1s");
+  return [...new Set([s.name, plural, s.herbal.latin, ...s.herbal.plants].filter(Boolean))];
 }
 
 const EMA = "https://www.ema.europa.eu/en/documents/report/";
@@ -125,6 +155,8 @@ const EMA_FILES = {
   "ema-psusa": EMA + "medicines-output-periodic_safety_update_report_single_assessments-output-json-report_en.json",
   "ema-dhpc": EMA + "dhpc-output-json-report_en.json",
   "ema-medicines": EMA + "medicines-output-medicines_json-report_en.json",
+  // HMPC herbal substances (ivy leaf, thyme, pelargonium …): none of them is in the three lists above.
+  "ema-herbal": EMA + "medicines-output-herbal_medicines-report-output-json_en.json",
 } as const;
 const EMA_TTL_MS = 12 * 3600 * 1000;
 
@@ -171,7 +203,14 @@ export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; fa
       }
       for (const row of r.value.rows) {
         if (row.category && row.category !== "Human") continue;
-        if (list === "ema-psusa") {
+        if (list === "ema-herbal") {
+          // one substance per row; a combination of several herbs is not one ingredient
+          const name = row.english_common_name?.trim();
+          const latin = row.latin_name?.trim();
+          if (!name || !latin || row.combination === "Yes" || name.length > 80) continue;
+          add(name, list);
+          index.get(key(name))!.herbal = { latin, plants: botanicalNames(row.botanical_name) };
+        } else if (list === "ema-psusa") {
           for (const n of splitSubstances(row.active_substance)) add(n, list);
           for (const n of splitSubstances(row.active_substances_in_scope_of_procedure)) add(n, list);
         } else if (list === "ema-dhpc") {
