@@ -13,14 +13,23 @@ export function useDebounced<T>(value: T, ms = 300): T {
   return v;
 }
 
-/** term_search(): a code, or at least three letters (two for an exact name in a few scripts). */
-export function useTermSearch(text: string, sources: TermSource[] | null, limit = 12) {
+/**
+ * term_find() (0106): term_search() — a code, or at least three letters (two for an exact name in a few scripts) —
+ * plus one row in the search log. `place` says whether a person typed it or it is a reaction's automatic proposals.
+ */
+export function useTermSearch(text: string, sources: TermSource[] | null, limit = 12,
+                              place: 'typed' | 'proposal' = 'typed') {
   const q = useDebounced(text.trim());
   return useQuery({
-    queryKey: ['term-search', q, sources?.join(',') ?? 'all', limit],
+    queryKey: ['term-search', q, sources?.join(',') ?? 'all', limit, place],
     queryFn: async () =>
       unwrap<TermHit[]>(
-        await supabase.rpc('term_search', { p_text: q, p_sources: sources && sources.length ? sources : null, p_limit: limit }),
+        await supabase.rpc('term_find', {
+          p_text: q,
+          p_sources: sources && sources.length ? sources : null,
+          p_limit: limit,
+          p_place: place,
+        }),
       ),
     enabled: q.length >= 2,
     staleTime: 5 * 60_000,
