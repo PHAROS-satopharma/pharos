@@ -64,7 +64,7 @@ function ProductEditor({
       ...d,
       strengths: d.strengths.map((s, j) =>
         j === k
-          ? { ...s, amounts: { ...s.amounts, [ingredient]: { amount: '', unit: 'mg', ...s.amounts[ingredient], [field]: v } } }
+          ? { ...s, amounts: { ...s.amounts, [ingredient]: { ...(s.amounts[ingredient] ?? { amount: '', unit: 'mg' }), [field]: v } } }
           : s,
       ),
     });
