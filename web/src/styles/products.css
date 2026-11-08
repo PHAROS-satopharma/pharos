@@ -1,0 +1,67 @@
+/* Products (0099): the product list and its add/change form. Flat colour, square corners, 1px rules, tokens
+   only. Phone first: every row of amounts wraps, every control is at least 44px tall. */
+
+.products-page .field {
+  min-height: 44px;
+}
+.product-table td {
+  vertical-align: top;
+}
+.product-table tr.is-archived td {
+  color: var(--muted);
+}
+.product-strengths {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.product-strengths li + li {
+  margin-top: 2px;
+}
+.product-editor {
+  padding: 4px 0;
+}
+.product-group {
+  margin: 16px 0 0;
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.product-group > .field-label {
+  display: block;
+  margin-bottom: 8px;
+}
+.product-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+.product-strength {
+  padding: 12px 0;
+  border-top: 1px dashed var(--rule);
+}
+.product-strength:first-of-type {
+  border-top: 0;
+}
+.product-strength-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin: 6px 0;
+}
+.product-amount {
+  display: flex;
+  gap: 6px;
+}
+.product-amount .field-wrap:first-child {
+  width: 9rem;
+}
+.product-amount .field-wrap:last-child {
+  width: 6rem;
+}
+.product-problems {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--danger);
+}

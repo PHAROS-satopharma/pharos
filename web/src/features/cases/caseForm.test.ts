@@ -60,6 +60,34 @@ describe('e2bProblems', () => {
       'reaction 1 needs its MedDRA version (e.g. 28.1)',
     ]);
   });
+
+  it('asks each ingredient of a product for its name, a number and a unit the file knows', () => {
+    const combo = {
+      name: 'Carvexa 6.25 mg / 5 mg',
+      role: 'suspect',
+      ingredients: [
+        { name: 'carvedilol', amount: 6.25, unit: 'mg' },
+        { name: 'ivabradine', amount: 5, unit: 'mg' },
+      ],
+    };
+    expect(e2bProblems({ ...FULL, products: [combo] }, true, 'confirmed')).toEqual([]);
+    const bad = {
+      ...combo,
+      ingredients: [
+        { name: '', amount: 6.25, unit: 'mg' },
+        { name: 'ivabradine', amount: 5, unit: 'tablets' },
+        { name: 'other', amount: -1, unit: 'mg' },
+        { name: 'named only', amount: null, unit: null },
+        { name: 'constructor', amount: 1, unit: 'constructor' },
+      ],
+    };
+    expect(e2bProblems({ ...FULL, products: [bad] }, true, 'confirmed')).toEqual([
+      'product 1 ingredient 1 needs its name',
+      'product 1 ingredient 2 needs its unit (mg, g, µg, mL, IU or %)',
+      'product 1 ingredient 3: the amount is not a number above zero',
+      'product 1 ingredient 5 needs its unit (mg, g, µg, mL, IU or %)',
+    ]);
+  });
 });
 
 describe('field helpers', () => {

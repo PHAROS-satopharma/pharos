@@ -11,6 +11,7 @@ import { Field, Input } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { Empty, ErrorNote, Loading, Notice } from '../../ui/States';
 import { Table } from '../../ui/Table';
+import { ProductPick, type PickState } from '../products/ProductPick';
 import { Tag } from '../../ui/Tag';
 import { PageHead, SectionHead } from '../../ui/Text';
 import {
@@ -47,6 +48,10 @@ export interface CaseRow {
   e2b_status: string | null;
   created_at: string;
   updated_at: string;
+  /** The product and its strength (0099), e.g. "Carvexa 6.25 mg / 5 mg"; null for a case of one ingredient. */
+  product_id: string | null;
+  product_strength_id: string | null;
+  product: string | null;
 }
 
 export const CASES_KEY = ['cases'] as const;
@@ -69,7 +74,7 @@ function NewCase() {
   const fileRef = useRef<HTMLInputElement>(null);
   const today = cairoToday();
   const [dayZero, setDayZero] = useState(today);
-  const [ingredient, setIngredient] = useState('');
+  const [pick, setPick] = useState<PickState>({ product: null, strength: null, ingredient: null });
   const [file, setFile] = useState<File | null>(null);
   const ingredients = useIngredients();
 
@@ -83,7 +88,9 @@ function NewCase() {
         file_name: file.name,
         data,
         day_zero: dayZero,
-        ingredient_id: ingredient || null,
+        ingredient_id: pick.product ? null : pick.ingredient,
+        product_id: pick.product,
+        strength_id: pick.product ? pick.strength : null,
       });
     },
     onSuccess: async (r) => {
@@ -124,14 +131,12 @@ function NewCase() {
             required
           />
         </Field>
-        <Field label="Ingredient" hint="Leave it to PHAROS when you are not sure">
-          <Select
-            value={ingredient}
-            onChange={(e) => setIngredient(e.target.value)}
-            placeholder="PHAROS will suggest it"
-            options={(ingredients.data ?? []).map((i) => ({ value: i.id, label: i.inn_en }))}
-          />
-        </Field>
+        <ProductPick
+          value={pick}
+          ingredients={ingredients.data ?? []}
+          onChange={(next) => setPick(next)}
+          placeholder="PHAROS will suggest it"
+        />
       </div>
       <div className="case-actions">
         <Button type="submit" variant="primary" busy={send.isPending} disabled={!file}>
@@ -214,7 +219,7 @@ export function CasesPage() {
                 <th scope="col">Case</th>
                 <th scope="col">Where it stands</th>
                 <th scope="col">Clock</th>
-                <th scope="col">Ingredient</th>
+                <th scope="col">Product or ingredient</th>
                 <th scope="col">Patient and reaction</th>
               </tr>
             </thead>
@@ -241,7 +246,10 @@ export function CasesPage() {
                       {c.serious === null ? 'Seriousness not decided' : c.serious ? 'Serious' : 'Not serious'}
                     </span>
                   </td>
-                  <td>{c.ingredient ?? '—'}</td>
+                  <td>
+                    {c.product ?? c.ingredient ?? '—'}
+                    {c.product && c.ingredient ? <span className="case-sub">{c.ingredient}</span> : null}
+                  </td>
                   <td>
                     {c.patient ?? '—'}
                     {c.reactions ? <span className="case-sub">{c.reactions}</span> : null}

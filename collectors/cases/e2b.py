@@ -6,8 +6,9 @@ worldwide unique case id ``<country>-<sender>-<case number>``, day zero as the d
 the most recent information, the type of report, seriousness overall); the primary source (C.2: name,
 qualification, organisation, country); the literature reference (C.4); the patient (D: initials, age, age group,
 sex, weight, birth date, history); each reaction (E.i: the verbatim words in their language, the MedDRA LLT code
-and version, onset, end, outcome, the seriousness criteria); each product (G.k: name, active ingredient, role,
-dose as text, route as text, indication, dates, batch, action taken); the narrative and the reporter's comment (H).
+and version, onset, end, outcome, the seriousness criteria); each product (G.k: name, each active ingredient with
+its strength — one G.k.2.3.r under the same product for each ingredient of a combination, 0099 —, role, dose as
+text, route as text, indication, dates, batch, action taken); the narrative and the reporter's comment (H).
 
 MedDRA codes are typed by the team on the case screen (PHAROS holds no MedDRA licence and never invents a code):
 a reaction without an LLT code and version stops the file, as do the four minimum criteria and a missing
@@ -29,6 +30,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from collectors.cases import schema
@@ -83,6 +85,10 @@ OBS = {"death": "34", "life_threatening": "21", "hospitalisation": "33", "disabi
        "weight": "7", "reaction": "29", "history": "18", "outcome": "27", "pregnant": "1", "action": "8", "causality": "20",
        "serious": "seriousness"}
 
+# An ingredient's unit as UCUM writes it (G.k.2.3.r.3b); the same map as UCUM in web/src/features/cases/caseForm.ts.
+UCUM_UNIT = {"mg": "mg", "g": "g", "µg": "ug", "mcg": "ug", "ug": "ug", "mL": "mL", "ml": "mL", "IU": "[iU]",
+             "%": "%"}
+
 _DAY = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")
 _LLT = re.compile(r"^\d{8}$")
 _VERSION = re.compile(r"^\d{1,2}\.\d$")
@@ -98,6 +104,43 @@ def hl7_date(value: Any) -> str | None:
     return v.replace("-", "") if _DAY.match(v) else None
 
 
+def _filled(v: Any) -> bool:
+    return v is not None and str(v).strip() != ""
+
+
+def amount_text(v: Any) -> str | None:
+    """An ingredient's amount as the file writes it (6.25, 5, 0.5), or None when it is not a number above zero."""
+    try:
+        n = Decimal(str(v).strip())
+    except (InvalidOperation, ValueError):
+        return None
+    if not n.is_finite() or n <= 0:
+        return None
+    return f"{n.normalize():f}"
+
+
+def ingredient_problems(products: list[dict] | None) -> list[str]:
+    """What an ingredient line of a product lacks for the file (the same checks as ingredientProblems() in the app)."""
+    out: list[str] = []
+    for k, p in enumerate(products or [], 1):
+        if not _filled(p.get("name")):
+            continue
+        for j, x in enumerate(p.get("ingredients") or [], 1):
+            said = f"product {k} ingredient {j}"
+            has_amount = _filled(x.get("amount"))
+            if not _filled(x.get("name")):
+                if has_amount:
+                    out.append(f"{said} needs its name")
+                continue
+            if not has_amount:
+                continue
+            if amount_text(x.get("amount")) is None:
+                out.append(f"{said}: the amount is not a number above zero")
+            if str(x.get("unit") or "").strip() not in UCUM_UNIT:
+                out.append(f"{said} needs its unit (mg, g, µg, mL, IU or %)")
+    return out
+
+
 def problems(case: dict) -> list[str]:
     """Why the file cannot be made yet, in plain words (empty when it can)."""
     data = case.get("data") or {}
@@ -106,6 +149,7 @@ def problems(case: dict) -> list[str]:
         out.append("seriousness is not decided")
     if case.get("status") not in ("confirmed", "sent"):
         out.append("the case is not confirmed")
+    out += ingredient_problems(data.get("products"))
     for i, r in enumerate(data.get("reactions") or [], 1):
         if not (r.get("verbatim") or "").strip():
             continue
@@ -287,7 +331,20 @@ def build_xml(case: dict, now: datetime | None = None) -> bytes:
             el(lot, "lotNumberText", None, str(p["batch"])[:35])                            # G.k.4.r.7
         product = el(kind, "kindOfProduct", {"classCode": "MMAT", "determinerCode": "KIND"})
         el(product, "name", None, str(p["name"])[:250])                                     # G.k.2.2
-        if p.get("active_ingredient"):
+        parts = [x for x in p.get("ingredients") or [] if _filled(x.get("name"))]
+        if parts:
+            # G.k.2.3.r: one ingredient per component of the product, each with its strength.
+            for x in parts:
+                ing = el(product, "ingredient", {"classCode": "ACTI"})
+                amount = amount_text(x.get("amount")) if _filled(x.get("amount")) else None
+                if amount is not None:
+                    qty = el(ing, "quantity")
+                    el(qty, "numerator", {"value": amount,
+                                          "unit": UCUM_UNIT[str(x.get("unit") or "").strip()]})  # G.k.2.3.r.3a/3b
+                    el(qty, "denominator", {"value": "1"})
+                el(el(ing, "ingredientSubstance", {"classCode": "MMAT", "determinerCode": "KIND"}), "name",
+                   None, str(x["name"]).strip()[:250])                                       # G.k.2.3.r.1
+        elif p.get("active_ingredient"):
             ing = el(el(product, "ingredient", {"classCode": "ACTI"}), "ingredientSubstance",
                      {"classCode": "MMAT", "determinerCode": "KIND"})
             el(ing, "name", None, str(p["active_ingredient"])[:250])                       # G.k.2.3.r.1

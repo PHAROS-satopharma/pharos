@@ -6,6 +6,7 @@ import { Layout } from './Layout';
 import { SignIn } from '../features/signin/SignIn';
 import { IngredientsPage } from '../features/ingredients/IngredientsPage';
 import { IngredientScreen } from '../features/screen/IngredientScreen';
+import { ProductsPage } from '../features/products/ProductsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { PeoplePage } from '../features/people/PeoplePage';
 import { MePage, PasswordForm } from '../features/me/MePage';
@@ -123,6 +124,7 @@ export function AppRoutes() {
         <Route index element={<Navigate to={HOME} replace />} />
         <Route path="ingredients" element={<IngredientsPage />} />
         <Route path="ingredients/:id" element={<IngredientScreen />} />
+        <Route path="products" element={<ProductsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="cases" element={<CasesPage />} />

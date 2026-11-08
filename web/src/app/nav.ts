@@ -5,11 +5,13 @@ export interface Tab {
 }
 
 /**
- * The three screening tabs, in the order she works: one ingredient across every source (vertical), each
- * authority's new items (horizontal), then the reports (daily and weekly). Everyone sees them.
+ * The screening tabs, in the order she works: one ingredient across every source (vertical), our products (0099:
+ * each with its ingredients and strengths, beside Ingredients), each authority's new items (horizontal), then the
+ * reports (daily and weekly). Everyone sees them.
  */
 export const SCREENING_TABS: readonly Tab[] = [
   { to: '/ingredients', label: 'Ingredients' },
+  { to: '/products', label: 'Products' },
   { to: '/sources', label: 'Sources' },
   { to: '/reports', label: 'Reports' },
 ];
@@ -18,7 +20,7 @@ export const SCREENING_TABS: readonly Tab[] = [
  *  reviewer or an administrator opens and confirms them). */
 export const CASES_TAB: Tab = { to: '/cases', label: 'Cases' };
 
-/** The tabs a person sees: the three screening tabs, Cases, and People (a setting) for the administrator who manages
+/** The tabs a person sees: the screening tabs, Cases, and People (a setting) for the administrator who manages
  *  the people only (person.manages_people, migration 0053: Dr Sama is an administrator without it). */
 export function tabsFor(managesPeople: boolean): Tab[] {
   const tabs = [...SCREENING_TABS, CASES_TAB];
