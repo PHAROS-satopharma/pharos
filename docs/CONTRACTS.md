@@ -213,6 +213,13 @@ is left alone (0038 sets `read_by`, `note` and, for a dead address, `url`). A pa
 `safety` with an empty `read_by` has a note starting "Not read:" that says why; a page whose address changed
 keeps her address in its note. `tests/test_regulator_pages.py` applies 0038 over the 0032 seed and checks both.
 
+Since 0098 (her feedback, 8 Nov 2026) an admin also writes her pages from the Sources screen
+(`web/src/features/sources/PageEdit.tsx`, rules in `pageRules.ts`): **Add a link** and **Change** write `regulator_id`,
+`kind`, `label`, `url` and `note` only, never `read_by` or `partial`, so a link she adds is one she opens herself;
+**Remove** deletes the row. **Add a local reference** inserts a `regulator` (id from its short name, `languages`
+`{en}`) and its first page. `regulator` is audited from 0098 (`audit_regulator_write`, and `audit_regulator_change`
+only when a row really changes, so the collector's catalogue upsert logs nothing); `supabase/tests/sources_she_edits.sql`.
+
 The feed rule (`(\.(xml|json|rss|atom)([?#]|$)|/(rss|feed|atom)(/|[?#]|$)|^https?://api\.)`, case-blind) is
 the same in `new_items()`, `web/src/features/sources/horizontal.ts` and `tests/test_regulator_pages.py`;
 the web test reads it from the migration. Subscription kind `new_items_digest` is the daily count of

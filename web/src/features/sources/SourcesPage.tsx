@@ -26,6 +26,7 @@ import {
   type SourceWithRegulator,
 } from './queries';
 import { AddSource } from './AddSource';
+import { AddAuthority, PageForm, RemovePage } from './PageEdit';
 import { useLabelWatchSources, watchLine } from './labelWatchLine';
 import { listLine, useListChecks, type ListCheckRow } from './listCheck';
 import {
@@ -74,6 +75,8 @@ interface CardShared {
   lists: Map<string, ListCheckRow>;
   totals: Map<string, RunTotals>;
   runsPending: boolean;
+  /** Every page of hers: a new link is checked against its authority's other links. */
+  allPages: RegulatorPage[];
   isAdmin: boolean;
   technical: boolean;
   onToggle: (id: string, enabled: boolean) => void;
@@ -87,6 +90,7 @@ export function SourcesPage() {
   const pages = useRegulatorPages();
   const hz = useHorizontal();
   const [adding, setAdding] = useState(false);
+  const [addingLocal, setAddingLocal] = useState(false);
   const [technical, setTechnical] = useState(false);
   const weekIso = hz.weekStart.toISOString();
   const runs = useQuery({
@@ -122,6 +126,7 @@ export function SourcesPage() {
     lists: lists.data ?? new Map(),
     totals,
     runsPending: runs.isPending,
+    allPages: pages.data ?? [],
     isAdmin,
     technical: isAdmin && technical,
     onToggle: (id, enabled) => toggle.mutate({ id, enabled }),
@@ -138,6 +143,9 @@ export function SourcesPage() {
           isAdmin ? (
             <>
               <Toggle checked={technical} onChange={setTechnical} label="Technical details" />
+              {!addingLocal ? (
+                <Button onClick={() => setAddingLocal(true)}>Add a local reference</Button>
+              ) : null}
               {!adding ? (
                 <Button variant="primary" onClick={() => setAdding(true)}>
                   Add a source
@@ -148,6 +156,9 @@ export function SourcesPage() {
         }
       />
       {adding ? <AddSource onDone={() => setAdding(false)} /> : null}
+      {addingLocal ? (
+        <AddAuthority regulators={hz.regulators} pages={pages.data ?? []} onDone={() => setAddingLocal(false)} />
+      ) : null}
       {shared.technical && summary.length > 0 ? (
         <StatRow label="Sources being read, by health">
           {summary.map((h) => (
@@ -236,14 +247,26 @@ function CountryCardView({ card, hz, ...rest }: CardShared & { card: Card }) {
         <p className="hz-regs">{card.regulators.map((r) => r.name).join(' · ')}</p>
       </header>
 
-      {card.pages.length > 0 ? (
+      {card.pages.length > 0 || rest.isAdmin ? (
         <div className="hz-block">
           <h3 className="hz-block-title">The pages you check</h3>
-          <ul className="hz-pages">
-            {card.pages.map((p) => (
-              <PageLine key={p.id} page={p} sources={sourcesById} />
-            ))}
-          </ul>
+          {card.pages.length > 0 ? (
+            <ul className="hz-pages">
+              {card.pages.map((p) => (
+                <PageLine
+                  key={p.id}
+                  page={p}
+                  sources={sourcesById}
+                  isAdmin={rest.isAdmin}
+                  regulators={card.regulators}
+                  allPages={rest.allPages}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="hz-nothing">No links of yours for this country yet.</p>
+          )}
+          {rest.isAdmin ? <AddLink regulators={card.regulators} allPages={rest.allPages} /> : null}
         </div>
       ) : null}
 
@@ -278,7 +301,33 @@ function CountryCardView({ card, hz, ...rest }: CardShared & { card: Card }) {
   );
 }
 
-function PageLine({ page, sources }: { page: RegulatorPage; sources: Map<string, SourceWithRegulator> }) {
+function AddLink({ regulators, allPages }: { regulators: CountryCard['regulators']; allPages: RegulatorPage[] }) {
+  const [open, setOpen] = useState(false);
+  return open ? (
+    <PageForm regulators={regulators} pages={allPages} onDone={() => setOpen(false)} />
+  ) : (
+    <div className="hz-edit-actions">
+      <Button size="sm" onClick={() => setOpen(true)}>
+        Add a link
+      </Button>
+    </div>
+  );
+}
+
+function PageLine({
+  page,
+  sources,
+  isAdmin,
+  regulators,
+  allPages,
+}: {
+  page: RegulatorPage;
+  sources: Map<string, SourceWithRegulator>;
+  isAdmin: boolean;
+  regulators: CountryCard['regulators'];
+  allPages: RegulatorPage[];
+}) {
+  const [editing, setEditing] = useState<'change' | 'remove' | null>(null);
   const status = pageStatus(page, sources);
   const href = safeHref(page.url);
   const watch = useLabelWatchSources();
@@ -296,6 +345,20 @@ function PageLine({ page, sources }: { page: RegulatorPage; sources: Map<string,
       <span className="hz-read">{status.label}</span>
       {status.note ? <span className="hz-note">{status.note}</span> : null}
       {watched ? <span className="hz-note">{watched}</span> : null}
+      {isAdmin && !editing ? (
+        <span className="hz-page-tools">
+          <Button size="sm" variant="quiet" onClick={() => setEditing('change')}>
+            Change
+          </Button>
+          <Button size="sm" variant="quiet" onClick={() => setEditing('remove')}>
+            Remove
+          </Button>
+        </span>
+      ) : null}
+      {editing === 'change' ? (
+        <PageForm regulators={regulators} pages={allPages} page={page} onDone={() => setEditing(null)} />
+      ) : null}
+      {editing === 'remove' ? <RemovePage page={page} onDone={() => setEditing(null)} /> : null}
     </li>
   );
 }
