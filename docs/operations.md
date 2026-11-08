@@ -1071,6 +1071,15 @@ SHA-256 shown on the case. Each reaction needs its MedDRA LLT code and version, 
 MedDRA browser (PHAROS holds no MedDRA licence and never invents a code). Until the first file has passed the
 Egyptian Drug Authority's gateway test, the file is a prepared draft to check before sending.
 
+**The CIOMS I form.** For a confirmed or sent case, **Open the CIOMS I form** makes the one-page CIOMS I suspect
+adverse reaction report in the browser (`web/src/features/cases/cioms.ts`) and opens it in a new tab, where it is
+saved as PDF and attached to the e-mail to the authority. It needs the four minimum criteria and the seriousness
+decision but no MedDRA code: the reactions go in English with the reporter's own words beside them, and a typed
+MedDRA code and version are printed beside a reaction only when there. It is the route while PHAROS has no MedDRA
+subscription (asked of MSSO on 8 Nov 2026). The form is not archived by PHAROS; the sent PDF is the record, with the
+day and reference written on the case when it is marked sent. Dechallenge and rechallenge (boxes 20–21) are printed
+as not stated, since the case does not hold them.
+
 **History.** Every step (received, read, saved, confirmed, not valid, sent, reopened, the E2B file, notes) is one
 row in `case_event`, append-only, with the person (or PHAROS) and a copy of the form at each save and
 confirmation.
