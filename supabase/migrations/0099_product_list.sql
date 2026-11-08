@@ -28,6 +28,21 @@ alter table product
   add column dosage_form text,
   add column active      boolean not null default true,
   add column created_by  uuid references person(id);
+-- The name rules below would stop the deploy half-way on rows that break them. Nothing has written product before
+-- this migration (0001 made the table; no app screen, function or collector inserts into it), but a row added by
+-- hand would: the deploy stops here first and names the rows to fix.
+do $$
+declare v_bad text;
+begin
+  select string_agg(format('%s (%s)', coalesce(nullif(trim(name), ''), '<no name>'), id), '; ' order by name)
+    into v_bad
+    from product p
+   where length(trim(coalesce(p.name, ''))) = 0
+      or exists (select 1 from product o where o.id <> p.id and lower(trim(o.name)) = lower(trim(p.name)));
+  if v_bad is not null then
+    raise exception 'Products with no name or one name twice (fix or merge them, then deploy again): %', v_bad;
+  end if;
+end $$;
 create unique index product_name_unique on product (lower(trim(name)));
 alter table product add constraint product_name_given check (length(trim(name)) > 0);
 
@@ -100,6 +115,7 @@ declare
   v_amount   numeric;
   v_label    text;
   v_n        int;
+  v_old      text;
 begin
   if v_person is null or my_role() is distinct from 'admin' then
     raise exception 'Only an administrator can change the product list.' using errcode = '42501';
@@ -151,6 +167,13 @@ begin
      where id = v_id;
   end if;
 
+  -- A product a case names keeps its ingredients: the case's suspect drug was that combination.
+  if exists (select 1 from safety_case where product_id = v_id)
+     and exists (select 1 from product_ingredient where product_id = v_id and not (ingredient_id = any(v_ings))) then
+    raise exception 'A case names this product: its ingredients cannot be taken off. Add a new product instead.'
+      using errcode = '22023';
+  end if;
+
   -- The ingredients: an ingredient taken off the product takes its amounts with it (the strengths are rebuilt).
   delete from product_ingredient where product_id = v_id and not (ingredient_id = any(v_ings));
   insert into product_ingredient (product_id, ingredient_id)
@@ -181,6 +204,9 @@ begin
       returning id into v_sid;
     else
       update product_strength set sort = v_sort where id = v_sid;
+      -- A strength a case names keeps its amounts (checked once the new ones are in, below).
+      select string_agg(ingredient_id || ':' || trim_scale(amount) || ' ' || unit, ',' order by ingredient_id)
+        into v_old from product_strength_part where strength_id = v_sid;
       delete from product_strength_part where strength_id = v_sid;
     end if;
     for v_part in select * from jsonb_array_elements(v_s -> 'parts') loop
@@ -199,6 +225,14 @@ begin
       insert into product_strength_part (strength_id, product_id, ingredient_id, amount, unit)
       values (v_sid, v_id, (v_part ->> 'ingredient_id')::uuid, v_amount, v_unit);
     end loop;
+    if exists (select 1 from safety_case where product_strength_id = v_sid)
+       and v_old is distinct from (select string_agg(ingredient_id || ':' || trim_scale(amount) || ' ' || unit, ','
+                                                     order by ingredient_id)
+                                     from product_strength_part where strength_id = v_sid) then
+      raise exception 'A case names strength %: its amounts cannot change. Add a new strength instead.', v_sort
+        using errcode = '22023';
+    end if;
+    v_old := null;
     v_label := coalesce(nullif(trim(v_s ->> 'label'), ''), product_strength_label(v_sid));
     if exists (select 1 from product_strength where product_id = v_id and label = v_label and id <> v_sid) then
       raise exception 'Two strengths of the product are both %.', v_label using errcode = '23505';
@@ -326,7 +360,7 @@ end $$;
 
 drop function save_case(uuid, timestamptz, jsonb, boolean, uuid, text);
 create function save_case(p_case uuid, p_seen timestamptz, p_data jsonb, p_serious boolean, p_ingredient uuid,
-                          p_comment text default null, p_product uuid default null, p_strength uuid default null)
+                          p_comment text, p_product uuid, p_strength uuid)
 returns timestamptz language plpgsql security definer set search_path = public as $$
 declare
   v_person uuid := case_require_reviewer();
@@ -350,7 +384,7 @@ end $$;
 -- Confirms the case: the four minimum criteria, a product or an ingredient, and the seriousness.
 drop function confirm_case(uuid, timestamptz, jsonb, boolean, uuid, text);
 create function confirm_case(p_case uuid, p_seen timestamptz, p_data jsonb, p_serious boolean, p_ingredient uuid,
-                             p_comment text default null, p_product uuid default null, p_strength uuid default null)
+                             p_comment text, p_product uuid, p_strength uuid)
 returns timestamptz language plpgsql security definer set search_path = public as $$
 declare
   v_person  uuid := case_require_reviewer();
@@ -393,6 +427,9 @@ grant execute on function
   save_case(uuid, timestamptz, jsonb, boolean, uuid, text, uuid, uuid),
   confirm_case(uuid, timestamptz, jsonb, boolean, uuid, text, uuid, uuid)
   to authenticated;
+-- A checker the case functions call (as their owner), never a caller: Supabase's default privileges grant every
+-- new function to authenticated, and this one is security definer with no role check of its own.
+revoke all on function case_check_product(uuid, uuid, uuid, uuid) from authenticated;
 
 -- ───────────────────────────── the list of cases ─────────────────────────────
 -- 0059's columns unchanged; the product and its strength are added at the end.

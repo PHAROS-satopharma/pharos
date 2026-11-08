@@ -83,9 +83,9 @@ update safety_case set status = 'to_confirm', updated_at = now(),
  where id = :'pc';
 select updated_at as seen1, data::text as form1 from safety_case where id = :'pc' \gset
 set role authenticated;
-select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, true, null)$q$, :'pc', :'seen1', :'form1')) as r_neither \gset
+select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, true, null, null, null, null)$q$, :'pc', :'seen1', :'form1')) as r_neither \gset
 select pg_temp.refused(format($q$select confirm_case(%L, %L, %L, true, null, null, %L, %L)$q$, :'pc', :'seen1', :'form1', :'prod', :'s1'::text || 'x')) as r_badstr \gset
-select pg_temp.refused(format($q$select save_case(%L, %L, '{"products": [{"name": "x", "ingredients": "6.25 mg"}]}', true, null, null, %L)$q$, :'pc', :'seen1', :'prod')) as r_shape \gset
+select pg_temp.refused(format($q$select save_case(%L, %L, '{"products": [{"name": "x", "ingredients": "6.25 mg"}]}', true, null, null, %L, null)$q$, :'pc', :'seen1', :'prod')) as r_shape \gset
 select confirm_case(:'pc', :'seen1', :'form1', true, null, 'Checked', :'prod', :'s2') as seen2 \gset
 reset role;
 select pg_temp.ci_assert(:'r_neither' like '%Choose the ingredient or the product%',
@@ -113,6 +113,41 @@ select pg_temp.refused(format($q$select save_product(jsonb_set(%L::jsonb, '{id}'
   || jsonb_build_object('strengths', jsonb_build_array(jsonb_build_object('id', %L::text, 'parts',
        '[{"ingredient_id": "00000000-0000-0000-0000-00000099a001", "amount": 6.25}, {"ingredient_id": "00000000-0000-0000-0000-00000099a002", "amount": 5}]'::jsonb))))$q$,
   :carvexa, :'prod', :'s1')) as r_dropused \gset
+-- A product a case names keeps its ingredients, and a strength a case names keeps its amounts.
+\set ca '''00000000-0000-0000-0000-00000099a001'''
+\set iv '''00000000-0000-0000-0000-00000099a002'''
+select pg_temp.refused(format($q$select save_product(jsonb_build_object('id', %L::text, 'name', 'CI Carvexa',
+  'ingredients', jsonb_build_array(%L::text),
+  'strengths', jsonb_build_array(
+    jsonb_build_object('id', %L::text, 'parts', jsonb_build_array(jsonb_build_object('ingredient_id', %L::text, 'amount', 6.25))),
+    jsonb_build_object('id', %L::text, 'parts', jsonb_build_array(jsonb_build_object('ingredient_id', %L::text, 'amount', 12.5))))))$q$,
+  :'prod', :ca, :'s1', :ca, :'s2', :ca)) as r_dropingredient \gset
+select pg_temp.refused(format($q$select save_product(jsonb_build_object('id', %L::text, 'name', 'CI Carvexa',
+  'ingredients', jsonb_build_array(%L::text, %L::text),
+  'strengths', jsonb_build_array(
+    jsonb_build_object('id', %L::text, 'parts', jsonb_build_array(jsonb_build_object('ingredient_id', %L::text, 'amount', 6.25),
+                                                                   jsonb_build_object('ingredient_id', %L::text, 'amount', 5))),
+    jsonb_build_object('id', %L::text, 'parts', jsonb_build_array(jsonb_build_object('ingredient_id', %L::text, 'amount', 25),
+                                                                   jsonb_build_object('ingredient_id', %L::text, 'amount', 7.5))))))$q$,
+  :'prod', :ca, :iv, :'s1', :ca, :iv, :'s2', :ca, :iv)) as r_changeused \gset
+select save_product(jsonb_build_object('id', :'prod', 'name', 'CI Carvexa',
+  'ingredients', jsonb_build_array(:ca::text, :iv::text),
+  'strengths', jsonb_build_array(
+    jsonb_build_object('id', :'s1', 'parts', jsonb_build_array(jsonb_build_object('ingredient_id', :ca::text, 'amount', 6.25),
+                                                               jsonb_build_object('ingredient_id', :iv::text, 'amount', 5))),
+    jsonb_build_object('id', :'s2', 'parts', jsonb_build_array(jsonb_build_object('ingredient_id', :ca::text, 'amount', '12.50'),
+                                                               jsonb_build_object('ingredient_id', :iv::text, 'amount', 7.5, 'unit', 'mg'))))))
+  ->> 'outcome' as resaved \gset
+reset role;
+select pg_temp.ci_assert(:'r_dropingredient' like '%ingredients cannot be taken off%',
+  'an ingredient is never taken off a product a case names');
+select pg_temp.ci_assert(:'r_changeused' like '%its amounts cannot change%', 'a strength a case names keeps its amounts');
+select pg_temp.ci_assert(:'resaved' = 'saved'
+                         and (select count(*) = 2 from product_ingredient where product_id = :'prod')
+                         and (select string_agg(trim_scale(amount)::text, ' / ' order by ingredient_id)
+                                from product_strength_part where strength_id = :'s2') = '12.5 / 7.5',
+  'the same amounts written another way save, and nothing changed');
+set role authenticated;
 select save_product(jsonb_build_object('id', :'prod', 'remove', true)) ->> 'outcome' as removed \gset
 select save_product('{"name": "CI Lonely", "ingredients": ["00000000-0000-0000-0000-00000099a003"], "strengths": [{"label": "8 mg", "parts": [{"ingredient_id": "00000000-0000-0000-0000-00000099a003", "amount": 8}]}]}') ->> 'id' as lonely \gset
 select save_product(jsonb_build_object('id', :'lonely', 'remove', true)) ->> 'outcome' as removed2 \gset
@@ -129,3 +164,9 @@ set role authenticated;
 select pg_temp.refused(format($q$select create_upload_case('q.pdf', 'application/pdf', %L, 100, case_cairo_today(), null, %L)$q$, :sha, :'prod')) as r_archived \gset
 reset role;
 select pg_temp.ci_assert(:'r_archived' like '%archived%', 'an archived product is not offered for a new case');
+
+select pg_temp.ci_assert(not has_function_privilege('authenticated', 'public.case_check_product(uuid, uuid, uuid, uuid)', 'execute')
+                         and not has_function_privilege('anon', 'public.case_check_product(uuid, uuid, uuid, uuid)', 'execute'),
+  'the case functions'' product check is not callable by a signed-in user');
+select pg_temp.ci_assert(not exists (select 1 from pg_proc where proname in ('save_case', 'confirm_case') and pronargdefaults > 0),
+  'save_case and confirm_case take every argument: an old tab''s call fails instead of clearing the product');

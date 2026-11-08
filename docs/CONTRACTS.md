@@ -688,8 +688,8 @@ safety_case (+ product_id uuid → product, product_strength_id uuid; fk (produc
              product_strength (id, product_id); check product_strength_id is null or product_id is not null)
 create_upload_case(p_file_name, p_mime, p_sha256, p_bytes, p_day_zero, p_ingredient uuid default null,
                    p_product uuid default null, p_strength uuid default null) returns uuid
-save_case(p_case, p_seen, p_data, p_serious, p_ingredient, p_comment default null,
-          p_product uuid default null, p_strength uuid default null) returns timestamptz
+save_case(p_case, p_seen, p_data, p_serious, p_ingredient, p_comment,
+          p_product uuid, p_strength uuid) returns timestamptz   -- no defaults: an old tab's call fails, never clears the product
 confirm_case(… the same …) returns timestamptz
   -- 0059's rules, and: a strength needs its product; a product must be on the list (an archived one only when
   -- the case already names it); the strength must be the product's; an ingredient given with a product must be
