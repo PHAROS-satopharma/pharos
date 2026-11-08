@@ -51,7 +51,7 @@ insert into literature_ref (scope, name, url, searched_in, journal_like, note, s
   ('global', 'PubMed (NCBI)', 'https://pubmed.ncbi.nlm.nih.gov/', '{pubmed}', null,
    'Searched by the app every day: the ingredient''s name and its class words, in titles and abstracts.', 10, null),
   ('global', 'PubMed Central (NCBI)', 'https://pmc.ncbi.nlm.nih.gov/', '{pmc}', null,
-   'Searched by the app every day: the full text of the open papers.', 20, null),
+   'Searched by the app every day: the ingredient''s name and its class words, in titles and abstracts.', 20, null),
   ('global', 'Europe PMC', 'https://europepmc.org/', '{europepmc}', null,
    'Searched by the app every day, with the preprints.', 30, null),
   ('global', 'Cochrane Database of Systematic Reviews', 'https://www.cochranelibrary.com/', '{pubmed,europepmc}',
@@ -68,7 +68,7 @@ insert into literature_ref (scope, name, url, searched_in, journal_like, note, s
 -- ───────────────────────────── 2. every search, with its count ─────────────────────────────
 create table literature_search_log (
   id           bigint generated always as identity primary key,
-  run_id       uuid references run(id) on delete set null,
+  run_id       uuid references run(id),
   source_id    text not null references source(id),
   db           text not null check (db in ('pubmed', 'pmc', 'europepmc')),
   query        text not null check (query <> '' and query = lower(query)),
@@ -91,6 +91,17 @@ revoke all on literature_search_log from anon;
 revoke insert, update, delete, truncate on literature_search_log from authenticated;
 grant select on literature_search_log to authenticated;
 
+-- Evidence: a search or a check, once written, is never changed or removed, by anyone (the owner and the service
+-- key included), as sign_off (0030) and audit_log (0046).
+create function literature_evidence_immutable() returns trigger language plpgsql as $$
+begin
+  raise exception 'A recorded literature search or check is never changed or removed.' using errcode = '42501';
+end $$;
+create trigger literature_search_log_no_change before update or delete on literature_search_log
+  for each row execute function literature_evidence_immutable();
+create trigger literature_search_log_no_truncate before truncate on literature_search_log
+  for each statement execute function literature_evidence_immutable();
+
 -- ───────────────────────────── 3. hand checks ─────────────────────────────
 create table literature_check (
   id          uuid primary key default gen_random_uuid(),
@@ -109,8 +120,12 @@ create policy literature_check_read on literature_check for select to authentica
 revoke all on literature_check from anon;
 revoke insert, update, delete, truncate on literature_check from authenticated;
 grant select on literature_check to authenticated;
-create trigger audit_literature_check after insert or update or delete on literature_check
+create trigger audit_literature_check after insert on literature_check
   for each row execute function audit_row();
+create trigger literature_check_no_change before update or delete on literature_check
+  for each row execute function literature_evidence_immutable();
+create trigger literature_check_no_truncate before truncate on literature_check
+  for each statement execute function literature_evidence_immutable();
 
 create function record_literature_check(p_ref uuid, p_result text, p_note text default null)
 returns uuid language plpgsql security definer set search_path = public as $$
@@ -139,12 +154,20 @@ revoke all on function record_literature_check(uuid, text, text) from public, an
 grant execute on function record_literature_check(uuid, text, text) to authenticated;
 
 -- ───────────────────────────── 4. each reference, for some days ─────────────────────────────
--- One object per active reference, in her order:
---   id, scope, name, url, note, by_hand (true when the app does not search it), searched_in, journal_like,
---   searches (searches sent in those days for the ingredient's words, or for any word with no ingredient),
---   last_searched, hits (what the databases returned, summed), found (the ingredient's papers of those days that
---   these databases found; null with no ingredient), check (the latest hand check in those days: result, note,
---   checked_at, checked_by (a name)).
+-- One object per reference, in her order: every active one, and one removed since that has a hand check in those
+-- days (its record stays in the reports).
+--   id, scope, name, url, note, active, by_hand (true when the app does not search it), searched_in, journal_like
+--   searches       searches sent in those days for the ingredient's words (any word with no ingredient)
+--   name_searches  of them, for the ingredient's own name: a week with none never says "nothing found", even when
+--                  its class words (shared with other ingredients) were searched
+--   last_searched, hits (what the databases returned, summed over overlapping windows: not a paper count)
+--   failed_reads   reads of these databases' sources that failed in those days: then the days were not fully
+--                  searched, and nothing is claimed
+--   found          the ingredient's literature papers first found in those days by these databases (null with no
+--                  ingredient, or for a hand-checked one)
+--   checks, found_checks, and check: the hand check that speaks for those days — the latest one that found
+--                  something, else the latest one (result, note, checked_at, checked_by (a name))
+-- With no ingredient: every search of those days.
 create function literature_refs_week(p_ingredient uuid, p_from date, p_to date) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -152,6 +175,7 @@ declare
   v_to      timestamptz := (p_to + 1)::timestamp at time zone 'Africa/Cairo';
   v_classes uuid[];
   v_lit     uuid[];
+  v_name    text;
   v_words   text[];
 begin
   if p_ingredient is not null then
@@ -160,8 +184,9 @@ begin
            coalesce(array_agg(ic.class_id) filter (where ic.enabled and ic.literature), '{}')
       into v_classes, v_lit
       from ingredient_class ic where ic.ingredient_id = p_ingredient;
+    select lower(regexp_replace(btrim(i.inn_en), '\s+', ' ', 'g')) into v_name from ingredient i where i.id = p_ingredient;
     select array_agg(w) into v_words from (
-      select lower(regexp_replace(btrim(i.inn_en), '\s+', ' ', 'g')) as w from ingredient i where i.id = p_ingredient
+      select v_name as w
       union
       select lower(regexp_replace(btrim(ct.term), '\s+', ' ', 'g'))
         from class_term ct where ct.class_id = any (v_lit) and ct.lang = 'en') x;
@@ -179,10 +204,21 @@ begin
 
   return coalesce((
     with log as (
-      select l.db, l.hits, l.searched_at
+      select l.db, l.query, l.hits, l.searched_at
         from literature_search_log l
        where l.searched_at >= v_from and l.searched_at < v_to
          and (p_ingredient is null or l.query = any (v_words))
+    ),
+    -- the reads of the literature sources in those days that failed; each database is read by its parser's source
+    fails as (
+      select d.db, count(*) as n
+        from source_run sr
+        join source s on s.id = sr.source_id and s.kind = 'literature'
+        join (values ('pubmed', 'pubmed'), ('pmc', 'pubmed'), ('europepmc', 'europepmc')) as d(db, parser)
+          on d.parser = s.parser
+       where sr.started_at >= v_from and sr.started_at < v_to
+         and source_run_failed(sr.error)
+       group by d.db
     ),
     papers as (
       select d.structured
@@ -194,15 +230,24 @@ begin
         join document d on d.id = h.doc_id
         join source s on s.id = d.source_id
        where s.kind = 'literature'
-         and coalesce(d.published_date, (d.first_seen_at at time zone 'Africa/Cairo')::date) between p_from and p_to
+         and d.first_seen_at >= v_from and d.first_seen_at < v_to
+    ),
+    refs as (
+      select r.* from literature_ref r
+       where r.active
+          or exists (select 1 from literature_check c
+                      where c.ref_id = r.id and c.checked_at >= v_from and c.checked_at < v_to)
     )
     select jsonb_agg(jsonb_build_object(
-             'id', r.id, 'scope', r.scope, 'name', r.name, 'url', r.url, 'note', r.note,
+             'id', r.id, 'scope', r.scope, 'name', r.name, 'url', r.url, 'note', r.note, 'active', r.active,
              'by_hand', cardinality(r.searched_in) = 0,
              'searched_in', to_jsonb(r.searched_in), 'journal_like', r.journal_like,
              'searches', (select count(*) from log where log.db = any (r.searched_in)),
+             'name_searches', (select count(*) from log where log.db = any (r.searched_in)
+                                                          and (p_ingredient is null or log.query = v_name)),
              'last_searched', (select max(log.searched_at) from log where log.db = any (r.searched_in)),
              'hits', (select coalesce(sum(log.hits), 0) from log where log.db = any (r.searched_in)),
+             'failed_reads', (select coalesce(sum(f.n), 0) from fails f where f.db = any (r.searched_in)),
              'found', case when p_ingredient is null or cardinality(r.searched_in) = 0 then null else
                         (select count(*) from papers pp
                           where jsonb_typeof(pp.structured -> 'found_in') = 'array'
@@ -211,14 +256,18 @@ begin
                                  or coalesce(pp.structured ->> 'journal', '')
                                     ilike '%' || replace(replace(replace(r.journal_like, '\', '\\'), '%', '\%'),
                                                          '_', '\_') || '%')) end,
+             'checks', (select count(*) from literature_check c
+                         where c.ref_id = r.id and c.checked_at >= v_from and c.checked_at < v_to),
+             'found_checks', (select count(*) from literature_check c
+                               where c.ref_id = r.id and c.result = 'found'
+                                 and c.checked_at >= v_from and c.checked_at < v_to),
              'check', (select jsonb_build_object('result', c.result, 'note', c.note, 'checked_at', c.checked_at,
                                                  'checked_by', coalesce(p.full_name, 'a former member'))
                          from literature_check c left join person p on p.id = c.checked_by
                         where c.ref_id = r.id and c.checked_at >= v_from and c.checked_at < v_to
-                        order by c.checked_at desc limit 1))
+                        order by c.result = 'found' desc, c.checked_at desc limit 1))
            order by r.scope, r.sort, lower(r.name))
-      from literature_ref r
-     where r.active), '[]'::jsonb);
+      from refs r), '[]'::jsonb);
 end $$;
 revoke all on function literature_refs_week(uuid, date, date) from public, anon;
 grant execute on function literature_refs_week(uuid, date, date) to authenticated;

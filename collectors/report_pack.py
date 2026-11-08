@@ -298,10 +298,10 @@ def gather_psur(db: Any, req: dict, check: Callable[[], None] = _no_check) -> di
         # her literature references (0101): the searches of each chunk, and the papers each database found
         for r in (db.fetchone("select literature_refs_week(%(i)s::uuid, %(f)s, %(t)s) as refs", p) or {}).get(
                 "refs") or []:
-            have = refs.setdefault(str(r.get("id")), {**r, "searches": 0, "hits": 0, "last_searched": None,
-                                                      "found": None})
-            have["searches"] += int(r.get("searches") or 0)
-            have["hits"] += int(r.get("hits") or 0)
+            have = refs.setdefault(str(r.get("id")), {**r, "searches": 0, "name_searches": 0, "hits": 0,
+                                                      "failed_reads": 0, "last_searched": None, "found": None})
+            for key in ("searches", "name_searches", "hits", "failed_reads"):
+                have[key] += int(r.get(key) or 0)
             if r.get("last_searched") and str(r["last_searched"]) > str(have["last_searched"] or ""):
                 have["last_searched"] = r["last_searched"]
             if r.get("found") is not None:
@@ -637,15 +637,27 @@ def _ref_row(r: dict, checks: dict | None) -> dict:
         found_n = int((checks or {}).get("found") or 0)
         screened = (f"Checked by hand {rw.plural(n, 'time', 'times')} in these days, "
                     f"last {cairo_time((checks or {}).get('last_at'))}" if n else "Not checked by hand in these days")
-        found = "" if not n else ("Nothing found" if not found_n else
-                                  f"Found something in {rw.plural(found_n, 'check', 'checks')}")
+        found = "Not checked" if not n else ("Nothing found" if not found_n else
+                                             f"Found something in {rw.plural(found_n, 'check', 'checks')}")
     else:
+        # as the weekly report: "Nothing found" only when the name was searched and no read failed
         s = int(r.get("searches") or 0)
+        named = int(r.get("name_searches") if r.get("name_searches") is not None else s)
+        failed = int(r.get("failed_reads") or 0)
         screened = (f"Searched by the app {rw.plural(s, 'time', 'times')} in these days"
                     + (f", last {cairo_time(r['last_searched'])}" if r.get("last_searched") else "")
-                    if s else "No search recorded in these days")
+                    if s else "Not searched by the app in these days")
+        if failed:
+            screened += f"; {rw.plural(failed, 'read', 'reads')} failed"
         n = r.get("found")
-        found = "" if n is None else ("Nothing found" if int(n) == 0 else rw.plural(int(n), "paper", "papers"))
+        if n is not None and int(n) > 0:
+            found = rw.plural(int(n), "paper", "papers")
+        elif not s or not named:
+            found = "Not searched — check by hand"
+        elif failed:
+            found = "Not fully searched — check by hand"
+        else:
+            found = "" if n is None else "Nothing found"
     return {"scope": rw.SCOPE_TITLE.get(r.get("scope"), r.get("scope") or ""), "name": r.get("name") or "",
             "url": rw.safe_link(r.get("url")), "screened": screened, "found": found}
 

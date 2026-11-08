@@ -154,7 +154,7 @@ function RefLine({
   isAdmin: boolean;
   canReview: boolean;
 }) {
-  const [editing, setEditing] = useState<'change' | 'remove' | 'found' | null>(null);
+  const [editing, setEditing] = useState<'change' | 'remove' | 'nothing' | 'found' | null>(null);
   const status = week ? refStatus(week, formatDateTime) : null;
   const href = r.url ? safeHref(r.url) : null;
   const byHand = r.searched_in.length === 0;
@@ -174,7 +174,9 @@ function RefLine({
         <span className="hz-page-tools">
           {byHand && canReview ? (
             <>
-              <CheckedNothing refId={r.id} />
+              <Button size="sm" onClick={() => setEditing('nothing')}>
+                Checked: nothing found
+              </Button>
               <Button size="sm" variant="quiet" onClick={() => setEditing('found')}>
                 Checked: found something
               </Button>
@@ -192,6 +194,7 @@ function RefLine({
           ) : null}
         </span>
       ) : null}
+      {editing === 'nothing' ? <CheckedNothing refRow={r} onDone={() => setEditing(null)} /> : null}
       {editing === 'found' ? <CheckedFound refRow={r} onDone={() => setEditing(null)} /> : null}
       {editing === 'change' ? (
         <RefForm scope={r.scope} refs={all} refRow={r} onDone={() => setEditing(null)} />
@@ -201,20 +204,33 @@ function RefLine({
   );
 }
 
-function CheckedNothing({ refId }: { refId: string }) {
+/** "Nothing found", asked twice: a recorded check is kept for the inspection and never changed. */
+function CheckedNothing({ refRow: r, onDone }: { refRow: LiteratureRef; onDone: () => void }) {
   const refresh = useRefresh();
   const save = useMutation({
     mutationFn: async () =>
-      unwrap<string>(await supabase.rpc('record_literature_check', { p_ref: refId, p_result: 'nothing' })),
-    onSuccess: () => refresh(),
+      unwrap<string>(await supabase.rpc('record_literature_check', { p_ref: r.id, p_result: 'nothing' })),
+    onSuccess: async () => {
+      await refresh();
+      onDone();
+    },
   });
   return (
-    <>
-      <Button size="sm" busy={save.isPending} onClick={() => save.mutate()}>
-        Checked: nothing found
-      </Button>
+    <div className="hz-edit" role="group" aria-label={`Record a check of ${r.name}`}>
+      <p>
+        Record that you searched <strong>{r.name}</strong> for every ingredient on the watchlist today and found
+        nothing? The check is kept for the inspection and cannot be changed.
+      </p>
       {save.isError ? <Notice tone="error">Not recorded: {errorMessage(save.error)}</Notice> : null}
-    </>
+      <div className="hz-edit-actions">
+        <Button variant="primary" busy={save.isPending} onClick={() => save.mutate()}>
+          Record: nothing found
+        </Button>
+        <Button variant="quiet" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -369,7 +385,7 @@ function RemoveRef({ refRow: r, onDone }: { refRow: LiteratureRef; onDone: () =>
     <div className="hz-edit hz-remove" role="group" aria-label={`Remove ${r.name}`}>
       <p>
         Remove <strong>{r.name}</strong> from the {SCOPE_TITLE[r.scope]} list? The checks already recorded for it
-        stay on record.
+        stay in the reports of the weeks they were made.
       </p>
       {remove.isError ? <Notice tone="error">Not removed: {errorMessage(remove.error)}</Notice> : null}
       <div className="hz-edit-actions">

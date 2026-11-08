@@ -783,26 +783,45 @@ SCOPE_TITLE = {"global": "Global", "local": "Local"}
 
 def literature_ref_row(r: dict, this: str = "this week") -> dict:
     """One of her literature references (0101), as the Sources page and the Ingredients screen word it: how it was
-    screened in the period, and what was found, "Nothing found" in words."""
+    screened in the period, and what was found, "Nothing found" in words.
+
+    As the authorities' answers (answer_of): "Nothing found" is an answer only when the ingredient's name was
+    searched and no read of the database failed in the period; a check that found something speaks for the period
+    even when a later one found nothing."""
     by_hand = bool(r.get("by_hand"))
     searches = int(r.get("searches") or 0)
+    named = int(r.get("name_searches") if r.get("name_searches") is not None else searches)
+    failed = int(r.get("failed_reads") or 0)
     check = r.get("check") or None
+    gap = False
     if by_hand:
         if not check:
-            screened, found = f"Checked by hand — not checked {this}", "Not checked"
+            screened, found, gap = f"Checked by hand — not checked {this}", "Not checked", True
         else:
-            screened = f"Checked by hand — {check.get('checked_by') or ''}, {cairo_time(check.get('checked_at'))}"
+            more = int(r.get("checks") or 1)
+            screened = (f"Checked by hand — {check.get('checked_by') or ''}, {cairo_time(check.get('checked_at'))}"
+                        + (f" ({plural(more, 'check', 'checks')} {this})" if more > 1 else ""))
             found = "Nothing found" if check.get("result") == "nothing" else (
                 "Found" + (f" — {check['note']}" if check.get("note") else ""))
     else:
-        screened = (f"Searched by the app — no search recorded {this}" if not searches else
+        screened = (f"Not searched by the app {this}" if not searches else
                     f"Searched by the app — {plural(searches, 'search', 'searches')} {this}" +
                     (f", last {cairo_time(r['last_searched'])}" if r.get("last_searched") else ""))
+        if failed:
+            screened += f"; {plural(failed, 'read', 'reads')} failed"
         n = r.get("found")
-        found = "" if n is None else ("Nothing found" if int(n) == 0 else plural(int(n), "paper", "papers"))
+        if n is not None and int(n) > 0:
+            found = plural(int(n), "paper", "papers")
+        elif not searches or not named:
+            found, gap = "Not searched — check by hand", True
+        elif failed:
+            found, gap = "Not fully searched — check by hand", True
+        else:
+            found = "" if n is None else "Nothing found"
+        gap = gap or not searches or bool(failed)
     return {"scope": SCOPE_TITLE.get(r.get("scope"), r.get("scope") or ""), "name": r.get("name") or "",
             "url": safe_link(r.get("url")), "by_hand": by_hand, "screened": screened, "found": found,
-            "gap": (by_hand and not check) or (not by_hand and not searches)}
+            "gap": gap}
 
 
 def assemble(raw: dict, week: Week | Day, made_at: datetime | None = None) -> dict:

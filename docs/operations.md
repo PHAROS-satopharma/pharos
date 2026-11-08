@@ -297,8 +297,11 @@ first (A to Z, the European Union among them), then *Other authorities*. Each ca
   in PubMed and Europe PMC, so they are counted from those searches); Medscape is checked by hand. *Local*: the
   Egyptian medical journals the Egyptian Drug Authority asks for (Al-Azhar, Ain Shams …), checked by hand. Each line
   says *Searched by the app — N searches this week*, or *Checked by hand — who, when: nothing found*, or *not
-  checked this week*. Reviewers and admins press **Checked: nothing found** or **Checked: found something** (with
-  what was found) once a week on each hand-checked line; the check is kept and cannot be changed. Admins have
+  checked this week*. Reviewers and admins press **Checked: nothing found** (asked twice) or **Checked: found
+  something** (with what was found) once a week on each hand-checked line; the check is kept and cannot be changed,
+  and a check that found something speaks for the week even if a later one found nothing. A reference the app
+  searches says *Nothing found* only when the ingredient's name was searched and no read failed; otherwise *Not
+  searched* or *Not fully searched — check by hand*. Admins have
   **Add a global reference**, **Add a local reference**, and **Change** / **Remove** on each line (Remove switches
   it off; its checks stay). The Ingredients screen, the weekly and daily reports and the PSUR pack show the same
   references for each ingredient, with *Nothing found* written out.

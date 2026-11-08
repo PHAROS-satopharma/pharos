@@ -181,11 +181,12 @@ class PsurDb:
             # in the second chunk; Medscape and Al-Azhar checked by hand.
             return {"refs": [
                 {"id": "r-pubmed", "scope": "global", "name": "PubMed (NCBI)", "url": "https://pubmed.ncbi.nlm.nih.gov/",
-                 "by_hand": False, "searches": 300 if chunk == CHUNK1 else 65, "hits": 4,
+                 "by_hand": False, "searches": 300 if chunk == CHUNK1 else 65,
+                 "name_searches": 150 if chunk == CHUNK1 else 30, "failed_reads": 0, "hits": 4,
                  "last_searched": "2025-11-06T04:00:00Z" if chunk == CHUNK1 else "2026-11-06T04:00:00Z",
                  "found": 2 if chunk == CHUNK1 else 0, "check": None},
                 {"id": "r-cochrane", "scope": "global", "name": "Cochrane Database of Systematic Reviews",
-                 "url": "javascript:alert(1)", "by_hand": False, "searches": 3, "hits": 0,
+                 "url": "javascript:alert(1)", "by_hand": False, "searches": 3, "name_searches": 3, "hits": 0,
                  "last_searched": "2025-11-06T04:00:00Z", "found": 0, "check": None},
                 {"id": "r-medscape", "scope": "global", "name": "Medscape", "url": "https://www.medscape.com/",
                  "by_hand": True, "searches": 0, "hits": 0, "last_searched": None, "found": None, "check": None},

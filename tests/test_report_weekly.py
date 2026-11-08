@@ -275,7 +275,12 @@ NOTHING = {"result": "nothing", "note": None, "checked_at": "2026-11-04T08:00:00
 REFS_ING = [_ref("PubMed (NCBI)", "global", searches=7, found=0, last="2026-11-07T04:00:00Z"),
             _ref("Europe PMC", "global", searches=7, found=1, last="2026-11-07T04:00:00Z"),
             _ref("Medscape", "global", by_hand=True, check=NOTHING),
-            _ref("Al-Azhar Medical Journal", "local", by_hand=True)]
+            _ref("Al-Azhar Medical Journal", "local", by_hand=True),
+            # never searched this week (the log starts with 0101), and searched but with a failed read
+            _ref("PubMed Central (NCBI)", "global", searches=0, found=0),
+            {**_ref("Cochrane Database of Systematic Reviews", "global", searches=7, found=0), "failed_reads": 2},
+            # its class words were searched, its own name was not
+            {**_ref("Europe PMC (class words only)", "global", searches=3, found=0), "name_searches": 0}]
 REFS_WEEK = [{**r, "found": None} for r in REFS_ING]
 
 
@@ -716,6 +721,13 @@ def test_every_literature_reference_has_its_negative_result_in_words():
     assert refs["Medscape"]["found"] == "Nothing found"
     assert refs["Al-Azhar Medical Journal"]["found"] == "Not checked" and refs["Al-Azhar Medical Journal"]["gap"]
     assert refs["Al-Azhar Medical Journal"]["scope"] == "Local"
+    # "Nothing found" only when the name was searched and no read failed (risk review of PR 223)
+    assert refs["PubMed Central (NCBI)"]["screened"] == "Not searched by the app this week"
+    assert refs["PubMed Central (NCBI)"]["found"] == "Not searched — check by hand" and refs["PubMed Central (NCBI)"]["gap"]
+    cochrane = refs["Cochrane Database of Systematic Reviews"]
+    assert cochrane["screened"].endswith("; 2 reads failed")
+    assert cochrane["found"] == "Not fully searched — check by hand" and cochrane["gap"]
+    assert refs["Europe PMC (class words only)"]["found"] == "Not searched — check by hand"
     week = {r["name"]: r for r in data["authorities"]["literature_refs"]}
     assert week["PubMed (NCBI)"]["found"] == "" and not week["PubMed (NCBI)"]["gap"]
 

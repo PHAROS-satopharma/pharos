@@ -25,9 +25,13 @@ export function screenedText(r: RefWeek, when: (iso: string) => string): string 
   if (r.by_hand) {
     return r.check ? `By hand — ${r.check.checked_by}, ${when(r.check.checked_at)}` : 'By hand — not checked in these days';
   }
-  if (r.searches === 0) return 'By the app — no search recorded in these days';
-  return `By the app — ${formatNumber(r.searches)} ${r.searches === 1 ? 'search' : 'searches'}` +
-    (r.last_searched ? `, last ${when(r.last_searched)}` : '');
+  if (r.searches === 0) return 'Not searched by the app in these days';
+  const failed = r.failed_reads ?? 0;
+  return (
+    `By the app — ${formatNumber(r.searches)} ${r.searches === 1 ? 'search' : 'searches'}` +
+    (r.last_searched ? `, last ${when(r.last_searched)}` : '') +
+    (failed ? `; ${formatNumber(failed)} ${failed === 1 ? 'read' : 'reads'} failed` : '')
+  );
 }
 
 export function LiteratureRefsTable({ ingredientId, from, to }: { ingredientId: string; from: string; to: string }) {

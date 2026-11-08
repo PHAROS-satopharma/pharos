@@ -159,13 +159,42 @@ insert into match (document_id, ingredient_id, term_id, field, matched_text)
   select d, '00000000-0000-0000-0000-000000101a01', '00000000-0000-0000-0000-000000101c01', 'structured', 'CI Refamine'
     from unnest(array['00000000-0000-0000-0000-000000101e01', '00000000-0000-0000-0000-000000101e02']::uuid[]) as d;
 
--- a Medscape check in the week, by the reviewer
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', true);
-set local role authenticated;
-select record_literature_check((select id from literature_ref where name = 'Medscape'), 'nothing');
-reset role;
-update literature_check set checked_at = '2026-11-04 10:00+00'
- where ref_id = (select id from literature_ref where name = 'Medscape');
+-- Medscape, checked by the reviewer twice in the week: something found on Tuesday, nothing on Thursday. A check
+-- is never changed, so the week's checks are written as they would have been, with their day.
+insert into literature_check (ref_id, result, note, checked_by, checked_at)
+  select r.id, x.result, x.note, p.id, x.at::timestamptz
+    from literature_ref r, person p,
+         (values ('found', 'CI case report of CI Refamine', '2026-11-03 10:00+00'),
+                 ('nothing', null, '2026-11-05 10:00+00')) as x(result, note, at)
+   where r.name = 'Medscape' and p.email = 'reviewer@example.test';
+
+-- a local journal checked in the week, then removed: its check stays in the week's record
+insert into literature_ref (id, scope, name, url) values
+  ('00000000-0000-0000-0000-000000101f03', 'local', 'CI Old Journal', 'https://ci-old.example.test/');
+insert into literature_check (ref_id, result, checked_by, checked_at)
+  select '00000000-0000-0000-0000-000000101f03', 'nothing', p.id, '2026-11-04 10:00+00'
+    from person p where p.email = 'reviewer@example.test';
+update literature_ref set active = false where id = '00000000-0000-0000-0000-000000101f03';
+
+-- a Europe PMC read that failed in the week
+insert into source (id, regulator_id, kind, channel, url, parser, languages, page_url, enabled) values
+  ('ci-lr-epmc', 'CI-LR', 'literature', 'api', 'https://epmc.example.test/', 'europepmc', '{en}',
+   'https://europepmc.example.test/', true);
+insert into source_run (run_id, source_id, started_at, finished_at, error) values
+  ('00000000-0000-0000-0000-000000101b01', 'ci-lr-epmc', '2026-11-04 05:00+00', '2026-11-04 05:01+00',
+   'HTTP 503 from epmc.example.test');
+
+-- ───────────── evidence: nobody changes or removes a search or a check, the owner included ─────────────
+select pg_temp.lr_assert(
+  pg_temp.lr_refused($q$update literature_check set result = 'nothing' where result = 'found'$q$) like '42501 %'
+  and pg_temp.lr_refused($q$delete from literature_check$q$) like '42501 %'
+  and pg_temp.lr_refused($q$truncate literature_check$q$) like '42501 %',
+  'a hand check is never changed or removed, by the owner either');
+select pg_temp.lr_assert(
+  pg_temp.lr_refused($q$update literature_search_log set hits = 0 where query = 'ci refamine'$q$) like '42501 %'
+  and pg_temp.lr_refused($q$delete from literature_search_log where query = 'ci refamine'$q$) like '42501 %'
+  and pg_temp.lr_refused($q$truncate literature_search_log$q$) like '42501 %',
+  'a logged search is never changed or removed, by the owner either');
 
 -- read as CI Reader; the temp tables that keep the answers are made by the owner
 create temp table lr_week (e jsonb);
@@ -178,23 +207,31 @@ insert into lr_week select e from jsonb_array_elements(
 insert into lr_all select e from jsonb_array_elements(literature_refs_week(null, '2026-11-01', '2026-11-07')) e;
 reset role;
 
-select pg_temp.lr_assert((select (e ->> 'searches')::int = 2 and (e ->> 'hits')::int = 3 and (e ->> 'found')::int = 1
+select pg_temp.lr_assert((select (e ->> 'searches')::int = 2 and (e ->> 'name_searches')::int = 2
+                                 and (e ->> 'hits')::int = 3 and (e ->> 'found')::int = 1
+                                 and (e ->> 'failed_reads')::int = 0
                             from lr_week where e ->> 'name' = 'PubMed (NCBI)'),
-  'PubMed: two searches for the ingredient that week, 3 papers returned, 1 of its papers found');
+  'PubMed: two searches of the ingredient''s name that week, 3 papers returned, 1 of its papers found');
 select pg_temp.lr_assert((select (e ->> 'searches')::int = 1 and (e ->> 'hits')::int = 0 and (e ->> 'found')::int = 0
                             from lr_week where e ->> 'name' = 'PubMed Central (NCBI)'),
   'PubMed Central: searched once, nothing found — the zero is on record');
 select pg_temp.lr_assert((select (e ->> 'searches')::int = 0 and (e ->> 'found')::int = 1
+                                 and (e ->> 'failed_reads')::int = 1
                             from lr_week where e ->> 'name' = 'Europe PMC'),
-  'Europe PMC: its paper counts though no Europe PMC search was logged that week');
+  'Europe PMC: its paper counts, and the failed read of the week is there to see');
 select pg_temp.lr_assert((select (e ->> 'searches')::int = 2 and (e ->> 'found')::int = 1
                             from lr_week where e ->> 'name' = 'Cochrane Database of Systematic Reviews'),
   'Cochrane: counted from the searches, only the papers in its journal');
 select pg_temp.lr_assert((select (e ->> 'by_hand')::boolean and e -> 'found' = 'null'::jsonb
-                                 and e -> 'check' ->> 'result' = 'nothing'
+                                 and e -> 'check' ->> 'result' = 'found'
+                                 and e -> 'check' ->> 'note' = 'CI case report of CI Refamine'
                                  and e -> 'check' ->> 'checked_by' = 'CI Reviewer'
+                                 and (e ->> 'checks')::int = 2 and (e ->> 'found_checks')::int = 1
                             from lr_week where e ->> 'name' = 'Medscape'),
-  'Medscape: checked by hand, nothing found, by the reviewer');
+  'Medscape: what was found on Tuesday speaks for the week, though nothing was found on Thursday');
+select pg_temp.lr_assert((select not (e ->> 'active')::boolean and e -> 'check' ->> 'result' = 'nothing'
+                            from lr_week where e ->> 'name' = 'CI Old Journal'),
+  'a reference removed since keeps its check in the week''s record');
 select pg_temp.lr_assert((select e -> 'check' = 'null'::jsonb from lr_week where e ->> 'name' = 'Al-Azhar Medical Journal'),
   'Al-Azhar: no check that week, and none is made up');
 select pg_temp.lr_assert((select (e ->> 'searches')::int = 3 and (e ->> 'hits')::int = 12 and e -> 'found' = 'null'::jsonb

@@ -62,9 +62,10 @@ describe('refStatus', () => {
     );
   });
 
-  it('says so when the app has not searched yet this week', () => {
-    expect(refStatus(week(), when)).toEqual({
-      text: 'Searched by the app — no search recorded this week yet',
+  it('says so when the app has not searched yet this week, or a read failed', () => {
+    expect(refStatus(week(), when)).toEqual({ text: 'Not searched by the app this week yet', tone: 'warning' });
+    expect(refStatus(week({ searches: 6, last_searched: 'T', failed_reads: 1 }), when)).toEqual({
+      text: 'Searched by the app — 6 searches this week, last [T]; 1 read failed',
       tone: 'warning',
     });
   });
@@ -85,10 +86,15 @@ describe('refStatus', () => {
 });
 
 describe('refFound', () => {
-  it('writes the negative result in words', () => {
-    expect(refFound(week({ found: 0 }))).toBe('Nothing found');
-    expect(refFound(week({ found: 1 }))).toBe('1 paper');
-    expect(refFound(week({ found: 3 }))).toBe('3 papers');
+  it('writes the negative result in words, only when the name was searched and no read failed', () => {
+    expect(refFound(week({ searches: 7, name_searches: 7, found: 0 }))).toBe('Nothing found');
+    expect(refFound(week({ searches: 7, found: 1 }))).toBe('1 paper');
+    expect(refFound(week({ searches: 7, found: 3 }))).toBe('3 papers');
+    expect(refFound(week({ searches: 0, found: 0 }))).toBe('Not searched — check by hand');
+    expect(refFound(week({ searches: 4, name_searches: 0, found: 0 }))).toBe('Not searched — check by hand');
+    expect(refFound(week({ searches: 7, name_searches: 7, failed_reads: 2, found: 0 }))).toBe(
+      'Not fully searched — check by hand',
+    );
     expect(refFound(week({ by_hand: true }))).toBe('Not checked');
     expect(
       refFound(week({ by_hand: true, check: { result: 'nothing', note: null, checked_at: 'T', checked_by: 'X' } })),
