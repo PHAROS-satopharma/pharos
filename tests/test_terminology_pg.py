@@ -38,8 +38,21 @@ def _release(version: str, concepts: list[base.Concept], data: bytes | None = No
                         concepts={c.code: c for c in concepts}, mime="application/rdf+xml")
 
 
+READER = "00000000-0000-0000-0000-0000000000b2"
+
+
+def _read(db, sql: str, params: tuple) -> list[dict]:
+    """As the screen reads: signed in as a PHAROS person (0105: nobody else finds anything)."""
+    db.execute("select set_config('request.jwt.claims', %s, false)",
+               ('{"sub": "%s", "role": "authenticated"}' % READER,))
+    try:
+        return db.fetchall(sql, params)
+    finally:
+        db.execute("select set_config('request.jwt.claims', '', false)")
+
+
 def _search(db, text: str) -> list[dict]:
-    return db.fetchall("select source, code, name, found_as, status from term_search(%s, array['oae'])", (text,))
+    return _read(db, "select source, code, name, found_as, status from term_search(%s, array['oae'])", (text,))
 
 
 def test_first_applied_then_staged_then_activated(db):
@@ -76,7 +89,7 @@ def test_first_applied_then_staged_then_activated(db):
     assert [r["code"] for r in _search(db, "test nightmare AE")][:1] == ["OAE_9100004"]
     assert [r["code"] for r in _search(db, "test wakefulness")][:1] == ["OAE_9100002"]
     assert not [r for r in _search(db, "test sleeplessness") if r["found_as"] == "test sleeplessness"]
-    path = db.fetchall("select code from term_path('oae', 'OAE_9100004') order by depth")
+    path = _read(db, "select code from term_path(%s, %s) order by depth", ("oae", "OAE_9100004"))
     assert [r["code"] for r in path] == ["OAE_9100001", "OAE_9100002", "OAE_9100004"]
 
     # A third release dropping a concept stages its retirement.

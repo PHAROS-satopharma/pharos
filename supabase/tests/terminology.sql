@@ -171,6 +171,26 @@ select pg_temp.ci_assert(pg_temp.refused($$select * from term_search('test')$$) 
                          'the public key cannot search');
 reset role;
 
+-- 0105: the search runs with its owner's rights, so the indexes serve it (under the caller's row-level security
+-- each of 250,000 names was read and checked, and the first search on 9 Nov 2026 timed out) ...
+select pg_temp.ci_assert((select bool_and(prosecdef) from pg_proc
+                           where proname in ('term_search','term_lookup','term_children','term_path','term_related')
+                             and pronamespace = 'public'::regnamespace),
+                         'the terminology functions run with their owner''s rights (0105)');
+select pg_temp.ci_assert((select bool_and(qual like '%SELECT my_role()%') from pg_policies where tablename like 'term\_%'),
+                         'the terminology policies ask my_role() once a query, not once a row (0105)');
+-- ... and still answer nothing to a signed-in account that is not a PHAROS person.
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000ffff","role":"authenticated"}', false);
+set role authenticated;
+select pg_temp.ci_assert((select count(*) from term_search('test sleeplessness')) = 0
+                         and (select count(*) from term_search('C9000002')) = 0
+                         and (select count(*) from term_lookup('ncit', 'C9000002')) = 0
+                         and (select count(*) from term_children('ncit', 'C9000001')) = 0
+                         and (select count(*) from term_path('ncit', 'C9000005')) = 0
+                         and (select count(*) from term_related('ncit', 'C9000002')) = 0,
+                         'someone who is not a PHAROS person finds nothing');
+reset role;
+
 delete from safety_case where id = '00000000-0000-0000-0000-00000103c001';
 delete from term_change;
 delete from term_parent;
