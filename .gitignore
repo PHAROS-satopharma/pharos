@@ -12,6 +12,8 @@ supabase/.temp/
 *.log
 # The reference Word file is the team's own document and stays out of the repository.
 *.docx
+# The SOP drafts PHAROS writes for the QPPV are kept with the handbook.
+!docs/sop/*.docx
 ~$*
 .archive/
 # The Sato Pharma logo files kept aside when PHAROS took its own identity.
