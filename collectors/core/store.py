@@ -523,6 +523,37 @@ class Store:
                 order by o.due, s.ref""", {"d": today, "w": within_days})
         return [{**r, "days_left": int(r["days_left"])} for r in rows]
 
+    def capa_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """The CAPAs (0107) not done or effective whose due day is within ``within_days`` of ``today`` or past,
+        oldest first, with where each comes from and its owner. Read on the collectors' own connection (the
+        tables' owner): the service key holds no right on them."""
+        rows = self.db.fetchall(
+            """select c.id::text as capa_id, c.ref, c.year, c.serial, c.status,
+                      case when c.deviation_id is not null then 'deviation' else 'audit' end as source,
+                      d.ref as deviation_ref, a.title as audit_title, o.number as observation_number,
+                      coalesce(p.full_name, c.owner_other) as owner, c.due_on, (c.due_on - %(d)s) as days_left
+                 from capa c
+                 left join deviation d on d.id = c.deviation_id
+                 left join audit_observation o on o.id = c.observation_id
+                 left join audit a on a.id = o.audit_id
+                 left join person p on p.id = c.owner_id
+                where c.status not in ('done', 'effective')
+                  and c.due_on is not null and c.due_on <= %(d)s + %(w)s
+                order by c.due_on, c.year, c.serial""", {"d": today, "w": within_days})
+        return [{**r, "days_left": int(r["days_left"])} for r in rows]
+
+    def audit_deadline_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """For each audit (0107) with a report received and not closed, its next deadline (collectors/quality.py,
+        as quality_audit_deadlines() counts them) when it is within ``within_days`` of ``today`` or late."""
+        from collectors.quality import due_audit_deadlines
+
+        rows = self.db.fetchall(
+            """select id::text as audit_id, kind, title, auditor, report_received_on, reviewed_on, meeting_on,
+                      capa_drafted_on, capa_approved_on, capa_submitted_on
+                 from audit
+                where report_received_on is not null and status <> 'closed'""")
+        return due_audit_deadlines(rows, today, within_days)
+
     # ───────────────────────────── packs on request (0048) ─────────────────────────────
     REPORT_STALE = "2 hours"   # a build started this long ago and never finished (the run died) is taken again
 

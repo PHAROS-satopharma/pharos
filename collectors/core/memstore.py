@@ -73,6 +73,11 @@ class MemoryStore:
         self.audit_name_rows: list[dict] = []             # what audit_names() returns
         self.filtered_item: dict[tuple[str, str], dict] = {}   # (source, title) -> reason, times_seen
         self.report_request: dict[str, dict] = {}         # id -> the row of 0048
+        # the quality records of 0107, as their rows: {id, ref, year, serial, …}
+        self.deviation: dict[str, dict] = {}
+        self.audit: dict[str, dict] = {}
+        self.audit_observation: dict[str, dict] = {}       # {id, audit_id, number, …}
+        self.capa: dict[str, dict] = {}                    # {id, ref, deviation_id | observation_id, owner_id, …}
 
     @contextmanager
     def transaction(self):
@@ -480,6 +485,34 @@ class MemoryStore:
                         "next_due": due, "days_left": (due - today).days})
         out.sort(key=lambda r: (r["next_due"], r["ref"]))
         return out
+
+    def capa_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """Store.capa_reminders in memory: the CAPAs not done or effective due within ``within_days`` or late,
+        oldest first."""
+        out = []
+        for c in self.capa.values():
+            due = c.get("due_on")
+            if c.get("status") in ("done", "effective") or due is None or due > today + timedelta(days=within_days):
+                continue
+            dev = self.deviation.get(c.get("deviation_id")) or {}
+            obs = self.audit_observation.get(c.get("observation_id")) or {}
+            aud = self.audit.get(obs.get("audit_id")) or {}
+            owner = (self.person.get(c.get("owner_id")) or {}).get("full_name") or c.get("owner_other")
+            out.append({"capa_id": c["id"], "ref": c["ref"], "year": c["year"], "serial": c["serial"],
+                        "status": c["status"], "source": "deviation" if c.get("deviation_id") else "audit",
+                        "deviation_ref": dev.get("ref"), "audit_title": aud.get("title"),
+                        "observation_number": obs.get("number"), "owner": owner, "due_on": due,
+                        "days_left": (due - today).days})
+        out.sort(key=lambda r: (r["due_on"], r["year"], r["serial"]))
+        return out
+
+    def audit_deadline_reminders(self, today: date, within_days: int = 2) -> list[dict]:
+        """Store.audit_deadline_reminders in memory: each open audit's next deadline, due within reach or late."""
+        from collectors.quality import due_audit_deadlines
+
+        open_ = [{**a, "audit_id": a["id"]} for a in self.audit.values()
+                 if a.get("report_received_on") is not None and a.get("status") != "closed"]
+        return due_audit_deadlines(open_, today, within_days)
 
     def notified(self, person_id: str, issue_id: str, kind: str, *, real_only: bool = False) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind

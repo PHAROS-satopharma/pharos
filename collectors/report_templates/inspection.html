@@ -162,4 +162,85 @@
   </tbody>
 </table>
 </section>
+
+{% set q = data.quality %}
+<section class="part">
+<h2><span class="n">07</span>Quality: deviations, audits and CAPA</h2>
+<p class="lede">The deviations (PV-SOP-021) and audits (PV-SOP-022) of these days, and the one CAPA plan both feed. Deadlines and lateness as on {{ q.today }}.</p>
+
+<h3>Deviations recorded in these days</h3>
+{% if q.deviations %}
+<table>
+  <thead><tr><th>Deviation</th><th>Level</th><th>Dates</th><th>Root cause</th><th>QA Manager</th><th>Status and CAPA</th></tr></thead>
+  <tbody>
+  {% for d in q.deviations %}
+  <tr>
+    <td><span class="code">{{ d.ref }}</span><br>{{ d.title }}</td>
+    <td>{{ d.level }}</td>
+    <td>{% if d.occurred %}Happened {{ d.occurred }}<br>{% endif %}Detected {{ d.detected }}<br><span class="comment">Recorded {{ d.recorded }}</span></td>
+    <td class="comment">{{ d.root_cause }}</td>
+    <td>{{ d.satisfactory }}</td>
+    <td>{{ d.status }}{% if d.closed %}, {{ d.closed }}{% endif %}{% if d.capas %}<br><span class="comment">{{ d.capas }}</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No deviation was recorded in these days.</div>
+{% endif %}
+
+<h3>Audits with a report in these days</h3>
+{% if q.audits %}
+{% for a in q.audits %}
+<table>
+  <thead><tr><th colspan="4">{{ a.title }} <span class="comment">· {{ a.kind }} · {{ a.auditor }}{% if a.lead %} · lead auditor {{ a.lead }}{% endif %} · report received {{ a.report }}</span></th></tr>
+  <tr><th>Deadline</th><th>Due</th><th>Done</th><th>On time</th></tr></thead>
+  <tbody>
+  {% for x in a.deadlines %}
+  <tr><td>{{ x.label }}</td><td>{{ x.due }}</td><td>{{ x.done }}</td><td>{% if x.state == 'late' %}<strong>late</strong>{% else %}{{ x.state }}{% endif %}</td></tr>
+  {% endfor %}
+  {% for o in a.observations %}
+  <tr><td colspan="4">Observation {{ o.number }} · <strong>{{ o.grade }}</strong> · {{ o.text }}{% if o.capas %}<br><span class="comment">{{ o.capas }}</span>{% endif %}</td></tr>
+  {% endfor %}
+  <tr><td colspan="4">{{ a.closure }}{% if a.final_report %} <span class="comment">· final report {{ a.final_report }}</span>{% endif %}</td></tr>
+  </tbody>
+</table>
+{% endfor %}
+{% else %}
+<div class="empty">No audit report was received in these days.</div>
+{% endif %}
+
+<h3>CAPA plan</h3>
+<p class="lede">Every CAPA opened in these days or still open: {{ q.counts.open }} open, {{ q.counts.late }} late, {{ q.counts.closed }} closed.</p>
+{% if q.capas %}
+<table>
+  <thead><tr><th>CAPA</th><th>Owner</th><th>Due</th><th>Status</th><th>Evidence</th></tr></thead>
+  <tbody>
+  {% for c in q.capas %}
+  <tr>
+    <td><span class="code">{{ c.ref }}</span><br><span class="comment">{{ c.source }}</span></td>
+    <td>{{ c.owner }}</td>
+    <td>{{ c.due }}{% if c.late %}<br><strong>late</strong>{% endif %}{% if c.done %}<br><span class="comment">done {{ c.done }}</span>{% endif %}</td>
+    <td>{{ c.status }}{% if c.effective %}<br><span class="comment">{{ c.effective }}</span>{% endif %}</td>
+    <td class="comment">{{ c.evidence }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No CAPA was opened in these days, and none is open.</div>
+{% endif %}
+
+<h3>Quality history</h3>
+<p class="lede">Every change to a quality record is a line in its history: who, when, the comment, and what it was before and after. The history cannot be changed: PHAROS refuses every change or deletion of it, for every role.</p>
+<table>
+  <thead><tr><th>Record</th><th class="num">History rows in these days</th></tr></thead>
+  <tbody>
+  {% for label, n in q.history %}
+  <tr><td>{{ label }}</td><td class="num">{{ n }}</td></tr>
+  {% endfor %}
+  <tr><td><strong>All</strong></td><td class="num"><strong>{{ q.history_total }}</strong></td></tr>
+  </tbody>
+</table>
+</section>
 {% endblock %}

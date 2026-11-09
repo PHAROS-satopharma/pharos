@@ -833,3 +833,61 @@ def test_what_a_filter_dropped_is_kept_once_per_title(store, tag):
                              "order by title", {"s": src.id})
     assert [(r["title"], r["times_seen"]) for r in rows] == [("Press release: new chair", 1),
                                                              ("Veterinary letter: enrofloxacin", 2)]
+
+
+def test_the_morning_reminder_reads_capa_due_and_audit_deadlines(store, tag):
+    """The quality records (0107) read by the collectors' own connection: CAPAs due within 2 days or late, oldest
+    first; each open audit's next deadline (review +1, meeting +2, draft +10, approval +12, submission +14)."""
+    today = date(2026, 11, 6)
+    owner = _person(store, tag, "Owner")
+    year, serial = random.randint(2100, 2999), random.randint(1, 990)
+    dev = store.db.fetchone(
+        """insert into deviation (year, serial, title, description, detected_on, created_by)
+           values (%(y)s, %(s)s, %(t)s, 'what happened', %(d)s, %(p)s) returning id::text as id, ref""",
+        {"y": year, "s": serial, "t": f"Deviation {tag}", "d": today, "p": owner})
+    late_audit = store.db.fetchone(
+        """insert into audit (kind, title, auditor, report_received_on, status, created_by)
+           values ('internal', %(t)s, 'PV department', %(r)s, 'report_received', %(p)s) returning id::text as id""",
+        {"t": f"Late audit {tag}", "r": date(2026, 10, 20), "p": owner})["id"]
+    today_audit = store.db.fetchone(
+        """insert into audit (kind, title, auditor, report_received_on, reviewed_on, meeting_on, status, created_by)
+           values ('external', %(t)s, 'Partner', %(r)s, %(r1)s, %(r2)s, 'report_received', %(p)s)
+           returning id::text as id""",
+        {"t": f"Today audit {tag}", "r": date(2026, 10, 27), "r1": date(2026, 10, 28), "r2": date(2026, 10, 29),
+         "p": owner})["id"]
+    closed_audit = store.db.fetchone(
+        """insert into audit (kind, title, auditor, report_received_on, capa_submitted_on, closure_confirmed_on,
+                              status, created_by)
+           values ('external', %(t)s, 'Partner', %(r)s, %(r)s, %(r)s, 'closed', %(p)s) returning id::text as id""",
+        {"t": f"Closed audit {tag}", "r": date(2026, 10, 1), "p": owner})["id"]
+    obs = store.db.fetchone(
+        """insert into audit_observation (audit_id, number, text, grade, created_by)
+           values (%(a)s, 2, 'Signal log not reviewed', 'major', %(p)s) returning id::text as id""",
+        {"a": today_audit, "p": owner})["id"]
+    capas = {}
+    for k, (status, due, source) in enumerate([("approved", date(2026, 11, 8), "dev"),
+                                               ("in_progress", date(2026, 11, 3), "obs"),
+                                               ("approved", date(2026, 11, 9), "dev"),
+                                               ("draft", None, "dev")]):
+        capas[k] = store.db.fetchone(
+            """insert into capa (year, serial, deviation_id, observation_id, corrective_action, owner_id,
+                                 owner_other, due_on, status, created_by)
+               values (%(y)s, %(s)s, %(d)s, %(o)s, 'fix it', %(own)s, %(other)s, %(due)s, %(st)s, %(p)s)
+               returning id::text as id, ref""",
+            {"y": year, "s": serial + k, "d": dev["id"] if source == "dev" else None,
+             "o": obs if source == "obs" else None, "own": owner if source == "dev" else None,
+             "other": "Ahmed (Regulatory)" if source == "obs" else None, "due": due, "st": status, "p": owner})
+    mine = {c["id"] for c in capas.values()}
+    rows = [r for r in store.capa_reminders(today, within_days=2) if r["capa_id"] in mine]
+    assert [(r["ref"], r["days_left"]) for r in rows] == [(capas[1]["ref"], -3), (capas[0]["ref"], 2)]
+    assert (rows[0]["source"], rows[0]["audit_title"], rows[0]["observation_number"], rows[0]["owner"]) == (
+        "audit", f"Today audit {tag}", 2, "Ahmed (Regulatory)")
+    assert (rows[1]["source"], rows[1]["deviation_ref"], rows[1]["owner"]) == ("deviation", dev["ref"],
+                                                                               f"Owner {tag}")
+    audits = {r["audit_id"]: r for r in store.audit_deadline_reminders(today, within_days=2)
+              if r["audit_id"] in (late_audit, today_audit, closed_audit)}
+    assert set(audits) == {late_audit, today_audit}
+    assert (audits[late_audit]["key"], audits[late_audit]["due"], audits[late_audit]["days_left"]) == (
+        "review", date(2026, 10, 21), -16)
+    assert (audits[today_audit]["key"], audits[today_audit]["days_left"], audits[today_audit]["kind"]) == (
+        "draft", 0, "external")

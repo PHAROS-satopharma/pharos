@@ -293,7 +293,7 @@ def test_a_refused_second_part_is_sent_again_without_the_first(monkeypatch):
     """Audit of 6 Nov 2026: a long reminder goes in two parts; part 2 refused at 08:17 counted the person as told,
     so the rest of the late findings never reached them that day."""
     s = store_with_findings()
-    monkeypatch.setattr(reminders, "build_messages", lambda items, today, signals=(): ["PART ONE", "PART TWO"])
+    monkeypatch.setattr(reminders, "build_messages", lambda items, today, signals=(), **quality: ["PART ONE", "PART TWO"])
     tg = PartRefusingTelegram(111, "PART TWO")
     assert reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(8, 17)) == 2
     assert tg.messages == [(111, "PART ONE"), (222, "PART ONE"), (222, "PART TWO")]
@@ -308,7 +308,7 @@ def test_a_refused_first_part_holds_back_the_rest_until_it_goes(monkeypatch):
     """Part 1 carries the heading and the most-late findings: when it is refused, part 2 waits with it, and the
     next run sends both in order."""
     s = store_with_findings()
-    monkeypatch.setattr(reminders, "build_messages", lambda items, today, signals=(): ["PART ONE", "PART TWO"])
+    monkeypatch.setattr(reminders, "build_messages", lambda items, today, signals=(), **quality: ["PART ONE", "PART TWO"])
     tg = PartRefusingTelegram(111, "PART ONE")
     reminders.remind_if_due(s, real_notifier(s, monkeypatch, tg), now=at(8, 17))
     assert [m for m in tg.messages if m[0] == 111] == []         # part 2 never goes alone
@@ -450,3 +450,162 @@ def test_the_collector_reminds_after_the_daily_message_and_never_on_a_backfill()
     assert backfill_branch < digest
     assert re.search(r"try:\s*\n\s*#[^\n]*\n\s*reminders\.remind_if_due\(", src), "wrapped in try"
     assert "reminder failed" in src, "a reminder failure is logged, never fails the run"
+
+
+# ───────────────────────────── the quality records (0107) ─────────────────────────────
+
+QUALITY = "https://pharos-satopharma.pages.dev/quality"
+
+
+def with_quality(s: MemoryStore) -> MemoryStore:
+    """Deviations, audits and CAPAs (0107) on Fri 6 Nov 2026: one CAPA due in 2 days, one 3 days late, one done,
+    one effective, one due in 14 days; one audit whose next deadline (draft CAPA, day 10) is today, one whose QPPV
+    review is 16 days late, one closed, one whose next deadline is in 5 days, one only planned."""
+    s.deviation["dv1"] = {"id": "dv1", "ref": "D001/2026", "year": 2026, "serial": 1,
+                          "title": "Weekly report signed late", "status": "capa"}
+
+    def audit(aid: str, title: str, kind: str, report: date | None, status: str, **done) -> None:
+        s.audit[aid] = {"id": aid, "kind": kind, "title": title, "auditor": "Partner Pharma",
+                        "report_received_on": report, "reviewed_on": None, "meeting_on": None,
+                        "capa_drafted_on": None, "capa_approved_on": None, "capa_submitted_on": None,
+                        "status": status, **done}
+
+    audit("au1", "Partner Pharma 2026", "external", date(2026, 10, 27), "report_received",
+          reviewed_on=date(2026, 10, 28), meeting_on=date(2026, 10, 29))                 # draft CAPA due today
+    audit("au2", "Internal PV audit 2026", "internal", date(2026, 10, 20), "report_received")   # review 16 days late
+    audit("au3", "Closed audit 2025", "external", date(2026, 10, 1), "closed",
+          capa_submitted_on=date(2026, 10, 15))                                            # closed: never listed
+    audit("au4", "Distributor audit", "external", date(2026, 11, 1), "report_received",
+          reviewed_on=date(2026, 11, 2), meeting_on=date(2026, 11, 3))                     # draft due 11 Nov: not yet
+    audit("au5", "Planned audit", "internal", None, "planned")                             # no report: no deadline
+    s.audit_observation["ob2"] = {"id": "ob2", "audit_id": "au1", "number": 2}
+
+    def capa(cid: str, serial: int, status: str, due: date | None, *, deviation: str | None = None,
+             observation: str | None = None, owner: str | None = None, other: str | None = None) -> None:
+        s.capa[cid] = {"id": cid, "ref": f"CAPA-{serial:03d}/2026", "year": 2026, "serial": serial,
+                       "deviation_id": deviation, "observation_id": observation, "owner_id": owner,
+                       "owner_other": other, "due_on": due, "status": status}
+
+    capa("c1", 1, "approved", date(2026, 11, 8), deviation="dv1", owner="p1")                  # due in 2 days
+    capa("c2", 2, "in_progress", date(2026, 11, 3), observation="ob2", other="Ahmed (Regulatory)")  # 3 days late
+    capa("c3", 3, "done", date(2026, 11, 1), deviation="dv1", owner="p1")                      # done: off the list
+    capa("c4", 4, "effective", date(2026, 11, 1), deviation="dv1", owner="p1")                 # effective: off
+    capa("c5", 5, "approved", date(2026, 11, 20), deviation="dv1", owner="p2")                 # 14 days: not yet
+    return s
+
+
+def quality_only() -> MemoryStore:
+    """No finding, no signal step: only the quality records are due."""
+    s = with_quality(store_with_findings())
+    s.review_event.clear()
+    return s
+
+
+def test_the_store_lists_capa_due_within_two_days_or_late_oldest_first():
+    s = with_quality(store_with_findings())
+    rows = s.capa_reminders(TODAY, within_days=2)
+    assert [(r["ref"], r["days_left"]) for r in rows] == [("CAPA-002/2026", -3), ("CAPA-001/2026", 2)]
+    assert rows[0]["source"] == "audit" and rows[0]["audit_title"] == "Partner Pharma 2026"
+    assert rows[0]["observation_number"] == 2 and rows[0]["owner"] == "Ahmed (Regulatory)"
+    assert rows[1]["source"] == "deviation" and rows[1]["deviation_ref"] == "D001/2026"
+    assert rows[1]["owner"] == "Sama Reviewer" and rows[1]["due_on"] == date(2026, 11, 8)
+
+
+def test_the_store_lists_each_open_audit_s_next_deadline_when_due_within_two_days_or_late():
+    s = with_quality(store_with_findings())
+    rows = s.audit_deadline_reminders(TODAY, within_days=2)
+    assert [(r["title"], r["key"], r["due"], r["days_left"]) for r in rows] == [
+        ("Internal PV audit 2026", "review", date(2026, 10, 21), -16),
+        ("Partner Pharma 2026", "draft", date(2026, 11, 6), 0)]
+    assert rows[0]["kind"] == "internal" and rows[1]["kind"] == "external"
+
+
+def test_capa_and_audit_words():
+    assert reminders.capa_due_text(date(2026, 11, 19), 13) == "due Thu 19 Nov"
+    assert reminders.capa_due_text(date(2026, 11, 3), -3) == "late by 3 days"
+    assert reminders.capa_due_text(date(2026, 11, 5), -1) == "late by 1 day"
+
+
+def test_the_message_adds_capa_due_and_audit_deadlines_after_the_signals():
+    s = with_quality(with_signals(store_with_findings()))
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    assert len(s.notification) == 2, "the same daily message, never a second one"
+    text = s.notification[0]["summary"]
+    assert text.startswith("<b>PHAROS</b> · Egyptian Drug Authority · 6 Nov 2026")
+    assert (text.index("findings to report") < text.index("signal steps due") < text.index("<b>CAPA due</b>")
+            < text.index("<b>Audit deadlines</b>")), "after the existing blocks, CAPA first"
+    lines = [ln for ln in text.splitlines() if ln.startswith("• ")]
+    assert lines[7:] == [
+        "• CAPA-002/2026 · from Audit Partner Pharma 2026, observation 2 · Ahmed (Regulatory) · late by 3 days",
+        "• CAPA-001/2026 · from D001/2026 · Sama Reviewer · due Sun 8 Nov",
+        "• Internal PV audit 2026 · Internal audit · QPPV review of the report · late by 16 days",
+        "• Partner Pharma 2026 · External audit · Draft CAPA · due Fri 6 Nov"]
+    assert text.count(QUALITY) == 4, "a link to the Quality tab under every line"
+    for absent in ("CAPA-003", "CAPA-004", "CAPA-005", "Closed audit", "Distributor audit", "Planned audit"):
+        assert absent not in text
+
+
+def test_the_existing_message_is_unchanged_when_no_quality_record_is_due():
+    plain = store_with_findings()
+    reminders.remind_if_due(plain, notifier_for(plain), now=at(8))
+    s = with_quality(store_with_findings())
+    for c in s.capa.values():
+        c["status"] = "effective"
+    for a in s.audit.values():
+        a["status"] = "closed"
+    reminders.remind_if_due(s, notifier_for(s), now=at(8))
+    assert [n["summary"] for n in s.notification] == [n["summary"] for n in plain.notification]
+    assert "CAPA" not in s.notification[0]["summary"] and "Audit deadlines" not in s.notification[0]["summary"]
+
+
+def test_quality_records_alone_are_enough_to_send():
+    s = quality_only()
+    assert s.eda_reminders(TODAY, within_days=2) == [] and s.signal_reminders(TODAY, within_days=2) == []
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    text = s.notification[0]["summary"]
+    assert text.startswith("<b>PHAROS</b> · Quality · 6 Nov 2026")
+    assert "findings to report" not in text and "signal steps" not in text
+    assert "<b>CAPA due</b>" in text and "<b>Audit deadlines</b>" in text
+    assert len([ln for ln in text.splitlines() if ln.startswith("• ")]) == 4
+
+
+def test_the_quality_blocks_go_once_a_day():
+    s = quality_only()
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(20)) == 0
+    assert len(s.notification) == 2
+    tomorrow = lambda: cairo(date(2026, 11, 7), 8).astimezone(timezone.utc)  # noqa: E731
+    assert reminders.remind_if_due(s, notifier_for(s), now=tomorrow) == 2
+    assert "late by 4 days" in s.notification[-1]["summary"]
+
+
+def test_nothing_is_sent_when_no_quality_record_is_due():
+    s = quality_only()
+    for c in s.capa.values():
+        c["status"] = "done"
+    for a in s.audit.values():
+        a["status"] = "closed"
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 0
+    assert s.notification == []
+
+
+def test_a_dry_run_writes_the_quality_text_and_never_reaches_telegram():
+    s = quality_only()
+    assert reminders.remind_if_due(s, notifier_for(s, dry_run=True), now=at(9)) == 2   # ExplodingTelegram
+    assert all(r["dry_run"] for r in s.notification)
+    assert "CAPA-002/2026" in s.notification[0]["summary"]
+    assert "Draft CAPA · due Fri 6 Nov" in s.notification[1]["summary"]
+
+
+def test_a_quality_read_that_fails_never_stops_the_authority_reminder(monkeypatch):
+    """Before migration 0107 is applied the quality tables do not exist: the findings still go."""
+    s = with_quality(store_with_findings())
+
+    def broken(*a, **k):
+        raise RuntimeError('relation "capa" does not exist')
+
+    monkeypatch.setattr(s, "capa_reminders", broken, raising=False)
+    monkeypatch.setattr(s, "audit_deadline_reminders", broken, raising=False)
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    assert "<b>4 findings to report to the authority</b>" in s.notification[0]["summary"]
+    assert "CAPA" not in s.notification[0]["summary"]

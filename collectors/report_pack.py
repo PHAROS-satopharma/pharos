@@ -26,7 +26,9 @@ do not concern us, counted (and listed in the Excel file); the screening annex.
 
 Inspection pack (report_templates/inspection.html and its sheets): coverage (her pages and whether the app reads
 them), the screening log, the decisions and the signatures, the reports to the authority, the weekly reports with
-their SHA-256 and signatures, the archive checks, the audit log counted per table, and the people and their roles.
+their SHA-256 and signatures, the archive checks, the audit log counted per table, the people and their roles, and
+the quality records of the days (0107: deviations, audits with each deadline on time / late / not yet, the CAPA
+plan, the history rows per kind), read from the tables in chunks of at most 366 days.
 
 Both are printed by Playwright (A4) like the weekly report, archived with ``put_named(revise=True)`` under
 ``reports/packs/<kind>/<request id>/`` with the SHA-256 of each file stored on the request, and the person who
@@ -46,6 +48,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time as dtime, timedelta, timezone
 from typing import Any, Callable
 
+from collectors import quality as qual
 from collectors import report_weekly as rw
 from collectors.report import (CAIRO, CREDIT, PAGE, SATO_LOGO, XLSX_MIME, _env, build_pdf, copyright_line,
                                logo_data_uri, render_footer, xlsx_sheet, xlsx_summary, xlsx_workbook)
@@ -421,7 +424,83 @@ def gather_inspection(db: Any, req: dict, check: Callable[[], None] = _no_check)
             """select full_name, role::text as role, active, telegram_chat_id is not null as telegram, created_at
                  from person
                 order by active desc, role, lower(full_name)"""),
+        "quality": _quality_chunks(db, period, check),
     }
+
+
+# The quality records of the days (0107), read chunk by chunk like the screening log. Each CAPA comes with where
+# it comes from and its owner; each deviation and audit observation with its CAPAs.
+DEVIATIONS_SQL = """
+select d.id::text as id, d.ref, d.year, d.serial, d.title, d.level, d.occurred_on, d.detected_on, d.created_at,
+       d.root_cause, d.qa_satisfactory, d.status, d.approved_at, d.closed_at,
+       coalesce((select json_agg(json_build_object('ref', c.ref, 'status', c.status) order by c.year, c.serial)
+                   from capa c where c.deviation_id = d.id), '[]') as capas
+  from deviation d
+ where d.created_at >= %(a)s and d.created_at < %(b)s
+ order by d.year, d.serial"""
+
+AUDITS_SQL = """
+select a.id::text as id, a.kind, a.title, a.auditor, a.lead_auditor, a.report_received_on, a.reviewed_on,
+       a.meeting_on, a.capa_drafted_on, a.capa_approved_on, a.capa_submitted_on, a.final_report_on,
+       a.closure_confirmed_on, a.status,
+       coalesce((select json_agg(json_build_object(
+                          'number', o.number, 'text', o.text, 'grade', o.grade,
+                          'capas', coalesce((select json_agg(json_build_object('ref', c.ref, 'status', c.status)
+                                                             order by c.year, c.serial)
+                                               from capa c where c.observation_id = o.id), '[]'))
+                        order by o.number)
+                   from audit_observation o where o.audit_id = a.id), '[]') as observations
+  from audit a
+ where a.report_received_on >= %(f)s and a.report_received_on <= %(t)s
+ order by a.report_received_on, a.created_at"""
+
+CAPAS_SQL = """
+select c.id::text as id, c.ref, c.year, c.serial,
+       case when c.deviation_id is not null then 'deviation' else 'audit' end as source,
+       d.ref as deviation_ref, a.title as audit_title, o.number as observation_number,
+       coalesce(p.full_name, c.owner_other) as owner, c.due_on, c.done_on, c.status, c.evidence,
+       pv.full_name as verified_by, c.verified_at, c.created_at
+  from capa c
+  left join deviation d on d.id = c.deviation_id
+  left join audit_observation o on o.id = c.observation_id
+  left join audit a on a.id = o.audit_id
+  left join person p on p.id = c.owner_id
+  left join person pv on pv.id = c.verified_by
+ where {where}
+ order by c.year, c.serial"""
+
+QUALITY_HISTORY_SQL = """
+select record_kind, count(*) as n
+  from quality_event
+ where at >= %(a)s and at < %(b)s
+ group by record_kind"""
+
+
+def _quality_chunks(db: Any, period: Period, check: Callable[[], None]) -> dict:
+    """The deviations recorded, the audits with a report and the CAPAs opened in the days, and the history rows
+    per kind, chunk by chunk (at most 366 days each); then the CAPAs still open that were opened before the days
+    ended. Each record once."""
+    deviations: dict[str, dict] = {}
+    audits: dict[str, dict] = {}
+    capas: dict[str, dict] = {}
+    history: dict[str, int] = defaultdict(int)
+    for f, t in chunks(period.start, period.end):
+        a, b = Period(period.kind, f, t).bounds_utc()
+        span = {"a": a, "b": b, "f": f, "t": t}
+        for r in db.fetchall(DEVIATIONS_SQL, span):
+            deviations.setdefault(r["id"], r)
+        for r in db.fetchall(AUDITS_SQL, span):
+            audits.setdefault(r["id"], r)
+        for r in db.fetchall(CAPAS_SQL.format(where="c.created_at >= %(a)s and c.created_at < %(b)s"), span):
+            capas.setdefault(r["id"], r)
+        for r in db.fetchall(QUALITY_HISTORY_SQL, span):
+            history[r["record_kind"]] += int(r["n"])
+        check()
+    _, end = period.bounds_utc()
+    for r in db.fetchall(CAPAS_SQL.format(where="c.status <> 'effective' and c.created_at < %(b)s"), {"b": end}):
+        capas.setdefault(r["id"], r)
+    return {"deviations": list(deviations.values()), "audits": list(audits.values()),
+            "capas": sorted(capas.values(), key=lambda r: (r["year"], r["serial"])), "history": dict(history)}
 
 
 # ───────────────────────────── worded once, for the PDF and the Excel file ─────────────────────────────
@@ -739,6 +818,7 @@ def assemble_inspection(raw: dict, made_at: datetime | None = None) -> dict:
                "active": "Active" if p.get("active") else "Switched off",
                "telegram": "Linked" if p.get("telegram") else "", "added": day_text(cairo_day(p.get("created_at")))}
               for p in raw["people"]]
+    quality = _quality(raw.get("quality") or {}, cairo_day(made_at))
     runs = raw.get("runs") or {}
     read_pages = sum(1 for c in coverage if c["state"] == "read")
     summary = [
@@ -762,13 +842,79 @@ def assemble_inspection(raw: dict, made_at: datetime | None = None) -> dict:
         ("Archive checks that found a problem", sum(1 for c in checks if c["mismatched"] or c["missing"])),
         ("Changes in the audit log", sum(a["n"] for a in audit)),
         ("People", len(people)),
+        ("Deviations recorded", len(quality["deviations"])),
+        ("Audits with a report", len(quality["audits"])),
+        ("CAPA in the plan", len(quality["capas"])),
+        ("CAPA open", quality["counts"]["open"]),
+        ("CAPA late", quality["counts"]["late"]),
+        ("CAPA closed (effective)", quality["counts"]["closed"]),
+        ("Quality history rows", quality["history_total"]),
     ]
     figures = [("Her pages read", f"{read_pages} / {len(coverage)}"), ("Decisions", len(decisions)),
                ("Weekly reports", len(weekly)), ("Signatures", len(signatures))]
     return {"kind": "inspection", "period": period, "made_at": made_at, "title": TITLE["inspection"],
             "asked": _asked(raw["request"]), "summary": summary, "figures": figures, "coverage": coverage,
             "annex": annex, "decisions": decisions, "signatures": signatures, "sent": sent, "weekly": weekly,
-            "checks": checks, "audit": audit, "people": people}
+            "checks": checks, "audit": audit, "people": people, "quality": quality}
+
+
+QUALITY_HISTORY_KINDS = (("deviation", "Deviations"), ("audit", "Audits"), ("observation", "Audit observations"),
+                         ("capa", "CAPAs"))
+
+
+def _capa_refs(capas: Any) -> str:
+    """"CAPA-001/2026 (Effective (closed)); CAPA-004/2026 (Draft)", or "" with none."""
+    return "; ".join(f"{c.get('ref')} ({qual.CAPA_STATUS_LABEL.get(c.get('status') or '', c.get('status') or '')})"
+                     for c in (capas or []))
+
+
+def _quality(raw: dict, today: date | None) -> dict:
+    """The quality section, worded once for the PDF and the Excel file: each audit deadline on time, late or not
+    yet, and the CAPAs late, on the Cairo day the pack is made."""
+    today = today or datetime.now(CAIRO).date()
+    deviations = []
+    for d in raw.get("deviations") or []:
+        sat = d.get("qa_satisfactory")
+        deviations.append({
+            "ref": d["ref"], "title": d.get("title") or "",
+            "level": f"Level {d['level']}" if d.get("level") else "Not set yet",
+            "occurred": day_text(d.get("occurred_on")), "detected": day_text(d.get("detected_on")),
+            "recorded": day_text(cairo_day(d.get("created_at"))), "root_cause": d.get("root_cause") or "",
+            "satisfactory": "Satisfactory" if sat else ("Not satisfactory" if sat is False else "Not judged yet"),
+            "status": qual.DEVIATION_STATUS_LABEL.get(d.get("status") or "", d.get("status") or ""),
+            "closed": day_text(cairo_day(d.get("closed_at"))), "capas": _capa_refs(d.get("capas"))})
+    audits = []
+    for a in raw.get("audits") or []:
+        deadlines = [{"label": x["label"], "due": day_text(x["due"]), "done": day_text(x["done_on"]),
+                      "state": qual.deadline_state(x["due"], x["done_on"], today)}
+                     for x in qual.audit_deadlines({k: as_day(v) if k.endswith("_on") else v for k, v in a.items()})]
+        closure = (f"Closed, confirmed {day_text(a.get('closure_confirmed_on'))}" if a.get("status") == "closed"
+                   else f"Not closed ({qual.AUDIT_STATUS_LABEL.get(a.get('status') or '', a.get('status') or '')})")
+        audits.append({
+            "title": a.get("title") or "", "kind": qual.KIND_LABEL.get(a.get("kind") or "", a.get("kind") or ""),
+            "auditor": a.get("auditor") or "", "lead": a.get("lead_auditor") or "",
+            "report": day_text(a.get("report_received_on")), "final_report": day_text(a.get("final_report_on")),
+            "deadlines": deadlines, "closure": closure,
+            "observations": [{"number": o.get("number"), "text": o.get("text") or "",
+                              "grade": qual.GRADE_LABEL.get(o.get("grade") or "", o.get("grade") or ""),
+                              "capas": _capa_refs(o.get("capas"))} for o in (a.get("observations") or [])]})
+    capas = []
+    for c in raw.get("capas") or []:
+        due = as_day(c.get("due_on"))
+        late = c.get("status") not in qual.CAPA_FINISHED and due is not None and due < today
+        capas.append({
+            "ref": c["ref"], "source": qual.capa_source_text(c), "owner": c.get("owner") or "No owner yet",
+            "due": day_text(due), "done": day_text(c.get("done_on")),
+            "status": qual.CAPA_STATUS_LABEL.get(c.get("status") or "", c.get("status") or ""),
+            "effective": (f"Verified {day_text(cairo_day(c.get('verified_at')))} by {c.get('verified_by') or ''}"
+                          if c.get("status") == "effective" else ""),
+            "evidence": c.get("evidence") or "", "late": late, "is_closed": c.get("status") == "effective"})
+    counts = {"open": sum(1 for c in capas if not c["is_closed"]), "late": sum(1 for c in capas if c["late"]),
+              "closed": sum(1 for c in capas if c["is_closed"])}
+    hist = raw.get("history") or {}
+    history = [(label, int(hist.get(kind) or 0)) for kind, label in QUALITY_HISTORY_KINDS]
+    return {"deviations": deviations, "audits": audits, "capas": capas, "counts": counts, "history": history,
+            "history_total": sum(n for _, n in history), "today": day_text(today)}
 
 
 # ───────────────────────────── Excel ─────────────────────────────
@@ -776,7 +922,8 @@ def assemble_inspection(raw: dict, made_at: datetime | None = None) -> dict:
 PSUR_SHEETS = ("Summary", "EURD", "§3 Regulatory actions", "§3 Countries", "§4 Label changes", "§11 Literature",
                "§11 References", "§11 Searches", "§15-16 Signals", "Not relevant", "Screening annex")
 INSPECTION_SHEETS = ("Summary", "Coverage", "Screening log", "Decisions", "Signatures", "Authority reports",
-                     "Weekly reports", "Archive checks", "Audit log", "People and roles")
+                     "Weekly reports", "Archive checks", "Audit log", "People and roles", "Deviations", "Audits",
+                     "CAPA plan")
 
 
 def _decision_cells(m: dict) -> list:
@@ -897,6 +1044,31 @@ def build_inspection_xlsx(data: dict) -> bytes:
     xlsx_sheet(wb, "People and roles", ["Name", "Role", "State", "Telegram", "Added"],
                [[p["name"], p["role"], p["active"], p["telegram"], p["added"]] for p in data["people"]],
                [30, 16, 14, 10, 14])
+    qd = data["quality"]
+    xlsx_sheet(wb, "Deviations",
+               ["Deviation", "Title", "Level", "Happened", "Detected", "Recorded", "Root cause", "QA Manager",
+                "Status", "Closed", "CAPA"],
+               [[d["ref"], d["title"], d["level"], d["occurred"], d["detected"], d["recorded"], d["root_cause"],
+                 d["satisfactory"], d["status"], d["closed"], d["capas"]] for d in qd["deviations"]],
+               [12, 44, 12, 14, 14, 14, 44, 18, 24, 14, 40], empty="No deviation was recorded in these days.")
+    steps = [label for _, label, _, _ in qual.AUDIT_STEPS]
+
+    def deadline_cell(x: dict) -> str:
+        return f"due {x['due']}" + (f" · done {x['done']}" if x["done"] else "") + f" · {x['state']}"
+
+    xlsx_sheet(wb, "Audits",
+               ["Audit", "Kind", "Auditor", "Lead auditor", "Report received", *steps, "Observations", "Closure"],
+               [[a["title"], a["kind"], a["auditor"], a["lead"], a["report"],
+                 *[deadline_cell(x) for x in a["deadlines"]],
+                 "\n".join(f"{o['number']} · {o['grade']} · {o['text']}" + (f" · {o['capas']}" if o["capas"] else "")
+                           for o in a["observations"]),
+                 a["closure"]] for a in qd["audits"]],
+               [30, 14, 24, 20, 14, 30, 30, 30, 30, 30, 60, 30], empty="No audit report was received in these days.")
+    xlsx_sheet(wb, "CAPA plan",
+               ["CAPA", "From", "Owner", "Due", "Done", "Status", "Late", "Effective", "Evidence"],
+               [[c["ref"], c["source"], c["owner"], c["due"], c["done"], c["status"], "yes" if c["late"] else "",
+                 c["effective"], c["evidence"]] for c in qd["capas"]],
+               [16, 44, 24, 14, 14, 18, 6, 36, 50], empty="No CAPA was opened in these days, and none is open.")
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
