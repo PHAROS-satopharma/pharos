@@ -664,7 +664,7 @@ for k, (d, a, b) in enumerate(tl):
     tx(s, x, ly + 0.3, sw_ - 0.3, 0.4, a, size=17, font=SERIF, color=INK)
     tx(s, x, ly + 0.82, sw_ - 0.3, 1.3, b, size=11, color=MUTED, ls=1.3)
 card(s, M, 5.8, CW, 0.78, fill=SURF2, top=BEACON)
-tx(s, M + 0.3, 6.02, CW - 0.6, 0.8, "The PHAROS handbook, edition 3, describes each screen in words that can be "
+tx(s, M + 0.3, 6.02, CW - 0.6, 0.8, "The PHAROS handbook describes each screen in words that can be "
    "lifted into the SOP and the master file.", size=12.5, color=INK, ls=1.3)
 notes(s, "I will write the literature-screening SOP from the handbook: how the process was done, and how we now use "
       "the system. I cannot change the SOP before the inspection, as the inspector already holds the current one; "
