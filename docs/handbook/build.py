@@ -5,7 +5,7 @@ pharmacovigilance system master file. Every screen it describes is the app as it
 Ingredients (the vertical pass, with readiness, case reports and our label), what follows a finding that concerns
 us (the five-day clock to the Egyptian Drug Authority and the signal steps), Sources (the horizontal pass and the
 literature references), Products and Cases, Reports (daily and weekly, fingerprints and signatures, packs on
-request), Telegram, People and Me, and a page for the SOP (with the Quality tab: deviations, audits and CAPA).
+request), Telegram, People and Me, Quality (deviations, audits and the CAPA plan), and a page for the SOP.
 
     python build.py ["PHAROS Handbook.pdf"]
 
@@ -20,7 +20,7 @@ from reportlab.platypus import Paragraph
 from kit import *
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else str(Path(__file__).with_name("PHAROS Handbook.pdf"))
-TOTAL = 22
+TOTAL = 23
 BOTTOM = 19 * mm
 report = []
 DANGER = HexColor("#A8322D")
@@ -272,7 +272,8 @@ c = canvas.Canvas(OUT, pagesize=A4)
 c.setTitle("The PHAROS Handbook")
 c.setAuthor("Sato Pharma")
 c.setSubject("Screening with PHAROS: the vertical pass by ingredient, the horizontal pass by authority, the "
-             "five-day clock, the signal steps, the weekly report and the evidence for inspection")
+             "five-day clock, the signal steps, the weekly report, the evidence for inspection, and deviations, audits "
+             "and CAPA")
 c.setCreator("Sato Pharma")
 c.setKeywords("PHAROS, pharmacovigilance, screening, safety notifications, weekly report, handbook")
 c._doc.info.producer = "Sato Pharma"
@@ -386,12 +387,12 @@ micro(c, "Contents", ML, y - 2.4 * mm, color=INK, size=6.6)
 y -= 4.6 * mm
 contents = [("01", "How PHAROS screens", 2), ("02", "Ingredients", 3), ("03", "A finding concerns us", 9),
             ("04", "Sources", 11), ("05", "Cases and products", 15), ("06", "Reports and evidence", 18),
-            ("07", "Telegram", 21), ("08", "People and Me", 21), ("09", "For the SOP", 22)]
-ccw = (CW - 2 * 5 * mm) / 3
+            ("07", "Telegram", 21), ("08", "People and Me", 21), ("09", "Quality", 22), ("10", "For the SOP", 23)]
+ccw = (CW - 3 * 5 * mm) / 4
 for i, (n, t, pg) in enumerate(contents):
-    x = ML + (i % 3) * (ccw + 5 * mm)
-    ry = y - (i // 3) * 5.4 * mm
-    rule(c, x, ry, x + ccw, INK if i < 3 else RULE, 0.8 if i < 3 else 0.6)
+    x = ML + (i % 4) * (ccw + 5 * mm)
+    ry = y - (i // 4) * 5.4 * mm
+    rule(c, x, ry, x + ccw, INK if i < 4 else RULE, 0.8 if i < 4 else 0.6)
     text(c, n, x, ry - 3.9 * mm, "Serif-B", 9, DEEP)
     text(c, t, x + 6.4 * mm, ry - 3.9 * mm, "Sans", 7.4)
     micro(c, str(pg), x + ccw, ry - 3.9 * mm, size=6.4, align="right")
@@ -2508,7 +2509,7 @@ y = table(c, [
                         "decision, and every signature (weekly reports, packs and signals) with whether what was "
                         "signed still matches. Every report to the authority, withdrawn ones too. Every weekly report "
                         "with both SHA-256. The archive checks. The audit log, counted per table. The people and "
-                        "their roles."),
+                        "their roles. A Quality section: deviations, audits and the CAPA plan (page 22)."),
 ], y, [30 * mm, CW - 30 * mm], styles=[cell_b, cell_st]) - 5 * mm
 y = notes_row(c, [
     ("Limits", "At most two packs waiting per person and five in all. The same pack asked for again while it waits "
@@ -2538,8 +2539,8 @@ y = table(c, [
      "Once a day, after 09:00 Cairo: how many items each country published since the last message, with a link "
      "to Sources. Nothing is sent on a day with nothing new."),
     ("Morning reminder", "Every reviewer and administrator",
-     "After 07:00 Cairo: findings due to the Egyptian Drug Authority and signal steps, late or due within 2 days, "
-     "each with a link. Nothing when nothing is due (page 9)."),
+     "After 07:00 Cairo: findings due to the Egyptian Drug Authority, signal steps, CAPAs and audit deadlines "
+     "(page 22), late or due within 2 days. Nothing when nothing is due (page 9)."),
     ("For administrators", "Source health alerts",
      "A source that stopped working. On Sunday morning, the weekly report PDF. A pack made, or not made, also "
      "to whoever asked for it."),
@@ -2595,12 +2596,264 @@ y = notes_row(c, [
 check(PAGE, y)
 c.showPage()
 
-# ═════════════════════════ PAGE 16 · FOR THE SOP ═════════════════════════
+# ═════════════════════════ PAGE 22 · QUALITY: DEVIATIONS, AUDITS AND CAPA ═════════════════════════
+# Every word the Quality tab shows on screen, in one place, so the page follows the tab's final wording.
+Q = {
+    "tab": "Quality",
+    "deviations": "Deviations",
+    "audits": "Audits",
+    "capa_plan": "CAPA plan",
+    "deviation": "Deviation",
+    "observation": "Audit observation",
+    "effective": "Effective",
+    "closed": "Closed",
+    "not_effective": "Not effective",
+    "deviation_steps": ["Open", "Investigating", "CAPA", "Approved", "Closed"],
+    "levels": ["Level 1", "Level 2", "Level 3"],
+    "satisfactory": "Satisfactory",
+    "not_satisfactory": "Not satisfactory",
+    "internal": "Internal",
+    "external": "External",
+    "grades": ["Critical", "Major", "Minor"],
+    "audit_deadlines": ["Report arrives", "Review", "Meeting", "Draft CAPA", "Approval", "Submission"],
+    "due": "{what} by {date}  ·  {n} days left",
+    "late": "late",
+    "done": "Done",
+    "final_report": "Final report",
+    "closure": "Closure confirmation",
+    "capa_steps": ["Draft", "Approved", "In progress", "Done", "Effective"],
+    "capa_columns": ["CAPA", "From", "Corrective and preventive action", "Owner", "Due", "Evidence"],
+    "from_observation": "{audit}  ·  observation {n}",
+}
+
+
+def arrow(x1, y1, x2, y2):
+    """A flat deep-amber arrow, straight across or straight up and down, its head at x2, y2."""
+    c.setStrokeColor(DEEP)
+    c.setLineWidth(1)
+    c.line(x1, y1, x2, y2)
+    ah = c.beginPath()
+    if y1 == y2:
+        s = 1 if x2 > x1 else -1
+        ah.moveTo(x2, y2)
+        ah.lineTo(x2 - s * 1.6 * mm, y2 + 1 * mm)
+        ah.lineTo(x2 - s * 1.6 * mm, y2 - 1 * mm)
+    else:
+        s = 1 if y2 > y1 else -1
+        ah.moveTo(x2, y2)
+        ah.lineTo(x2 - 1 * mm, y2 - s * 1.6 * mm)
+        ah.lineTo(x2 + 1 * mm, y2 - s * 1.6 * mm)
+    ah.close()
+    c.setFillColor(DEEP)
+    c.drawPath(ah, stroke=0, fill=1)
+
+
+def chain(x, y_, w, items, cur):
+    """The steps as the app draws them (as the signal stages on page 10): done shaded, the current one lit."""
+    bw = (w - (len(items) - 1) * 2 * mm) / len(items)
+    xs = []
+    for k, t in enumerate(items):
+        bx = x + k * (bw + 2 * mm)
+        on, done = k == cur, k < cur
+        c.setFillColor(INK if on else (SURFACE2 if done else WHITE))
+        c.setStrokeColor(INK if on else RULE)
+        c.setLineWidth(0.6)
+        c.rect(bx, y_ - 6 * mm, bw, 6 * mm, stroke=0 if on else 1, fill=1)
+        text(c, f"{k + 1:02d}", bx + 2.4 * mm, y_ - 3.9 * mm, "Mono", 5.6, BEACON if on else MUTED)
+        text(c, t, bx + 8 * mm, y_ - 3.9 * mm, "Sans-B", 6.6, WHITE if on else (INK if done else MUTED))
+        xs.append(bx)
+    return xs, bw
+
+
+new_page("Quality")
+y = running_head(c, "09  ·  Quality  ·  deviations, audits and CAPA")
+y = head(c, "09", "Quality: deviations, audits and CAPA", y, sub="A drawing, not real data")
+y = para(c, "A CAPA comes from one of two places: a deviation, a mistake that happened, or an observation of an "
+            "audit. Both end in one CAPA plan, worked through until it is effective.", what_st, ML, y, CW) - 3 * mm
+
+# the rule, drawn: two sources, one CAPA plan, then effective and closed
+fh = 34 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+mid = y - 17.5 * mm
+sx0, sw0 = ix + 6 * mm, 44 * mm
+jx = sx0 + sw0 + 5 * mm
+hx, hw, hh = jx + 5 * mm, 46 * mm, 18 * mm
+ex, ew_, eh_ = hx + hw + 10 * mm, 22 * mm, 12 * mm
+cx0 = ex + ew_ + 8 * mm
+cw0 = ML + CW - 5 * mm - cx0
+for k, (t, s1, s2, L) in enumerate([
+        (Q["deviation"], "A mistake that happened", "PV-SOP-021  ·  D001/2026", "A"),
+        (Q["observation"], "Internal or external audit", "PV-SOP-022  ·  critical, major, minor", "B")]):
+    top_ = mid + 12.5 * mm if k == 0 else mid - 1.5 * mm
+    c.setFillColor(SURFACE2)
+    c.rect(sx0, top_ - 11 * mm, sw0, 11 * mm, stroke=0, fill=1)
+    text(c, t, sx0 + 2.4 * mm, top_ - 3.8 * mm, "Sans-B", 7.2)
+    text(c, s1, sx0 + 2.4 * mm, top_ - 6.9 * mm, "Sans", 5.8)
+    text(c, s2, sx0 + 2.4 * mm, top_ - 9.5 * mm, "Mono", 5.2, MUTED)
+    tag(c, ix + 2.3 * mm, top_ - 5.5 * mm, L)
+    c.setStrokeColor(DEEP)
+    c.setLineWidth(1)
+    c.line(sx0 + sw0, top_ - 5.5 * mm, jx, top_ - 5.5 * mm)
+c.setStrokeColor(DEEP)
+c.setLineWidth(1)
+c.line(jx, mid + 7 * mm, jx, mid - 7 * mm)
+arrow(jx, mid, hx - 0.3 * mm, mid)
+# the CAPA plan
+c.setFillColor(INK)
+c.rect(hx, mid - hh / 2, hw, hh, stroke=0, fill=1)
+text(c, Q["capa_plan"], hx + 3 * mm, mid + hh / 2 - 6 * mm, "Serif-B", 10.5, WHITE)
+text(c, "Corrective and preventive action", hx + 3 * mm, mid + hh / 2 - 10 * mm, "Sans", 6, MAST_MUTED)
+text(c, "Owner, due date, evidence", hx + 3 * mm, mid + hh / 2 - 12.8 * mm, "Sans", 6, MAST_MUTED)
+text(c, "CAPA-001/2026", hx + 3 * mm, mid + hh / 2 - 16.2 * mm, "Mono", 6, BEACON)
+tag(c, hx + 2.3 * mm, y - 4.4 * mm, "C")
+arrow(hx + hw, mid, ex - 0.3 * mm, mid)
+# effective, and closed
+c.setFillColor(SEA)
+c.rect(ex, mid - eh_ / 2, ew_, eh_, stroke=0, fill=1)
+text(c, Q["effective"], ex + 2.4 * mm, mid + 0.6 * mm, "Sans-B", 7.2, WHITE)
+text(c, "It worked", ex + 2.4 * mm, mid - 2.8 * mm, "Sans", 5.8, WHITE)
+tag(c, ex + 2.3 * mm, y - 4.4 * mm, "D")
+arrow(ex + ew_, mid, cx0 - 0.3 * mm, mid)
+c.setFillColor(WHITE)
+c.setStrokeColor(INK)
+c.setLineWidth(0.6)
+c.rect(cx0, mid - eh_ / 2, cw0, eh_, stroke=1, fill=1)
+text(c, Q["closed"], cx0 + 2.4 * mm, mid + 0.6 * mm, "Sans-B", 7.2)
+text(c, "Its source closes", cx0 + 2.4 * mm, mid - 2.8 * mm, "Sans", 5.8, MUTED)
+tag(c, cx0 + 2.3 * mm, y - 4.4 * mm, "E")
+# not effective: back into the plan
+ly_ = y - fh + 5.4 * mm
+lx1, lx2 = ex + ew_ / 2, hx + hw - 8 * mm
+c.setStrokeColor(DEEP)
+c.setLineWidth(1)
+c.line(lx1, mid - eh_ / 2, lx1, ly_)
+c.line(lx1, ly_, lx2, ly_)
+arrow(lx2, ly_, lx2, mid - hh / 2 - 0.3 * mm)
+text(c, Q["not_effective"], lx1 + 1.6 * mm, ly_ - 2.8 * mm, "Sans-B", 5.8, DEEP)
+bt = "back to " + Q["capa_steps"][2]
+text(c, bt, lx2 - 1.6 * mm - pdfmetrics.stringWidth(bt, "Sans", 5.6), ly_ - 2.8 * mm, "Sans", 5.6, MUTED)
+y -= fh + 3.5 * mm
+y = legend(c, [("A", Q["deviation"], "D001/2026; restarts each year."),
+               ("B", "Observation", "From an internal or external audit."),
+               ("C", Q["capa_plan"], "One list, from both."),
+               ("D", Q["effective"], "Checked: it worked."),
+               ("E", Q["closed"], "When every CAPA is effective.")], y, 5) - 5 * mm
+
+# 01 deviations
+y = sub_head(c, Q["deviations"], y, aside="01 on Quality  ·  SOP PV-SOP-021")
+chain(ML, y, CW, Q["deviation_steps"], 1)
+y -= 6 * mm + 3 * mm
+top = y
+yl = table(c, [
+    (Q["levels"][0], "No impact on patient safety or regulatory compliance."),
+    (Q["levels"][1], "May affect regulatory compliance. Needs more investigation."),
+    (Q["levels"][2], "Impact on patient safety."),
+], y, [17 * mm, colw - 17 * mm], styles=[cell_b, cell_st], pad=1.2 * mm)
+yr = para(c, "<b>The investigation answers six questions:</b> what was the cause; who was involved, when and for how "
+             "long; could it happen again; has it happened before; does it touch other products or processes; and "
+             "the training status of the people involved. Then the root cause. The QA manager marks it <b>" +
+             Q["satisfactory"] + "</b> or <b>" + Q["not_satisfactory"] + "</b>, and approves. The deviation closes "
+             "only when every CAPA of it is effective.", ink_tiny, ML + colw + 8 * mm, top, colw)
+y = min(yl, yr) - 4 * mm
+
+# 02 audits
+y = sub_head(c, Q["audits"], y, aside="02 on Quality  ·  SOP PV-SOP-022")
+y = para(c, "<b>" + Q["internal"] + "</b>, by the PV department in the last quarter of every year, or <b>" +
+         Q["external"] + "</b>, by another marketing authorisation holder. Each observation is graded critical, major "
+         "or minor, and assigned to one person. From the day the report arrives each deadline shows as due, late or "
+         "done. The submission: an internal audit's CAPA on the reporting system, an external one's e-mailed to the "
+         "auditors. Then the <b>" + Q["final_report"] + "</b>, and the lead auditor's <b>" + Q["closure"] + "</b>.",
+         ink_tiny, ML, y, CW) - 3 * mm
+th = 21 * mm
+frame(c, ML, y, CW, th)
+w_ = text(c, "External audit", ix, y - 5 * mm, "Sans-B", 6.6)
+text(c, "Report arrived Mon 9 Nov 2026", ix + w_ + 3 * mm, y - 5 * mm, "Sans", 6, MUTED)
+due_ = Q["due"].format(what=Q["audit_deadlines"][3], date="Thu 19 Nov", n=3)
+text(c, due_, ML + CW - 5 * mm - pdfmetrics.stringWidth(due_, "Sans-B", 6.4), y - 5 * mm, "Sans-B", 6.4, DEEP)
+tx0 = ix + 8 * mm
+tstep = (CW - 26 * mm) / 5
+tly = y - 12.5 * mm
+c.setFillColor(MARK)
+c.rect(tx0, tly - 1.2 * mm, tstep * 2.7, 2.4 * mm, stroke=0, fill=1)
+rule(c, tx0, tly, tx0 + tstep * 5, INK, 0.8)
+for k, (nm, day, date_, st) in enumerate(zip(Q["audit_deadlines"], [0, 1, 2, 10, 12, 14],
+                                            ["Mon 9 Nov", "Tue 10 Nov", "Wed 11 Nov", "Thu 19 Nov", "Sat 21 Nov",
+                                             "Mon 23 Nov"],
+                                            ["", Q["done"], Q["done"], "3 days left", "", ""], strict=True)):
+    x = tx0 + k * tstep
+    c.setStrokeColor(INK)
+    c.setLineWidth(0.8)
+    c.line(x, tly - 1.6 * mm, x, tly + 1.6 * mm)
+    for s_, f_, sz, col, dy in [(nm, "Sans-B", 6.4, DEEP if k == 3 else INK, 2.8),
+                                (f"{date_}  ·  day {day}", "Sans", 6, INK, -4.4),
+                                (st, "Sans-B", 5.8, DEEP if k == 3 else SEA, -7.4)]:
+        sw = pdfmetrics.stringWidth(s_, f_, sz)
+        text(c, s_, x - 1 * mm if k == 0 else x - sw / 2, tly + dy * mm, f_, sz, col)
+y -= th + 4 * mm
+
+# 03 the CAPA plan
+y = sub_head(c, Q["capa_plan"], y, aside="03 on Quality  ·  from both sources, late first")
+xs, bw = chain(ML, y, CW, Q["capa_steps"], 2)
+ly_ = y - 9.4 * mm
+lx1, lx2 = xs[3] + bw / 2, xs[2] + bw / 2
+c.setStrokeColor(DEEP)
+c.setLineWidth(1)
+c.line(lx1, y - 6 * mm, lx1, ly_)
+c.line(lx1, ly_, lx2, ly_)
+arrow(lx2, ly_, lx2, y - 6.3 * mm)
+text(c, Q["not_effective"], lx2 + 2 * mm, ly_ - 3 * mm, "Sans-B", 5.8, DEEP)
+text(c, "sends it back to " + Q["capa_steps"][2], lx2 + 2 * mm + pdfmetrics.stringWidth(Q["not_effective"], "Sans-B", 5.8) +
+     1.6 * mm, ly_ - 3 * mm, "Sans", 5.6, MUTED)
+y = ly_ - 6 * mm
+cws = [24 * mm, 36 * mm, 48 * mm, 22 * mm, 28 * mm, CW - 158 * mm]
+x = ML
+for h_, w0 in zip(Q["capa_columns"], cws, strict=True):
+    micro(c, h_, x, y - 5, size=5.8, spacing=0.8)
+    x += w0
+y -= 3.4 * mm
+rule(c, ML, y, ML + CW, INK, 0.8)
+for num, frm, step, due, st, late in [
+        ("CAPA-001/2026", "D001/2026", Q["capa_steps"][2], "Thu 12 Nov 2026", "late by 4 days", True),
+        ("CAPA-002/2026", Q["from_observation"].format(audit="External audit", n=3), Q["capa_steps"][1],
+         "Thu 26 Nov 2026", "10 days left", False)]:
+    yy = y - 3.6 * mm
+    xx = ML
+    text(c, num, xx, yy, "Mono", 6.2)
+    chip(c, xx, yy - 4.6 * mm, step)
+    xx += cws[0]
+    text(c, frm, xx, yy, "Sans", 6.2)
+    xx += cws[1]
+    c.setFillColor(INK)
+    c.rect(xx, yy - 0.2 * mm, cws[2] * 0.82, 1.8 * mm, stroke=0, fill=1)
+    c.rect(xx, yy - 3.4 * mm, cws[2] * 0.56, 1.8 * mm, stroke=0, fill=1)
+    xx += cws[2]
+    text(c, "Sama Mosaad", xx, yy, "Sans", 6.2)
+    xx += cws[3]
+    text(c, due, xx, yy, "Sans", 6.2)
+    text(c, st, xx, yy - 3.2 * mm, "Sans-B", 5.8, DANGER if late else DEEP)
+    xx += cws[4]
+    text(c, "Not yet", xx, yy, "Sans", 6.2, MUTED)
+    y -= 8.4 * mm
+    rule(c, ML, y, ML + CW, RULE)
+y -= 5 * mm
+
+y = notes_row(c, [
+    ("Who records", "Readers see everything, with no buttons. Reviewers and administrators record."),
+    ("Nothing deleted", "Nothing is ever deleted. Every step is kept in a history nobody can change."),
+    ("The morning message", "After 07:00 Cairo: the CAPAs, and the next audit deadline, due within 2 days or "
+                            "late."),
+    ("The inspection pack", "Administrators: a Quality section, with Deviations, Audits and CAPA plan sheets."),
+], y, 4, gap=5 * mm) - 3 * mm
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 23 · FOR THE SOP ═════════════════════════
 new_page("For the SOP")
-y = running_head(c, "09  ·  For the SOP and the master file")
-y = head(c, "09", "For the SOP and the master file", y)
+y = running_head(c, "10  ·  For the SOP and the master file")
+y = head(c, "10", "For the SOP and the master file", y)
 y = para(c, "What PHAROS covers, a routine to screen with it, and the record it keeps. Written to be lifted into "
-            "the SOP and the pharmacovigilance system master file.", what_st, ML, y, CW) - 4 * mm
+            "the SOP and the pharmacovigilance system master file.", what_st, ML, y, CW) - 3 * mm
 
 y = label(c, "Scope", y)
 y = para(c, "PHAROS screens, for the active ingredients on its watchlist and their drug classes: the safety "
@@ -2631,7 +2884,8 @@ y = table(c, [
     ("When a case arrives", "Open it on <b>Cases</b>; check it against the document and confirm it; send it within "
                             "15 days, 90 if not serious, and record it as sent."),
     ("For a PSUR or an inspection", "Ask for the pack on <b>Reports</b>; sign it once it is made."),
-    ("A deviation or an audit", "Record it on <b>Quality</b>, and take each of its CAPAs to verified effective."),
+    ("When a deviation happens or an audit report arrives", "Record it on <b>Quality</b>. Work its CAPA through to "
+                                                            "effective; the morning message lists what is due."),
 ], y, [44 * mm, CW - 44 * mm], header=["When", "What to do"], styles=[cell_b, cell_st]) - 4 * mm
 
 y = label(c, "The record PHAROS keeps", y)
@@ -2648,14 +2902,11 @@ y = notes_row(c, [
 
 y = label(c, "Deviations, audits and CAPA", y)
 colw2 = (CW - 9 * mm) / 2
-yl = para(c, "<b>A deviation (PV-SOP-021).</b> A hand check not recorded, a case past its clock, section 06 left "
-             "undone, a finding reported after five days: record it on <b>Quality</b>, 01 Deviations, as on "
-             "PV-FM-009 (D001/2026). QA sets its level; then the investigation, the CAPA, the approval, and closing "
-             "once every CAPA is effective.", tiny, ML, y, colw2)
-yr = para(c, "<b>An audit (PV-SOP-022).</b> 02 Audits counts from the report day: review by day 1, meeting 2, draft "
-             "CAPA 10, approval 12, submission 14. Each observation gets its CAPAs. 03 CAPA plan takes every CAPA "
-             "(CAPA-001/2026) to verified effective. Nothing is deleted. PV-SOP-024 sets out the quality system.",
-          tiny, ML + colw2 + 9 * mm, y, colw2)
+yl = para(c, "<b>Kept on Quality (page 22):</b> each deviation (PV-SOP-021), such as a case past its clock, and "
+             "each audit observation (PV-SOP-022), with its CAPA plan.", tiny, ML, y, colw2)
+yr = para(c, "<b>The evidence for an audit:</b> the weekly reports with their SHA-256 and signatures, the screening "
+             "log, the inspection pack, the audit log. PV-SOP-024 sets out the quality system.", tiny,
+          ML + colw2 + 9 * mm, y, colw2)
 y = min(yl, yr) - 5 * mm
 
 y = navy_band(c, y, "Remember", [
@@ -2664,8 +2915,8 @@ y = navy_band(c, y, "Remember", [
     "A decision is never edited. You record a new one after it.",
     "A finding that concerns us reaches the Egyptian Drug Authority within five days.",
     "Every date and time, on screen and in the reports, is Cairo time.",
-], gap=4.5 * mm, size=9.8)
-y -= 5.5 * mm
+], gap=5.2 * mm, size=9.8)
+y -= 6 * mm
 centred(c, "PHAROS Handbook  ·  Edition 4  ·  November 2026  ·  Sato Pharma, Pharmacovigilance", "Serif-I", 8.6, y,
         MUTED)
 y -= 2 * mm
