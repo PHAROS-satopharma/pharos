@@ -1,6 +1,12 @@
-/* The phone app (November 2026): the three screening tabs, Cases, and People for administrators, in a bar at the foot
-   of the screen below 760px, in place of the old Menu button. Flat: a 1px rule on top, labelled tabs at least
-   48px tall, the current tab in the accent colour with a 2px beacon rule. No icons, shadow or gloss.
+/* The phone app (November 2026): the screening tabs, Cases, Quality, and People for the administrator who manages
+   the people, in a bar at the foot of the screen below 760px, in place of the old Menu button. Flat: a 1px rule on
+   top, labelled tabs at least 48px tall, the current tab in the accent colour with a 2px beacon rule. No icons,
+   shadow or gloss.
+
+   Every word is shown whole. Each tab is as wide as its word and the spare width is shared out, so "Ingredients"
+   (70px at 13px in IBM Plex Sans) is not held to a seventh of the screen; six tabs fit at 13px down to 350px.
+   Seven tabs (with People) step down to 12px under 400px, 11px under 370px and 10px under 340px; everyone else
+   steps to 11px under 350px. The ellipsis stays only as the last resort on a screen narrower than any phone.
 
    index.html sets viewport-fit=cover so the page may reach under a phone's notch and gesture bar; the
    safe-area insets below keep every word clear of them (each inset is 0 on a screen without them). */
@@ -29,7 +35,7 @@ body {
   /* Two classes, so the global a and a:hover colours never win over a tab. */
   .tabbar .tabbar-link {
     display: flex;
-    flex: 1 1 0;
+    flex: 1 1 auto;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -73,6 +79,35 @@ body {
   /* The page ends above the bar (the bar's own safe-area inset is the body's bottom padding). */
   .app {
     padding-bottom: 56px;
+  }
+}
+
+/* Seven tabs: People is the seventh. */
+@media (max-width: 400px) {
+  .tabbar:has(> .tabbar-link:nth-child(7)) .tabbar-link {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 370px) {
+  .tabbar:has(> .tabbar-link:nth-child(7)) .tabbar-link {
+    padding-right: 3px;
+    padding-left: 3px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 350px) {
+  .tabbar .tabbar-link {
+    padding-right: 3px;
+    padding-left: 3px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 340px) {
+  .tabbar:has(> .tabbar-link:nth-child(7)) .tabbar-link {
+    font-size: 10px;
   }
 }
 
