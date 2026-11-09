@@ -797,6 +797,74 @@ re-file what it found; `RemoveSource`) under `features/sources/`. A source a per
 (`USER_SOURCE_KINDS`, `lib/types.ts`): only the label watch reads those. SQL test: `supabase/tests/remove_ingredient_and_source.sql`.
 
 
+## Quality: deviations, audits and the CAPA plan (0107)
+
+Dr Sama's three SOPs: an observation that needs a CAPA comes from a deviation (PV-SOP-021, form PV-FM-009) or an
+audit observation (PV-SOP-022, plan PV-FM-011, report PV-FM-012); both end in the one CAPA plan (PV-FM-010,
+PV-FM-013). PV-SOP-024 (the QMS) is only the overview.
+
+```sql
+deviation (id, year, serial, ref 'D' || lpad(serial,3,'0') || '/' || year,  -- D001/2026; serial per year, taken
+           title, description, occurred_on, detected_on,                      -- under an advisory lock; unique (year, serial)
+           level 1|2|3 (null until QA sets it), patient_safety, regulatory_compliance, document_quality,
+           inv_cause, inv_people_time, inv_reoccur, inv_similar, inv_other_impact, inv_training, root_cause,
+           qa_satisfactory, status open|investigating|capa|approved|closed, created_by, approved_by/at, closed_by/at)
+audit (id, kind internal|external, title, auditor, lead_auditor, planned_on, plan_sent_on, visit_from, visit_to,
+       rfi_received_on, rfi_answered_on, report_received_on (day zero), reviewed_on, meeting_on, capa_drafted_on,
+       capa_approved_on, capa_submitted_on, final_report_on, closure_confirmed_on,
+       status planned|report_received|capa_submitted|closed, created_by)
+audit_observation (id, audit_id, number (within the audit), text, grade critical|major|minor,
+                   assigned_to person | assigned_other text, root_cause, created_by)
+capa (id, year, serial, ref 'CAPA-' || lpad(serial,3,'0') || '/' || year,
+      deviation_id | observation_id  -- exactly one (check capa_one_source)
+      corrective_action, preventive_action, owner_id person | owner_other text, due_on,
+      status draft|approved|in_progress|done|effective, evidence, done_on, verified_by/at, created_by)
+quality_event (id, record_kind deviation|audit|observation|capa, record_id, step, from_status, to_status, comment,
+               before jsonb, after jsonb, person_id, at)
+  -- append-only: update, delete and truncate refused for every role, the owner included
+```
+
+All five tables: audited (`audit_row`), read by every member of the team (`my_role() is not null`), no insert,
+update or delete for `authenticated`, nothing for `anon` or `service_role`. Writes only through these functions
+(security definer; a reviewer or an administrator, else 42501; each writes its `quality_event` row):
+
+```sql
+deviation_open(p_title, p_description, p_occurred_on, p_detected_on,
+               p_patient_safety, p_regulatory_compliance, p_document_quality) returns uuid
+deviation_update(p_id, p_expected text, p jsonb, p_comment)           -- description, the six answers, root cause
+deviation_set_level(p_id, p_expected, p_level int, p_comment)        -- comment required
+deviation_step(p_id, p_to, p_expected, p_comment, p_satisfactory)    -- investigating | capa (level and root cause)
+  -- | approved (comment; satisfactory true needs a CAPA, false sends it back to investigating)
+  -- | closed (comment; every CAPA of it effective)
+audit_open(p_kind, p_title, p_auditor, p_lead_auditor, p_planned_on, p_visit_from, p_visit_to,
+           p_report_received_on) returns uuid                        -- with a report day: report_received at once
+audit_update(p_id, p_expected, p jsonb, p_comment)                   -- the days; a done day is not in the future
+                                                                     -- and on or after the report day
+audit_step(p_id, p_to, p_expected, p_comment, p_on date)             -- report_received | capa_submitted
+  -- | closed (comment, the closure confirmation day, every CAPA of it effective)
+audit_add_observation(p_audit, p_text, p_grade, p_assigned_to, p_assigned_other, p_root_cause) returns uuid
+audit_observation_update(p_id, p jsonb, p_comment)
+capa_open(p_deviation, p_observation, p_corrective, p_preventive, p_owner, p_owner_other, p_due_on) returns uuid
+capa_update(p_id, p_expected, p jsonb, p_comment)                    -- a due day moved after approval: comment
+capa_step(p_id, p_to, p_expected, p_comment, p_done_on, p_evidence)  -- approved (comment, owner, due day)
+  -- | in_progress | done (evidence) | effective (comment; verified_by) | not_effective (comment; back to in_progress)
+quality_state() returns jsonb                                        -- any member of the team, else 42501
+  -- {today, deviations: [… history], audits: [… deadlines, observations, history],
+  --  capas: [… source, deviation_ref | audit_title + observation_number, owner_name, due, history]}
+  -- deadline / due: {key?, due, done_on, days_left, state done|late|soon (0-2 days)|running}, Cairo days.
+  -- Audit deadlines from report_received_on: review +1, meeting +2, draft +10, approval +12, submission +14;
+  -- before the report, an internal audit's plan 14 days before the visit; a request for information +3 (72 hours).
+```
+
+`p_expected` is the status the person saw: when the row moved meanwhile the write is refused with **PH409**
+`STALE_QUALITY: …`, as `signal_take_step` does. The `_as` paths (`deviation_open_as`, `capa_open_as`, taking the
+person and the day) and the helpers are granted to nobody. Nothing is ever deleted: a correction is an update with
+its before and after in the history.
+
+Web: `features/quality/` (`QualityPage.tsx`, `Deviations.tsx`, `Audits.tsx`, `CapaPlan.tsx`, `parts.tsx`; the pure
+helpers in `quality.ts` with `quality.test.ts`), `styles/quality.css`, route `/quality`, tab Quality after Cases
+(`nav.ts`). SQL test: `supabase/tests/quality.sql`.
+
 ## Environment / secrets
 
 | Secret | Used by |

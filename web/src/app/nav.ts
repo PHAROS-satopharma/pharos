@@ -20,10 +20,14 @@ export const SCREENING_TABS: readonly Tab[] = [
  *  reviewer or an administrator opens and confirms them). */
 export const CASES_TAB: Tab = { to: '/cases', label: 'Cases' };
 
-/** The tabs a person sees: the screening tabs, Cases, and People (a setting) for the administrator who manages
- *  the people only (person.manages_people, migration 0053: Dr Sama is an administrator without it). */
+/** Quality (migration 0107): deviations, audits and the one CAPA plan both feed. For everyone (a reader sees;
+ *  a reviewer or an administrator records and takes the steps). */
+export const QUALITY_TAB: Tab = { to: '/quality', label: 'Quality' };
+
+/** The tabs a person sees: the screening tabs, Cases, Quality, and People (a setting) for the administrator who
+ *  manages the people only (person.manages_people, migration 0053: Dr Sama is an administrator without it). */
 export function tabsFor(managesPeople: boolean): Tab[] {
-  const tabs = [...SCREENING_TABS, CASES_TAB];
+  const tabs = [...SCREENING_TABS, CASES_TAB, QUALITY_TAB];
   return managesPeople ? [...tabs, { to: '/people', label: 'People' }] : tabs;
 }
 

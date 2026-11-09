@@ -14,6 +14,7 @@ import { ReportsPage } from '../features/reports/ReportsPage';
 import { CasesPage } from '../features/cases/CasesPage';
 import { CaseView } from '../features/cases/CaseView';
 import { TerminologyPage } from '../features/terminology/TerminologyPage';
+import { QualityPage } from '../features/quality/QualityPage';
 import { Button } from '../ui/Button';
 import { Empty, Loading } from '../ui/States';
 import { PharosMark } from '../ui/PharosMark';
@@ -130,6 +131,7 @@ export function AppRoutes() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="cases" element={<CasesPage />} />
         <Route path="cases/:id" element={<CaseView />} />
+        <Route path="quality" element={<QualityPage />} />
         <Route path="terminology" element={<TerminologyPage />} />
         <Route path="terminology/:source/:code" element={<TerminologyPage />} />
         <Route path="people" element={managesPeople ? <PeoplePage /> : <Navigate to="/" replace />} />

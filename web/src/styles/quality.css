@@ -1,0 +1,332 @@
+/* The Quality tab (0107): deviations, audits and the CAPA plan. Flat colour, 1px rules, square corners, the
+   tokens only. Phone first: one column at 375px with no sideways scroll; every button and field at least 44px
+   tall. Two columns for forms and facts from 760px. */
+
+.quality .btn,
+.quality .field {
+  min-height: 44px;
+}
+.quality .toggle {
+  min-height: 44px;
+}
+
+/* ───────── lists and cards ───────── */
+.q-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.q-card {
+  min-width: 0;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.q-card.is-late {
+  border-left: 3px solid var(--danger);
+}
+.q-card.is-open {
+  border-color: var(--text);
+}
+.q-detail .q-card,
+.q-obs .q-card {
+  background: var(--paper);
+}
+.q-pad {
+  padding: 12px 14px;
+}
+
+/* the row that opens a record: the whole row is the button */
+.q-row {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.q-row:hover {
+  background: var(--surface-2);
+}
+.q-row:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: -2px;
+}
+.q-ref {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.q-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.q-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.q-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.q-source {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── status words ───────── */
+.q-status,
+.q-grade {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 20px;
+}
+.q-dev-closed,
+.q-audit-closed,
+.q-capa-effective {
+  border-color: var(--sea);
+  color: var(--sea);
+}
+.q-dev-open,
+.q-audit-planned,
+.q-capa-draft {
+  color: var(--muted);
+}
+.q-grade-critical {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.q-grade-major {
+  border-color: var(--beacon-deep);
+  color: var(--beacon-deep);
+}
+.q-late {
+  color: var(--danger);
+  font-weight: 600;
+}
+.q-soon {
+  color: var(--beacon-deep);
+  font-weight: 600;
+}
+
+/* ───────── the audit deadlines ───────── */
+.q-deadlines {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0 14px 10px;
+  list-style: none;
+}
+.q-deadline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-height: 32px;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--rule);
+  font-size: 13.5px;
+}
+.q-deadline.is-done {
+  border-left-color: var(--sea);
+  color: var(--muted);
+}
+.q-deadline.is-soon {
+  border-left-color: var(--beacon);
+}
+.q-deadline.is-late {
+  border-left-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+.q-deadline-text {
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.q-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.q-inline .field {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* ───────── a record opened ───────── */
+.q-detail {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--rule);
+}
+.q-sub {
+  margin: 18px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.q-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px 18px;
+  margin: 10px 0;
+}
+.q-fact {
+  min-width: 0;
+}
+.q-fact dt {
+  display: block;
+  color: var(--muted);
+}
+.q-fact dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.q-pre {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.q-obs {
+  min-width: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+.q-detail > .q-list {
+  gap: 0;
+}
+
+/* ───────── forms ───────── */
+.q-add {
+  margin: 4px 0 8px;
+}
+.q-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px 16px;
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.q-form-what {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+}
+.q-form > .small {
+  margin: 0;
+}
+.q-impact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.q-impact legend {
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+}
+.q-blocked {
+  color: var(--muted);
+  font-size: 13px;
+}
+.q-steps {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+.q-step-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.q-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px 16px;
+  margin: 8px 0;
+}
+.q-counts {
+  margin: 4px 0 8px;
+}
+
+/* ───────── the history ───────── */
+.q-history {
+  margin-top: 12px;
+  font-size: 13px;
+}
+.q-history summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.q-history-list {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0 0 0 12px;
+  border-left: 1px solid var(--rule);
+  list-style: none;
+}
+.q-history-what {
+  font-weight: 600;
+}
+.q-history-who {
+  color: var(--muted);
+}
+.q-history-words {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── wider screens ───────── */
+@media (min-width: 760px) {
+  .q-form,
+  .q-facts,
+  .q-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .q-wide {
+    grid-column: 1 / -1;
+  }
+  .q-filters {
+    max-width: 640px;
+  }
+}
+
+/* On a phone every button takes the full width, in reach of the thumb. */
+@media (max-width: 759px) {
+  .quality .button-row .btn,
+  .q-step-choice .btn {
+    flex: 1 1 100%;
+  }
+}

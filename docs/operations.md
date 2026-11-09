@@ -1284,6 +1284,42 @@ ingredient, from ClinicalTrials.gov, the registry of the U.S. National Library o
   which every search failed ends red; one ingredient's failed search is counted ("1 to try again"), changes nothing
   for that ingredient, and is tried again the next week.
 
+## Quality: deviations, audits and CAPA
+
+The **Quality** tab (migration 0107) follows Dr Sama's SOPs: an observation that needs a CAPA comes from a
+deviation (PV-SOP-021) or from an audit (PV-SOP-022), and both end in the same CAPA plan. Everyone signed in sees
+the tab; a reviewer or an administrator records and takes the steps (a reader sees no buttons).
+
+- **01 Deviations.** *Record a deviation* (form PV-FM-009): the title, what happened in full, the days it happened
+  and was detected, and the potential impact (patient safety, regulatory compliance, document quality). It is
+  numbered D001/2026, D002/2026 … (the numbers start again each year). Notify QA at once: QA sets the level
+  (1 no impact, 2 may affect compliance, 3 impact on patient safety) with the reason. Opening a deviation shows
+  the record, the six investigation questions and the root cause (*Write the investigation*), its CAPAs (*Add a
+  CAPA*), the history and the next step: start the investigation; root cause found, plan the CAPA (once the level
+  and the root cause are known); the QA Manager marks it satisfactory and approves it, or not satisfactory (back to
+  the investigation); close it, only when every CAPA of it is effective.
+- **02 Audits.** *Plan or record an audit*: internal (the PV department, last quarter of the year; the audit plan
+  goes to the QPPV two weeks before) or external (another marketing authorisation holder), the auditor, the days,
+  and the day the report was received. From that day each audit shows its deadlines: QPPV review by day 1, meeting
+  by day 2, draft CAPA by day 10, all CAPAs approved by day 12, CAPA submitted by day 14 — "Draft CAPA by Thu 19 Nov
+  · 3 days left", "late by 2 days" or "done". *Done on…* records the day each was done; *Change the days* records
+  the final report, the closure confirmation and a request for information (answered within 72 hours). Opening an
+  audit shows its observations (graded critical, major or minor, assigned to a stakeholder, with the root cause)
+  and each observation's CAPAs. An audit closes with the lead auditor's closure confirmation and every CAPA
+  effective. Audit reports are confidential: they stay within the team.
+- **03 CAPA plan.** Every CAPA from both sources in one list, the late ones first, filtered by status and by
+  source: its number (CAPA-001/2026), where it comes from ("from D001/2026", "from Audit …, observation 2"), the
+  actions, the owner (a PHAROS person, or someone outside PHAROS by name), the due day, the status and the
+  evidence. Draft → approved (an owner and a due day) → in progress → done (the evidence: what was done, a document
+  reference or a link) → verified effective, or not effective (back to work).
+
+A judgement (a level, an approval, effective or not, closing) needs a comment. If someone else changed the record a
+moment before, the step is refused and the tab reloads. **Nothing is ever deleted**: every change is a new line in
+the record's history (who, when, the comment, and what it was before and after), and the history itself cannot be
+changed.
+
+Deploying: apply migration 0107 before the new app (the tab calls its functions).
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings
