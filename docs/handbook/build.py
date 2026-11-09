@@ -19,7 +19,7 @@ from reportlab.platypus import Paragraph
 from kit import *
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else str(Path(__file__).with_name("PHAROS Handbook.pdf"))
-TOTAL = 16
+TOTAL = 22
 BOTTOM = 19 * mm
 report = []
 DANGER = HexColor("#A8322D")
@@ -35,9 +35,19 @@ cell_b = ParagraphStyle("cell_b", parent=cell_st, fontName="Sans-B")
 ntitle = ParagraphStyle("ntitle", parent=body, fontName="Sans-B", fontSize=8.6, leading=11, textColor=INK)
 
 
+PAGE = 0
+
+
+def new_page(label_):
+    """Start the next page: its paper, foot and page number."""
+    global PAGE
+    PAGE += 1
+    page_furniture(c, PAGE, TOTAL, label_)
+
+
 def check(page, y):
     report.append(f"page {page}: {round((y - BOTTOM) / mm, 1)} mm spare")
-    if y < BOTTOM:
+    if y < BOTTOM and not __import__("os").environ.get("HB_DRAFT"):
         raise SystemExit(f"page {page} overflows by {round((BOTTOM - y) / mm, 1)} mm")
 
 
@@ -267,7 +277,7 @@ c.setKeywords("PHAROS, pharmacovigilance, screening, safety notifications, weekl
 c._doc.info.producer = "Sato Pharma"
 
 # ═════════════════════════ PAGE 1 · COVER, NAME, ENGINE ═════════════════════════
-page_furniture(c, 1, TOTAL, "The idea")
+new_page("The idea")
 c.setStrokeColor(INK)
 c.setLineWidth(0.7)
 c.rect(5 * mm, 5 * mm, W - 10 * mm, H - 10 * mm, stroke=1, fill=0)
@@ -386,11 +396,11 @@ for i, (n, t, pg) in enumerate(contents):
     micro(c, str(pg), x + ccw, ry - 3.9 * mm, size=6.4, align="right")
 y -= 2 * 5.4 * mm
 rule(c, ML, y, W - MR, RULE)
-check(1, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 2 · THE METHOD ═════════════════════════
-page_furniture(c, 2, TOTAL, "How PHAROS screens")
+new_page("How PHAROS screens")
 y = running_head(c, "01  ·  How PHAROS screens")
 y = head(c, "01", "How PHAROS screens", y)
 y = para(c, "PHAROS replaces the manual screen of regulatory safety information for the active ingredients we "
@@ -514,11 +524,11 @@ y = notes_row(c, [
     ("Titles as published", "Every title stays in its own language, exactly as the authority wrote it. A link "
                             "always opens the authority's own page, never a data feed."),
 ], y, 3) - 4 * mm
-check(2, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 3 · INGREDIENTS: THE WATCHLIST AND DRUG CLASSES ═════════════════════════
-page_furniture(c, 3, TOTAL, "Ingredients")
+new_page("Ingredients")
 y = running_head(c, "02  ·  Ingredients")
 y = head(c, "02", "Ingredients: the watchlist", y, sub="A drawing, not real data")
 y = para(c, "Every active ingredient we watch, looked for under every name it carries, in each regulator's own "
@@ -646,11 +656,11 @@ y = notes_row(c, [
     ("The check of the past", "A new name or class word is also checked against every stored notice, whatever "
                               "its date. What it finds is marked <b>History</b> and sends no message."),
 ], y, 3) - 4 * mm
-check(3, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 4 · INGREDIENTS: READY, AND THE JAPAN CODE ═════════════════════════
-page_furniture(c, 4, TOTAL, "Ingredients")
+new_page("Ingredients")
 y = running_head(c, "02  ·  Ingredients  ·  ready or still preparing")
 y = head(c, "", "Any ingredient she adds is covered", y, sub="A drawing, not real data")
 y = para(c, "Nothing more is asked after Save. Under its name, each ingredient's row says how far PHAROS has got in "
@@ -768,11 +778,11 @@ yr = steps(c, ["Paste it and press <b>Save</b>. Seven characters; the 12-charact
                "The row shows <b>Now 6241013 · its products on PMDA</b>. Japan's label watch uses it at its next "
                "weekly run."], ML + colw + 8 * mm, top, colw, start=3)
 y = min(yl, yr)
-check(4, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 5 · INGREDIENTS: THE INGREDIENT SCREEN ═════════════════════════
-page_furniture(c, 5, TOTAL, "Ingredients")
+new_page("Ingredients")
 y = running_head(c, "02  ·  Ingredients  ·  the vertical pass")
 y = head(c, "", "One ingredient, every source", y, sub="A drawing, not real data")
 y = para(c, "Click an ingredient's name. For the days you choose, the screen answers one question for every country: "
@@ -895,45 +905,45 @@ yr = steps(c, ["Write why. For Doesn't concern us the reason is required; for Co
 y = min(yl, yr)
 y = para(c, "Readers see the decisions; reviewers and administrators record them. A decision is never edited or "
             "deleted. <b>Concerns us</b> brings the five-day clock and the signal (pages 9 and 10).", tiny, ML, y, CW)
-check(5, y)
+check(PAGE, y)
 c.showPage()
 
-# ═════════════════════════ PAGE 6 · INGREDIENTS: NCBI LITERATURE AND LABEL CHANGES ═════════════════════════
-page_furniture(c, 6, TOTAL, "Ingredients")
-y = running_head(c, "02  ·  Ingredients  ·  NCBI literature")
-y = head(c, "", "NCBI literature: PubMed and PubMed Central", y, sub="A drawing, not real data")
-y = para(c, "At the foot of every ingredient's screen. PubMed and PubMed Central are searched every day, by the "
-            "ingredient's name and its class words, the way you search them on the NCBI websites.",
+# ═════════════════════════ PAGE 6 · INGREDIENTS: LITERATURE AND LABEL CHANGES ═════════════════════════
+new_page("Ingredients")
+y = running_head(c, "02  ·  Ingredients  ·  literature")
+y = head(c, "", "Literature: PubMed, PubMed Central and Europe PMC", y, sub="A drawing, not real data")
+y = para(c, "At the foot of every ingredient's screen. PubMed, PubMed Central and Europe PMC are searched four times "
+            "a day for the ingredient's English names, in titles and abstracts.",
          what_st, ML, y, CW) - 3 * mm
-fh = 92 * mm
+fh = 82 * mm
 frame(c, ML, y, CW, fh)
 ix = ML + 5 * mm
 iw = CW - 18 * mm
-yy = screen_sec(c, ix, y - 4 * mm, iw, "04", "Literature", "312")
-text(c, "312 papers in these days: 96 name the ingredient, 216 only its class  ·  24 in PubMed, 288 in PubMed "
-        "Central", ix, yy - 1 * mm, "Sans", 6.6)
+yy = screen_sec(c, ix, y - 4 * mm, iw, "04", "Literature", "58")
+text(c, "58 papers in these days: 58 name the ingredient, 0 only its class  ·  24 in PubMed, 31 in PubMed "
+        "Central, 41 in Europe PMC", ix, yy - 1 * mm, "Sans", 6.6)
 tag(c, tagx, yy, "A")
 yy -= 6 * mm
 micro(c, "What the daily watch searches, and what it found", ix, yy, size=5, spacing=0.6)
 yy -= 4 * mm
-qx = [ix, ix + 62 * mm, ix + 84 * mm]
-for lab, x_ in zip(["Search", "PubMed", "PubMed Central"], qx, strict=True):
+qx = [ix, ix + 62 * mm, ix + 84 * mm, ix + 112 * mm]
+for lab, x_ in zip(["Search", "PubMed", "PubMed Central", "Europe PMC"], qx, strict=True):
     micro(c, lab, x_, yy, size=5, spacing=0.6)
-rule(c, ix, yy - 1.6 * mm, ix + 112 * mm, INK, 0.6)
+rule(c, ix, yy - 1.6 * mm, ix + 134 * mm, INK, 0.6)
 yy -= 5.4 * mm
-for q, kind, a, b in [("levofloxacin", "name", "11", "84"), ("fluoroquinolones", "class word", "13", "204")]:
+for q, kind, a, b, e in [("levofloxacin", "name", "24", "31", "41")]:
     w_ = text(c, q, qx[0], yy, "Sans-B", 6.4)
     text(c, kind, qx[0] + w_ + 2 * mm, yy, "Sans", 5.6, MUTED)
     text(c, a, qx[1], yy, "Mono", 6.4)
     text(c, b, qx[2], yy, "Mono", 6.4)
-    rule(c, ix, yy - 1.8 * mm, ix + 112 * mm, RULE)
+    text(c, e, qx[3], yy, "Mono", 6.4)
+    rule(c, ix, yy - 1.8 * mm, ix + 134 * mm, RULE)
     yy -= 5 * mm
-tag(c, tagx, yy + 7 * mm, "B")
+tag(c, tagx, yy + 4.5 * mm, "B")
 yy -= 1.5 * mm
 lbutton(c, ix, yy, "Count on PubMed and PubMed Central now", size=6)
 yy -= 8 * mm
-for q, a, b in [("levofloxacin", "PubMed: 24", "PubMed Central: 185"), ("fluoroquinolones", "PubMed: 31",
-                                                                       "PubMed Central: 266")]:
+for q, a, b in [("levofloxacin", "PubMed: 24", "PubMed Central: 31")]:
     text(c, q, ix, yy, "Sans-B", 6.4)
     w1 = text(c, a, ix + 40 * mm, yy, "Sans", 6.4, SEA)
     rule(c, ix + 40 * mm, yy - 0.8 * mm, ix + 40 * mm + w1, SEA, 0.4)
@@ -941,21 +951,24 @@ for q, a, b in [("levofloxacin", "PubMed: 24", "PubMed Central: 185"), ("fluoroq
     rule(c, ix + 62 * mm, yy - 0.8 * mm, ix + 62 * mm + w2, SEA, 0.4)
     yy -= 4.4 * mm
 text(c, "Counted by publication date, as the two websites count them.", ix, yy, "Sans", 5.8, MUTED)
-tag(c, tagx, yy + 6 * mm, "C")
+tag(c, tagx, yy + 3 * mm, "C")
 yy -= 5 * mm
-for jr, cls in [("Antimicrob Agents Chemother", False), ("J Antimicrob Chemother", True)]:
+for jr, links, pre in [("Antimicrob Agents Chemother", ["PubMed", "PubMed Central", "Europe PMC"], False),
+                       ("medRxiv", ["Europe PMC"], True)]:
     rule(c, ix, yy + 1.4 * mm, ix + iw, RULE)
     micro(c, "3 Nov 2026  ·  " + jr, ix, yy - 1.6 * mm, size=5, spacing=0.6)
-    if cls:
-        chip(c, ix + 62 * mm, yy - 2.6 * mm, "By class")
+    if pre:
+        w_ = chip(c, ix + 62 * mm, yy - 2.6 * mm, "Preprint")
+        text(c, "not peer reviewed", ix + 63.5 * mm + w_, yy - 1.6 * mm, "Sans", 5.4, MUTED)
     c.setFillColor(INK)
-    c.rect(ix, yy - 5.4 * mm, iw * 0.7, 1.9 * mm, stroke=0, fill=1)
-    c.rect(ix, yy - 8 * mm, iw * 0.4, 1.9 * mm, stroke=0, fill=1)
-    w1 = text(c, "PubMed", ix, yy - 11 * mm, "Sans-B", 5.8, SEA)
-    text(c, "PubMed Central", ix + w1 + 4 * mm, yy - 11 * mm, "Sans-B", 5.8, SEA)
+    c.rect(ix, yy - 5.4 * mm, iw * (0.55 if pre else 0.7), 1.9 * mm, stroke=0, fill=1)
+    c.rect(ix, yy - 8 * mm, iw * (0.3 if pre else 0.4), 1.9 * mm, stroke=0, fill=1)
+    lx_ = ix
+    for ln in links:
+        lx_ += text(c, ln, lx_, yy - 11 * mm, "Sans-B", 5.8, SEA) + 4 * mm
     yy -= 13 * mm
-tag(c, tagx, yy + 19 * mm, "D")
-lbutton(c, ix, yy - 0.5 * mm, "Show 50 more of 262", size=6)
+tag(c, tagx, yy + 12 * mm, "D")
+lbutton(c, ix, yy - 0.5 * mm, "Show 8 more of 8", size=6)
 y -= fh + 3.5 * mm
 y = legend(c, [("A", "Stored papers", "Found by the daily watch."),
                ("B", "The searches", "What is searched, and what each found."),
@@ -964,15 +977,17 @@ y = legend(c, [("A", "Stored papers", "Found by the daily watch."),
 
 y = label(c, "How the search is made", y)
 y = table(c, [
-    ("What", "Every day, for each watched ingredient: its English name, and each English word of its drug classes. "
-             "On PubMed, and on PubMed Central (full texts)."),
-    ("How", "Typed exactly as a person types it on the NCBI websites: no quotes, no field tag, so NCBI expands it the "
-            "same way. Every page of results is read."),
-    ("Once", "A paper in both databases is kept once, with both links and the two decision buttons of its notice."),
-    ("New words", "A new ingredient or class word first reads the last 12 months. What that finds is marked "
-                  "<b>History</b>."),
+    ("What", "Four times a day, for each watched ingredient: its English names, in titles and abstracts only. A "
+             "drug class is searched only when its line says <b>In the literature search</b>; it starts as "
+             "<b>Notices only</b>."),
+    ("Where", "PubMed and PubMed Central (NCBI), and Europe PMC, which adds preprints, marked <b>Preprint</b>, not "
+              "peer reviewed. Every page of results is read, by the day each database added the paper."),
+    ("Once", "A paper found in two or three databases is kept once, with every link and the two decision buttons."),
+    ("New words", "A new ingredient first reads the last 12 months. What that finds is marked <b>History</b>."),
     ("Telegram", "Papers are read here and in the weekly report, never sent one by one, so the authorities' notices "
                  "are not buried under them. Only a possible case report goes in the daily message (page 7)."),
+    ("References", "Under the line, each literature reference: how it was screened in these days and what was "
+                   "found (page 13)."),
 ], y, [30 * mm, CW - 30 * mm], styles=[cell_b, cell_st]) - 5 * mm
 
 y = label(c, "How to see that PHAROS and NCBI agree", y)
@@ -990,11 +1005,11 @@ y = para(c, "The weekly label watch reads the product information (SPC) of produ
             "detected in the days you chose is listed under <b>Label changes</b>, with the sections that changed, "
             "what the originator added set against our own label (page 8), and the same two decision buttons.",
          ink_tiny, ML, y, CW) - 2 * mm
-check(6, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 7 · INGREDIENTS: CASE REPORTS IN THE LITERATURE ═════════════════════════
-page_furniture(c, 7, TOTAL, "Ingredients")
+new_page("Ingredients")
 y = running_head(c, "02  ·  Ingredients  ·  case reports in the literature")
 y = head(c, "", "Case reports in the literature", y, sub="A drawing, not real data")
 y = para(c, "A paper that reports a case with one of our ingredients starts its own clock: a valid serious case "
@@ -1053,6 +1068,7 @@ y = table(c, [
     ("PubMed lists it as a case report", "Its PubMed publication type is Case Reports. For a paper PubMed Central "
                                          "alone found, PHAROS reads its PubMed record too."),
     ("Its title says so", "Its title says “case report”, “case series” or “a case of”."),
+    ("It names the ingredient", "Either way, only a paper whose title or abstract names the ingredient is flagged."),
     ("Day zero, 15 days, 90 days", "Day zero is the Cairo day PHAROS first found the paper, never its publication "
                                    "date. 15 days for a valid serious case, 90 for a non-serious one."),
     ("Not monitored by EMA", "From EMA's medical literature monitoring list, read every Monday. When EMA does not "
@@ -1085,7 +1101,9 @@ label(c, "What to do with a possible case report", y, sxs)
 yr = steps(c, ["Open <b>PubMed</b> and read the paper. Is it a valid case for one of our products?",
                "Press <b>Concerns us</b>, with a comment, or <b>Doesn't concern us</b> with the reason. The decision "
                "shows on every paper of the same notice.",
-               "Concerns us also brings the five-day clock and the signal under the decision (pages 9 and 10)."],
+               "Concerns us also brings the five-day clock and the signal under the decision (pages 9 and 10).",
+               "A valid case: press <b>Open a case</b> on the paper. PHAROS fetches it from PubMed and fills "
+               "in the case form, on <b>Cases</b> (page 16)."],
            sxs, y - 12, sws)
 y = min(y - mh, yr) - 5 * mm
 y = notes_row(c, [
@@ -1094,11 +1112,11 @@ y = notes_row(c, [
     ("The weekly report", "Section 04 lists the possible case reports first, with day zero, both dates and the "
                           "decision. The summary counts those with no decision yet."),
 ], y, 2)
-check(7, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 8 · INGREDIENTS: OUR LABEL UNDER LABEL CHANGES ═════════════════════════
-page_furniture(c, 8, TOTAL, "Ingredients")
+new_page("Ingredients")
 y = running_head(c, "02  ·  Ingredients  ·  our label")
 y = head(c, "", "Our label under Label changes", y, sub="A drawing, not real data")
 y = para(c, "Each label change the label watch finds is set against our own approved label, sentence by sentence: "
@@ -1200,11 +1218,11 @@ y = notes_row(c, [
     ("In the weekly report", "Under each ingredient, one line: “Our label: 2 covered, 1 partly, 1 missing”, or why "
                              "it was not compared."),
 ], y, 3)
-check(8, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 9 · A FINDING THAT CONCERNS US: THE FIVE-DAY CLOCK ═════════════════════════
-page_furniture(c, 9, TOTAL, "When a finding concerns us")
+new_page("When a finding concerns us")
 y = running_head(c, "03  ·  When a finding concerns us  ·  the five-day clock")
 y = head(c, "03", "The five-day clock to the authority", y, sub="A drawing, not real data")
 y = para(c, "A finding that concerns us must reach the Egyptian Drug Authority within five days. PHAROS keeps "
@@ -1313,11 +1331,11 @@ y = table(c, [
                  "signal step, and uploads our label."),
     ("Administrator", "All a reviewer does, and asks for inspection packs (page 14)."),
 ], y, [30 * mm, CW - 30 * mm], styles=[cell_b, cell_st])
-check(9, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 10 · A FINDING THAT CONCERNS US: THE SIGNAL STEPS ═════════════════════════
-page_furniture(c, 10, TOTAL, "When a finding concerns us")
+new_page("When a finding concerns us")
 y = running_head(c, "03  ·  When a finding concerns us  ·  the signal steps")
 y = head(c, "", "Signal steps inside the finding", y, sub="A drawing, not real data")
 y = para(c, "A finding that concerns us is also a signal to take through validation, assessment and action. "
@@ -1423,11 +1441,11 @@ yr = steps(c, ["<b>20 Nov.</b> <b>Record the assessment</b>: Update our label, w
                "<b>The day it is done.</b> <b>Action done</b>, with what was done and its reference. The signal is "
                "closed; its history stays."], ML + colw + 8 * mm, top, colw, start=3)
 y = min(yl, yr)
-check(10, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 11 · SOURCES ═════════════════════════
-page_furniture(c, 11, TOTAL, "Sources")
+new_page("Sources")
 y = running_head(c, "04  ·  Sources  ·  the horizontal pass")
 y = head(c, "04", "Sources: every authority, by eye", y, sub="A drawing, not real data")
 y = para(c, "One card per country, her 25 countries first, then other authorities: the pages you check, and "
@@ -1545,11 +1563,617 @@ y = notes_row(c, [
     ("For administrators", "<b>Read</b> switches a source off or on. <b>Technical details</b> shows each source's "
                            "address and last error. <b>Add a source</b> tests a link before saving it."),
 ], y, 3)
-check(11, y)
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ EDITION 4 · DRAWING HELPERS FOR THE NEW PAGES ═════════════════════════
+TONE = {"ok": SEA, "warning": BEACON, "danger": DANGER}
+cell_s = ParagraphStyle("cell_s", parent=cell_st, fontSize=6.3, leading=8.4)
+cell_sb = ParagraphStyle("cell_sb", parent=cell_s, fontName="Sans-B")
+
+
+def status(c, x, y, tone, s, size=6):
+    """A line as the app marks it: a square in the tone's colour, then the words."""
+    dot(c, x, y - 0.2 * mm, TONE[tone])
+    return 3.2 * mm + text(c, s, x + 3.2 * mm, y, "Sans" if tone == "ok" else "Sans-B", size)
+
+
+def link(c, s, x, y, size=6.4, font="Sans-B"):
+    w_ = text(c, s, x, y, font, size, SEA)
+    rule(c, x, y - 0.8 * mm, x + w_, SEA, 0.4)
+    return w_
+
+
+def tools_right(c, xr, y, items, size=5.6):
+    """Buttons ending at xr, on the baseline y, each (words, 'dark' | 'light' | 'quiet'). Returns the left edge."""
+    x = xr
+    for s, kind in reversed(items):
+        if kind == "quiet":
+            x -= pdfmetrics.stringWidth(s, "Sans-B", size)
+            text(c, s, x, y, "Sans-B", size)
+        else:
+            x -= pdfmetrics.stringWidth(s, "Sans-B", size) + 4.4 * mm
+            lbutton(c, x, y + 3 * mm, s, dark=kind == "dark", size=size, h=4.2 * mm)
+        x -= 3 * mm
+    return x
+
+
+def tools_left(c, x, y, items, size=5.6):
+    """Buttons starting at x, on the baseline y. Returns the right edge."""
+    for s, kind in items:
+        if kind == "quiet":
+            x += text(c, s, x, y, "Sans-B", size)
+        else:
+            x += lbutton(c, x, y + 3 * mm, s, dark=kind == "dark", size=size, h=4.2 * mm)
+        x += 3 * mm
+    return x
+
+
+def field(c, x, y, w, label_, value="", hint=None, placeholder=False, size=6):
+    """A form field: its label over a white box holding its value (a placeholder in grey); y is the label's top."""
+    micro(c, label_, x, y - 2 * mm, size=4.8, spacing=0.5, color=INK)
+    c.setFillColor(WHITE)
+    c.setStrokeColor(RULE)
+    c.setLineWidth(0.6)
+    c.rect(x, y - 7.8 * mm, w, 4.6 * mm, stroke=1, fill=1)
+    if value:
+        text(c, value, x + 1.4 * mm, y - 6.1 * mm, "Sans", size, MUTED if placeholder else INK)
+    if hint:
+        text(c, hint, x, y - 10.2 * mm, "Sans", 5.1, MUTED)
+        return y - 11.6 * mm
+    return y - 9.4 * mm
+
+
+def page_title(c, x, y, eyebrow, title_):
+    """The app's page head: a micro eyebrow over a serif title."""
+    micro(c, eyebrow, x, y, size=5, spacing=0.7, color=DEEP)
+    text(c, title_, x, y - 5.4 * mm, "Serif-B", 11)
+
+
+# ═════════════════════════ PAGE 12 · SOURCES: LITERATURE REFERENCES ═════════════════════════
+new_page("Sources")
+y = running_head(c, "04  ·  Sources  ·  literature references")
+y = head(c, "", "Literature references, Global and Local", y, sub="A drawing, not real data")
+y = para(c, "The first card on Sources: where the literature is screened for every ingredient, and the negative "
+            "result of each, week by week. Searched by the app, or checked by hand.", what_st, ML, y, CW) - 3 * mm
+fh = 104 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+iw = CW - 18 * mm
+yy = y - 7.5 * mm
+text(c, "Literature references", ix, yy, "Serif-B", 11)
+yy -= 4.2 * mm
+text(c, "Where the literature is screened for every ingredient, and the negative result of each, week by week.",
+     ix, yy, "Sans", 6, MUTED)
+yy -= 2.6 * mm
+rule(c, ix, yy, ix + iw, INK, 0.7)
+yy -= 5.6 * mm
+kx = ix + 58 * mm
+HAND = [("Checked: nothing found", "light"), ("Checked: found something", "quiet")]
+ADMIN = [("Change", "quiet"), ("Remove", "quiet")]
+SEARCHED = "Searched by the app — {} searches this week, last 7 Nov 2026, 20:41"
+marks = {}
+for title_, explain, add, rows in [
+    ("Global", "The international literature databases.", "Add a global reference", [
+        ("PubMed (NCBI)", False, "ok", SEARCHED.format(28)),
+        ("PubMed Central (NCBI)", False, "ok", SEARCHED.format(28)),
+        ("Europe PMC", False, "warning", SEARCHED.format(14) + "; 1 read failed"),
+        ("Cochrane Database of Systematic Reviews", False, "ok", SEARCHED.format(42)),
+        ("Medscape", True, "ok", "Checked by hand — Sama Mosaad, 5 Nov 2026, 11:20: nothing found")]),
+    ("Local", "The Egyptian medical journals the Egyptian Drug Authority asks for.", "Add a local reference", [
+        ("Al-Azhar Medical Journal", True, "danger", "Checked by hand — not checked this week"),
+        ("Ain Shams Medical Journal", True, "warning",
+         "Checked by hand — Sama Mosaad, 5 Nov 2026, 11:32: found — a review article, no case report")]),
+]:
+    marks[title_] = yy
+    micro(c, title_, ix, yy, size=5.8, spacing=0.8, color=INK)
+    text(c, explain, ix + 16 * mm, yy, "Sans", 5.8, MUTED)
+    yy -= 6 * mm
+    for name, hand, tone, st in rows:
+        link(c, name, ix, yy)
+        text(c, "By hand" if hand else "By the app", kx, yy, "Sans", 5.8, MUTED)
+        tools_right(c, ix + iw, yy, (HAND if hand else []) + ADMIN)
+        status(c, ix, yy - 3.9 * mm, tone, st, size=5.9)
+        marks[name] = yy
+        rule(c, ix, yy - 5.8 * mm, ix + iw, RULE)
+        yy -= 9 * mm
+    lbutton(c, ix, yy + 3.4 * mm, add, size=5.8, h=4.4 * mm)
+    marks[add] = yy
+    yy -= 6.4 * mm
+tag(c, tagx, marks["Global"] + 0.8 * mm, "A")
+tag(c, tagx, marks["Europe PMC"] - 3 * mm, "B")
+tag(c, tagx, marks["Medscape"] - 3 * mm, "C")
+tag(c, tagx, marks["Al-Azhar Medical Journal"] + 1 * mm, "D")
+tag(c, tagx, marks["Add a local reference"] + 1.2 * mm, "E")
+y -= fh + 3.5 * mm
+y = legend(c, [("A", "Global and Local", "Two lists, in her order."),
+               ("B", "By the app", "Its searches; a failed read shows."),
+               ("C", "By hand", "Who checked, when, the answer."),
+               ("D", "The two buttons", "Reviewers and administrators."),
+               ("E", "Administrators", "Add, Change, Remove.")], y, 5) - 4 * mm
+
+y = label(c, "Every week, the references checked by hand", y)
+top = y
+yl = steps(c, ["Open <b>Sources</b>. <b>Literature references</b> is the first card: how each reference was "
+               "screened this week.",
+               "Open each reference marked <b>By hand</b> (Medscape and the two Egyptian journals) and search it for "
+               "every ingredient on the watchlist.",
+               "Nothing found: press <b>Checked: nothing found</b>, then <b>Record: nothing found</b>. It asks twice "
+               "because a recorded check can never be changed."], ML, y, colw)
+yr = steps(c, ["Something found: press <b>Checked: found something</b>, write what was found (the article, its "
+               "link or its reference) and press <b>Record the check</b>. Then assess it as a possible case "
+               "(page 16).",
+               "A line in red, <b>not checked this week</b>, is still to do. A line saying a read failed is not a "
+               "negative result: search that database yourself."], ML + colw + 8 * mm, top, colw, start=4)
+y = min(yl, yr) - 3.5 * mm
+y = label(c, "Lines that ask for you", y)
+y = table(c, [
+    ("…; 1 read failed  ·  Not searched by the app this week yet", "A read of that database failed, or it was not "
+                                                                   "searched yet: no negative result is claimed."),
+    ("Checked by hand — not checked this week", "Nobody has recorded a check of it this week."),
+], y, [70 * mm, CW - 70 * mm], styles=[cell_b, cell_st]) - 5 * mm
+y = notes_row(c, [
+    ("Every search logged", "Each search PHAROS sends is logged: the database, the words, the days and how many "
+                            "records came back, 0 included. Nothing logged can be changed or deleted, by anyone."),
+    ("Cochrane and Medscape", "Every Cochrane review is indexed in PubMed and Europe PMC, so the app's searches cover "
+                              "it, counted by journal. Medscape refuses automatic access: it is checked by hand."),
+    ("For administrators", "<b>Add a global reference</b> or <b>Add a local reference</b>: a name, a link, a note. A "
+                           "reference you add is checked by hand. <b>Remove</b> takes it off the list; its checks "
+                           "stay in the reports of their weeks."),
+], y, 3)
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 13 · SOURCES: EACH INGREDIENT, REFERENCE BY REFERENCE ═════════════════════════
+new_page("Sources")
+y = running_head(c, "04  ·  Sources  ·  literature references, for each ingredient")
+y = head(c, "", "Each ingredient, reference by reference", y, sub="A drawing, not real data")
+y = para(c, "On the ingredient's screen under 04 Literature, and in the reports: how each reference was screened in "
+            "the days you chose, and what was found. The negative result is written, Nothing found, even in a week "
+            "with no paper.", what_st, ML, y, CW) - 3 * mm
+fh = 74 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+iw = CW - 18 * mm
+yy = screen_sec(c, ix, y - 4 * mm, iw, "04", "Literature", "3")
+text(c, "3 papers in these days: 3 name the ingredient, 0 only its class  ·  3 in PubMed, 1 in PubMed Central, 0 in "
+        "Europe PMC", ix, yy - 1 * mm, "Sans", 6.6)
+yy -= 5.6 * mm
+micro(c, "Literature references: how each was screened in these days, and what was found", ix, yy, size=5,
+      spacing=0.6)
+yy -= 1.4 * mm
+BYAPP = "By the app — {} searches, last 7 Nov 2026, 20:41"
+top_ = yy
+yy = table(c, [
+    ("<font color='#1F4E5F'><u>PubMed (NCBI)</u></font>  <font color='#5B6670'>Global</font>", BYAPP.format(28),
+     "3 papers"),
+    ("<font color='#1F4E5F'><u>PubMed Central (NCBI)</u></font>  <font color='#5B6670'>Global</font>",
+     BYAPP.format(28), "1 paper"),
+    ("<font color='#1F4E5F'><u>Europe PMC</u></font>  <font color='#5B6670'>Global</font>",
+     BYAPP.format(14) + "; 1 read failed", "Not fully searched — check by hand"),
+    ("<font color='#1F4E5F'><u>Cochrane Database of Systematic Reviews</u></font>  "
+     "<font color='#5B6670'>Global</font>", BYAPP.format(42), "<b>Nothing found</b>"),
+    ("<font color='#1F4E5F'><u>Medscape</u></font>  <font color='#5B6670'>Global</font>",
+     "By hand — Sama Mosaad, 5 Nov 2026, 11:20", "<b>Nothing found</b>"),
+    ("<font color='#1F4E5F'><u>Al-Azhar Medical Journal</u></font>  <font color='#5B6670'>Local</font>",
+     "By hand — not checked in these days", "Not checked"),
+    ("<font color='#1F4E5F'><u>Ain Shams Medical Journal</u></font>  <font color='#5B6670'>Local</font>",
+     "By hand — Sama Mosaad, 5 Nov 2026, 11:32", "Found — a review article, no case report"),
+], yy, [62 * mm, 58 * mm, iw - 120 * mm], header=["Reference", "Screened", "Found"], x0=ix,
+    styles=[cell_sb, cell_s, cell_s], pad=1.1 * mm)
+tag(c, tagx, top_ - 6.6 * mm, "A")
+tag(c, tagx, top_ - 23 * mm, "B")
+tag(c, tagx, yy + 4 * mm, "C")
+y -= fh + 3.5 * mm
+y = legend(c, [("A", "Searched by the app", "Its searches for this ingredient, and its papers."),
+               ("B", "Not fully searched", "A read failed: no negative result claimed."),
+               ("C", "Checked by hand", "The week's hand check, for every ingredient.")], y, 3) - 6 * mm
+
+y = label(c, "What the Found column says", y)
+y = table(c, [
+    ("3 papers", "The ingredient's papers first found in these days by that database. For Cochrane, the papers "
+                 "whose journal is the Cochrane Database of Systematic Reviews."),
+    ("Nothing found", "Only when the ingredient's own name was searched in these days and no read of that database "
+                      "failed. For a reference checked by hand: the hand check found nothing."),
+    ("Not searched — check by hand", "The ingredient's name was not searched there in these days."),
+    ("Not fully searched — check by hand", "A read of that database failed in these days."),
+    ("Found — …  ·  Not checked", "A hand check found something, with what was written; or nobody recorded a check in "
+                                  "these days. A check that found something speaks for the days, even when a later "
+                                  "one found nothing."),
+], y, [56 * mm, CW - 56 * mm], styles=[cell_b, cell_st]) - 7 * mm
+
+y = sub_head(c, "The same lines in the reports", y, aside="Kept for the inspection")
+y = notes_row(c, [
+    ("The weekly and daily report", "Section 02 lists each reference with how it was screened; a gap is in bold. "
+                                    "Section 04 gives each ingredient's references: Screened and Found, Nothing found "
+                                    "in words. The Excel file has the sheet <b>Literature references</b>."),
+    ("The PSUR pack", "§11 Literature carries each reference over the pack's days: how often it was searched or "
+                      "checked by hand, and what was found. The Excel file has the sheet <b>§11 References</b>."),
+    ("Nothing logged changes", "The search log and the hand checks can never be changed or deleted, by any role. A "
+                               "reference removed later stays in the reports of the weeks it was checked."),
+], y, 3)
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 14 · SOURCES: FOR ADMINISTRATORS ═════════════════════════
+new_page("Sources")
+y = running_head(c, "04  ·  Sources  ·  for administrators")
+y = head(c, "", "Her pages, her authorities, her sources", y, sub="A drawing, not real data")
+y = para(c, "An administrator keeps Sources right herself: the pages on each country's card, an authority she checks "
+            "by hand, the sources PHAROS reads, and the literature references.", what_st, ML, y, CW) - 3 * mm
+fh = 96 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+iw = CW - 18 * mm
+yy = y - 6 * mm
+page_title(c, ix, yy, "Screening", "Sources")
+xr_ = tools_right(c, ix + iw, yy - 4.6 * mm, [("Add an authority", "light"), ("Add a source", "dark")], size=6)
+switch(c, xr_ - 29 * mm, yy - 5.2 * mm, on=False)
+text(c, "Technical details", xr_ - 21.6 * mm, yy - 4.6 * mm, "Sans", 6)
+tag(c, tagx, yy - 3.6 * mm, "A")
+yy -= 9.6 * mm
+rule(c, ix, yy, ix + iw, INK, 0.7)
+yy -= 5 * mm
+text(c, "Add an authority", ix, yy, "Sans-B", 7.4)
+tools_right(c, ix + iw, yy, [("Cancel", "quiet")])
+yy -= 1.6 * mm
+yy = para(c, "An authority you check by hand, with its first link. Its country then joins your list; add more links "
+             "on its card. The app does not read a link you add: it says “open it yourself”, so a week with nothing "
+             "found there is recorded as checked by you.",
+          ParagraphStyle("pn", parent=tiny, fontSize=6.2, leading=8.4), ix, yy, iw) - 2.4 * mm
+tag(c, tagx, yy + 6 * mm, "B")
+f3 = (iw - 8 * mm) / 3
+field(c, ix, yy, f3, "Authority", "A new authority…")
+field(c, ix + f3 + 4 * mm, yy, f3, "Country", "Egypt", placeholder=True)
+yy = field(c, ix + 2 * (f3 + 4 * mm), yy, f3, "Country code", "EG", hint="Two letters, as on its flag",
+           placeholder=True)
+field(c, ix, yy, 2 * f3 + 4 * mm, "Authority’s name", "Egyptian Drug Authority", placeholder=True)
+yy = field(c, ix + 2 * (f3 + 4 * mm), yy, f3, "Short name", "", hint="Latin letters, such as EDA") - 1 * mm
+micro(c, "Its first link", ix, yy - 1 * mm, size=5.2, spacing=0.7, color=DEEP)
+yy -= 3 * mm
+field(c, ix, yy, f3, "Name in the list", "Safety communications", placeholder=True)
+field(c, ix + f3 + 4 * mm, yy, f3, "Link", "https://", placeholder=True)
+yy = field(c, ix + 2 * (f3 + 4 * mm), yy, f3, "What it is", "Safety notifications")
+yy -= 1.4 * mm
+tools_left(c, ix, yy - 3 * mm, [("Add the authority", "dark"), ("Cancel", "quiet")], size=6)
+yy -= 9 * mm
+rule(c, ix, yy, ix + iw, RULE)
+yy -= 6.4 * mm
+text(c, "Egypt", ix, yy, "Serif-B", 11)
+text(c, "EDA", ix + 13 * mm, yy, "Sans", 6.4, MUTED)
+yy -= 3.4 * mm
+rule(c, ix, yy, ix + iw, INK, 0.7)
+yy -= 4.4 * mm
+micro(c, "The pages you check", ix, yy, size=5.2, spacing=0.7, color=INK)
+yy -= 4.8 * mm
+bars(c, ix, yy, 30 * mm, HexColor("#9DB3C7"))
+rule(c, ix, yy - 0.4 * mm, ix + 30 * mm, SEA, 0.4)
+text(c, "Safety notifications", ix + 48 * mm, yy, "Sans", 6, MUTED)
+status(c, ix + 76 * mm, yy, "warning", "Not read by the app — open it yourself", size=6)
+tools_right(c, ix + iw, yy, [("Change", "quiet"), ("Remove", "quiet")])
+tag(c, tagx, yy + 1 * mm, "C")
+yy -= 3.4 * mm
+lbutton(c, ix, yy, "Add a link", size=5.8, h=4.4 * mm)
+tag(c, tagx, yy - 2.2 * mm, "D")
+y -= fh + 3.5 * mm
+y = legend(c, [("A", "At the top", "An authority, or a source PHAROS reads."),
+               ("B", "Add an authority", "Known, or new, with its first link."),
+               ("C", "Each link", "Change it, or remove it."),
+               ("D", "Add a link", "On any country's card.")], y, 4) - 6 * mm
+
+y = label(c, "What an administrator changes on Sources", y)
+y = table(c, [
+    ("A page on a country's card", "<b>Add a link</b> at the foot of the card: the authority, its name in the list, "
+                                   "the link, what it is (Safety notifications, DHPC, Drug database) and a note. "
+                                   "<b>Change</b> and <b>Remove</b> on each link. A link she adds is not read by the "
+                                   "app: it says <b>Not read by the app — open it yourself</b>. Removing a link the "
+                                   "app also reads only takes it off her list; the app keeps reading it."),
+    ("An authority", "<b>Add an authority</b>: one already known that has no links yet, or <b>A new authority…</b> "
+                     "with its country, two-letter code, name and short name; then its first link. Its country joins "
+                     "her list."),
+    ("A source PHAROS reads", "<b>Add a source</b>: paste the link and press <b>Test this link</b>; PHAROS reads it "
+                              "once and shows what it found before you save it. <b>Read</b> switches any source off "
+                              "or on. A source added by hand can be changed or removed: one never read is deleted, "
+                              "one already read is switched off and kept."),
+    ("A literature reference", "<b>Add a global reference</b> or <b>Add a local reference</b>, <b>Change</b>, "
+                               "<b>Remove</b> (page 12)."),
+], y, [44 * mm, CW - 44 * mm], styles=[cell_b, cell_st]) - 6 * mm
+y = notes_row(c, [
+    ("Only administrators", "These buttons show to administrators only. Everyone else sees the same cards without "
+                            "them."),
+    ("In the audit log", "Every change to a link, an authority or a literature reference is written to the audit "
+                         "log, with who made it and when."),
+    ("Technical details", "The switch at the top shows each source's address and its last error."),
+], y, 3)
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 15 · CASES AND PRODUCTS: THE PRODUCT LIST ═════════════════════════
+new_page("Cases and products")
+y = running_head(c, "05  ·  Cases and products  ·  the product list")
+y = head(c, "05", "Products: what a case is about", y, sub="A drawing, not real data")
+y = para(c, "Our products, each with its active ingredients and strengths. A case is opened against the product and "
+            "its strength; the literature, the label watch and the reports follow each ingredient.", what_st, ML, y,
+         CW) - 3 * mm
+fh = 106 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+iw = CW - 18 * mm
+yy = y - 6 * mm
+page_title(c, ix, yy, "Watchlist", "Products")
+tools_right(c, ix + iw, yy - 4.6 * mm, [("Add a product", "dark")], size=6)
+tag(c, tagx, yy - 3.6 * mm, "A")
+yy -= 10.4 * mm
+yy = screen_sec(c, ix, yy, iw, "01", "Add a product") - 1 * mm
+field(c, ix, yy, f3, "Product name", "Carvexa", hint="As it is registered, e.g. Carvexa")
+field(c, ix + f3 + 4 * mm, yy, f3, "Marketing authorisation holder", "Sato Pharma")
+yy = field(c, ix + 2 * (f3 + 4 * mm), yy, f3, "Dosage form", "film-coated tablet", hint="e.g. film-coated tablet")
+micro(c, "Ingredients", ix, yy - 1 * mm, size=5.2, spacing=0.7, color=DEEP)
+yy -= 5.4 * mm
+x_ = ix
+for n_, on_ in [("Carvedilol", True), ("Levofloxacin", False), ("Lornoxicam", False)]:
+    switch(c, x_, yy - 0.6 * mm, on=on_)
+    x_ += 8 * mm + text(c, n_, x_ + 8 * mm, yy, "Sans-B" if on_ else "Sans", 6.2, INK if on_ else MUTED) + 6 * mm
+tag(c, tagx, yy + 1 * mm, "B")
+yy -= 4.6 * mm
+micro(c, "Strengths", ix, yy - 1 * mm, size=5.2, spacing=0.7, color=DEEP)
+yy -= 3 * mm
+sw4 = 24 * mm
+for amt, last in [("6.25", False), ("12.5", True)]:
+    field(c, ix, yy, sw4, "Carvedilol", amt)
+    field(c, ix + sw4 + 3 * mm, yy, 16 * mm, "Unit", "mg")
+    yy2 = field(c, ix + sw4 + 22 * mm, yy, 60 * mm, "Name of the strength", "",
+                hint="Leave empty: it is named from the amounts" if last else None)
+    tools_right(c, ix + iw, yy - 6.4 * mm, [("Remove this strength", "quiet")])
+    yy = yy2
+tag(c, tagx, yy + 10 * mm, "C")
+yy -= 0.6 * mm
+tools_left(c, ix, yy - 3 * mm, [("Add a strength", "light")])
+yy -= 7 * mm
+tools_left(c, ix, yy - 3 * mm, [("Add the product", "dark"), ("Cancel", "quiet")], size=6)
+yy -= 8 * mm
+yy = screen_sec(c, ix, yy, iw, "02", "Products", "2 on the list")
+px_ = [ix, ix + 62 * mm, ix + 104 * mm]
+for lab_, x_ in zip(["Product", "Ingredients", "Strengths"], px_, strict=True):
+    micro(c, lab_, x_, yy, size=5, spacing=0.6)
+rule(c, ix, yy - 1.6 * mm, ix + iw, INK, 0.6)
+yy -= 5.4 * mm
+for name_, sub_, ings, strs, archived in [
+        ("Carvexa", "film-coated tablet  ·  Sato Pharma", "Carvedilol", "6.25 mg, 12.5 mg, 25 mg", False),
+        ("Product 2", "tablet  ·  Sato Pharma", "Ingredient A + Ingredient B", "6.25 mg / 5 mg", False),
+        ("Product 3", "capsule  ·  Sato Pharma", "Ingredient C", "500 mg", True)]:
+    w_ = text(c, name_, ix, yy, "Sans-B", 6.6)
+    if archived:
+        chip(c, ix + w_ + 2 * mm, yy - 0.9 * mm, "Archived", size=5.2)
+    text(c, sub_, ix, yy - 3.2 * mm, "Sans", 5.6, MUTED)
+    text(c, ings, px_[1], yy, "Sans", 6.4)
+    text(c, strs, px_[2], yy, "Sans", 6.4)
+    tools_right(c, ix + iw, yy - 1 * mm, [("Change", "light")])
+    rule(c, ix, yy - 5.2 * mm, ix + iw, RULE)
+    yy -= 8.6 * mm
+tag(c, tagx, yy + 13 * mm, "D")
+y -= fh + 3.5 * mm
+y = legend(c, [("A", "Add a product", "Administrators only."),
+               ("B", "Ingredients", "Each one on the watchlist."),
+               ("C", "Strengths", "An amount per ingredient."),
+               ("D", "The list", "Offered on every new case.")], y, 4) - 6 * mm
+
+y = label(c, "How to add a product", y)
+top = y
+yl = steps(c, ["Open <b>Products</b> and press <b>Add a product</b>.",
+               "Type the <b>Product name</b> as it is registered, the holder (Sato Pharma unless another) and the "
+               "dosage form.",
+               "Under <b>Ingredients</b>, switch on each active ingredient of the product. Only ingredients on the "
+               "watchlist are offered: add a missing one on Ingredients first."], ML, y, colw)
+yr = steps(c, ["Under <b>Strengths</b>, give each ingredient's amount and unit; <b>Add a strength</b> for each "
+               "other strength. Left empty, its name is made from the amounts, such as 6.25 mg / 5 mg.",
+               "Press <b>Add the product</b>. It is offered at once under <b>Product or ingredient</b> on every new "
+               "case."], ML + colw + 8 * mm, top, colw, start=4)
+y = min(yl, yr) - 5 * mm
+y = notes_row(c, [
+    ("Take off the list", "<b>Change</b>, then <b>Take off the list</b>. A product a case names is archived, never "
+                          "deleted: it stays on that case and is no longer offered."),
+    ("Locked by a case", "Once a case names a product, its ingredients and that strength's amounts can no longer "
+                         "change."),
+    ("Each ingredient counts", "A case of a product counts for each of its ingredients: on the ingredient's screen, "
+                               "under <b>05 Reactions by MeSH</b>, in the <b>Cases</b> column."),
+    ("Who", "Everyone sees the list. Only an administrator adds, changes or takes off a product."),
+], y, 4, gap=5 * mm)
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 16 · CASES: HOW A CASE STARTS, AND THE LIST ═════════════════════════
+new_page("Cases and products")
+y = running_head(c, "05  ·  Cases and products  ·  cases")
+y = head(c, "", "Cases: each individual case safety report", y, sub="A drawing, not real data")
+y = para(c, "Each case keeps its source document, the form PHAROS fills from it, your check and confirmation, the "
+            "clock to the authority, and the E2B(R3) file.", what_st, ML, y, CW) - 3 * mm
+fh = 92 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+iw = CW - 18 * mm
+yy = y - 6 * mm
+page_title(c, ix, yy, "Pharmacovigilance", "Cases")
+yy -= 10 * mm
+yy = screen_sec(c, ix, yy, iw, "01", "New case")
+yy = para(c, "Drop the report as it arrived: a PDF, a photo of a form, a Word file, a saved email or a text file. "
+             "PHAROS keeps the original and fills in the case form within a few minutes; you check it against the "
+             "document and confirm. A report can also be forwarded to the PHAROS mailbox with CASE in the subject.",
+          ParagraphStyle("pn2", parent=tiny, fontSize=6.2, leading=8.4), ix, yy, iw) - 2 * mm
+field(c, ix, yy, f3, "Document", "report-0511.pdf", hint="PDF, photo, Word, saved email or text; at most 10 MB")
+field(c, ix + f3 + 4 * mm, yy, f3, "Day zero", "05/11/2026", hint="The day the company first received the report")
+yy = field(c, ix + 2 * (f3 + 4 * mm), yy, f3, "Product or ingredient", "PHAROS will suggest it", placeholder=True)
+tag(c, tagx, yy + 7 * mm, "A")
+tools_left(c, ix, yy - 3 * mm, [("Open the case", "dark")], size=6)
+yy -= 9 * mm
+yy = screen_sec(c, ix, yy, iw, "02", "Cases")
+c.setFillColor(WHITE)
+c.setStrokeColor(RULE)
+c.rect(ix + iw - 22 * mm, yy + 3.2 * mm, 22 * mm, 4.4 * mm, stroke=1, fill=1)
+text(c, "Open cases  ▾", ix + iw - 20.6 * mm, yy + 4.6 * mm, "Sans", 6)
+tag(c, tagx, yy + 5.4 * mm, "B")
+yy -= 1 * mm
+yy = table(c, [
+    ("<b>CASE-2026-003</b><br/><font color='#5B6670'>Uploaded · day zero 5 Nov 2026</font>",
+     "To check and confirm<br/><font color='#5B6670'>Missing an identifiable reporter</font>",
+     "12 days left (due 2026-11-20)<br/><font color='#5B6670'>Seriousness not decided</font>",
+     "Carvexa 6.25 mg", "Female, 54<br/>dizzy and fainted"),
+    ("<b>CASE-2026-002</b><br/><font color='#5B6670'>Literature paper · day zero 3 Nov 2026</font>",
+     "Confirmed", "10 days left (due 2026-11-18)<br/><font color='#5B6670'>Serious</font>", "Levofloxacin",
+     "Male, 71<br/>rash"),
+    ("<b>CASE-2026-001</b><br/><font color='#5B6670'>Forwarded email · day zero 20 Oct 2026</font>",
+     "Sent to the authority", "Was due 2026-11-04<br/><font color='#5B6670'>Serious</font>", "Carvexa 12.5 mg",
+     "Female, 62<br/>bradycardia"),
+], yy, [40 * mm, 34 * mm, 36 * mm, 24 * mm, iw - 134 * mm],
+    header=["Case", "Where it stands", "Clock", "Product or ingredient", "Patient and reaction"], x0=ix,
+    styles=[cell_s] * 5, pad=1.1 * mm)
+tag(c, tagx, yy + 14 * mm, "C")
+y -= fh + 3.5 * mm
+y = legend(c, [("A", "New case", "Reviewers and administrators."),
+               ("B", "Open or every case", "Open cases first."),
+               ("C", "The list", "Where each stands, and its clock.")], y, 3) - 6 * mm
+
+y = label(c, "Three ways a case starts", y)
+y = table(c, [
+    ("Uploaded", "On <b>Cases</b>, under <b>New case</b>: the document as it arrived, its <b>Day zero</b> (the day "
+                 "the company first received the report, today or up to a year back), and the product if you know "
+                 "it. Press <b>Open the case</b>."),
+    ("Forwarded email", "Forward the report from your own address to the PHAROS mailbox, pharos@satopharma.com, with "
+                        "the word CASE in the subject. The case opens by itself; day zero is the day the message is "
+                        "dated. Only a reviewer's or an administrator's address is accepted."),
+    ("Literature paper", "On a possible case report on an ingredient's screen, press <b>Open a case</b> (page 7). "
+                         "Day zero is the day PHAROS found the paper. The paper then shows its case."),
+], y, [34 * mm, CW - 34 * mm], styles=[cell_b, cell_st]) - 6 * mm
+
+y = label(c, "Where a case stands", y)
+y = table(c, [
+    ("Waiting to be read  ·  Being read", "PHAROS keeps the original and reads it. The form appears within a few "
+                                          "minutes."),
+    ("To check and confirm", "The form is filled: check it against the document (page 17). The list says what is "
+                             "missing."),
+    ("Confirmed", "Checked and confirmed: ready for the authority. The clock still runs."),
+    ("Sent to the authority", "Recorded as sent, with the day and the authority's reference. The clock stops."),
+    ("Not a valid case  ·  Could not be read", "Closed with a comment; or the document could not be read: press "
+                                               "<b>Read again</b>, or fill the form yourself."),
+], y, [60 * mm, CW - 60 * mm], styles=[cell_b, cell_st]) - 6 * mm
+y = notes_row(c, [
+    ("The clock", "15 days from day zero; 90 days once a reviewer sets <b>Not serious</b>. Until seriousness is "
+                  "decided the case counts as serious."),
+    ("On the list", "“12 days left”, “Due today”, “Overdue by 2 days”, and once closed “Was due”. An overdue open "
+                    "case is marked."),
+    ("Who", "Everyone signed in sees the cases. Only reviewers and administrators open, change, confirm and send "
+            "them."),
+], y, 3)
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 17 · CASES: CHECK, CONFIRM, SEND ═════════════════════════
+new_page("Cases and products")
+y = running_head(c, "05  ·  Cases and products  ·  check, confirm, send")
+y = head(c, "", "A case: check it, confirm it, send it", y, sub="A drawing, not real data")
+y = para(c, "PHAROS reads the document and fills the form. A reviewer checks every field against the document, "
+            "decides the seriousness, and confirms. PHAROS never sends a case: you do, and record it.", what_st, ML,
+         y, CW) - 3 * mm
+fh = 112 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+iw = CW - 18 * mm
+yy = y - 6 * mm
+page_title(c, ix, yy, "Cases  ·  Uploaded", "CASE-2026-003")
+text(c, "report-0511.pdf", ix + 34 * mm, yy - 5.4 * mm, "Sans", 6.2, MUTED)
+tools_right(c, ix + iw, yy - 4.6 * mm, [("Open the document", "light")], size=6)
+yy -= 10.6 * mm
+w_ = chip(c, ix, yy - 0.9 * mm, "To check and confirm", size=5.6, fill=MARK)
+text(c, "12 days left (due 2026-11-20)  ·  15 days: serious or not yet decided", ix + w_ + 3 * mm, yy, "Sans", 6.2)
+tag(c, tagx, yy + 1 * mm, "A")
+yy -= 4.6 * mm
+yy = screen_sec(c, ix, yy, iw, "01", "A valid case", "Read 5 Nov 2026, 10:06")
+for k_, (crit, ok_) in enumerate([("an identifiable patient", True), ("an identifiable reporter", False),
+                                  ("a suspect product", True), ("a reaction", True)]):
+    cx_ = ix + (k_ % 2) * 80 * mm
+    cy_ = yy - (k_ // 2) * 4.6 * mm
+    text(c, crit, cx_, cy_, "Sans", 6.2)
+    chip(c, cx_ + 34 * mm, cy_ - 0.9 * mm, "Present" if ok_ else "Missing", size=5.2, fill=SEA if ok_ else DANGER,
+         color=WHITE)
+tag(c, tagx, yy + 1 * mm, "B")
+yy -= 8.6 * mm
+f5 = (iw - 16 * mm) / 5
+for k_, (lab_, val_) in enumerate([("Seriousness", "Not decided (15 days)"), ("Product or ingredient", "Carvexa"),
+                                   ("Strength", "6.25 mg"), ("Type of report", "Spontaneous"),
+                                   ("Country (two letters)", "EG")]):
+    yy2 = field(c, ix + k_ * (f5 + 4 * mm), yy, f5, lab_, val_, size=5.8)
+yy = yy2 - 1 * mm
+yy = screen_sec(c, ix, yy, iw, "02", "The case form", "Not saved")
+micro(c, "Patient", ix, yy - 0.6 * mm, size=5, spacing=0.6, color=DEEP)
+yy -= 2.4 * mm
+f6 = (iw - 20 * mm) / 6
+for k_, (lab_, val_) in enumerate([("Initials", "M. A."), ("Sex", "Female"), ("Age", "54"), ("Age in", "Years"),
+                                   ("Weight (kg)", ""), ("Birth date", "")]):
+    yy2 = field(c, ix + k_ * (f6 + 4 * mm), yy, f6, lab_, val_, size=5.8)
+yy = yy2
+text(c, "“a 54-year-old woman”", ix, yy - 0.4 * mm, "Serif-I", 6.4)
+text(c, "patient.age_value  ·  page 1", ix + 26 * mm, yy - 0.4 * mm, "Sans", 5.4, MUTED)
+tag(c, tagx, yy + 0.6 * mm, "C")
+yy -= 4 * mm
+micro(c, "Reactions", ix, yy - 0.6 * mm, size=5, spacing=0.6, color=DEEP)
+tools_right(c, ix + iw, yy - 0.6 * mm, [("Add a reaction", "light")])
+yy -= 2.4 * mm
+f4 = (iw - 12 * mm) / 4
+for k_, (lab_, val_, hint_) in enumerate([("As the reporter wrote it", "dizzy and fainted", None),
+                                          ("In English", "Dizziness; syncope", None),
+                                          ("MedDRA LLT code", "", "8 digits, from the MedDRA browser"),
+                                          ("MedDRA version", "", "e.g. 28.1")]):
+    yy2 = field(c, ix + k_ * (f4 + 4 * mm), yy, f4, lab_, val_, hint=hint_, size=5.8)
+yy = yy2 - 0.6 * mm
+yy = screen_sec(c, ix, yy, iw, "03", "Decide")
+yy = field(c, ix, yy, iw, "Comment", "", hint="Kept in the history with the step")
+tools_left(c, ix, yy - 3 * mm, [("Save", "light"), ("Confirm the case", "dark"), ("Not a valid case", "quiet")],
+           size=6)
+tag(c, tagx, yy - 1.6 * mm, "D")
+yy -= 8 * mm
+yy = screen_sec(c, ix, yy, iw / 2 - 4 * mm, "04", "E2B(R3) file")
+yy_h = screen_sec(c, ix + iw / 2 + 4 * mm, yy + 6 * mm, iw / 2 - 4 * mm, "05", "History")
+tools_left(c, ix, yy - 3 * mm, [("Make the E2B file", "light")], size=5.8)
+text(c, "5 Nov 2026, 10:02  ·  Received  ·  Sama Mosaad", ix + iw / 2 + 4 * mm, yy_h, "Sans", 5.8)
+text(c, "5 Nov 2026, 10:06  ·  Read by PHAROS", ix + iw / 2 + 4 * mm, yy_h - 3.4 * mm, "Sans", 5.8)
+text(c, "Original SHA-256 9f2c41d0…a41b07e3", ix + iw / 2 + 4 * mm, yy_h - 6.8 * mm, "Mono", 5.4, MUTED)
+tag(c, tagx, yy_h - 2 * mm, "E")
+y -= fh + 3.5 * mm
+y = legend(c, [("A", "Where it stands", "Its status and clock."),
+               ("B", "A valid case", "Four criteria: Present or Missing."),
+               ("C", "The form", "What PHAROS read, with its words."),
+               ("D", "Decide", "Save, confirm, or not valid."),
+               ("E", "The record", "E2B file and the history.")], y, 5) - 5 * mm
+
+y = label(c, "How to check and confirm a case", y)
+top = y
+yl = steps(c, ["Open the case. Press <b>Open the document</b> and keep it beside the form.",
+               "Check every field against the document: patient, reporter, products, reactions, narrative. Under "
+               "each part, PHAROS quotes the words it read, with the page. Correct what is wrong; press <b>Save</b>.",
+               "Under <b>A valid case</b>, each criterion says <b>Present</b> or <b>Missing</b>.",
+               "Set <b>Seriousness</b>: Serious (15 days) or Not serious (90 days). PHAROS only suggests it: you "
+               "decide."], ML, y, colw)
+yr = steps(c, ["Choose the product and its strength, or the ingredient. Press <b>Confirm the case</b>. It is "
+               "refused while a criterion is missing, the seriousness is not decided or nothing is chosen.",
+               "Type the MedDRA code and version of each reaction from the MedDRA browser, press <b>Make the E2B "
+               "file</b> and check the file before you send it.",
+               "Once sent, give <b>Sent on</b> and <b>The authority's reference</b>, and press <b>Record as "
+               "sent</b>."], ML + colw + 8 * mm, top, colw, start=5)
+y = min(yl, yr) - 4 * mm
+y = notes_row(c, [
+    ("Not a case", "<b>Not a valid case</b>, with a comment, closes it. No case is ever deleted."),
+    ("A follow-up", "On a confirmed or sent case, <b>Reopen</b> with a comment, and a <b>New day zero (a "
+                    "follow-up)</b> if new information came. A confirmed case is corrected only after Reopen."),
+    ("The E2B(R3) file", "Made once the case is confirmed, with every reaction's MedDRA code; PHAROS never invents "
+                         "one. Until a first file has passed the authority's gateway test, it is a prepared draft."),
+    ("The history", "Every step, its time, the person and the comment, kept and never changed, with the "
+                    "original document's SHA-256."),
+], y, 4, gap=5 * mm)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 12 · REPORTS ═════════════════════════
-page_furniture(c, 12, TOTAL, "Reports")
+new_page("Reports")
 y = running_head(c, "05  ·  Reports")
 y = head(c, "05", "Reports: the weekly report", y)
 y = para(c, "Our record that we screened, week by week. It is made for the SOP and the pharmacovigilance system "
@@ -1665,11 +2289,11 @@ y = notes_row(c, [
     ("The five-day clock", "The report comes after the week. A finding due to the Egyptian Drug Authority is "
                            "followed by its clock on the Ingredients screen and the morning reminder (page 9)."),
 ], y, 3)
-check(12, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 13 · REPORTS: INSPECTION EVIDENCE ═════════════════════════
-page_furniture(c, 13, TOTAL, "Reports")
+new_page("Reports")
 y = running_head(c, "05  ·  Reports  ·  inspection evidence")
 y = head(c, "", "Inspection evidence: fingerprints and signatures", y, sub="A drawing, not real data")
 y = para(c, "What an inspector can be shown for any week: the two files, their fingerprints, who signed them and "
@@ -1781,11 +2405,11 @@ y = notes_row(c, [
     ("The archive check", "Every Sunday PHAROS re-reads a sample of the originals, the weekly reports and the packs, "
                           "checks each against its fingerprint, and tests that nothing can be overwritten."),
 ], y, 3)
-check(13, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 14 · REPORTS: PACKS ON REQUEST ═════════════════════════
-page_furniture(c, 14, TOTAL, "Reports")
+new_page("Reports")
 y = running_head(c, "05  ·  Reports  ·  packs on request")
 y = head(c, "", "Packs on request: PSUR and inspection", y, sub="A drawing, not real data")
 y = para(c, "A PSUR pack for one ingredient, or an inspection pack for the whole system: asked for on Reports, made "
@@ -1881,11 +2505,11 @@ y = notes_row(c, [
     ("Never overwritten", "Kept in the locked archive with the SHA-256 of each file. It is read from the same "
                           "records as the screens and the weekly reports."),
 ], y, 3)
-check(14, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 15 · TELEGRAM, PEOPLE, ME, THE PHONE APP ═════════════════════════
-page_furniture(c, 15, TOTAL, "Telegram, People, Me")
+new_page("Telegram, People, Me")
 y = running_head(c, "06  Telegram  ·  07  People and Me  ·  The phone app")
 y = head(c, "06", "Telegram: what PHAROS sends", y)
 y = para(c, "Messages carry the authority's public notice only: never a comment, never a decision.",
@@ -1955,11 +2579,11 @@ y = notes_row(c, [
     ("Administrator", "Also manages the watchlist, drug classes, sources and people, and asks for inspection packs. "
                       "Dr Sama Mosaad's role."),
 ], y, 3) - 3 * mm
-check(15, y)
+check(PAGE, y)
 c.showPage()
 
 # ═════════════════════════ PAGE 16 · FOR THE SOP ═════════════════════════
-page_furniture(c, 16, TOTAL, "For the SOP")
+new_page("For the SOP")
 y = running_head(c, "08  ·  For the SOP and the master file")
 y = head(c, "08", "For the SOP and the master file", y)
 y = para(c, "What PHAROS covers, a routine to screen with it, and the record it keeps. Written to be lifted into "
@@ -2025,6 +2649,6 @@ y -= 6 * mm
 centred(c, "PHAROS Handbook  ·  Edition 3  ·  November 2026  ·  Sato Pharma, Pharmacovigilance", "Serif-I", 8.6, y,
         MUTED)
 y -= 2 * mm
-check(16, y)
+check(PAGE, y)
 c.save()
 print("\n".join(report))
