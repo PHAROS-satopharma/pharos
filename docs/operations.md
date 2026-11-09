@@ -870,7 +870,8 @@ packs and their files and cannot ask for one.
 - **The inspection pack.** Coverage (every page of hers and whether the app reads it), the screening log,
   every decision, every signature with whether the file still matches it, every report to the authority
   (withdrawn ones too, with the reason), every weekly report with the SHA-256 of both files and its signatures,
-  the archive checks, the changes in the audit log counted per table, and the people and their roles.
+  the archive checks, the changes in the audit log counted per table, the people and their roles, and the
+  quality records of the days (deviations, audits, the CAPA plan; see *Quality: deviations, audits and CAPA*).
 - **The files.** A4 PDF and an Excel file with a sheet per section, archived in R2 under
   `reports/packs/<psur|inspection>/<request id>/` (never overwritten: a pack made again is stored as `-r2`),
   with the SHA-256 of each on the request, the code (`git_sha`) and the run that made it. Reports shows both
@@ -1319,6 +1320,22 @@ the record's history (who, when, the comment, and what it was before and after),
 changed.
 
 Deploying: apply migration 0107 before the new app (the tab calls its functions).
+
+- **In the morning reminder.** The same daily message as the findings and the signal steps (never a second one)
+  ends with two blocks, each line with the link to the Quality tab: **CAPA due** — every CAPA not done or
+  effective whose due day is within two days or past, oldest first: its number, where it comes from (D001/2026, or
+  the audit and its observation number), the owner, "due Thu 19 Nov" or "late by 3 days"; **Audit deadlines** —
+  for each audit with a report received and not closed, its next deadline (QPPV review, meeting, draft CAPA,
+  approval, submission) when it is within two days or late. When nothing at all is due, nothing is sent. If the
+  quality records cannot be read (0107 not applied yet), the run logs it and the rest of the reminder goes as
+  before.
+- **In the inspection pack.** Section 07 *Quality: deviations, audits and CAPA* and the Excel sheets
+  *Deviations*, *Audits* and *CAPA plan*, for the pack's days (read in pieces of at most 366 days): the deviations
+  recorded (number, title, level, dates, root cause, the QA Manager's judgement, status, its CAPAs); the audits
+  whose report was received (kind, auditor, report day, each deadline on time, late or not yet, the observations
+  with their grade and CAPAs, the closure); every CAPA opened in the days or still open (number, where it comes
+  from, owner, due, done, effective, evidence) with the open, late and closed counts; and the number of history
+  rows per kind in the days. Lateness is as on the day the pack is made. The summary counts them too.
 
 ## PRAC agendas
 

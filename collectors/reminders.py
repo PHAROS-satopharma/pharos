@@ -18,6 +18,13 @@ After the findings, the same message lists the signal steps that are late or due
 its reference, the notice, the ingredient and the link to the screen where the step is taken. A message goes
 when either list has something in it.
 
+Then the quality records (migration 0107), in the same message, never a second one: "CAPA due" (every CAPA not
+done or effective whose due day is within two days or past, oldest first: its number, where it comes from, the
+owner, "due Thu 19 Nov" or "late by 3 days") and "Audit deadlines" (for each audit with a report received and
+not closed, the next deadline of PV-SOP-022 when it is within two days or late), each line with the link to the
+Quality tab. A message goes when any of the four lists has something in it. A quality read that fails (before
+0107 is applied) is logged and the rest of the reminder goes as before.
+
     python -m collectors.reminders            # send if due
     python -m collectors.reminders --dry-run  # write what would go, send nothing
 """
@@ -31,6 +38,7 @@ from datetime import date, datetime, time, timezone
 from typing import Any, Callable
 
 from collectors.alerts import BRAND, CAIRO, MAX_MESSAGE_CHARS, Notifier, esc, esc_cut, fmt_date
+from collectors.quality import KIND_LABEL, QUALITY_URL, capa_source_text
 
 log = logging.getLogger("collectors.reminders")
 
@@ -41,6 +49,7 @@ MAX_LINES = 40                # findings per message set; the rest are counted w
 SCREEN_URL = "https://pharos-satopharma.pages.dev/ingredients/{id}"
 AUTHORITY = "Egyptian Drug Authority"
 SIGNALS = "Signal steps"       # the header when no finding is due but a signal step is
+QUALITY = "Quality"            # the header when only quality records are due
 STAGE_WORD = {"validation": "Validate", "assessment": "Assess", "action": "Action"}   # the step each stage waits for
 
 
@@ -64,17 +73,51 @@ def step_text(stage: str, due: date, days_left: int) -> str:
     return f"{STAGE_WORD.get(stage, stage)} · {due_text(due, days_left)}"
 
 
+def capa_due_text(due: date, days_left: int) -> str:
+    """A CAPA's or an audit deadline's due words: "due Thu 19 Nov" or "late by 3 days"."""
+    if days_left < 0:
+        late = -days_left
+        return f"late by {late} {'day' if late == 1 else 'days'}"
+    return f"due {_day(due)}"
+
+
+def _quality_lines(capas: list[dict] | tuple, audits: list[dict] | tuple) -> list[str]:
+    """The "CAPA due" and "Audit deadlines" blocks, each line with the link to the Quality tab."""
+    lines: list[str] = []
+    for title, rows, more in (("CAPA due", capas, "CAPAs"), ("Audit deadlines", audits, "audit deadlines")):
+        if not rows:
+            continue
+        late = sum(1 for r in rows if int(r["days_left"]) < 0)
+        lines += ["", f"<b>{title}</b>", f"{late} late, {len(rows) - late} due within {WITHIN_DAYS} days", ""]
+        for r in list(rows)[:MAX_LINES]:
+            if title == "CAPA due":
+                owner = r.get("owner") or "no owner yet"
+                text = (f"• {esc(r.get('ref'))} · {esc_cut(capa_source_text(r), 160)} · {esc(owner)}"
+                        f" · {esc(capa_due_text(r['due_on'], int(r['days_left'])))}")
+            else:
+                kind = KIND_LABEL.get(r.get("kind") or "", "Audit")
+                text = (f"• {esc_cut(r.get('title'), 160)} · {esc(kind)} · {esc(r.get('step'))}"
+                        f" · {esc(capa_due_text(r['due'], int(r['days_left'])))}")
+            lines += [text, "  " + QUALITY_URL]
+        if len(rows) > MAX_LINES:
+            lines.append(f"… and {len(rows) - MAX_LINES} more {more} in PHAROS (Quality).")
+    return lines
+
+
 def _screen_link(ingredient_id: str | None) -> str:
     return "  " + (SCREEN_URL.format(id=ingredient_id) if ingredient_id else SCREEN_URL.format(id="").rstrip("/"))
 
 
-def build_messages(items: list[dict], today: date, signals: list[dict] | tuple = ()) -> list[str]:
+def build_messages(items: list[dict], today: date, signals: list[dict] | tuple = (), *,
+                   capas: list[dict] | tuple = (), audits: list[dict] | tuple = ()) -> list[str]:
     """The reminder text: the findings to report to the authority (as the store lists them: most late first),
-    then the signal steps due (0042), split under Telegram's limit."""
+    then the signal steps due (0042), then the CAPAs due and the audit deadlines (0107), split under Telegram's
+    limit."""
     late = sum(1 for i in items if int(i["days_left"]) < 0)
     due = len(items) - late
     n = len(items)
-    lines = [f"<b>{BRAND}</b> · {AUTHORITY if items else SIGNALS} · {esc(fmt_date(today))}"]
+    header = AUTHORITY if items else SIGNALS if signals or not (capas or audits) else QUALITY
+    lines = [f"<b>{BRAND}</b> · {header} · {esc(fmt_date(today))}"]
     if items:
         lines += [f"<b>{n} {'finding' if n == 1 else 'findings'} to report to the authority</b>",
                   f"{late} late, {due} due within {WITHIN_DAYS} days", ""]
@@ -98,6 +141,7 @@ def build_messages(items: list[dict], today: date, signals: list[dict] | tuple =
             lines.append(_screen_link(s.get("ingredient_id")))
         if m > MAX_LINES:
             lines.append(f"… and {m - MAX_LINES} more signal steps in PHAROS (Ingredients).")
+    lines += _quality_lines(capas, audits)
     messages, current = [], ""
     for line in lines:
         if current and len(current) + 1 + len(line) > MAX_MESSAGE_CHARS:
@@ -129,10 +173,12 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
         return 0
     items = store.eda_reminders(moment.date(), WITHIN_DAYS)
     signals = store.signal_reminders(moment.date(), WITHIN_DAYS)
-    if not items and not signals:
-        log.info("nothing is due to the authority, and no signal step is due, on %s", moment.date())
+    capas, audits = _quality_due(store, moment.date())
+    if not items and not signals and not capas and not audits:
+        log.info("nothing is due to the authority, and no signal step, CAPA or audit deadline is due, on %s",
+                 moment.date())
         return 0
-    texts = build_messages(items, moment.date(), signals)
+    texts = build_messages(items, moment.date(), signals, capas=capas, audits=audits)
     for person in people:
         # a retry sends only the parts this person does not have; a refused part holds back the ones after it
         # (written down as refused), so they always arrive in order
@@ -148,9 +194,19 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
                 continue
             if notifier._deliver(person, None, KIND, text) is None and not notifier.dry_run:
                 failed = "held back: an earlier part was refused"
-    log.info("morning reminder: %d findings and %d signal steps to %d people (dry run: %s)", len(items),
-             len(signals), len(people), notifier.dry_run)
+    log.info("morning reminder: %d findings, %d signal steps, %d CAPAs and %d audit deadlines to %d people "
+             "(dry run: %s)", len(items), len(signals), len(capas), len(audits), len(people), notifier.dry_run)
     return len(people)
+
+
+def _quality_due(store: Any, today: date) -> tuple[list[dict], list[dict]]:
+    """The CAPAs due and the audit deadlines (0107). A read that fails (the migration not applied yet) is logged
+    and leaves both empty: the findings and the signal steps still go."""
+    try:
+        return store.capa_reminders(today, WITHIN_DAYS), store.audit_deadline_reminders(today, WITHIN_DAYS)
+    except Exception as e:  # noqa: BLE001 - never let the quality records stop the authority reminder
+        log.warning("the quality records could not be read for the morning reminder: %s", e)
+        return [], []
 
 
 def main(argv: list[str] | None = None) -> int:
