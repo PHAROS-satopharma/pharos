@@ -140,18 +140,48 @@ def notes(s, text):
     s.notes_slide.notes_text_frame.text = text
 
 
+ROMAN = ["", "I", "II", "III", "IV"]
+ACT = [0]
+
+
 def new_slide(ground=PAPER):
     s = prs.slides.add_slide(BLANK)
     s.background.fill.solid()
     s.background.fill.fore_color.rgb = ground
+    # a quiet fade between slides when presented
+    tr = etree.SubElement(s._element, qn("p:transition"))
+    tr.set("spd", "med")
+    etree.SubElement(tr, qn("p:fade"))
     SLIDES.append(s)
     return s
+
+
+def beam(s, x0, y0, x1, top, bottom, color):
+    """The beacon's beam: one flat wedge from a point to a vertical edge."""
+    ff = s.shapes.build_freeform(int(Inches(x0)), int(Inches(y0)), scale=1.0)
+    ff.add_line_segments([(int(Inches(x1)), int(Inches(top))), (int(Inches(x1)), int(Inches(bottom)))], close=True)
+    sh = ff.convert_to_shape()
+    sh.shadow.inherit = False
+    sh.fill.solid()
+    sh.fill.fore_color.rgb = color
+    sh.line.fill.background()
+    return sh
+
+
+def progress(s, x_right, y, on_navy=False):
+    """Four squares, one per part; the current part in beacon gold."""
+    for k in range(4, 0, -1):
+        x = x_right - (5 - k) * 0.2
+        cur = k == ACT[0]
+        rect(s, x, y, 0.12, 0.12, fill=BEACON if cur else (MAST_RULE if on_navy else RULE))
 
 
 def chrome(s, section, title, sub=None):
     """Running head, title and foot of an inside slide. Returns the y under the title block."""
     pic(s, "pharos-logo.png", M, 0.34, h=0.46)
-    micro(s, SW - M - 6, 0.5, 6, section, color=INK, align="r")
+    progress(s, SW - M - 0.12, 0.36)
+    section = re.sub(r"^\d+\s*·\s*", "", section)
+    micro(s, SW - M - 8, 0.6, 8, f"Part {ROMAN[ACT[0]]}  ·  {section}", color=INK, align="r")
     hline(s, M, 0.98, SW - M, INK, 0.9)
     rect(s, M, 0.98, 1.05, 0.05, fill=BEACON)
     tx(s, M, 1.22, CW, 0.7, title, size=29, font=SERIF, color=INK, ls=1.05)
@@ -201,7 +231,51 @@ LOCALS = by_country(LOCAL)
 LANGS = sorted({lg for r in REG for lg in r["languages"]})
 assert len(REFS) == 25, f"Dr Sama's 25 reference countries: the catalogue now gives {len(REFS)}"
 assert len(LANGS) == 15, f"15 languages: the catalogue now gives {len(LANGS)}"
-N = 14  # slides
+N = 20  # slides
+
+# The four parts: their titles, Dr Sama's line for each, and the slides inside with their page numbers.
+PARTS = [
+    ("How we screen", "Screening in two passes, vertical and horizontal, in every reference.",
+     [("PHAROS at a glance", 4), ("The two passes", 5), ("Ingredients", 6), ("Literature", 7), ("Sources", 8)]),
+    ("The evidence", "Evidence that we searched, including when the result was negative.",
+     [("Evidence for negative results", 10), ("The five-day clock", 11), ("Reports", 12)]),
+    ("Cases and quality", "The ICSR database, and one CAPA plan for deviations and audits.",
+     [("The ICSR database", 14), ("Quality", 15)]),
+    ("Control", "Who can do what, what can never change, and where our SOP stands.",
+     [("People and integrity", 17), ("SOP and master file", 18)]),
+]
+DIVIDER_PAGE = {1: 3, 2: 9, 3: 13, 4: 16}
+
+
+def foot_navy(s):
+    hline(s, M, 7.02, SW - M, MAST_RULE)
+    micro(s, M, 7.12, 7, f"PHAROS  ·  Pharmacovigilance inspection  ·  {DATE}", size=7.5, color=MAST_MUTED)
+
+
+def divider(act):
+    """A part's opening: navy, the beam, the part's numeral, its title and the slides inside."""
+    ACT[0] = act
+    title, line, items = PARTS[act - 1]
+    s = new_slide(INK)
+    assert len(SLIDES) == DIVIDER_PAGE[act], (act, len(SLIDES))
+    beam(s, 0.07, 3.15, SW, 0.55, 6.55, MAST_RAISE)
+    rect(s, 0, 0, 0.07, SH, fill=BEACON)
+    micro(s, M + 0.15, 0.62, 5, f"Part {ROMAN[act]} of IV", color=BEACON, size=8)
+    progress(s, SW - M - 0.12, 0.66, on_navy=True)
+    tx(s, M + 0.05, 1.05, 4.2, 2.6, ROMAN[act], size=150, font=SERIF, color=BEACON, ls=0.9)
+    X = 4.75
+    tx(s, X, 1.55, SW - X - M, 1.6, title, size=44, font=SERIF, color=WHITE, ls=1.02, anchor="b")
+    tx(s, X, 3.3, SW - X - M - 0.5, 0.8, line, size=15, color=MAST_MUTED, ls=1.3)
+    for k, (name, page) in enumerate(items):
+        yy = 4.35 + k * 0.42
+        hline(s, X, yy, SW - M, MAST_RULE)
+        tx(s, X, yy + 0.09, 6, 0.3, name, size=12.5, color=WHITE)
+        micro(s, SW - M - 1.0, yy + 0.13, 1.0, f"{page:02d}", color=BEACON, align="r", size=8)
+    hline(s, X, 4.35 + len(items) * 0.42, SW - M, MAST_RULE)
+    foot_navy(s)
+    pic(s, "sato-pharma-reverse.png", SW - M - 0.72, 7.08, h=0.27)
+    notes(s, f"Part {ROMAN[act]}: {title}. {line}")
+    return s
 
 
 # ═════════ 01 COVER: the identity of PHAROS ═════════
@@ -209,6 +283,8 @@ s = new_slide(PAPER)
 pic(s, "pharos-logo-stacked.png", 0.55, 1.05, w=6.6)
 micro(s, M, 6.95, 6.4, "Sato Pharma  ·  Pharmacovigilance", size=8)
 rect(s, 7.55, 0, SW - 7.55, SH, fill=INK)
+# the logo's beam carries on across the navy, flat
+beam(s, 7.62, 2.05, SW, 0.0, 4.05, MAST_RAISE)
 rect(s, 7.55, 0, 0.07, SH, fill=BEACON)
 X, WW = 8.15, 4.6
 micro(s, X, 0.85, WW, "Pharmacovigilance inspection  ·  18 November 2026", color=BEACON, size=8)
@@ -228,6 +304,37 @@ notes(s, "PHAROS: Pharmaceutical Alerts & Regulatory Observation System. This is
       "database item of today's inspection. It does the hardest task we have, the literature screening, and it "
       "now holds our ICSRs as a database. I adopted it on 8 November 2026 for literature screening and retired "
       "the Excel sheet I kept for positive and negative results.")
+
+# ═════════ CONTENTS ═════════
+s = new_slide()
+pic(s, "pharos-logo.png", M, 0.34, h=0.46)
+hline(s, M, 0.98, SW - M, INK, 0.9)
+rect(s, M, 0.98, 1.05, 0.05, fill=BEACON)
+micro(s, M, 1.3, 4, "Contents", color=DEEP, bold=True)
+tx(s, M, 1.62, 3.9, 2.6, "Four parts, then the system itself", size=34, font=SERIF, color=INK, ls=1.05)
+tx(s, M, 3.85, 3.6, 1.6, "The computerised system and database of Sato Pharma's pharmacovigilance, presented by "
+   "the QPPV.", size=12.5, color=MUTED, ls=1.35)
+RX = 5.2
+for k, (title, _line, items) in enumerate(PARTS):
+    yy = 1.3 + k * 1.22
+    hline(s, RX, yy, SW - M, INK if k == 0 else RULE, 0.9 if k == 0 else 0.6)
+    tx(s, RX, yy + 0.12, 0.9, 0.7, ROMAN[k + 1], size=30, font=SERIF, color=DEEP, ls=1.0)
+    tx(s, RX + 1.0, yy + 0.16, 5.2, 0.4, title, size=18, font=SERIF, color=INK)
+    tx(s, RX + 1.0, yy + 0.58, 5.6, 0.6, "  ·  ".join(n for n, _ in items), size=10.5, color=MUTED, ls=1.3)
+    micro(s, SW - M - 1.2, yy + 0.24, 1.2, f"{DIVIDER_PAGE[k + 1]:02d}–{items[-1][1]:02d}", color=INK,
+          align="r", size=8)
+yy = 1.3 + 4 * 1.22
+hline(s, RX, yy, SW - M, RULE, 0.6)
+tx(s, RX + 1.0, yy + 0.16, 5.2, 0.4, "Live demonstration", size=18, font=SERIF, color=INK)
+micro(s, SW - M - 1.2, yy + 0.24, 1.2, "19", color=INK, align="r", size=8)
+hline(s, RX, yy + 0.7, SW - M, INK, 0.9)
+hline(s, M, 7.02, SW - M, RULE)
+micro(s, M, 7.12, 7, f"PHAROS  ·  Pharmacovigilance inspection  ·  {DATE}", size=7.5)
+pic(s, "sato-pharma.png", SW / 2 - 0.36, 7.08, h=0.27)
+notes(s, "Four parts: how the system screens, the evidence it keeps, the ICSR database and quality, and the "
+      "control around it. Then I show the system itself.")
+
+divider(1)
 
 # ═════════ 02 AT A GLANCE ═════════
 s = new_slide()
@@ -425,47 +532,60 @@ notes(s, "The Sources tab is the horizontal search. I want every newly published
       "us. It shows how many runs it made and what it found, and it keeps the links of each reference country in "
       "order. I can now add or change a link, and add our local references, myself.")
 
+divider(2)
+
 # ═════════ 07 EVIDENCE FOR NEGATIVE RESULTS ═════════
 s = new_slide()
 y = chrome(s, "06  ·  Evidence for negative results", "It searched, and it found zero: that is recorded",
            "Positive results were always documented. The evidence that a search found nothing is now kept too.")
-tx_, ty_ = M, 2.78
-cols_ = [("Active ingredient", 1.4), ("Authority", 1.95), ("What was read", 2.3), ("Read this week", 1.15),
-         ("Result", 2.45)]
+# the report page itself, lying on a second page
+cols_ = [("Active ingredient", 1.3), ("Authority", 1.85), ("What was read", 2.15), ("Read", 1.05),
+         ("Result", 2.3)]
 tw_t = sum(w for _, w in cols_)
-drawing_mark(s, tx_, ty_ - 0.3, tw_t)
-rect(s, tx_, ty_, tw_t, 0.38, fill=INK)
+shx, shy, shw, shh = M, 2.55, tw_t + 0.5, 4.3
+rect(s, shx + 0.1, shy + 0.1, shw, shh, fill=SURF2, line=RULE, lw=0.5)
+rect(s, shx, shy, shw, shh, fill=SURF, line=RULE, lw=0.5)
+tx_ = shx + 0.25
+pic(s, "pharos-logo.png", tx_, shy + 0.2, h=0.3)
+micro(s, shx + shw - 4.25, shy + 0.2, 4, "A drawing, not real data", color=DEEP, size=7, align="r")
+micro(s, shx + shw - 4.25, shy + 0.4, 4, "Weekly report  ·  page 3 of 12", size=7, align="r")
+tx(s, tx_, shy + 0.62, tw_t, 0.35, "Screening log  ·  week of Sunday 8 November 2026", size=14, font=SERIF,
+   color=INK)
+ty_ = shy + 1.08
+rect(s, tx_, ty_, tw_t, 0.32, fill=INK)
 xx = tx_
 for h_, w_ in cols_:
-    micro(s, xx + 0.12, ty_ + 0.12, w_, h_, color=WHITE, size=7, track=1.0)
+    micro(s, xx + 0.1, ty_ + 0.1, w_, h_, color=WHITE, size=6.5, track=1.0)
     xx += w_
 data = [("Levofloxacin", "MHRA  ·  United Kingdom", "Drug Safety Update, alerts", "7 of 7 days", "Nothing found"),
         ("Levofloxacin", "PMDA  ·  Japan", "Safety notices, Japanese", "7 of 7 days", "Nothing found"),
-        ("Levofloxacin", "NCBI  ·  PubMed, PMC", "Search logged with its count", "7 of 7 days", "0 new papers"),
-        ("Lornoxicam", "BfArM  ·  Germany", "Rote-Hand-Briefe, German", "7 of 7 days", "Nothing found"),
-        ("Lornoxicam", "ANSM  ·  France", "Safety notices, French", "7 of 7 days", "1 notice: doesn't concern us"),
+        ("Levofloxacin", "NCBI  ·  PubMed, PMC", "Search, with its count", "7 of 7 days", "0 new papers"),
+        ("Lornoxicam", "ANSM  ·  France", "Safety notices, French", "7 of 7 days", "1 notice: not ours"),
         ("Guaifenesin", "FDA  ·  United States", "Drug Safety Communications", "7 of 7 days", "Nothing found"),
         ("Carvedilol", "EDA  ·  Egypt", "DHPC letters, safety alerts", "7 of 7 days", "Nothing found")]
 for i, row in enumerate(data):
-    yy = ty_ + 0.38 + i * 0.47
+    yy = ty_ + 0.32 + i * 0.4
     if i % 2:
-        rect(s, tx_, yy, tw_t, 0.47, fill=SURF2)
+        rect(s, tx_, yy, tw_t, 0.4, fill=PAPER)
     xx = tx_
     for j, ((_, w_), v) in enumerate(zip(cols_, row, strict=True)):
         neg = j == 4 and v[0] in "N0"
         if j == 4:
-            rect(s, xx + 0.12, yy + 0.19, 0.09, 0.09, fill=SEA if neg else BEACON)
-        tx(s, xx + (0.3 if j == 4 else 0.12), yy + 0.13, w_ - 0.2, 0.3, v, size=10.5,
+            rect(s, xx + 0.1, yy + 0.16, 0.08, 0.08, fill=SEA if neg else BEACON)
+        tx(s, xx + (0.26 if j == 4 else 0.1), yy + 0.11, w_ - 0.15, 0.3, v, size=10,
            color=SEA if neg else INK, bold=(j == 4))
         xx += w_
-    hline(s, tx_, yy + 0.47, tx_ + tw_t, RULE, 0.5)
-px = tx_ + tw_t + 0.35
+    hline(s, tx_, yy + 0.4, tx_ + tw_t, RULE, 0.5)
+fy = ty_ + 0.32 + len(data) * 0.4 + 0.2
+micro(s, tx_, fy, 5, "SHA-256  9c41 7e0b 2a55 … 52d1", color=DEEP, size=7, track=1.0)
+micro(s, tx_ + tw_t - 3.5, fy, 3.5, "Signed  ·  Reviewed by the QPPV", size=7, align="r", track=1.0)
+px = shx + shw + 0.5
 pw = SW - M - px
 pts = [("Daily and weekly", "For every active ingredient on its own, and across all of them."),
        ("Weekly, never monthly", "Some findings must reach the authority within five days."),
        ("Kept, unchangeable", "Every page read has an archive copy that nothing can overwrite or delete.")]
 for k, (a, b) in enumerate(pts):
-    yy = 2.78 + k * 1.3
+    yy = 2.55 + k * 1.42
     hline(s, px, yy, px + pw, INK, 0.9)
     tx(s, px, yy + 0.14, pw, 0.35, a, size=12.5, bold=True, color=INK)
     tx(s, px, yy + 0.52, pw, 0.75, b, size=11, color=MUTED, ls=1.28)
@@ -509,35 +629,6 @@ notes(s, "Some findings must be reported within five days, which is why the repo
       "what is due and what is late, and records the day we sent it to the Egyptian Drug Authority and its "
       "reference. A decision can be changed; it is never erased.")
 
-# ═════════ 09 THE ICSR DATABASE ═════════
-s = new_slide()
-y = chrome(s, "08  ·  Cases", "The ICSR database",
-           "ICSRs were kept in an Excel log, an approved alternative while our numbers are low. "
-           "Now every ICSR is in a database.")
-steps = [("01", "New case", "Opened from the Cases tab, numbered, dated."),
-         ("02", "The CIOMS form", "Dropped into the case; PHAROS reads it into the case's fields."),
-         ("03", "Our product", "Picked from the product list, with its strength: carvedilol with ivabradine, "
-                               "levofloxacin 500."),
-         ("04", "MedDRA coding", "From the company's MedDRA subscription, once its files are loaded."),
-         ("05", "Sent", "As an E2B (R3) file, or as the CIOMS I form when there are no MedDRA codes.")]
-sw_ = (CW - 4 * 0.32) / 5
-for k, (n, a, b) in enumerate(steps):
-    x = M + k * (sw_ + 0.32)
-    hline(s, x, 2.75, x + sw_, INK, 1.1)
-    tx(s, x, 2.88, 1, 0.5, n, size=22, font=SERIF, color=DEEP)
-    tx(s, x, 3.42, sw_, 0.35, a, size=13.5, bold=True, color=INK)
-    tx(s, x, 3.82, sw_, 1.2, b, size=11, color=MUTED, ls=1.3)
-card(s, M, 5.4, CW, 1.3, fill=SURF2, top=BEACON)
-micro(s, M + 0.3, 5.6, 4, "The product list", color=DEEP, bold=True)
-tx(s, M + 0.3, 5.9, CW - 0.6, 0.8, "A product with two active ingredients is one product: carvedilol with "
-   "ivabradine, each strength listed. The literature stays per active ingredient: anything found for ivabradine "
-   "is screened and recorded under ivabradine.", size=12, color=INK, ls=1.3)
-notes(s, "The ICSRs. We were expected to have a database for them, but as our ICSRs are few, I kept an Excel sheet "
-      "as an approved alternative. Now there is a Cases tab: New case, I put in the CIOMS form, it reads it, and "
-      "with the MedDRA subscription it turns it into E2B, the format that goes straight into the global "
-      "databases. The product list knows that a product can hold two active ingredients, carvedilol with "
-      "ivabradine, and its strengths, so each case names the exact product. I will not show the old Excel sheet.")
-
 # ═════════ 10 REPORTS ═════════
 s = new_slide()
 y = chrome(s, "09  ·  Reports", "Reports the inspector can hold",
@@ -572,6 +663,60 @@ tx(s, M + 0.35, 6.02, CW - 0.6, 0.6, "Each file carries its SHA-256 fingerprint 
 notes(s, "Reports are weekly, not monthly. For the master file the report has to be weekly. A PSUR pack and an "
       "inspection pack can be asked for from the Reports tab, for any interval, and are built within hours. Each "
       "file has a fingerprint that proves it was not changed, and each can be signed.")
+
+divider(3)
+
+# ═════════ 09 THE ICSR DATABASE ═════════
+s = new_slide()
+y = chrome(s, "08  ·  Cases", "The ICSR database",
+           "ICSRs were kept in an Excel log, an approved alternative while our numbers are low. "
+           "Now every ICSR is in a database.")
+steps = [("01", "New case", "Opened from the Cases tab, numbered, dated."),
+         ("02", "The CIOMS form", "Dropped into the case; PHAROS reads it into the case's fields."),
+         ("03", "Our product", "From the product list, with its strength: carvedilol with ivabradine."),
+         ("04", "MedDRA coding", "From the company's MedDRA subscription, once its files are loaded."),
+         ("05", "Sent", "As an E2B (R3) file; as the CIOMS I form until MedDRA arrives.")]
+# left: the five steps, one under the other
+lw5 = 5.75
+for k, (n, a, b) in enumerate(steps):
+    yy = 2.62 + k * 0.84
+    hline(s, M, yy, M + lw5, INK if k == 0 else RULE, 0.9 if k == 0 else 0.5)
+    tx(s, M, yy + 0.12, 0.7, 0.5, n, size=19, font=SERIF, color=DEEP, ls=1.0)
+    tx(s, M + 0.75, yy + 0.12, lw5 - 0.75, 0.3, a, size=13, bold=True, color=INK)
+    tx(s, M + 0.75, yy + 0.42, lw5 - 0.75, 0.4, b, size=10.5, color=MUTED, ls=1.25)
+hline(s, M, 2.62 + 5 * 0.84, M + lw5, RULE, 0.5)
+# right: the case as it stands in the database
+cx5 = M + lw5 + 0.6
+cw5 = SW - M - cx5
+cy5 = 2.62
+drawing_mark(s, cx5, cy5 - 0.3, cw5)
+rect(s, cx5, cy5, cw5, 4.2, fill=SURF, line=RULE, lw=0.5)
+rect(s, cx5, cy5, cw5, 0.62, fill=INK)
+rect(s, cx5, cy5 + 0.62, cw5, 0.04, fill=BEACON)
+micro(s, cx5 + 0.25, cy5 + 0.13, 3, "Case", color=MAST_MUTED, size=7)
+tx(s, cx5 + 0.25, cy5 + 0.3, 3, 0.3, "2026-0007", size=13, bold=True, color=WHITE)
+micro(s, cx5 + cw5 - 3.25, cy5 + 0.24, 3, "Open  ·  non-serious", color=BEACON, size=7.5, align="r")
+fields = [("Received", "Monday 9 November 2026  ·  CIOMS form, PDF"),
+          ("Product", "Carvedilol 6.25 mg with ivabradine 5 mg"),
+          ("Reaction", "Coded to a MedDRA preferred term"),
+          ("Reporter", "Health care professional, Egypt"),
+          ("Due", "Day 0: 9 Nov  ·  90 days: Sunday 7 February 2027")]
+for k, (a, b) in enumerate(fields):
+    yy = cy5 + 0.84 + k * 0.5
+    micro(s, cx5 + 0.25, yy + 0.06, 1.4, a, size=7)
+    tx(s, cx5 + 1.65, yy, cw5 - 1.9, 0.35, b, size=11, color=INK)
+    hline(s, cx5 + 0.25, yy + 0.4, cx5 + cw5 - 0.25, RULE, 0.5)
+micro(s, cx5 + 0.25, cy5 + 3.47, 2, "Send as", size=7)
+for k, f in enumerate(["E2B (R3) file", "CIOMS I form"]):
+    fx = cx5 + 1.65 + k * 1.75
+    rect(s, fx, cy5 + 3.38, 1.6, 0.42, fill=SEA_T if k == 0 else BEACON_T, line=SEA if k == 0 else DEEP, lw=0.75)
+    tx(s, fx, cy5 + 3.38, 1.6, 0.42, f, size=10.5, bold=True, color=SEA if k == 0 else DEEP, align="c",
+       anchor="m")
+notes(s, "The ICSRs. We were expected to have a database for them, but as our ICSRs are few, I kept an Excel sheet "
+      "as an approved alternative. Now there is a Cases tab: New case, I put in the CIOMS form, it reads it, and "
+      "with the MedDRA subscription it turns it into E2B, the format that goes straight into the global "
+      "databases. The product list knows that a product can hold two active ingredients, carvedilol with "
+      "ivabradine, and its strengths, so each case names the exact product. I will not show the old Excel sheet.")
 
 # ═════════ 11 QUALITY ═════════
 s = new_slide()
@@ -613,6 +758,8 @@ notes(s, "To keep things organised: a CAPA comes from one of two places. Either 
       "and we make a CAPA plan to correct it; or an observation came out of an audit, and we make a CAPA for it. "
       "Each has its SOP, and both end in the same place: we prepare a CAPA. The QMS SOP is short; it is an "
       "overview of the same process written in the deviation and the audit SOPs.")
+
+divider(4)
 
 # ═════════ 12 PEOPLE, ACCESS, INTEGRITY ═════════
 s = new_slide()
@@ -675,6 +822,7 @@ notes(s, "I will write the literature-screening SOP from the handbook: how the p
 s = new_slide(PAPER)
 pic(s, "pharos-logo-stacked.png", 0.75, 1.55, w=5.6)
 rect(s, 7.0, 0, SW - 7.0, SH, fill=INK)
+beam(s, 7.07, 2.4, SW, 0.6, 4.2, MAST_RAISE)
 rect(s, 7.0, 0, 0.07, SH, fill=BEACON)
 X, WW = 7.6, SW - 7.6 - M
 micro(s, X, 0.85, WW, "Now, on the system itself", color=BEACON, size=8)
@@ -696,10 +844,25 @@ notes(s, "The laptop is connected to the projector. I show the system and its fe
       "the Ingredients and Sources tabs, a weekly report with its zero results, the Cases tab with our ICSRs, "
       "and the Quality tab.")
 
-# page numbers on the inside slides
-for i, s in enumerate(SLIDES):
-    if 0 < i < len(SLIDES) - 1:
-        micro(s, SW - M - 2, 7.12, 2, f"{i + 1:02d} / {len(SLIDES):02d}", size=7.5, align="r")
+# ═════════ CLOSING ═════════
+s = new_slide(PAPER)
+pic(s, "pharos-logo-stacked.png", SW / 2 - 2.55, 0.55, w=5.1)
+tx(s, M, 4.15, CW, 0.7, "Thank you", size=40, font=SERIF, color=INK, align="c")
+micro(s, M, 4.95, CW, "Questions are welcome", color=DEEP, align="c", size=8.5)
+hline(s, SW / 2 - 0.6, 5.42, SW / 2 + 0.6, BEACON, 2.2)
+tx(s, M, 5.65, CW, 0.35, "Dr Sama Mosaad  ·  Qualified Person for Pharmacovigilance", size=13, color=INK,
+   align="c")
+micro(s, M, 6.05, CW, f"Sato Pharma  ·  Pharmacovigilance inspection  ·  {DATE}", align="c", size=7.5)
+rect(s, 0, SH - 0.5, SW, 0.5, fill=INK)
+rect(s, 0, SH - 0.53, SW, 0.035, fill=BEACON)
+pic(s, "sato-pharma-reverse.png", SW / 2 - 0.42, SH - 0.42, h=0.32)
+notes(s, "Thank you. I am glad to take any questions, and to show any part of the system again.")
+
+# page numbers on the inside slides (not the cover, the parts' openings, the demonstration or the close)
+SKIP = {1, *DIVIDER_PAGE.values(), N - 1, N}
+for i, s in enumerate(SLIDES, start=1):
+    if i not in SKIP:
+        micro(s, SW - M - 2, 7.12, 2, f"{i:02d} / {N:02d}", size=7.5, align="r")
 assert len(SLIDES) == N, len(SLIDES)
 prs.save(OUT)
 print("wrote", OUT, len(SLIDES), "slides")
