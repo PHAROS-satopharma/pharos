@@ -1993,7 +1993,7 @@ new_page("Cases and products")
 y = running_head(c, "05  ·  Cases and products  ·  cases")
 y = head(c, "", "Cases: each individual case safety report", y, sub="A drawing, not real data")
 y = para(c, "Each case keeps its source document, the form PHAROS fills from it, your check and confirmation, the "
-            "clock to the authority, and the E2B(R3) file.", what_st, ML, y, CW) - 3 * mm
+            "clock to the authority, and the CIOMS I form or E2B(R3) file.", what_st, ML, y, CW) - 3 * mm
 fh = 94.5 * mm
 frame(c, ML, y, CW, fh)
 ix = ML + 5 * mm
@@ -2080,7 +2080,7 @@ y = head(c, "", "A case: check it, confirm it, send it", y, sub="A drawing, not 
 y = para(c, "PHAROS reads the document and fills the form. A reviewer checks every field against the document, "
             "decides the seriousness, and confirms. PHAROS never sends a case: you do, and record it.", what_st, ML,
          y, CW) - 3 * mm
-fh = 116 * mm
+fh = 118.5 * mm
 frame(c, ML, y, CW, fh)
 ix = ML + 5 * mm
 iw = CW - 18 * mm
@@ -2137,19 +2137,25 @@ tools_left(c, ix + iw / 2 + 4 * mm, yy - 6.1 * mm,
 tag(c, tagx, yy - 5 * mm, "D")
 yy = field(c, ix, yy, iw / 2 - 4 * mm, "Comment", "", hint="Kept in the history with the step")
 yy -= 1.6 * mm
-yy = screen_sec(c, ix, yy, iw / 2 - 4 * mm, "04", "E2B(R3) file")
-yy_h = screen_sec(c, ix + iw / 2 + 4 * mm, yy + 6 * mm, iw / 2 - 4 * mm, "05", "History")
+c3 = (iw - 10 * mm) / 3
+yy = screen_sec(c, ix, yy, c3, "04", "E2B(R3) file")
+screen_sec(c, ix + c3 + 5 * mm, yy + 6 * mm, c3, "05", "CIOMS I form")
+yy_h = screen_sec(c, ix + 2 * (c3 + 5 * mm), yy + 6 * mm, c3, "06", "History")
 tools_left(c, ix, yy - 3 * mm, [("Make the E2B file", "light")], size=5.8)
-text(c, "5 Nov 2026, 10:02  ·  Received  ·  Sama Mosaad", ix + iw / 2 + 4 * mm, yy_h, "Sans", 5.8)
-text(c, "5 Nov 2026, 10:06  ·  Read by PHAROS", ix + iw / 2 + 4 * mm, yy_h - 3.4 * mm, "Sans", 5.8)
-text(c, "Original SHA-256 9f2c41d0…a41b07e3", ix + iw / 2 + 4 * mm, yy_h - 6.8 * mm, "Mono", 5.4, MUTED)
+text(c, "Needs each reaction's MedDRA code", ix, yy - 7.6 * mm, "Sans", 5.4, MUTED)
+tools_left(c, ix + c3 + 5 * mm, yy - 3 * mm, [("Open the CIOMS I form", "light")], size=5.8)
+text(c, "The reactions in the reporter's words", ix + c3 + 5 * mm, yy - 7.6 * mm, "Sans", 5.4, MUTED)
+hx_ = ix + 2 * (c3 + 5 * mm)
+text(c, "5 Nov 2026, 10:02  ·  Received  ·  Sama Mosaad", hx_, yy_h, "Sans", 5.6)
+text(c, "5 Nov 2026, 10:06  ·  Read by PHAROS", hx_, yy_h - 3.4 * mm, "Sans", 5.6)
+text(c, "Original SHA-256 9f2c41d0…a41b07e3", hx_, yy_h - 6.8 * mm, "Mono", 5.2, MUTED)
 tag(c, tagx, yy_h - 2 * mm, "E")
 y -= fh + 3.5 * mm
 y = legend(c, [("A", "Where it stands", "Its status and clock."),
                ("B", "A valid case", "Four criteria: Present or Missing."),
                ("C", "The form", "What PHAROS read, with its words."),
                ("D", "Decide", "Save, confirm, or not valid."),
-               ("E", "The record", "E2B file and the history.")], y, 5) - 3.6 * mm
+               ("E", "Send and record", "E2B or CIOMS I; the history.")], y, 5) - 3.6 * mm
 
 y = label(c, "How to check and confirm a case", y)
 top = y
@@ -2161,8 +2167,8 @@ yl = steps(c, ["Open the case. Press <b>Open the document</b> and keep it beside
                "decide."], ML, y, colw)
 yr = steps(c, ["Choose the product and its strength, or the ingredient. Press <b>Confirm the case</b>. It is "
                "refused while a criterion is missing, the seriousness is not decided or nothing is chosen.",
-               "Type the MedDRA code and version of each reaction from the MedDRA browser, press <b>Make the E2B "
-               "file</b> and check the file before you send it.",
+               "Until MedDRA arrives, press <b>Open the CIOMS I form</b>, save it as PDF and send it. With each "
+               "reaction's MedDRA code, <b>Make the E2B file</b> instead.",
                "Once sent, give <b>Sent on</b> and <b>The authority's reference</b>, and press <b>Record as "
                "sent</b>."], ML + colw + 8 * mm, top, colw, start=5)
 y = min(yl, yr) - 3 * mm
@@ -2170,8 +2176,8 @@ y = notes_row(c, [
     ("Not a case", "<b>Not a valid case</b>, with a comment, closes it. No case is ever deleted."),
     ("A follow-up", "On a confirmed or sent case, <b>Reopen</b> with a comment, and a <b>New day zero (a "
                     "follow-up)</b> if new information came. A confirmed case is corrected only after Reopen."),
-    ("The E2B(R3) file", "Made once the case is confirmed, with every reaction's MedDRA code; PHAROS never invents "
-                         "one. Until a first file has passed the authority's gateway test, it is a prepared draft."),
+    ("CIOMS I or E2B(R3)", "The CIOMS I form needs no MedDRA code. The E2B file needs every reaction's MedDRA "
+                           "code; PHAROS never invents one. Until it passes the gateway test, it is a draft."),
     ("The history", "Every step, its time, the person and the comment, kept and never changed, with the "
                     "original document's SHA-256."),
 ], y, 4, gap=5 * mm)
