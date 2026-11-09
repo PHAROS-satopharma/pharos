@@ -5,14 +5,29 @@ import { HOME, REMOVED_PATHS, tabsFor } from './nav';
 const removed = (pathname: string) => REMOVED_PATHS.some((p) => matchPath({ path: p }, pathname) !== null);
 
 describe('tabsFor', () => {
-  it('gives everyone the screening tabs, in her order with Products beside Ingredients, then Cases', () => {
-    expect(tabsFor(false).map((t) => t.label)).toEqual(['Ingredients', 'Products', 'Sources', 'Reports', 'Cases']);
-    expect(tabsFor(false).map((t) => t.to)).toEqual(['/ingredients', '/products', '/sources', '/reports', '/cases']);
+  it('gives everyone the screening tabs, in her order with Products beside Ingredients, then Cases and Quality', () => {
+    expect(tabsFor(false).map((t) => t.label)).toEqual(['Ingredients', 'Products', 'Sources', 'Reports', 'Cases', 'Quality']);
+    expect(tabsFor(false).map((t) => t.to)).toEqual([
+      '/ingredients',
+      '/products',
+      '/sources',
+      '/reports',
+      '/cases',
+      '/quality',
+    ]);
   });
 
   it('adds People, last, for the administrator who manages the people only', () => {
-    expect(tabsFor(true).map((t) => t.label)).toEqual(['Ingredients', 'Products', 'Sources', 'Reports', 'Cases', 'People']);
-    expect(tabsFor(true)[5].to).toBe('/people');
+    expect(tabsFor(true).map((t) => t.label)).toEqual([
+      'Ingredients',
+      'Products',
+      'Sources',
+      'Reports',
+      'Cases',
+      'Quality',
+      'People',
+    ]);
+    expect(tabsFor(true)[6].to).toBe('/people');
     expect(tabsFor(false).some((t) => t.to === '/people')).toBe(false);
   });
 
@@ -43,7 +58,7 @@ describe('REMOVED_PATHS', () => {
   });
 
   it('leaves the screens that stay alone', () => {
-    for (const p of ['/', '/ingredients', '/ingredients/42', '/products', '/sources', '/reports', '/people', '/me']) {
+    for (const p of ['/', '/ingredients', '/ingredients/42', '/products', '/sources', '/reports', '/quality', '/people', '/me']) {
       expect(removed(p), p).toBe(false);
     }
   });
