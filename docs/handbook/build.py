@@ -642,7 +642,7 @@ y = sub_head(c, "Drug class words", y, aside="From the ATC code until you confir
 y = para(c, "Many safety notices speak of a whole class (fluoroquinolones, NSAIDs) and never name the ingredient. So "
             "each ingredient also carries its drug class: its ATC group (levofloxacin J01MA12 belongs to "
             "Fluoroquinolones, J01MA), with the words notices use for that class in each regulator's language. "
-            "The next class run (three a day) makes the class from the ATC code. It reads <b>from the ATC code</b> until an "
+            "The next class run (four a day) makes the class from the ATC code. It reads <b>from the ATC code</b> until an "
             "administrator checks its words and presses <b>Confirm</b>.", ink_tiny, ML, y, CW) - 4 * mm
 colw = (CW - 8 * mm) / 2
 top = y
@@ -752,7 +752,7 @@ y = label(c, "What the line says, and when it clears by itself", y)
 y = table(c, [
     ("Ready", "Its names, its class words, the check of the past, the PubMed look-back and the label watch are all "
               "done, and someone receives its Telegram messages."),
-    ("class words waiting", "It has an ATC code and no drug class yet. The next class run makes it (three a day)."),
+    ("class words waiting", "It has an ATC code and no drug class yet. The next class run makes it (four a day)."),
     ("check of the past running, or waiting", "Its names are checked against every stored notice, whatever its "
                                               "date. It clears when every name is checked."),
     ("PubMed look-back running, or waiting", "PubMed abstracts are read 12 months back for its name. It clears "
