@@ -5,7 +5,7 @@ pharmacovigilance system master file. Every screen it describes is the app as it
 Ingredients (the vertical pass, with readiness, case reports and our label), what follows a finding that concerns
 us (the five-day clock to the Egyptian Drug Authority and the signal steps), Sources (the horizontal pass and the
 literature references), Products and Cases, Reports (daily and weekly, fingerprints and signatures, packs on
-request), Telegram, People and Me, and a page for the SOP (with deviations, audits and CAPA).
+request), Telegram, People and Me, and a page for the SOP (with the Quality tab: deviations, audits and CAPA).
 
     python build.py ["PHAROS Handbook.pdf"]
 
@@ -494,8 +494,8 @@ y = notes_row(c, [
                     "The vertical pass. It is the page PHAROS opens on."),
     ("Sources", "One card per country: the pages you check and what was published since you last looked. The "
                 "horizontal pass. Its tab says how many items are new."),
-    ("Products and Cases", "Our products, each with its ingredients and strengths. Each individual case report, "
-                           "from its document to the authority (page 15)."),
+    ("Products, Cases, Quality", "Our products and their strengths. Each case report, to the authority (page "
+                                 "15). Deviations, audits, CAPA (page 22)."),
     ("Reports", "The daily and weekly reports, PDF and Excel, with fingerprints and signatures; packs on request; "
                 "the screening log."),
     ("People and Me", "People: who may sign in. Me, your name at the top right: Telegram, password, light or "
@@ -2587,8 +2587,8 @@ y = min(yl, yr) - 7 * mm
 y = label(c, "The three roles", y)
 y = notes_row(c, [
     ("Reader", "Sees every screen and every report."),
-    ("Reviewer", "Also records decisions, reports to the authority and signal steps; signs reports; asks for PSUR "
-                 "packs."),
+    ("Reviewer", "Also records decisions, reports to the authority, signal steps and Quality; signs reports; asks "
+                 "for PSUR packs."),
     ("Administrator", "Also manages the watchlist, drug classes, sources and people, and asks for inspection packs. "
                       "Dr Sama Mosaad's role."),
 ], y, 3) - 3 * mm
@@ -2631,6 +2631,7 @@ y = table(c, [
     ("When a case arrives", "Open it on <b>Cases</b>; check it against the document and confirm it; send it within "
                             "15 days, 90 if not serious, and record it as sent."),
     ("For a PSUR or an inspection", "Ask for the pack on <b>Reports</b>; sign it once it is made."),
+    ("A deviation or an audit", "Record it on <b>Quality</b>, and take each of its CAPAs to verified effective."),
 ], y, [44 * mm, CW - 44 * mm], header=["When", "What to do"], styles=[cell_b, cell_st]) - 4 * mm
 
 y = label(c, "The record PHAROS keeps", y)
@@ -2648,11 +2649,13 @@ y = notes_row(c, [
 y = label(c, "Deviations, audits and CAPA", y)
 colw2 = (CW - 9 * mm) / 2
 yl = para(c, "<b>A deviation (PV-SOP-021).</b> A hand check not recorded, a case past its clock, section 06 left "
-             "undone, a finding reported after five days: the QPPV notifies QA on PV-FM-009; the root cause and CAPA "
-             "go on PV-FM-010. PHAROS shows the gap; it keeps no CAPA record.", tiny, ML, y, colw2)
-yr = para(c, "<b>An audit (PV-SOP-022).</b> Each observation gets a CAPA plan (PV-FM-011 to 013). The evidence: the "
-             "weekly reports with their SHA-256 and signatures, the screening log, the inspection pack, the audit "
-             "log. PV-SOP-024 sets out the quality system.", tiny, ML + colw2 + 9 * mm, y, colw2)
+             "undone, a finding reported after five days: record it on <b>Quality</b>, 01 Deviations, as on "
+             "PV-FM-009 (D001/2026). QA sets its level; then the investigation, the CAPA, the approval, and closing "
+             "once every CAPA is effective.", tiny, ML, y, colw2)
+yr = para(c, "<b>An audit (PV-SOP-022).</b> 02 Audits counts from the report day: review by day 1, meeting 2, draft "
+             "CAPA 10, approval 12, submission 14. Each observation gets its CAPAs. 03 CAPA plan takes every CAPA "
+             "(CAPA-001/2026) to verified effective. Nothing is deleted. PV-SOP-024 sets out the quality system.",
+          tiny, ML + colw2 + 9 * mm, y, colw2)
 y = min(yl, yr) - 5 * mm
 
 y = navy_band(c, y, "Remember", [
@@ -2661,8 +2664,8 @@ y = navy_band(c, y, "Remember", [
     "A decision is never edited. You record a new one after it.",
     "A finding that concerns us reaches the Egyptian Drug Authority within five days.",
     "Every date and time, on screen and in the reports, is Cairo time.",
-], gap=5.2 * mm, size=9.8)
-y -= 6 * mm
+], gap=4.5 * mm, size=9.8)
+y -= 5.5 * mm
 centred(c, "PHAROS Handbook  ·  Edition 4  ·  November 2026  ·  Sato Pharma, Pharmacovigilance", "Serif-I", 8.6, y,
         MUTED)
 y -= 2 * mm
