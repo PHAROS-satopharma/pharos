@@ -341,9 +341,72 @@ INSP_REQ = {"id": "22222222-2222-4222-8222-222222222222", "kind": "inspection", 
 GOOD = "a" * 64
 
 
+CAPA_ROWS = [  # what the CAPA plan reads (0107): opened in the days, or still open (not effective)
+    {"id": "c1", "ref": "CAPA-001/2026", "year": 2026, "serial": 1, "source": "deviation", "deviation_ref": "D001/2026",
+     "audit_title": None, "observation_number": None, "owner": "Sama Hassan", "due_on": date(2026, 6, 1),
+     "done_on": date(2026, 5, 28), "status": "effective", "evidence": "PV-SOP-021 version 3",
+     "verified_by": "Omar Gawish", "verified_at": datetime(2026, 6, 2, 9, tzinfo=UTC),
+     "created_at": datetime(2026, 5, 5, 9, tzinfo=UTC)},
+    {"id": "c2", "ref": "CAPA-002/2026", "year": 2026, "serial": 2, "source": "audit", "deviation_ref": None,
+     "audit_title": "Partner Pharma 2026", "observation_number": 1, "owner": "Mona Adel", "due_on": date(2026, 10, 30),
+     "done_on": None, "status": "in_progress", "evidence": None, "verified_by": None, "verified_at": None,
+     "created_at": datetime(2026, 6, 9, 9, tzinfo=UTC)},                         # late by 7 days on 6 Nov
+    {"id": "c3", "ref": "CAPA-003/2025", "year": 2025, "serial": 3, "source": "deviation", "deviation_ref": "D004/2025",
+     "audit_title": None, "observation_number": None, "owner": "Ahmed (Regulatory)", "due_on": date(2026, 12, 1),
+     "done_on": None, "status": "approved", "evidence": None, "verified_by": None, "verified_at": None,
+     "created_at": datetime(2025, 9, 1, 9, tzinfo=UTC)},                         # opened before the days, still open
+]
+
+
+def _audit_row(title, kind, report, **done):
+    return {"id": title, "kind": kind, "title": title, "auditor": "Partner Pharma", "lead_auditor": "Dr Lee",
+            "report_received_on": report, "reviewed_on": None, "meeting_on": None, "capa_drafted_on": None,
+            "capa_approved_on": None, "capa_submitted_on": None, "final_report_on": None,
+            "closure_confirmed_on": None, "status": "report_received", "observations": [], **done}
+
+
+AUDIT_ROWS = [
+    # review on time, meeting 2 days late, draft on time, approval and submission never done: late
+    _audit_row("Partner Pharma 2026", "external", date(2026, 6, 1), reviewed_on=date(2026, 6, 2),
+               meeting_on=date(2026, 6, 5), capa_drafted_on=date(2026, 6, 10),
+               observations=[{"number": 1, "text": "Signal log not reviewed monthly", "grade": "major",
+                              "capas": [{"ref": "CAPA-002/2026", "status": "in_progress"}]}]),
+    # report on 1 Nov: draft CAPA due 11 Nov, not yet
+    _audit_row("Internal PV audit 2026", "internal", date(2026, 11, 1), reviewed_on=date(2026, 11, 2),
+               meeting_on=date(2026, 11, 3)),
+]
+
+
 class InspectionDb:
     def __init__(self):
         self.sql: list[tuple[str, dict]] = []
+
+    def _quality(self, sql, params):
+        """The quality records of the days (0107), read chunk by chunk like the screening log."""
+        if "from deviation d" in sql:
+            assert (params["b"] - params["a"]) <= timedelta(days=367)
+            at = datetime(2026, 5, 4, 9, tzinfo=UTC)
+            return [{"id": "dv1", "ref": "D001/2026", "year": 2026, "serial": 1, "title": "Weekly report signed late",
+                     "level": 2, "occurred_on": date(2026, 5, 3), "detected_on": date(2026, 5, 4), "created_at": at,
+                     "root_cause": "No deputy named", "qa_satisfactory": True, "status": "approved",
+                     "approved_at": datetime(2026, 5, 20, 9, tzinfo=UTC), "closed_at": None,
+                     "capas": [{"ref": "CAPA-001/2026", "status": "effective"}]}] if params["a"] <= at < params["b"] else []
+        if "from audit a" in sql:
+            assert (params["t"] - params["f"]).days <= 365
+            return [r for r in AUDIT_ROWS if params["f"] <= r["report_received_on"] <= params["t"]]
+        if "from capa c" in sql:
+            if "c.created_at >= %(a)s" in sql:
+                assert (params["b"] - params["a"]) <= timedelta(days=367)
+                return [r for r in CAPA_ROWS if params["a"] <= r["created_at"] < params["b"]]
+            assert "c.status <> 'effective'" in sql
+            return [r for r in CAPA_ROWS if r["status"] != "effective" and r["created_at"] < params["b"]]
+        if "from quality_event" in sql:
+            assert (params["b"] - params["a"]) <= timedelta(days=367)
+            if not params["a"] <= datetime(2026, 6, 1, tzinfo=UTC) < params["b"]:
+                return []
+            return [{"record_kind": "deviation", "n": 9}, {"record_kind": "capa", "n": 7},
+                    {"record_kind": "audit", "n": 4}, {"record_kind": "observation", "n": 1}]
+        return None
 
     def fetchone(self, sql, params=None):
         self.sql.append((sql, params))
@@ -353,6 +416,9 @@ class InspectionDb:
 
     def fetchall(self, sql, params=None):
         self.sql.append((sql, params))
+        quality = self._quality(sql, params)
+        if quality is not None:
+            return quality
         if "screening_log(" in sql:
             assert (params["t"] - params["f"]).days <= 365
             return [_log("bfarm-src", "BfArM", "Germany", "safety", 2190, failed=5, why="HTTP 503")]
@@ -443,7 +509,8 @@ def test_the_inspection_pdf_and_excel_file():
     html = rp.render_pack_html(data)
     heads = re.findall(r'<h2><span class="n">(\d\d)</span>([^<]+)</h2>', html)
     assert heads == [("01", "Summary"), ("02", "Coverage"), ("03", "Screening log"),
-                     ("04", "Decisions and signatures"), ("05", "Weekly reports"), ("06", "Audit log and people")]
+                     ("04", "Decisions and signatures"), ("05", "Weekly reports"), ("06", "Audit log and people"),
+                     ("07", "Quality: deviations, audits and CAPA")]
     for words in ("PHAROS — Inspection pack", "File changed since signing", "c" * 64, "Sent twice",
                   "Every file matched its SHA-256", "review_event", "Mona Adel"):
         assert words in html, words
@@ -451,6 +518,78 @@ def test_the_inspection_pdf_and_excel_file():
     assert wb.sheetnames == list(rp.INSPECTION_SHEETS)
     weekly = list(wb["Weekly reports"].iter_rows(values_only=True))
     assert weekly[1][2] == "c" * 64 and weekly[1][3] == "d" * 64
+
+
+# ───────────────────────────── the quality section (0107) ─────────────────────────────
+
+def test_the_inspection_pack_holds_the_quality_records_of_the_days():
+    _, data = _inspection()
+    q = data["quality"]
+    dev = q["deviations"][0]
+    assert (dev["ref"], dev["level"], dev["detected"], dev["satisfactory"], dev["status"]) == (
+        "D001/2026", "Level 2", "4 May 2026", "Satisfactory", "Approved by the QA Manager")
+    assert dev["root_cause"] == "No deputy named" and dev["capas"] == "CAPA-001/2026 (Effective (closed))"
+    # each audit deadline from the report day: on time, late, or not yet
+    partner, internal = q["audits"]
+    assert [(d["label"], d["due"], d["state"]) for d in partner["deadlines"]] == [
+        ("QPPV review of the report", "2 Jun 2026", "on time"),
+        ("Meeting with the responsible persons", "3 Jun 2026", "late"),
+        ("Draft CAPA", "11 Jun 2026", "on time"),
+        ("All CAPAs reviewed and approved", "13 Jun 2026", "late"),
+        ("CAPA submitted", "15 Jun 2026", "late")]
+    assert [d["state"] for d in internal["deadlines"]] == ["on time", "on time", "not yet", "not yet", "not yet"]
+    assert partner["observations"][0]["grade"] == "Major"
+    assert partner["observations"][0]["capas"] == "CAPA-002/2026 (In progress)"
+    assert partner["closure"] == "Not closed (Report received)"
+    # the CAPA plan: opened in the days or still open, once each; a late CAPA counted
+    assert [c["ref"] for c in q["capas"]] == ["CAPA-003/2025", "CAPA-001/2026", "CAPA-002/2026"]
+    assert [c["ref"] for c in q["capas"] if c["late"]] == ["CAPA-002/2026"]
+    assert q["counts"] == {"open": 2, "late": 1, "closed": 1}
+    c1 = next(c for c in q["capas"] if c["ref"] == "CAPA-001/2026")
+    assert (c1["source"], c1["done"], c1["effective"], c1["evidence"]) == (
+        "from D001/2026", "28 May 2026", "Verified 2 Jun 2026 by Omar Gawish", "PV-SOP-021 version 3")
+    c2 = next(c for c in q["capas"] if c["ref"] == "CAPA-002/2026")
+    assert c2["source"] == "from Audit Partner Pharma 2026, observation 1"
+    # the history: rows per kind in the days, and that it cannot be changed
+    assert q["history"] == [("Deviations", 9), ("Audits", 4), ("Audit observations", 1), ("CAPAs", 7)]
+    assert q["history_total"] == 21
+    for row in (("Deviations recorded", 1), ("Audits with a report", 2), ("CAPA open", 2), ("CAPA late", 1),
+                ("CAPA closed (effective)", 1), ("Quality history rows", 21)):
+        assert row in data["summary"], row
+
+
+def test_the_quality_section_and_sheets_of_the_inspection_pack():
+    _, data = _inspection()
+    html = rp.render_pack_html(data)
+    part = html[html.index("Quality: deviations, audits and CAPA"):]
+    for words in ("D001/2026", "No deputy named", "Partner Pharma 2026", "Meeting with the responsible persons",
+                  "CAPA-002/2026", "2 open, 1 late, 1 closed", "Signal log not reviewed monthly",
+                  "cannot be changed"):
+        assert words in part, words
+    assert "PH409" not in part and "uuid" not in part.lower()
+    wb = load_workbook(io.BytesIO(rp.build_inspection_xlsx(data)))
+    assert wb.sheetnames[-3:] == ["Deviations", "Audits", "CAPA plan"]
+    devs = list(wb["Deviations"].iter_rows(values_only=True))
+    assert devs[1][0] == "D001/2026" and devs[1][2] == "Level 2"
+    audits = list(wb["Audits"].iter_rows(values_only=True))
+    assert audits[1][0] == "Partner Pharma 2026"
+    assert "late" in audits[1][audits[0].index("Meeting with the responsible persons")]
+    plan = list(wb["CAPA plan"].iter_rows(values_only=True))
+    late = plan[0].index("Late")
+    assert [(r[0], r[late] or "") for r in plan[1:]] == [("CAPA-003/2025", ""), ("CAPA-001/2026", ""),
+                                                   ("CAPA-002/2026", "yes")]
+
+
+def test_the_quality_records_are_read_in_chunks_of_at_most_366_days():
+    db = InspectionDb()
+    req = {**INSP_REQ, "from_day": date(2024, 11, 7)}                     # two years: two chunks
+    data = rp.assemble_inspection(rp.gather_inspection(db, req), made_at=datetime(2026, 11, 6, tzinfo=UTC))
+    devs = [p for s, p in db.sql if "from deviation d" in s]
+    assert [(p["f"], p["t"]) for p in devs] == [(date(2024, 11, 7), date(2025, 11, 7)),
+                                                (date(2025, 11, 8), date(2026, 11, 6))]
+    assert len([1 for s, _ in db.sql if "from quality_event" in s]) == 2
+    assert [d["ref"] for d in data["quality"]["deviations"]] == ["D001/2026"]          # once, never twice
+    assert [c["ref"] for c in data["quality"]["capas"]] == ["CAPA-003/2025", "CAPA-001/2026", "CAPA-002/2026"]
 
 
 # ───────────────────────────── built, archived and told ─────────────────────────────
@@ -534,6 +673,9 @@ def test_an_inspection_pack_is_made(env):
         f"reports/packs/inspection/{rid}/PHAROS-inspection-2025-11-07-to-2026-11-06.pdf")
     # the administrator asked: told once
     assert [n["person_id"] for n in store.notification] == ["p-adm"]
+    # the quality section is in the pack, and nothing reached Telegram
+    assert "Quality: deviations, audits and CAPA" in env["printed"][0][0]
+    assert env["telegram"].calls == [] and all(n["dry_run"] for n in store.notification)
 
 
 def test_an_inspection_pack_is_told_to_administrators_only(env):
