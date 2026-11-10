@@ -18,7 +18,8 @@ from collectors.core.archive import Archive
 from collectors.core.context import RETRY_WAITS_S, FetchContext
 from collectors.core.memstore import MemoryStore
 from collectors.core.registry import load_catalogue, sync_catalogue
-from collectors.run import DOWN_AFTER, Runner, latest_published, parse_args, select_sources
+from collectors.run import (DOWN_AFTER, Runner, SourceStats, latest_published, parse_args, run_failed,
+                            select_sources)
 
 FIX = Path(__file__).resolve().parent / "fixtures"
 PSUSA = json.loads((FIX / "ema-psusa/psusa-slice.json").read_text(encoding="utf-8"))
@@ -480,3 +481,29 @@ def test_a_source_removed_during_the_run_is_skipped_and_the_run_goes_on(tmp_path
     store.start_source_run = broken
     with pytest.raises(RuntimeError, match="database down"):
         runner.run_source(SRC)
+
+
+def test_one_dead_source_does_not_fail_the_run():
+    ok, dead = SourceStats(), SourceStats(failed=True)
+    assert not run_failed([])                                     # nothing read: not a failure
+    assert not run_failed([ok, ok, ok])
+    assert not run_failed([ok, ok, dead])                         # Jordan timing out, 10 Nov
+    assert not run_failed([ok, dead])                             # half is not most
+    assert run_failed([dead])                                     # a one-source run that failed
+    assert run_failed([ok, dead, dead])                           # most failed: a systemic fault
+    assert run_failed([dead, dead, dead])
+
+
+def test_run_stays_green_when_one_of_three_sources_fails(tmp_path, monkeypatch, caplog):
+    server = Server()
+    store, ctx, runner, _ = setup(tmp_path, server)
+    srcs = [dataclasses.replace(SRC, id=f"src-{i}") for i in range(3)]
+    monkeypatch.setattr(runner, "pull_mail", lambda sources: None)
+    monkeypatch.setattr(runner, "run_source",
+                        lambda src: SourceStats(failed=src.id == "src-1", error="ConnectTimeout"))
+    with caplog.at_level("WARNING"):
+        assert runner.run(srcs) is True
+    assert "1 of 3 source(s) failed" in caplog.text and "src-1" in caplog.text
+    monkeypatch.setattr(runner, "run_source", lambda src: SourceStats(failed=src.id != "src-0"))
+    assert runner.run(srcs) is False                              # two of three: the run fails
+    ctx.close()

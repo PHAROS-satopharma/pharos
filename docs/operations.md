@@ -109,6 +109,8 @@ the first thing to cut is the 4h schedule, to every 6 h.
 | `down` | The source failed 3 runs in a row (timeouts, HTTP errors) | Usually the regulator's site is down. It recovers by itself |
 | `blocked` | The site showed a bot check (for example Cloudflare, or a short page whose words say it is a security check). PHAROS never bypasses one. A page that lost its list but only carries a captcha in its code (a contact form) is "the page changed shape", not blocked | Use the newsletter by email (Fimea already does). This is not "down" |
 
+One failed source never turns the GitHub collect run red. A run fails only when **more than half** of the sources it read failed (or its only source did): that is a systemic fault (the network, the database, a broken release). A single unreachable site (Jordan's timed out on 10 Nov 2026) shows here as `down` after 3 runs and sends its own Telegram alert; the run log names it in a line "1 of N source(s) failed and wait for the next run".
+
 ## The daily report
 
 The owner's word (6 Nov 2026): the outcome of every day, as well as the week. `report.yml` makes it every
