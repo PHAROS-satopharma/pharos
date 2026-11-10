@@ -59,6 +59,18 @@ DOWN_AFTER = 3
 ALERT_MAX_AGE_DAYS = 60        # an item published longer ago than this never alerts
 
 
+def run_failed(results: list["SourceStats"]) -> bool:
+    """A run fails only when MORE THAN HALF of the sources it read failed (or its only one did).
+
+    One unreachable regulator site (Jordan's timed out twice on 10 Nov) must not turn every collect
+    run red: that source keeps its own health, its consecutive-failure count and its "down" alert
+    after DOWN_AFTER runs in a row. A run where most sources fail is a systemic fault (network,
+    database, a broken release) and still fails, so GitHub still says so.
+    """
+    failed = sum(1 for s in results if s.failed)
+    return failed > 0 and failed * 2 > len(results)
+
+
 @dataclass
 class SourceStats:
     seen: int = 0
@@ -457,23 +469,31 @@ class Runner:
                 self.imap_note[sid] = f"imap: {type(exc).__name__}: {exc}"[:300]
 
     def run(self, sources: list[SourceConfig]) -> bool:
-        """True when no source failed (a blocked source is a known state, not a failed run)."""
+        """True unless more than half of the sources failed (see run_failed; a blocked source is a
+        known state, not a failure)."""
         self.pull_mail(sources)
         # The least recently completed source goes first, so one cut-short run never starves the
         # same sources twice.
         epoch = datetime.min.replace(tzinfo=timezone.utc)
         order = sorted(sources, key=lambda s: (self.store.get_source(s.id) or {}).get("last_ok_at")
                        or epoch)
-        results = []
+        results: list[SourceStats] = []
+        down: list[str] = []
         for src in order:
             if self.out_of_time():
                 self.skipped.append(src.id)
                 continue
-            results.append(self.run_source(src))
+            stats = self.run_source(src)
+            results.append(stats)
+            if stats.failed:
+                down.append(src.id)
         if self.skipped:
             log.warning("time budget reached: %d source(s) wait for the next run: %s",
                         len(self.skipped), ", ".join(self.skipped))
-        return not any(s.failed for s in results)
+        if down and not run_failed(results):
+            log.warning("%d of %d source(s) failed and wait for the next run; the run is not failed "
+                        "by them: %s", len(down), len(results), ", ".join(down))
+        return not run_failed(results)
 
 
 def select_sources(sources: list[SourceConfig], schedule: str, source_id: str | None,
