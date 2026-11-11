@@ -5,7 +5,8 @@ pharmacovigilance system master file. Every screen it describes is the app as it
 Ingredients (the vertical pass, with readiness, case reports and our label), what follows a finding that concerns
 us (the five-day clock to the Egyptian Drug Authority and the signal steps), Sources (the horizontal pass and the
 literature references), Products and Cases, Reports (daily and weekly, fingerprints and signatures, packs on
-request), Telegram, People and Me, Quality (deviations, audits and the CAPA plan), and a page for the SOP.
+request), Telegram, People and Me, Quality (deviations, audits and the CAPA plan; what PHAROS prepares: proposed
+deviations, drafted root causes and CAPAs, the effectiveness check day), and a page for the SOP.
 
     python build.py ["PHAROS Handbook.pdf"]
 
@@ -20,7 +21,7 @@ from reportlab.platypus import Paragraph
 from kit import *
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else str(Path(__file__).with_name("PHAROS Handbook.pdf"))
-TOTAL = 23
+TOTAL = 24
 BOTTOM = 19 * mm
 report = []
 DANGER = HexColor("#A8322D")
@@ -387,7 +388,7 @@ micro(c, "Contents", ML, y - 2.4 * mm, color=INK, size=6.6)
 y -= 4.6 * mm
 contents = [("01", "How PHAROS screens", 2), ("02", "Ingredients", 3), ("03", "A finding concerns us", 9),
             ("04", "Sources", 11), ("05", "Cases and products", 15), ("06", "Reports and evidence", 18),
-            ("07", "Telegram", 21), ("08", "People and Me", 21), ("09", "Quality", 22), ("10", "For the SOP", 23)]
+            ("07", "Telegram", 21), ("08", "People and Me", 21), ("09", "Quality", 22), ("10", "For the SOP", 24)]
 ccw = (CW - 3 * 5 * mm) / 4
 for i, (n, t, pg) in enumerate(contents):
     x = ML + (i % 4) * (ccw + 5 * mm)
@@ -2848,7 +2849,136 @@ y = notes_row(c, [
 check(PAGE, y)
 c.showPage()
 
-# ═════════════════════════ PAGE 23 · FOR THE SOP ═════════════════════════
+# ═════════════════════════ PAGE 23 · QUALITY: WHAT PHAROS PREPARES ═════════════════════════
+# The words the tab shows for what PHAROS prepares (0108, 0109, 0110), in one place, as on page 22.
+QP = {
+    "proposed_head": "1 missed deadline proposed as a deviation",
+    "proposed_note": "PHAROS proposes each deadline it keeps that passed unmet. Record it as a deviation or dismiss "
+                     "it with the reason.",
+    "sources": ["Five-day clock to the EDA", "Signal step", "CAPA due day", "Audit deadline (PV-SOP-022)"],
+    "record": "Record as deviation",
+    "dismiss": "Dismiss",
+    "draft_sub": "Draft",
+    "ask": "Draft the root cause and CAPA",
+    "draft_label": "Draft, not recorded",
+    "draft_fields": ["Root cause", "Corrective action", "Preventive action", "Check before you use it"],
+    "use_root": "Use as the root cause",
+    "use_capa": "Use in a new CAPA",
+    "again": "Draft again",
+    "check_fact": "Effectiveness check",
+    "check_text": "Check by Wed 10 Feb  ·  91 days left",
+    "verified": "Verified effective",
+    "not_effective": "Not effective: back to work",
+    "move": "Check that it worked by",
+}
+
+new_page("Quality")
+y = running_head(c, "09  ·  Quality  ·  what PHAROS prepares")
+y = head(c, "09", "Quality: PHAROS prepares, you decide", y, sub="A drawing, not real data")
+y = para(c, "PHAROS watches every deadline it keeps and does the writing that comes before a decision. It never takes "
+            "the decision: a deviation is recorded, a root cause written and a CAPA judged effective only by a "
+            "reviewer or an administrator, and the history shows who.", what_st, ML, y, CW) - 3 * mm
+
+# 01 proposed deviations
+y = sub_head(c, "Proposed deviations", y, aside="01 on Quality  ·  above the register of deviations")
+fh = 27 * mm
+frame(c, ML, y, CW, fh)
+ix = ML + 5 * mm
+w_ = text(c, QP["proposed_head"], ix, y - 5 * mm, "Sans-B", 6.8)
+text(c, "  " + QP["proposed_note"], ix + w_, y - 5 * mm, "Sans", 5.8, MUTED)
+cy = y - 8 * mm
+c.setFillColor(WHITE)
+c.setStrokeColor(DANGER)
+c.setLineWidth(0.6)
+c.rect(ix, cy - 16.5 * mm, CW - 10 * mm, 16.5 * mm, stroke=1, fill=1)
+c.setFillColor(DANGER)
+c.rect(ix, cy - 16.5 * mm, 0.9 * mm, 16.5 * mm, stroke=0, fill=1)
+kx = ix + 3.4 * mm
+w_ = text(c, QP["sources"][2], kx, cy - 4 * mm, "Sans", 5.8, MUTED)
+text(c, "CAPA not done by its due day", kx + w_ + 3 * mm, cy - 4 * mm, "Sans-B", 7)
+text(c, "CAPA-002/2026 (from deviation D001/2026) was due on Thu 12 Nov 2026 and was still in progress on "
+        "Fri 13 Nov 2026.", kx, cy - 7.6 * mm, "Sans", 6.2)
+text(c, "Was due Thu 12 Nov 2026  ·  found Fri 13 Nov 2026 (1 day late)", kx, cy - 10.6 * mm, "Sans", 5.8, MUTED)
+tools_left(c, kx, cy - 15.2 * mm, [(QP["record"], "dark"), (QP["dismiss"], "quiet")])
+y -= fh + 3.5 * mm
+top = y
+yl = table(c, [(s, d) for s, d in zip(QP["sources"], [
+    "A finding that concerns us, not reported to the authority in its five days.",
+    "A step of an open signal past its due day.",
+    "A CAPA not done by its due day.",
+    "A deadline of an audit not closed, past.",
+], strict=True)], y, [41 * mm, colw - 41 * mm], header=["What PHAROS keeps", "Proposed when"],
+    styles=[cell_b, cell_st], pad=1.1 * mm)
+yr = para(c, "<b>Each morning from 07:00 Cairo</b> PHAROS proposes every one of these that passed unmet, once, worded "
+             "in full. <b>" + QP["record"] + "</b> opens the usual deviation form filled in with what PHAROS found: "
+             "change anything, and saving gives it its D-number and its history. <b>" + QP["dismiss"] + "</b> needs "
+             "the reason. A missed deadline recorded or dismissed is never proposed again; the dismissed ones, with "
+             "who and why, are in the inspection pack under <b>Deadlines reviewed</b>. Only deadlines due from "
+             "Wed 11 Nov 2026, the day this began, are proposed.", ink_tiny, ML + colw + 8 * mm, top, colw)
+y = min(yl, yr) - 4.5 * mm
+
+# 02 drafted root cause and CAPA
+y = sub_head(c, "Drafted root cause and CAPA", y, aside="On a deviation or an audit observation not closed")
+top = y
+dh = 43 * mm
+c.setFillColor(WHITE)
+c.setStrokeColor(MUTED)
+c.setLineWidth(0.6)
+c.setDash(2, 1.6)
+c.rect(ML, top - dh, colw, dh, stroke=1, fill=1)
+c.setDash()
+dx = ML + 3.4 * mm
+text(c, QP["draft_label"], dx, top - 4.6 * mm, "Sans-B", 7)
+bars(c, dx, top - 8 * mm, colw * 0.6)
+fy = top - 9.6 * mm
+for k, (lab, frac) in enumerate(zip(QP["draft_fields"], [0.7, 0.62, 0.74, 0.5], strict=True)):
+    micro(c, lab, dx, fy - 1.6 * mm, size=4.8, spacing=0.5, color=INK)
+    c.setFillColor(INK)
+    c.rect(dx, fy - 5.4 * mm, (colw - 7 * mm) * frac, 1.6 * mm, stroke=0, fill=1)
+    fy -= 6.4 * mm
+tools_left(c, dx, top - dh + 2.6 * mm, [(QP["use_root"], "light"), (QP["use_capa"], "light"), (QP["again"], "quiet")])
+yr = para(c, "A reviewer or an administrator presses <b>" + QP["ask"] + "</b>. Within about a minute PHAROS "
+             "writes four short texts from what is recorded on that record and nothing else (for a deviation its "
+             "description, level, investigation and CAPAs; for an observation its text, grade and audit). It invents "
+             "no fact, names no person, and lists what it could not know. The draft is only text: <b>" +
+             QP["use_root"] + "</b> and <b>" + QP["use_capa"] + "</b> open the usual forms filled in with it. "
+             "<b>Nothing is recorded until you save the form</b>, and the history shows you as the author.",
+          ink_tiny, ML + colw + 8 * mm, top, colw)
+y = min(top - dh, yr) - 4.5 * mm
+
+# 03 effectiveness check
+y = sub_head(c, "Effectiveness check", y, aside="03 CAPA plan  ·  PV-SOP-022, follow up")
+top = y
+eh = 24 * mm
+frame(c, ML, top, colw, eh)
+ex = ML + 3.4 * mm
+w_ = text(c, "CAPA-001/2026", ex, top - 4.6 * mm, "Mono", 6.2)
+chip(c, ex + w_ + 2.4 * mm, top - 5.6 * mm, Q["capa_steps"][3])
+fx2 = ex + (colw - 7 * mm) / 2
+for x_, lab, val, col in [(ex, "Due", "Done Tue 10 Nov", INK), (fx2, QP["check_fact"], QP["check_text"], DEEP)]:
+    micro(c, lab, x_, top - 9.4 * mm, size=4.8, spacing=0.5, color=INK)
+    text(c, val, x_, top - 12.6 * mm, "Sans-B" if col is DEEP else "Sans", 6.2, col)
+tools_left(c, ex, top - eh + 2.8 * mm, [(QP["verified"], "dark"), (QP["not_effective"], "light")])
+yr = para(c, "When a CAPA is marked <b>" + Q["capa_steps"][3] + "</b>, PHAROS sets the day to check that it worked: "
+             "<b>three months after the day it was done</b>. Under <b>Change the CAPA</b>, <b>" + QP["move"] + "</b> "
+             "moves it, today or later, with the reason. A late check is listed with the late CAPAs. <b>" +
+             QP["verified"] + "</b> and <b>Not effective</b> stay yours, each with your comment; not effective sends "
+             "it back to work, and done again sets a new day.", ink_tiny, ML + colw + 8 * mm, top, colw)
+y = min(top - eh, yr) - 5 * mm
+
+y = notes_row(c, [
+    ("Who decides", "PHAROS proposes, drafts and sets the day. Reviewers and administrators decide; readers see "
+                    "everything, with no buttons."),
+    ("The morning message", "After 07:00 Cairo: how many proposed deviations wait, and the effectiveness checks "
+                            "due within 2 days or late."),
+    ("The inspection pack", "The missed deadlines dismissed, with who and why, and the check day of every CAPA."),
+    ("Nothing deleted", "A proposal recorded or dismissed is kept, and every draft used is in the history as "
+                        "yours."),
+], y, 4, gap=5 * mm) - 3 * mm
+check(PAGE, y)
+c.showPage()
+
+# ═════════════════════════ PAGE 24 · FOR THE SOP ═════════════════════════
 new_page("For the SOP")
 y = running_head(c, "10  ·  For the SOP and the master file")
 y = head(c, "10", "For the SOP and the master file", y)
