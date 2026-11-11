@@ -147,6 +147,11 @@ export function IngredientsPage() {
     () => new Set((list.data ?? []).map((i) => i.atc_code).filter((x): x is string => Boolean(x))),
     [list.data],
   );
+  // An ingredient with no ATC code (a herbal such as Ivy leaf) is known by its name.
+  const existingNames = useMemo(
+    () => new Set((list.data ?? []).map((i) => i.inn_en.trim().toLowerCase())),
+    [list.data],
+  );
 
   return (
     <div className="page">
@@ -172,6 +177,7 @@ export function IngredientsPage() {
       {adding ? (
         <AddIngredient
           existingAtc={existingAtc}
+          existingNames={existingNames}
           onDone={() => {
             setAdding(false);
             setSaved(true);
