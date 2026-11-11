@@ -3,8 +3,8 @@ import { PageHead, SectionHead } from '../../ui/Text';
 import { Audits } from './Audits';
 import { CapaPlan } from './CapaPlan';
 import { Deviations } from './Deviations';
-import { useQuality } from './parts';
-import { capaCounts, dayText } from './quality';
+import { useProposals, useQuality } from './parts';
+import { capaCounts, dayText, waitingProposals } from './quality';
 import '../../styles/quality.css';
 
 /**
@@ -14,6 +14,9 @@ import '../../styles/quality.css';
  */
 export function QualityPage() {
   const q = useQuality();
+  const proposals = useProposals();
+  const proposalList = proposals.data ?? [];
+  const waiting = waitingProposals(proposalList).length;
   const counts = q.data ? capaCounts(q.data.capas) : null;
   const openDeviations = q.data ? q.data.deviations.filter((d) => d.status !== 'closed').length : 0;
   const openAudits = q.data ? q.data.audits.filter((a) => a.status !== 'closed').length : 0;
@@ -34,9 +37,9 @@ export function QualityPage() {
             <SectionHead
               index="01"
               title="Deviations"
-              aside={`${openDeviations} open · ${dayText(q.data.today)}`}
+              aside={`${openDeviations} open${waiting ? ` · ${waiting} proposed` : ''} · ${dayText(q.data.today)}`}
             />
-            <Deviations deviations={q.data.deviations} capas={q.data.capas} />
+            <Deviations deviations={q.data.deviations} capas={q.data.capas} proposals={proposalList} />
           </section>
           <section className="section">
             <SectionHead index="02" title="Audits" aside={`${openAudits} open · internal and external`} />

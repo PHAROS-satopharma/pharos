@@ -554,6 +554,18 @@ class Store:
                 where report_received_on is not null and status <> 'closed'""")
         return due_audit_deadlines(rows, today, within_days)
 
+    def find_deviation_proposals(self, today: date) -> int:
+        """Writes a proposed deviation (0108) for every deadline PHAROS keeps that passed unmet before ``today``
+        (the five-day clock, a signal step, a CAPA, an audit deadline), once each; returns how many were new.
+        The SQL is deviation_proposals_find(), granted to nobody but the owner this connection is."""
+        row = self.db.fetchone("select deviation_proposals_find(%(d)s) as n", {"d": today})
+        return int((row or {}).get("n") or 0)
+
+    def deviation_proposals_waiting(self) -> int:
+        """How many proposed deviations (0108) wait for a reviewer to record or dismiss them."""
+        row = self.db.fetchone("select count(*) as n from deviation_proposal where status = 'proposed'")
+        return int((row or {}).get("n") or 0)
+
     # ───────────────────────────── packs on request (0048) ─────────────────────────────
     REPORT_STALE = "2 hours"   # a build started this long ago and never finished (the run died) is taken again
 

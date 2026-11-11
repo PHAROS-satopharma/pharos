@@ -25,6 +25,12 @@ not closed, the next deadline of PV-SOP-022 when it is within two days or late),
 Quality tab. A message goes when any of the four lists has something in it. A quality read that fails (before
 0107 is applied) is logged and the rest of the reminder goes as before.
 
+Before anything else, from 07:00, the run asks the database to propose as a deviation every deadline it keeps
+that passed unmet (migration 0108, deviation_proposals_find: once each, whoever is linked and whatever else is
+due), and the message ends with "Proposed deviations": how many wait for a reviewer to record or dismiss, with
+the link to the Quality tab. Proposals waiting are enough for the message to go. PHAROS never records a
+deviation itself. A finder that fails is logged and the reminder goes as before.
+
     python -m collectors.reminders            # send if due
     python -m collectors.reminders --dry-run  # write what would go, send nothing
 """
@@ -81,8 +87,9 @@ def capa_due_text(due: date, days_left: int) -> str:
     return f"due {_day(due)}"
 
 
-def _quality_lines(capas: list[dict] | tuple, audits: list[dict] | tuple) -> list[str]:
-    """The "CAPA due" and "Audit deadlines" blocks, each line with the link to the Quality tab."""
+def _quality_lines(capas: list[dict] | tuple, audits: list[dict] | tuple, proposals: int = 0) -> list[str]:
+    """The "CAPA due" and "Audit deadlines" blocks, each line with the link to the Quality tab, then how many
+    proposed deviations wait (0108)."""
     lines: list[str] = []
     for title, rows, more in (("CAPA due", capas, "CAPAs"), ("Audit deadlines", audits, "audit deadlines")):
         if not rows:
@@ -101,6 +108,10 @@ def _quality_lines(capas: list[dict] | tuple, audits: list[dict] | tuple) -> lis
             lines += [text, "  " + QUALITY_URL]
         if len(rows) > MAX_LINES:
             lines.append(f"… and {len(rows) - MAX_LINES} more {more} in PHAROS (Quality).")
+    if proposals:
+        lines += ["", "<b>Proposed deviations</b>",
+                  f"{proposals} missed {'deadline waits' if proposals == 1 else 'deadlines wait'}: "
+                  "record as a deviation or dismiss with the reason", "  " + QUALITY_URL]
     return lines
 
 
@@ -109,14 +120,14 @@ def _screen_link(ingredient_id: str | None) -> str:
 
 
 def build_messages(items: list[dict], today: date, signals: list[dict] | tuple = (), *,
-                   capas: list[dict] | tuple = (), audits: list[dict] | tuple = ()) -> list[str]:
+                   capas: list[dict] | tuple = (), audits: list[dict] | tuple = (), proposals: int = 0) -> list[str]:
     """The reminder text: the findings to report to the authority (as the store lists them: most late first),
     then the signal steps due (0042), then the CAPAs due and the audit deadlines (0107), split under Telegram's
     limit."""
     late = sum(1 for i in items if int(i["days_left"]) < 0)
     due = len(items) - late
     n = len(items)
-    header = AUTHORITY if items else SIGNALS if signals or not (capas or audits) else QUALITY
+    header = AUTHORITY if items else SIGNALS if signals or not (capas or audits or proposals) else QUALITY
     lines = [f"<b>{BRAND}</b> · {header} · {esc(fmt_date(today))}"]
     if items:
         lines += [f"<b>{n} {'finding' if n == 1 else 'findings'} to report to the authority</b>",
@@ -141,7 +152,7 @@ def build_messages(items: list[dict], today: date, signals: list[dict] | tuple =
             lines.append(_screen_link(s.get("ingredient_id")))
         if m > MAX_LINES:
             lines.append(f"… and {m - MAX_LINES} more signal steps in PHAROS (Ingredients).")
-    lines += _quality_lines(capas, audits)
+    lines += _quality_lines(capas, audits, proposals)
     messages, current = [], ""
     for line in lines:
         if current and len(current) + 1 + len(line) > MAX_MESSAGE_CHARS:
@@ -161,6 +172,7 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
         log.info("the authority reminder waits for %s Cairo", SEND_FROM.strftime("%H:%M"))
         return 0
     midnight = datetime.combine(moment.date(), time(0), CAIRO)
+    proposals = _proposals(store, moment.date())
     notifier = notifier or Notifier(store, store.settings(), dry_run=dry_run)
     if now is not None:
         notifier.now = now      # the rows it writes carry the same clock the day window is cut from
@@ -174,11 +186,11 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
     items = store.eda_reminders(moment.date(), WITHIN_DAYS)
     signals = store.signal_reminders(moment.date(), WITHIN_DAYS)
     capas, audits = _quality_due(store, moment.date())
-    if not items and not signals and not capas and not audits:
-        log.info("nothing is due to the authority, and no signal step, CAPA or audit deadline is due, on %s",
-                 moment.date())
+    if not items and not signals and not capas and not audits and not proposals:
+        log.info("nothing is due to the authority, and no signal step, CAPA, audit deadline or proposed "
+                 "deviation waits, on %s", moment.date())
         return 0
-    texts = build_messages(items, moment.date(), signals, capas=capas, audits=audits)
+    texts = build_messages(items, moment.date(), signals, capas=capas, audits=audits, proposals=proposals)
     for person in people:
         # a retry sends only the parts this person does not have; a refused part holds back the ones after it
         # (written down as refused), so they always arrive in order
@@ -197,6 +209,19 @@ def remind_if_due(store: Any, notifier: Notifier | None = None, *, dry_run: bool
     log.info("morning reminder: %d findings, %d signal steps, %d CAPAs and %d audit deadlines to %d people "
              "(dry run: %s)", len(items), len(signals), len(capas), len(audits), len(people), notifier.dry_run)
     return len(people)
+
+
+def _proposals(store: Any, today: date) -> int:
+    """Runs the finder of proposed deviations (0108) and returns how many wait. A failure (the migration not
+    applied yet) is logged and counts none: the rest of the reminder still goes."""
+    try:
+        new = store.find_deviation_proposals(today)
+        if new:
+            log.info("%d missed deadlines proposed as deviations on %s", new, today)
+        return store.deviation_proposals_waiting()
+    except Exception as e:  # noqa: BLE001 - never let the proposals stop the authority reminder
+        log.warning("the proposed deviations could not be found for the morning reminder: %s", e)
+        return 0
 
 
 def _quality_due(store: Any, today: date) -> tuple[list[dict], list[dict]]:

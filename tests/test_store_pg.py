@@ -891,3 +891,11 @@ def test_the_morning_reminder_reads_capa_due_and_audit_deadlines(store, tag):
         "review", date(2026, 10, 21), -16)
     assert (audits[today_audit]["key"], audits[today_audit]["days_left"], audits[today_audit]["kind"]) == (
         "draft", 0, "external")
+
+
+def test_the_store_runs_the_finder_of_proposed_deviations_and_counts_those_waiting(store):
+    """0108: the finder is the owner's to run; it proposes nothing twice, and the count is a number."""
+    day = date.today()
+    store.find_deviation_proposals(day)
+    assert store.find_deviation_proposals(day) == 0, "a second run the same day proposes nothing new"
+    assert store.deviation_proposals_waiting() >= 0

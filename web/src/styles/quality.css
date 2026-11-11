@@ -330,3 +330,15 @@
     flex: 1 1 100%;
   }
 }
+
+/* Proposed deviations (0108): the missed deadlines waiting above the register. */
+.q-proposals {
+  margin: 0 0 16px;
+}
+.q-proposals-head {
+  margin: 0 0 8px;
+}
+.q-proposals .q-card > p {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}

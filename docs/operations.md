@@ -1339,6 +1339,21 @@ Deploying: apply migration 0107 before the new app (the tab calls its functions)
   from, owner, due, done, effective, evidence) with the open, late and closed counts; and the number of history
   rows per kind in the days. Lateness is as on the day the pack is made. The summary counts them too.
 
+- **Proposed deviations (0108).** PHAROS keeps four kinds of deadline: the five-day clock to the EDA, the steps of
+  a signal, the due day of a CAPA and the deadlines of an audit. Each morning from 07:00 the reminder run first
+  proposes as a deviation every one of them that passed unmet, once each, worded in full ("The finding … was due to
+  the Egyptian Drug Authority on Tue 3 Nov 2026 … and had not been reported by …"). They wait above the register
+  on *01 Deviations*, with when each was due, when it was found and a link to the ingredient where there is one.
+  A reviewer or an administrator decides: *Record as deviation* opens the usual form filled in with what PHAROS
+  found (change anything), and saving gives it its D-number and history; *Dismiss* needs the reason. **PHAROS
+  never records, approves or closes a deviation itself.** A dismissed or recorded missed deadline is never proposed
+  again. Only deadlines due on or after the day 0108 was applied are proposed (app_setting
+  `deviation_proposals_since`). The morning message ends with **Proposed deviations** (how many wait, with the link)
+  and goes even when nothing else is due. The inspection pack adds *Missed deadlines reviewed, not deviations* (the
+  dismissed ones of the days, who dismissed them and why) to section 07, a sheet *Deadlines reviewed* and a summary
+  row. Deploying: apply migration 0108 before the new app; before it, the tab shows no proposals and the reminder
+  goes as before.
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings

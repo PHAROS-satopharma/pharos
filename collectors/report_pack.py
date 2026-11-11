@@ -469,6 +469,16 @@ select c.id::text as id, c.ref, c.year, c.serial,
  where {where}
  order by c.year, c.serial"""
 
+# A missed deadline PHAROS proposed as a deviation (0108) that a person dismissed in the days, with the reason:
+# the inspector sees that every missed deadline was looked at, even those that were not deviations.
+REVIEWED_SQL = """
+select p.title, p.description, p.occurred_on, p.detected_on, p.dismissed_reason, p.decided_at,
+       pd.full_name as decided_by
+  from deviation_proposal p
+  left join person pd on pd.id = p.decided_by
+ where p.status = 'dismissed' and p.decided_at >= %(a)s and p.decided_at < %(b)s
+ order by p.decided_at, p.id"""
+
 QUALITY_HISTORY_SQL = """
 select record_kind, count(*) as n
   from quality_event
@@ -483,6 +493,7 @@ def _quality_chunks(db: Any, period: Period, check: Callable[[], None]) -> dict:
     deviations: dict[str, dict] = {}
     audits: dict[str, dict] = {}
     capas: dict[str, dict] = {}
+    reviewed: list[dict] = []
     history: dict[str, int] = defaultdict(int)
     for f, t in chunks(period.start, period.end):
         a, b = Period(period.kind, f, t).bounds_utc()
@@ -493,6 +504,7 @@ def _quality_chunks(db: Any, period: Period, check: Callable[[], None]) -> dict:
             audits.setdefault(r["id"], r)
         for r in db.fetchall(CAPAS_SQL.format(where="c.created_at >= %(a)s and c.created_at < %(b)s"), span):
             capas.setdefault(r["id"], r)
+        reviewed += db.fetchall(REVIEWED_SQL, span)
         for r in db.fetchall(QUALITY_HISTORY_SQL, span):
             history[r["record_kind"]] += int(r["n"])
         check()
@@ -500,7 +512,8 @@ def _quality_chunks(db: Any, period: Period, check: Callable[[], None]) -> dict:
     for r in db.fetchall(CAPAS_SQL.format(where="c.status <> 'effective' and c.created_at < %(b)s"), {"b": end}):
         capas.setdefault(r["id"], r)
     return {"deviations": list(deviations.values()), "audits": list(audits.values()),
-            "capas": sorted(capas.values(), key=lambda r: (r["year"], r["serial"])), "history": dict(history)}
+            "capas": sorted(capas.values(), key=lambda r: (r["year"], r["serial"])), "reviewed": reviewed,
+            "history": dict(history)}
 
 
 # ───────────────────────────── worded once, for the PDF and the Excel file ─────────────────────────────
@@ -848,6 +861,7 @@ def assemble_inspection(raw: dict, made_at: datetime | None = None) -> dict:
         ("CAPA open", quality["counts"]["open"]),
         ("CAPA late", quality["counts"]["late"]),
         ("CAPA closed (effective)", quality["counts"]["closed"]),
+        ("Missed deadlines reviewed, not deviations", len(quality["reviewed"])),
         ("Quality history rows", quality["history_total"]),
     ]
     figures = [("Her pages read", f"{read_pages} / {len(coverage)}"), ("Decisions", len(decisions)),
@@ -911,9 +925,14 @@ def _quality(raw: dict, today: date | None) -> dict:
             "evidence": c.get("evidence") or "", "late": late, "is_closed": c.get("status") == "effective"})
     counts = {"open": sum(1 for c in capas if not c["is_closed"]), "late": sum(1 for c in capas if c["late"]),
               "closed": sum(1 for c in capas if c["is_closed"])}
+    reviewed = [{"missed": r.get("title") or "", "what": r.get("description") or "",
+                 "due": day_text(r.get("occurred_on")), "found": day_text(r.get("detected_on")),
+                 "dismissed": day_text(cairo_day(r.get("decided_at"))), "by": r.get("decided_by") or "",
+                 "reason": r.get("dismissed_reason") or ""} for r in raw.get("reviewed") or []]
     hist = raw.get("history") or {}
     history = [(label, int(hist.get(kind) or 0)) for kind, label in QUALITY_HISTORY_KINDS]
-    return {"deviations": deviations, "audits": audits, "capas": capas, "counts": counts, "history": history,
+    return {"deviations": deviations, "audits": audits, "capas": capas, "counts": counts, "reviewed": reviewed,
+            "history": history,
             "history_total": sum(n for _, n in history), "today": day_text(today)}
 
 
@@ -923,7 +942,7 @@ PSUR_SHEETS = ("Summary", "EURD", "§3 Regulatory actions", "§3 Countries", "§
                "§11 References", "§11 Searches", "§15-16 Signals", "Not relevant", "Screening annex")
 INSPECTION_SHEETS = ("Summary", "Coverage", "Screening log", "Decisions", "Signatures", "Authority reports",
                      "Weekly reports", "Archive checks", "Audit log", "People and roles", "Deviations", "Audits",
-                     "CAPA plan")
+                     "CAPA plan", "Deadlines reviewed")
 
 
 def _decision_cells(m: dict) -> list:
@@ -1069,6 +1088,13 @@ def build_inspection_xlsx(data: dict) -> bytes:
                [[c["ref"], c["source"], c["owner"], c["due"], c["done"], c["status"], "yes" if c["late"] else "",
                  c["effective"], c["evidence"]] for c in qd["capas"]],
                [16, 44, 24, 14, 14, 18, 6, 36, 50], empty="No CAPA was opened in these days, and none is open.")
+    xlsx_sheet(wb, "Deadlines reviewed",
+               ["Missed deadline", "What PHAROS found", "Was due", "Found", "Dismissed", "By",
+                "Why it is not a deviation"],
+               [[r["missed"], r["what"], r["due"], r["found"], r["dismissed"], r["by"], r["reason"]]
+                for r in qd["reviewed"]],
+               [30, 60, 14, 14, 14, 24, 50],
+               empty="No missed deadline proposed as a deviation was dismissed in these days.")
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

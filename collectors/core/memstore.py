@@ -78,6 +78,10 @@ class MemoryStore:
         self.audit: dict[str, dict] = {}
         self.audit_observation: dict[str, dict] = {}       # {id, audit_id, number, …}
         self.capa: dict[str, dict] = {}                    # {id, ref, deviation_id | observation_id, owner_id, …}
+        # the proposed deviations of 0108 ({id, title, status, …}) and the days the finder ran; what it finds is
+        # SQL (deviation_proposals_find), tested in supabase/tests/deviation_proposals.sql
+        self.deviation_proposal: dict[str, dict] = {}
+        self.proposal_runs: list[date] = []
 
     @contextmanager
     def transaction(self):
@@ -513,6 +517,14 @@ class MemoryStore:
         open_ = [{**a, "audit_id": a["id"]} for a in self.audit.values()
                  if a.get("report_received_on") is not None and a.get("status") != "closed"]
         return due_audit_deadlines(open_, today, within_days)
+
+    def find_deviation_proposals(self, today: date) -> int:
+        """Store.find_deviation_proposals in memory: notes the run; the finding itself is the SQL's."""
+        self.proposal_runs.append(today)
+        return 0
+
+    def deviation_proposals_waiting(self) -> int:
+        return sum(1 for p in self.deviation_proposal.values() if p.get("status") == "proposed")
 
     def notified(self, person_id: str, issue_id: str, kind: str, *, real_only: bool = False) -> bool:
         return any(n["person_id"] == person_id and n["issue_id"] == issue_id and n["kind"] == kind

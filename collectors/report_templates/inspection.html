@@ -231,6 +231,26 @@
 <div class="empty">No CAPA was opened in these days, and none is open.</div>
 {% endif %}
 
+<h3>Missed deadlines reviewed, not deviations</h3>
+<p class="lede">Each Cairo day PHAROS proposes as a deviation every deadline it keeps that passed unmet (the five-day clock to the EDA, a signal step, a CAPA, an audit deadline). A reviewer records it as a deviation, which then appears above, or dismisses it with the reason, listed here.</p>
+{% if q.reviewed %}
+<table>
+  <thead><tr><th>Missed deadline</th><th>Was due</th><th>Dismissed</th><th>Why it is not a deviation</th></tr></thead>
+  <tbody>
+  {% for r in q.reviewed %}
+  <tr>
+    <td>{{ r.missed }}<br><span class="comment">{{ r.what }}</span></td>
+    <td>{{ r.due }}</td>
+    <td>{{ r.dismissed }}<br><span class="comment">{{ r.by }}</span></td>
+    <td class="comment">{{ r.reason }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">No missed deadline proposed as a deviation was dismissed in these days.</div>
+{% endif %}
+
 <h3>Quality history</h3>
 <p class="lede">Every change to a quality record is a line in its history: who, when, the comment, and what it was before and after. The history cannot be changed: PHAROS refuses every change or deletion of it, for every role.</p>
 <table>

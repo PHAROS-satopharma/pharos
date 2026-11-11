@@ -133,6 +133,50 @@ export interface Capa {
   history: HistoryRow[];
 }
 
+/** A deadline PHAROS kept that passed unmet, proposed as a deviation for a reviewer to record or dismiss (0108). */
+export type ProposalSource = 'eda_clock' | 'signal_step' | 'capa' | 'audit_deadline';
+export type ProposalStatus = 'proposed' | 'confirmed' | 'dismissed';
+
+export interface DeviationProposal {
+  id: string;
+  source_kind: ProposalSource;
+  source_ref: string | null;
+  ingredient_id: string | null;
+  title: string;
+  description: string;
+  occurred_on: string;
+  detected_on: string;
+  patient_safety: boolean;
+  regulatory_compliance: boolean;
+  document_quality: boolean;
+  status: ProposalStatus;
+  dismissed_reason: string | null;
+  deviation_id: string | null;
+  deviation_ref: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+}
+
+export const PROPOSAL_SOURCE_LABEL: Record<ProposalSource, string> = {
+  eda_clock: 'Five-day clock to the EDA',
+  signal_step: 'Signal step',
+  capa: 'CAPA due day',
+  audit_deadline: 'Audit deadline (PV-SOP-022)',
+};
+
+/** The proposals still waiting for a decision, oldest miss first. */
+export function waitingProposals(list: readonly DeviationProposal[]): DeviationProposal[] {
+  return list
+    .filter((p) => p.status === 'proposed')
+    .sort((a, b) => a.occurred_on.localeCompare(b.occurred_on) || a.title.localeCompare(b.title));
+}
+
+/** "Was due Tue 3 Nov 2026 · found Wed 4 Nov 2026 (1 day late)". */
+export function proposalDueText(p: Pick<DeviationProposal, 'occurred_on' | 'detected_on'>): string {
+  const late = daysBetween(p.occurred_on, p.detected_on);
+  return `Was due ${dayText(p.occurred_on)} · found ${dayText(p.detected_on)} (${daysWord(late)} late)`;
+}
+
 export interface QualityState {
   today: string;
   deviations: Deviation[];

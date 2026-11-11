@@ -8,7 +8,7 @@ import { Field, Input, Textarea } from '../../ui/Input';
 import { Select } from '../../ui/Select';
 import { Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
-import { type HistoryRow, type QualityState, type Step, historyWords, isStale } from './quality';
+import { type DeviationProposal, type HistoryRow, type QualityState, type Step, historyWords, isStale } from './quality';
 
 export const QUALITY_KEY = ['quality-state'] as const;
 
@@ -17,6 +17,18 @@ export function useQuality() {
   return useQuery({
     queryKey: QUALITY_KEY,
     queryFn: async () => unwrap<QualityState>(await supabase.rpc('quality_state')),
+  });
+}
+
+/**
+ * The proposed deviations (deviation_proposals(), 0108). Under the tab's key, so every write reads them again.
+ * Before 0108 is applied the read fails: the tab then shows none, never an error.
+ */
+export function useProposals() {
+  return useQuery({
+    queryKey: [...QUALITY_KEY, 'proposals'],
+    retry: false,
+    queryFn: async () => unwrap<DeviationProposal[] | null>(await supabase.rpc('deviation_proposals')) ?? [],
   });
 }
 
