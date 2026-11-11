@@ -99,9 +99,9 @@ select pg_temp.q_assert(
 insert into capa (year, serial, deviation_id, corrective_action, owner_other, due_on, status, evidence, done_on,
                   created_by)
 values (2999, 998, :'d1', 'x', 'QA', :'today'::date, 'done', 'e', :'today'::date - 3,
-        '00000000-0000-0000-0000-0000000000c3'),
+        (select created_by from capa where id = :'c1')),
        (2999, 999, :'d1', 'x', 'QA', :'today'::date, 'done', 'e', :'today'::date - 3,
-        '00000000-0000-0000-0000-0000000000c3');
+        (select created_by from capa where id = :'c1'));
 update capa set effectiveness_due_on = :'today'::date + 7 where year = 2999 and serial = 999;
 select pg_temp.q_assert(
   (select effectiveness_due_on = (:'today'::date - 3 + interval '3 months')::date from capa where year = 2999 and serial = 998)
