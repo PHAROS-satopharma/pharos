@@ -1,8 +1,8 @@
 // deno test --allow-env supabase/functions/
 // The names of a herbal substance from EMA's HMPC list (8 November 2026: "ivy leaves" found nothing).
-import { assertEquals } from "jsr:@std/assert@1.0.13";
+import { assert, assertEquals } from "jsr:@std/assert@1.0.13";
 import { assertRejects } from "jsr:@std/assert@1.0.13";
-import { addHerbals, botanicalNames, type EmaSubstance, herbalNames, pubchemSynonyms } from "./sources.ts";
+import { addHerbals, botanicalNames, type EmaSubstance, herbalMatch, herbalNames, pubchemSynonyms } from "./sources.ts";
 import { key, plainLabel, similarity } from "./text.ts";
 
 const herbal = (name: string, latin: string, plants: string[]): EmaSubstance => ({
@@ -82,4 +82,16 @@ Deno.test("the herbal list stored in PHAROS finds ivy leaf, and joins a name ano
   assertEquals([...valerian.lists], ["ema-psusa", "ema-herbal"]);
   assertEquals([...valerian.atc], ["N05CM09"]);
   assertEquals(index.size, 2);
+});
+
+Deno.test("ivy alone, ivy extract and ivy syrup name Ivy leaf; a plant part alone names no herb (11 November 2026)", () => {
+  const ivy = herbal("Ivy leaf", "Hederae helicis folium", ["Hedera helix"]);
+  for (const typed of ["ivy", "Ivy", "ivy extract", "ivy syrup", "ivy leaf dry extract", "hedera", "helix"]) {
+    assert(herbalMatch(typed, ivy) >= 0.8, typed);
+  }
+  for (const typed of ["dry extract", "ivabradine", "ivy glycerol", "thyme"]) {
+    assert(herbalMatch(typed, ivy) < 0.55, typed);
+  }
+  const lorn: EmaSubstance = { name: "lornoxicam", atc: new Set(), lists: new Set(["ema-psusa"]), brands: new Set() };
+  assertEquals(herbalMatch("lornoxicam", lorn), 1);
 });

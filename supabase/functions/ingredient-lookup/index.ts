@@ -21,7 +21,7 @@ import { HttpError, json, readJson, serve } from "../_shared/cors.ts";
 import { requirePerson } from "../_shared/auth.ts";
 import {
   emaIndex,
-  herbalNames,
+  herbalMatch,
   pubchemAutocomplete,
   rxnavSuggest,
   wikidataByAtc,
@@ -76,7 +76,7 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
   const emaHits = [...emaRes.index.values()]
     .map((s) => ({
       s,
-      sim: atcQuery ? (s.atc.has(atcQuery) ? 1 : 0) : Math.max(...herbalNames(s).map((n) => similarity(q, n))),
+      sim: atcQuery ? (s.atc.has(atcQuery) ? 1 : 0) : herbalMatch(q, s),
     }))
     .filter((h) => h.sim >= 0.55)
     .sort((a, b) => b.sim - a.sim)
@@ -96,6 +96,16 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
   } catch (e) {
     warnings.push("Wikidata details did not answer; labels and ATC codes may be missing.");
     console.warn(e);
+  }
+
+  // A plant Wikidata found for what was typed ("common ivy" → Hedera helix) brings the herbal substances made
+  // from it (Ivy leaf), when the typed words alone did not.
+  if (!atcQuery) {
+    const taxa = new Set([...details.values()].flatMap((it) => it.taxon.map(key)));
+    for (const s of emaRes.index.values()) {
+      if (!s.herbal || emaHits.some((h) => h.s === s)) continue;
+      if (s.herbal.plants.some((p) => taxa.has(key(p)))) emaHits.push({ s, sim: 0.75 });
+    }
   }
 
   const byKey = new Map<string, Candidate>();
@@ -168,7 +178,11 @@ async function search(q: string): Promise<{ candidates: Candidate[]; warnings: s
     const herbal = emaRes.index.get(key(c.inn_en));
     const sim = atcQuery && c.atc_code === atcQuery
       ? 1
-      : Math.max(...[c.inn_en, ...Object.values(c.labels), ...(herbal ? herbalNames(herbal) : [])].map((n) => similarity(q, n)));
+      : Math.max(
+        ...[c.inn_en, ...Object.values(c.labels)].map((n) => similarity(q, n)),
+        herbal ? herbalMatch(q, herbal) : 0,
+        emaHits.find((h) => h.s === herbal)?.sim ?? 0,
+      );
     let score = 55 * sim;
     if (sim === 1) score += 15;
     if (c.atc_code) score += 12;
