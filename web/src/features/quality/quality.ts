@@ -177,6 +177,36 @@ export function proposalDueText(p: Pick<DeviationProposal, 'occurred_on' | 'dete
   return `Was due ${dayText(p.occurred_on)} · found ${dayText(p.detected_on)} (${daysWord(late)} late)`;
 }
 
+/** A drafted root cause and CAPA for a deviation or an audit observation (0109): text only, it changes no record. */
+export type DraftKind = 'deviation' | 'observation';
+export type DraftStatus = 'queued' | 'drafting' | 'ready' | 'failed';
+
+export interface QualityDraft {
+  id: string;
+  record_kind: DraftKind;
+  record_id: string;
+  status: DraftStatus;
+  root_cause: string | null;
+  corrective_action: string | null;
+  preventive_action: string | null;
+  to_check: string | null;
+  model: string | null;
+  error: string | null;
+  asked_by: string | null;
+  asked_at: string;
+  finished_at: string | null;
+}
+
+/** The latest draft of one record, or null. */
+export function draftOf(list: readonly QualityDraft[], kind: DraftKind, id: string): QualityDraft | null {
+  return list.find((d) => d.record_kind === kind && d.record_id === id) ?? null;
+}
+
+/** Still being drafted: asked for, not ready or failed yet. */
+export function draftWaiting(d: Pick<QualityDraft, 'status'>): boolean {
+  return d.status === 'queued' || d.status === 'drafting';
+}
+
 export interface QualityState {
   today: string;
   deviations: Deviation[];

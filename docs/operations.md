@@ -1354,6 +1354,19 @@ Deploying: apply migration 0107 before the new app (the tab calls its functions)
   row. Deploying: apply migration 0108 before the new app; before it, the tab shows no proposals and the reminder
   goes as before.
 
+- **Drafted root cause and CAPA (0109).** On a deviation and on an audit observation not closed, a reviewer or
+  an administrator clicks *Draft the root cause and CAPA*. The quality-draft Edge Function records the ask and
+  starts `quality-draft.yml` (the 4-hourly collection's *Quality drafts* step is the safety net). The reader (the
+  same Claude model as the case reports, signed in by federation, no stored key) is given only what is recorded on
+  that record — the description, dates, impact, level, the six investigation answers, the root cause so far and the
+  CAPAs already there, or the observation, its grade and audit — and returns four short texts: root cause,
+  corrective action, preventive action, and what must be checked first. It is told never to invent a fact or name
+  a person. The draft shows under *Draft*, marked "Draft, not recorded"; *Use as the root cause* and *Use in a new
+  CAPA* open the usual forms filled in with it. **Nothing is recorded until she saves the form**, and the history
+  shows her as the author. A failure (reader not reachable, refused) shows on the record with *Draft again*;
+  passing failures are tried up to 3 times. Deploying: apply 0109 and deploy the Edge Function before the app;
+  before that the tab offers no draft.
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings

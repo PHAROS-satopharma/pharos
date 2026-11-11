@@ -7,6 +7,7 @@ import { Select } from '../../ui/Select';
 import { Empty } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { CapaCard, CapaForm } from './CapaPlan';
+import { DraftPanel, type DraftUse } from './Drafts';
 import { DAY, Fact, History, OwnerFields, StepButtons, WriteError, useWrite } from './parts';
 import {
   type Audit,
@@ -303,9 +304,17 @@ function ObservationForm({ auditId, onDone }: { auditId: string; onDone: () => v
 }
 
 /** The root cause and the stakeholder of an observation, written after the meeting. */
-function ObservationEdit({ o, onDone }: { o: Audit['observations'][number]; onDone: () => void }) {
+function ObservationEdit({
+  o,
+  onDone,
+  seedRootCause,
+}: {
+  o: Audit['observations'][number];
+  onDone: () => void;
+  seedRootCause?: string;
+}) {
   const write = useWrite<null>();
-  const [root, setRoot] = useState(o.root_cause ?? '');
+  const [root, setRoot] = useState(seedRootCause || (o.root_cause ?? ''));
   const [person, setPerson] = useState(o.assigned_to ?? '');
   const [other, setOther] = useState(o.assigned_other ?? '');
   return (
@@ -342,6 +351,9 @@ function ObservationCard({ a, o, capas }: { a: Audit; o: Audit['observations'][n
   const { canReview } = useAuth();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
+  // A draft (0109) opens the usual forms filled in; the key starts a form again with each use.
+  const [seedRoot, setSeedRoot] = useState<{ text: string; n: number } | null>(null);
+  const [seedCapa, setSeedCapa] = useState<{ use: DraftUse; n: number } | null>(null);
   const open = a.status !== 'closed';
   return (
     <li className="q-obs">
@@ -358,7 +370,15 @@ function ObservationCard({ a, o, capas }: { a: Audit; o: Audit['observations'][n
       </dl>
       {canReview && open ? (
         editing ? (
-          <ObservationEdit o={o} onDone={() => setEditing(false)} />
+          <ObservationEdit
+            key={seedRoot?.n ?? 0}
+            o={o}
+            seedRootCause={seedRoot?.text}
+            onDone={() => {
+              setEditing(false);
+              setSeedRoot(null);
+            }}
+          />
         ) : (
           <div className="button-row">
             <Button variant="quiet" onClick={() => setEditing(true)}>
@@ -368,7 +388,30 @@ function ObservationCard({ a, o, capas }: { a: Audit; o: Audit['observations'][n
           </div>
         )
       ) : null}
-      {adding ? <CapaForm observationId={o.id} onDone={() => setAdding(false)} /> : null}
+      <DraftPanel
+        kind="observation"
+        recordId={o.id}
+        canAsk={canReview && open}
+        onUseRootCause={(text) => {
+          setSeedRoot((s) => ({ text, n: (s?.n ?? 0) + 1 }));
+          setEditing(true);
+        }}
+        onUseCapa={(use) => {
+          setSeedCapa((s) => ({ use, n: (s?.n ?? 0) + 1 }));
+          setAdding(true);
+        }}
+      />
+      {adding ? (
+        <CapaForm
+          key={seedCapa?.n ?? 0}
+          observationId={o.id}
+          initial={seedCapa ? { corrective: seedCapa.use.corrective, preventive: seedCapa.use.preventive } : undefined}
+          onDone={() => {
+            setAdding(false);
+            setSeedCapa(null);
+          }}
+        />
+      ) : null}
       {capas.length ? (
         <ul className="q-list">
           {capas.map((c) => (

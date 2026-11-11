@@ -342,3 +342,16 @@
   margin: 6px 0;
   overflow-wrap: anywhere;
 }
+
+/* A drafted root cause and CAPA (0109): text only, marked as a draft, set apart by a dashed rule. */
+.q-draft-area {
+  margin: 8px 0 0;
+}
+.q-draft {
+  border: 1px dashed var(--muted);
+  padding: 12px 14px;
+}
+.q-draft-label {
+  margin: 0 0 4px;
+  font-weight: 600;
+}

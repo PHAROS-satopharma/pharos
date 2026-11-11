@@ -885,6 +885,22 @@ first. `deviation_proposal_confirm(id, title, description, occurred_on, detected
 `deviation_proposal_dismiss(id, reason)` (a reviewer or an administrator, else 42501; a decided proposal PH409):
 confirm opens the deviation through `deviation_open_as()` and links it; dismiss needs a reason (22023).
 
+### Drafted root cause and CAPA (0109)
+
+```sql
+quality_draft (id, record_kind deviation|observation, record_id, status queued|drafting|ready|failed,
+               root_cause, corrective_action, preventive_action, to_check, model, error, attempts,
+               asked_by, asked_at, started_at, finished_at)
+  -- at most one queued or drafting per record (unique partial index quality_draft_one_waiting)
+```
+
+Audited, read by every member of the team, written by nobody directly. `quality_draft_ask(kind, id)` (a reviewer
+or an administrator, else 42501; the record exists and is not closed, else 22023) returns the waiting draft or a
+new one. `quality_drafts()` (every member) returns the latest draft of each record. The Edge Function
+`quality-draft` ({kind, id}, signed in, not a reader) calls it and fires repository_dispatch `quality-draft`
+{draft_id}; `collectors/quality_drafts.py` claims, writes and fails drafts on the owner connection. A draft changes
+no deviation, observation or CAPA.
+
 ## Environment / secrets
 
 | Secret | Used by |
