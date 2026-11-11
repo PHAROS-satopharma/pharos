@@ -1,7 +1,7 @@
 // Outside reference sources for ingredient lookup. Every call has a short timeout and fails soft: a source
 // that does not answer becomes a warning, never an error, and never an automatic choice.
 import { serviceClient } from "../_shared/supabase.ts";
-import { key } from "./text.ts";
+import { key, similarity } from "./text.ts";
 
 export const LANGS = ["en", "de", "fr", "it", "es", "pt", "nl", "da", "nb", "sv", "fi", "is", "ja", "ko", "ar"];
 /** EU/EEA languages in LANGS: an EU-wide (centrally authorised) brand name is proposed in each of them. */
@@ -29,6 +29,7 @@ export interface WikidataItem {
   description: string | null;
   labels: Record<string, string>;
   alt: Record<string, string[]>;
+  taxon: string[];              // a plant's scientific name (P225): "ivy" finds the plant Hedera helix
 }
 
 interface SearchHit { id: string; label?: string; description?: string }
@@ -75,7 +76,8 @@ function qidOf(uri: string | undefined): string | null {
   return m ? m[1] : null;
 }
 
-/** Labels and alternative labels in LANGS, plus ATC (P267), RxNorm CUI (P3345) and PubChem CID (P662). */
+/** Labels and alternative labels in LANGS, plus ATC (P267), RxNorm CUI (P3345), PubChem CID (P662) and a
+ *  plant's scientific name (P225). */
 export async function wikidataDetails(qids: string[]): Promise<Map<string, WikidataItem>> {
   const out = new Map<string, WikidataItem>();
   const ids = [...new Set(qids)].filter((q) => /^Q\d+$/.test(q)).slice(0, 20);
@@ -87,6 +89,7 @@ SELECT ?item ?kind ?val WHERE {
   { ?item wdt:P267 ?val . BIND("atc" AS ?kind) }
   UNION { ?item wdt:P3345 ?val . BIND("rxcui" AS ?kind) }
   UNION { ?item wdt:P662 ?val . BIND("cid" AS ?kind) }
+  UNION { ?item wdt:P225 ?val . BIND("taxon" AS ?kind) }
   UNION { ?item rdfs:label ?val . FILTER(LANG(?val) IN (${langs})) BIND("label" AS ?kind) }
   UNION { ?item skos:altLabel ?val . FILTER(LANG(?val) IN (${langs})) BIND("alt" AS ?kind) }
   UNION { ?item schema:description ?val . FILTER(LANG(?val) = "en") BIND("desc" AS ?kind) }
@@ -98,13 +101,14 @@ SELECT ?item ?kind ?val WHERE {
     if (!qid || !kind || !val) continue;
     let it = out.get(qid);
     if (!it) {
-      it = { qid, atc: [], rxcui: [], cid: [], description: null, labels: {}, alt: {} };
+      it = { qid, atc: [], rxcui: [], cid: [], description: null, labels: {}, alt: {}, taxon: [] };
       out.set(qid, it);
     }
     const lang = b.val?.["xml:lang"] ?? "";
     if (kind === "atc" && !it.atc.includes(val)) it.atc.push(val);
     else if (kind === "rxcui" && !it.rxcui.includes(val)) it.rxcui.push(val);
     else if (kind === "cid" && !it.cid.includes(val)) it.cid.push(val);
+    else if (kind === "taxon" && !it.taxon.includes(val)) it.taxon.push(val);
     else if (kind === "desc") it.description = val;
     else if (kind === "label" && lang) it.labels[lang] = val;
     else if (kind === "alt" && lang) (it.alt[lang] ??= []).push(val);
@@ -141,6 +145,31 @@ export function botanicalNames(s: string | undefined): string[] {
     out.add(hybrid ? `${genus} x ${epithet}` : `${genus} ${epithet}`);
   }
   return [...out];
+}
+
+// Words that name a part of a plant or a preparation, never the herb: "ivy extract" is ivy, and "root" alone is
+// no herb at all.
+const PREPARATION_WORDS = new Set([
+  "leaf", "leaves", "root", "roots", "herb", "herbs", "flower", "flowers", "fruit", "fruits", "seed", "seeds",
+  "bark", "oil", "extract", "extracts", "dry", "dried", "liquid", "tincture", "syrup", "powder", "tea", "the",
+  "and", "folium", "radix", "herba", "flos", "fructus", "semen", "cortex", "aetheroleum",
+]);
+
+function words(s: string): string[] {
+  return s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().split(/[^\p{L}]+/u).filter((w) => w.length >= 3);
+}
+
+/** How well what was typed names a herbal substance: its closest name, or 0.8 when every word typed (leaving out
+ *  the part and the preparation) is a word of its names: "ivy", "ivy extract" and "ivy syrup" all name Ivy leaf
+ *  (11 November 2026). */
+export function herbalMatch(q: string, s: EmaSubstance): number {
+  const names = herbalNames(s);
+  const best = Math.max(...names.map((n) => similarity(q, n)));
+  if (!s.herbal) return best;
+  const typed = words(q).filter((w) => !PREPARATION_WORDS.has(w));
+  if (!typed.length) return best;
+  const own = new Set(names.flatMap(words));
+  return typed.every((w) => own.has(w)) ? Math.max(best, 0.8) : best;
 }
 
 /** Every name a herbal substance goes by: the common name (and its plural), the Latin name and the plants. */

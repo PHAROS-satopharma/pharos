@@ -73,7 +73,9 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
   const lookup = useQuery({
     queryKey: ['ingredient-lookup', q],
     enabled: q.length >= 3 && !confirmed,
-    staleTime: 10 * 60_000,
+    // A list of candidates is kept 10 minutes; "Nothing found" never is, so typing the name again always asks the
+    // server again (11 November 2026: an empty answer from before a fix went on showing).
+    staleTime: (query) => (query.state.data?.length ? 10 * 60_000 : 0),
     queryFn: async () => {
       const r = await invoke<{ candidates?: LookupCandidate[] }>('ingredient-lookup', { q });
       return [...(r.candidates ?? [])].sort((a, b) => b.score - a.score);
@@ -249,7 +251,7 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
       </Field>
 
       {q.length >= 3 ? (
-        lookup.isPending ? (
+        lookup.isPending || (lookup.isFetching && !lookup.data?.length) ? (
           <Loading label="Looking it up" />
         ) : lookup.isError ? (
           <Notice tone="error">The lookup did not answer: {errorMessage(lookup.error)}</Notice>
