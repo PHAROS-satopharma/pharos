@@ -1,5 +1,6 @@
 // Outside reference sources for ingredient lookup. Every call has a short timeout and fails soft: a source
 // that does not answer becomes a warning, never an error, and never an automatic choice.
+import { serviceClient } from "../_shared/supabase.ts";
 import { key } from "./text.ts";
 
 export const LANGS = ["en", "de", "fr", "it", "es", "pt", "nl", "da", "nb", "sv", "fi", "is", "ja", "ko", "ar"];
@@ -155,10 +156,45 @@ const EMA_FILES = {
   "ema-psusa": EMA + "medicines-output-periodic_safety_update_report_single_assessments-output-json-report_en.json",
   "ema-dhpc": EMA + "dhpc-output-json-report_en.json",
   "ema-medicines": EMA + "medicines-output-medicines_json-report_en.json",
-  // HMPC herbal substances (ivy leaf, thyme, pelargonium …): none of them is in the three lists above.
-  "ema-herbal": EMA + "medicines-output-herbal_medicines-report-output-json_en.json",
 } as const;
+// The HMPC herbal substances (ivy leaf, thyme, pelargonium …) are in none of the three lists above. EMA's site
+// answers their file with "429 Too Many Requests" (11 November 2026), so the collection loads it once a day into
+// herbal_substance (collectors/herbal.py, migration 0111) and the lookup reads it from there.
+const HERBAL = "ema-herbal";
 const EMA_TTL_MS = 12 * 3600 * 1000;
+// A load where a list failed is kept only this long, so the next lookup soon tries that list again.
+const EMA_RETRY_MS = 5 * 60 * 1000;
+
+/** One row of herbal_substance: "Ivy leaf", "Hederae helicis folium", "Hedera helix L.". */
+export interface HerbalRow {
+  name: string;
+  latin: string;
+  botanical: string | null;
+}
+
+/** Put the herbal substances into the EMA index; a combination of several herbs is never one row there. */
+export function addHerbals(index: Map<string, EmaSubstance>, rows: HerbalRow[]): void {
+  for (const row of rows) {
+    const name = row.name?.trim();
+    const latin = row.latin?.trim();
+    if (!name || !latin || name.length > 80) continue;
+    const k = key(name);
+    let s = index.get(k);
+    if (!s) {
+      s = { name, atc: new Set(), lists: new Set(), brands: new Set() };
+      index.set(k, s);
+    }
+    s.lists.add(HERBAL);
+    s.herbal = { latin, plants: botanicalNames(row.botanical ?? undefined) };
+  }
+}
+
+async function herbalRows(): Promise<HerbalRow[]> {
+  const { data, error } = await serviceClient().from("herbal_substance").select("name, latin, botanical");
+  if (error) throw new Error(`herbal_substance: ${error.message}`);
+  if (!data?.length) throw new Error("herbal_substance is empty");
+  return data as HerbalRow[];
+}
 
 let emaCache: { at: number; index: Map<string, EmaSubstance>; failed: string[] } | null = null;
 let emaLoading: Promise<{ index: Map<string, EmaSubstance>; failed: string[] }> | null = null;
@@ -173,7 +209,7 @@ function splitSubstances(s: string | undefined): string[] {
 }
 
 export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; failed: string[] }> {
-  if (emaCache && Date.now() - emaCache.at < EMA_TTL_MS) return emaCache;
+  if (emaCache && Date.now() - emaCache.at < (emaCache.failed.length ? EMA_RETRY_MS : EMA_TTL_MS)) return emaCache;
   if (emaLoading) return emaLoading;
   emaLoading = (async () => {
     const index = new Map<string, EmaSubstance>();
@@ -189,12 +225,14 @@ export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; fa
       if (atc && /^[A-Z]\d{2}[A-Z]{2}\d{2}$/.test(atc.trim())) s.atc.add(atc.trim());
       if (brand) s.brands.add(brand.trim());
     };
+    const herbalLoad = Promise.allSettled([herbalRows()]);
     const results = await Promise.allSettled(
       Object.entries(EMA_FILES).map(async ([list, url]) => {
         const data = await getJson<{ data?: Row[] }>(url, 20000);
         return { list, rows: data.data ?? [] };
       }),
     );
+    const [herbals] = await herbalLoad;
     results.forEach((r, i) => {
       const list = Object.keys(EMA_FILES)[i];
       if (r.status === "rejected") {
@@ -203,14 +241,7 @@ export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; fa
       }
       for (const row of r.value.rows) {
         if (row.category && row.category !== "Human") continue;
-        if (list === "ema-herbal") {
-          // one substance per row; a combination of several herbs is not one ingredient
-          const name = row.english_common_name?.trim();
-          const latin = row.latin_name?.trim();
-          if (!name || !latin || row.combination === "Yes" || name.length > 80) continue;
-          add(name, list);
-          index.get(key(name))!.herbal = { latin, plants: botanicalNames(row.botanical_name) };
-        } else if (list === "ema-psusa") {
+        if (list === "ema-psusa") {
           for (const n of splitSubstances(row.active_substance)) add(n, list);
           for (const n of splitSubstances(row.active_substances_in_scope_of_procedure)) add(n, list);
         } else if (list === "ema-dhpc") {
@@ -226,8 +257,13 @@ export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; fa
         }
       }
     });
-    // Keep a failed load out of the cache so the next call tries again.
-    if (failed.length < Object.keys(EMA_FILES).length) emaCache = { at: Date.now(), index, failed };
+    if (herbals.status === "fulfilled") addHerbals(index, herbals.value);
+    else {
+      failed.push(HERBAL);
+      console.warn(herbals.reason);
+    }
+    // A load where every EMA file failed is not kept; one where some failed is kept for EMA_RETRY_MS only.
+    if (results.some((r) => r.status === "fulfilled")) emaCache = { at: Date.now(), index, failed };
     return { index, failed };
   })();
   try {

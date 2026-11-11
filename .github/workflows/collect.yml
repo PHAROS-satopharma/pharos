@@ -191,6 +191,15 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m collectors.eurd || echo "::warning::The EURD list could not be read; the PSUR dates keep the last list."
 
+      # EMA's herbal substances (the HMPC list), once a day: Ingredients → Add an ingredient finds a herbal ("ivy
+      # leaves") in them (collectors/herbal.py, migration 0111). EMA's site refuses the lookup that list directly
+      # (429). A failure warns and never fails the collection; the stored list stays as it was.
+      - name: Herbal list
+        if: steps.which.outputs.schedule == 'daily' || steps.which.outputs.schedule == 'all'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python -m collectors.herbal || echo "::warning::EMA's herbal list could not be read; the stored herbal list stays as it was."
+
       # The check of the past (collectors/rematch.py): words saved after the notices arrived (a new ingredient,
       # a new or changed name, a new class word) are looked for in every stored notice, whatever its date, as
       # history: no Telegram message, no digest. 15 minutes a run, three runs a day (daily and literature); the

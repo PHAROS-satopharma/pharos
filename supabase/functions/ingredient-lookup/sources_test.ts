@@ -2,8 +2,8 @@
 // The names of a herbal substance from EMA's HMPC list (8 November 2026: "ivy leaves" found nothing).
 import { assertEquals } from "jsr:@std/assert@1.0.13";
 import { assertRejects } from "jsr:@std/assert@1.0.13";
-import { botanicalNames, type EmaSubstance, herbalNames, pubchemSynonyms } from "./sources.ts";
-import { plainLabel, similarity } from "./text.ts";
+import { addHerbals, botanicalNames, type EmaSubstance, herbalNames, pubchemSynonyms } from "./sources.ts";
+import { key, plainLabel, similarity } from "./text.ts";
 
 const herbal = (name: string, latin: string, plants: string[]): EmaSubstance => ({
   name,
@@ -63,4 +63,23 @@ Deno.test("Wikidata's telling-apart bracket is taken off a label (ginkgo, 8 Nove
   assertEquals(plainLabel("Efeublätter"), "Efeublätter");
   assertEquals(plainLabel("vitamin B12 (cobalamin) tablets"), "vitamin B12 (cobalamin) tablets");
   assertEquals(plainLabel("(R)"), "(R)");
+});
+
+Deno.test("the herbal list stored in PHAROS finds ivy leaf, and joins a name another EMA list has (11 November 2026)", () => {
+  const index = new Map<string, EmaSubstance>();
+  index.set(key("Valerian root"), { name: "Valerian root", atc: new Set(["N05CM09"]), lists: new Set(["ema-psusa"]), brands: new Set() });
+  addHerbals(index, [
+    { name: "Ivy leaf", latin: "Hederae helicis folium", botanical: "Hedera helix L." },
+    { name: "Valerian root", latin: "Valerianae radix", botanical: "Valeriana officinalis L." },
+    { name: "", latin: "Nameless", botanical: null },
+    { name: "No Latin", latin: " ", botanical: null },
+  ]);
+  const ivy = index.get(key("Ivy leaf"))!;
+  assertEquals([...ivy.lists], ["ema-herbal"]);
+  assertEquals(ivy.herbal, { latin: "Hederae helicis folium", plants: ["Hedera helix"] });
+  assertEquals(Math.max(...herbalNames(ivy).map((n) => similarity("ivy leaves", n))), 1);
+  const valerian = index.get(key("Valerian root"))!;
+  assertEquals([...valerian.lists], ["ema-psusa", "ema-herbal"]);
+  assertEquals([...valerian.atc], ["N05CM09"]);
+  assertEquals(index.size, 2);
 });
