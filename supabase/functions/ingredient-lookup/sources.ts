@@ -196,6 +196,9 @@ async function herbalRows(): Promise<HerbalRow[]> {
   return data as HerbalRow[];
 }
 
+/** Where the herbal rows come from: the database; a test puts its own rows here, as it replaces fetch. */
+export const herbalStore = { read: herbalRows };
+
 let emaCache: { at: number; index: Map<string, EmaSubstance>; failed: string[] } | null = null;
 let emaLoading: Promise<{ index: Map<string, EmaSubstance>; failed: string[] }> | null = null;
 
@@ -225,7 +228,7 @@ export async function emaIndex(): Promise<{ index: Map<string, EmaSubstance>; fa
       if (atc && /^[A-Z]\d{2}[A-Z]{2}\d{2}$/.test(atc.trim())) s.atc.add(atc.trim());
       if (brand) s.brands.add(brand.trim());
     };
-    const herbalLoad = Promise.allSettled([herbalRows()]);
+    const herbalLoad = Promise.allSettled([herbalStore.read()]);
     const results = await Promise.allSettled(
       Object.entries(EMA_FILES).map(async ([list, url]) => {
         const data = await getJson<{ data?: Row[] }>(url, 20000);
