@@ -25,7 +25,7 @@ create table quality_draft (
   error              text,
   attempts           int not null default 0,
   asked_by           uuid not null references person(id),
-  asked_at           timestamptz not null default now(),
+  asked_at           timestamptz not null default clock_timestamp(),  -- the moment of the ask, so two asks never tie on "latest"
   started_at         timestamptz,
   finished_at        timestamptz,
   check (status <> 'ready' or (root_cause is not null and finished_at is not null)),
