@@ -545,6 +545,22 @@ def test_the_message_adds_capa_due_and_audit_deadlines_after_the_signals():
         assert absent not in text
 
 
+def test_a_done_capa_s_effectiveness_check_is_listed_when_due_within_two_days_or_late():
+    """0110: a done CAPA waits for its effectiveness check (done day + 3 months); an effective one never shows."""
+    s = with_quality(store_with_findings())
+    s.capa["c3"]["effectiveness_due_on"] = date(2026, 11, 5)          # done: check late by 1 day
+    s.capa["c4"]["effectiveness_due_on"] = date(2026, 11, 1)          # effective: checked, never listed
+    s.capa["c5"]["effectiveness_due_on"] = date(2026, 11, 7)          # approved: its due day counts, not this
+    rows = s.capa_reminders(TODAY, within_days=2)
+    assert [(r["ref"], r["days_left"], r["check"]) for r in rows] == [
+        ("CAPA-002/2026", -3, False), ("CAPA-003/2026", -1, True), ("CAPA-001/2026", 2, False)]
+    reminders.remind_if_due(s, notifier_for(s), now=at(8))
+    text = s.notification[0]["summary"]
+    assert "• CAPA-003/2026 · from D001/2026 · Sama Reviewer · effectiveness check late by 1 day" in text
+    assert "2 late, 1 due within 2 days" in text
+    assert "CAPA-004" not in text and "CAPA-005" not in text
+
+
 def test_the_existing_message_is_unchanged_when_no_quality_record_is_due():
     plain = store_with_findings()
     reminders.remind_if_due(plain, notifier_for(plain), now=at(8))

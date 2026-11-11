@@ -589,6 +589,23 @@ def test_the_quality_section_and_sheets_of_the_inspection_pack():
                                                    ("CAPA-002/2026", "yes")]
 
 
+def test_the_capa_plan_gives_the_effectiveness_check_day_and_a_late_check_is_late():
+    """0110: a done or effective CAPA carries the day to check that it worked; a done one past it is late."""
+    base = {k: v for k, v in CAPA_ROWS[0].items()}
+    done_late = {**base, "id": "d1", "ref": "CAPA-010/2026", "serial": 10, "status": "done", "verified_by": None,
+                 "verified_at": None, "effectiveness_due_on": date(2026, 11, 1)}
+    done_later = {**done_late, "id": "d2", "ref": "CAPA-011/2026", "serial": 11,
+                  "effectiveness_due_on": date(2027, 2, 1)}
+    effective = {**base, "effectiveness_due_on": date(2026, 8, 28)}
+    q = rp._quality({"capas": [done_late, done_later, effective, CAPA_ROWS[1]]}, date(2026, 11, 6))
+    by = {c["ref"]: c for c in q["capas"]}
+    assert (by["CAPA-010/2026"]["check"], by["CAPA-010/2026"]["late"]) == ("1 Nov 2026", True)
+    assert (by["CAPA-011/2026"]["check"], by["CAPA-011/2026"]["late"]) == ("1 Feb 2027", False)
+    assert (by["CAPA-001/2026"]["check"], by["CAPA-001/2026"]["late"]) == ("28 Aug 2026", False)
+    assert by["CAPA-002/2026"]["check"] == "" and by["CAPA-002/2026"]["late"] is True
+    assert q["counts"] == {"open": 3, "late": 2, "closed": 1}
+
+
 def test_the_quality_records_are_read_in_chunks_of_at_most_366_days():
     db = InspectionDb()
     req = {**INSP_REQ, "from_day": date(2024, 11, 7)}                     # two years: two chunks

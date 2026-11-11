@@ -846,11 +846,14 @@ audit_add_observation(p_audit, p_text, p_grade, p_assigned_to, p_assigned_other,
 audit_observation_update(p_id, p jsonb, p_comment)
 capa_open(p_deviation, p_observation, p_corrective, p_preventive, p_owner, p_owner_other, p_due_on) returns uuid
 capa_update(p_id, p_expected, p jsonb, p_comment)                    -- a due day moved after approval: comment
+  -- 0110: p may carry effectiveness_due_on, only while done (else 22023), today or later, with a comment
 capa_step(p_id, p_to, p_expected, p_comment, p_done_on, p_evidence)  -- approved (comment, owner, due day)
   -- | in_progress | done (evidence) | effective (comment; verified_by) | not_effective (comment; back to in_progress)
 quality_state() returns jsonb                                        -- any member of the team, else 42501
   -- {today, deviations: [… history], audits: [… deadlines, observations, history],
-  --  capas: [… source, deviation_ref | audit_title + observation_number, owner_name, due, history]}
+  --  capas: [… source, deviation_ref | audit_title + observation_number, owner_name, due, history,
+  --          effectiveness_due_on, effectiveness (done or effective only; done_on = the Cairo day verified)]}
+  -- 0110: a done CAPA is ranked by effectiveness_due_on (late, soon, running), an effective one last.
   -- deadline / due: {key?, due, done_on, days_left, state done|late|soon (0-2 days)|running}, Cairo days.
   -- Audit deadlines from report_received_on: review +1, meeting +2, draft +10, approval +12, submission +14;
   -- before the report, an internal audit's plan 14 days before the visit; a request for information +3 (72 hours).
@@ -900,6 +903,19 @@ new one. `quality_drafts()` (every member) returns the latest draft of each reco
 `quality-draft` ({kind, id}, signed in, not a reader) calls it and fires repository_dispatch `quality-draft`
 {draft_id}; `collectors/quality_drafts.py` claims, writes and fails drafts on the owner connection. A draft changes
 no deviation, observation or CAPA.
+
+### Effectiveness check day (0110)
+
+```sql
+capa.effectiveness_due_on date  -- check (effectiveness_due_on >= done_on); capa_effectiveness_months() = 3
+```
+
+Trigger `capa_effectiveness_day` (before insert or update on capa): becoming done (or a row written done without
+a day) sets `done_on + 3 months`; any status other than done or effective clears it; a day moved while done and
+the day of an effective CAPA are kept. `capa_update` and `quality_state()` are redefined from 0107 with the
+additions above. Collectors: `Store.capa_reminders` also returns done CAPAs whose check is within the window
+(`check` true, `due_on` the check day); the pack's CAPA plan reads `effectiveness_due_on` (field `check`, column
+*Effectiveness check by*), and a done CAPA past it is late. SQL test: `supabase/tests/capa_effectiveness.sql`.
 
 ## Environment / secrets
 

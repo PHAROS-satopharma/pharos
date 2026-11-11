@@ -1367,6 +1367,19 @@ Deploying: apply migration 0107 before the new app (the tab calls its functions)
   passing failures are tried up to 3 times. Deploying: apply 0109 and deploy the Edge Function before the app;
   before that the tab offers no draft.
 
+- **Effectiveness check day (0110).** PV-SOP-022 ("Follow up") asks that every completed CAPA is checked to be
+  still running as communicated. When a CAPA is marked done, PHAROS sets the day of that check itself: three months
+  after the day it was done. The CAPA card shows *Effectiveness check* ("Check by Wed 10 Feb · 91 days left", "late
+  by 2 days", "Checked Tue 17 Nov" once verified). A reviewer may move it under *Change the CAPA* while the CAPA is
+  done: today or later, with the reason, kept in the history. Not effective sends the CAPA back to work and clears
+  the day; done again sets a new one from the new done day. In the CAPA plan a done CAPA is ranked by its check day
+  (a late check is listed with the late CAPAs and counted late). The morning reminder's **CAPA due** block lists
+  the checks due within two days or late ("effectiveness check due Thu 19 Nov"); the inspection pack gives the day
+  ("check by …", column *Effectiveness check by*) and counts a late check as late. **PHAROS never judges
+  effectiveness**: *Verified effective* and *Not effective* stay the reviewer's, with her comment. CAPAs already
+  done or effective when 0110 was applied got their day from their done day. Deploying: apply 0110 before the new
+  app and the morning run (both read the new column).
+
 ## PRAC agendas
 
 - **PRAC agendas.** The `ema-prac` source also reads the agendas and minutes of PRAC meetings

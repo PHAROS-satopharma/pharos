@@ -492,11 +492,12 @@ class MemoryStore:
 
     def capa_reminders(self, today: date, within_days: int = 2) -> list[dict]:
         """Store.capa_reminders in memory: the CAPAs not done or effective due within ``within_days`` or late,
-        oldest first."""
+        and the done ones whose effectiveness check (0110) is, oldest first."""
         out = []
         for c in self.capa.values():
-            due = c.get("due_on")
-            if c.get("status") in ("done", "effective") or due is None or due > today + timedelta(days=within_days):
+            check = c.get("status") == "done"
+            due = c.get("effectiveness_due_on") if check else c.get("due_on")
+            if c.get("status") == "effective" or due is None or due > today + timedelta(days=within_days):
                 continue
             dev = self.deviation.get(c.get("deviation_id")) or {}
             obs = self.audit_observation.get(c.get("observation_id")) or {}
@@ -506,7 +507,7 @@ class MemoryStore:
                         "status": c["status"], "source": "deviation" if c.get("deviation_id") else "audit",
                         "deviation_ref": dev.get("ref"), "audit_title": aud.get("title"),
                         "observation_number": obs.get("number"), "owner": owner, "due_on": due,
-                        "days_left": (due - today).days})
+                        "days_left": (due - today).days, "check": check})
         out.sort(key=lambda r: (r["due_on"], r["year"], r["serial"]))
         return out
 

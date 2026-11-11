@@ -220,7 +220,7 @@
   <tr>
     <td><span class="code">{{ c.ref }}</span><br><span class="comment">{{ c.source }}</span></td>
     <td>{{ c.owner }}</td>
-    <td>{{ c.due }}{% if c.late %}<br><strong>late</strong>{% endif %}{% if c.done %}<br><span class="comment">done {{ c.done }}</span>{% endif %}</td>
+    <td>{{ c.due }}{% if c.late %}<br><strong>late</strong>{% endif %}{% if c.done %}<br><span class="comment">done {{ c.done }}</span>{% endif %}{% if c.check %}<br><span class="comment">check by {{ c.check }}</span>{% endif %}</td>
     <td>{{ c.status }}{% if c.effective %}<br><span class="comment">{{ c.effective }}</span>{% endif %}</td>
     <td class="comment">{{ c.evidence }}</td>
   </tr>

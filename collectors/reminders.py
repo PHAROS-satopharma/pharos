@@ -19,8 +19,9 @@ its reference, the notice, the ingredient and the link to the screen where the s
 when either list has something in it.
 
 Then the quality records (migration 0107), in the same message, never a second one: "CAPA due" (every CAPA not
-done or effective whose due day is within two days or past, oldest first: its number, where it comes from, the
-owner, "due Thu 19 Nov" or "late by 3 days") and "Audit deadlines" (for each audit with a report received and
+done or effective whose due day is within two days or past, and every done CAPA whose effectiveness check, set by
+PHAROS three months after it was done (0110), is, oldest first: its number, where it comes from, the owner, "due
+Thu 19 Nov", "late by 3 days" or "effectiveness check due Thu 19 Nov") and "Audit deadlines" (for each audit with a report received and
 not closed, the next deadline of PV-SOP-022 when it is within two days or late), each line with the link to the
 Quality tab. A message goes when any of the four lists has something in it. A quality read that fails (before
 0107 is applied) is logged and the rest of the reminder goes as before.
@@ -99,8 +100,10 @@ def _quality_lines(capas: list[dict] | tuple, audits: list[dict] | tuple, propos
         for r in list(rows)[:MAX_LINES]:
             if title == "CAPA due":
                 owner = r.get("owner") or "no owner yet"
-                text = (f"• {esc(r.get('ref'))} · {esc_cut(capa_source_text(r), 160)} · {esc(owner)}"
-                        f" · {esc(capa_due_text(r['due_on'], int(r['days_left'])))}")
+                due = capa_due_text(r["due_on"], int(r["days_left"]))
+                if r.get("check"):
+                    due = f"effectiveness check {due}"
+                text = f"• {esc(r.get('ref'))} · {esc_cut(capa_source_text(r), 160)} · {esc(owner)} · {esc(due)}"
             else:
                 kind = KIND_LABEL.get(r.get("kind") or "", "Audit")
                 text = (f"• {esc_cut(r.get('title'), 160)} · {esc(kind)} · {esc(r.get('step'))}"
