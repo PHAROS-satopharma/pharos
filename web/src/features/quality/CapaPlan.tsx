@@ -12,8 +12,10 @@ import {
   type CapaSourceFilter,
   type CapaStatusFilter,
   CAPA_STATUS_LABEL,
+  capaCheckText,
   capaCounts,
   capaDueText,
+  capaLate,
   capaSourceText,
   capaSteps,
   filterCapas,
@@ -99,10 +101,15 @@ function CapaEdit({ c, onDone }: { c: Capa; onDone: () => void }) {
   const [other, setOther] = useState(c.owner_other ?? '');
   const [due, setDue] = useState(c.due_on ?? '');
   const [evidence, setEvidence] = useState(c.evidence ?? '');
+  const [check, setCheck] = useState(c.effectiveness_due_on ?? '');
   const [comment, setComment] = useState('');
   const dueMoved = (due || null) !== c.due_on;
-  const reasonNeeded = dueMoved && c.status !== 'draft';
-  const blocked = (reasonNeeded && comment.trim() === '') || (dueMoved && due !== '' && due < today);
+  // The effectiveness check day (0110) is moved only while the CAPA is done, today or later, with the reason.
+  const canMoveCheck = c.status === 'done' && c.effectiveness_due_on !== undefined;
+  const checkMoved = canMoveCheck && check !== '' && check !== (c.effectiveness_due_on ?? '');
+  const reasonNeeded = (dueMoved && c.status !== 'draft') || checkMoved;
+  const blocked =
+    (reasonNeeded && comment.trim() === '') || (dueMoved && due !== '' && due < today) || (checkMoved && check < today);
   return (
     <form
       className="q-form"
@@ -117,6 +124,7 @@ function CapaEdit({ c, onDone }: { c: Capa; onDone: () => void }) {
         if (otherNow !== c.owner_other) p.owner_other = otherNow;
         if (dueMoved) p.due_on = due || null;
         if (evidence.trim() !== (c.evidence ?? '')) p.evidence = evidence;
+        if (checkMoved) p.effectiveness_due_on = check;
         write.mutate(
           { fn: 'capa_update', args: { p_id: c.id, p_expected: c.status, p, p_comment: comment.trim() || null } },
           { onSuccess: onDone },
@@ -137,8 +145,19 @@ function CapaEdit({ c, onDone }: { c: Capa; onDone: () => void }) {
       <Field label="Evidence" hint="What was done: a document reference or a link." className="q-wide">
         <Textarea rows={2} value={evidence} onChange={(e) => setEvidence(e.target.value)} />
       </Field>
+      {canMoveCheck ? (
+        <Field label="Check that it worked by" hint="Set by PHAROS three months after it was done.">
+          <Input type="date" value={check} min={today} onChange={(e) => setCheck(e.target.value)} />
+        </Field>
+      ) : null}
       <Field
-        label={reasonNeeded ? 'Why the due day moved (required)' : 'Comment (optional)'}
+        label={
+          checkMoved && !dueMoved
+            ? 'Why the check day moved (required)'
+            : reasonNeeded
+              ? 'Why the due day moved (required)'
+              : 'Comment (optional)'
+        }
         hint="Kept in the history for the record."
         className="q-wide"
       >
@@ -164,8 +183,11 @@ export function CapaCard({ c, showSource = true }: { c: Capa; showSource?: boole
   const [editing, setEditing] = useState(false);
   const late = c.status !== 'done' && c.status !== 'effective' && c.due?.state === 'late';
   const soon = c.status !== 'done' && c.status !== 'effective' && c.due?.state === 'soon';
+  const check = capaCheckText(c);
+  const checkLate = c.status === 'done' && c.effectiveness?.state === 'late';
+  const checkSoon = c.status === 'done' && c.effectiveness?.state === 'soon';
   return (
-    <li className={cx('q-card', 'q-pad', late && 'is-late')}>
+    <li className={cx('q-card', 'q-pad', capaLate(c) && 'is-late')}>
       <div className="q-card-head">
         <span className="q-ref">{c.ref}</span>
         <span className={cx('q-status', `q-capa-${c.status}`)}>{CAPA_STATUS_LABEL[c.status]}</span>
@@ -178,6 +200,11 @@ export function CapaCard({ c, showSource = true }: { c: Capa; showSource?: boole
         <Fact label="Due">
           <span className={cx(late && 'q-late', soon && 'q-soon')}>{capaDueText(c)}</span>
         </Fact>
+        {check ? (
+          <Fact label="Effectiveness check">
+            <span className={cx(checkLate && 'q-late', checkSoon && 'q-soon')}>{check}</span>
+          </Fact>
+        ) : null}
         {c.evidence ? <Fact label="Evidence" wide>{c.evidence}</Fact> : null}
         {c.verified_by ? (
           <Fact label="Verified effective">

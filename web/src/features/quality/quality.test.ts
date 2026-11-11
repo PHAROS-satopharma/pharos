@@ -5,8 +5,10 @@ import {
   type QualityDraft,
   type DeviationProposal,
   auditSteps,
+  capaCheckText,
   capaCounts,
   capaDueText,
+  capaLate,
   capaSourceText,
   capaSteps,
   capasOf,
@@ -146,6 +148,51 @@ describe('the CAPA plan', () => {
     expect(filterCapas(list, 'late', 'deviation').map((c) => c.id)).toEqual(['c']);
     expect(filterCapas(list, 'effective', 'all').map((c) => c.id)).toEqual(['b']);
     expect(capaCounts(list)).toEqual({ open: 2, late: 1, effective: 1 });
+  });
+  it('says when the effectiveness check of a done CAPA is due (0110), and when it was checked', () => {
+    const done = { status: 'done' as const, done_on: '2026-11-10' };
+    expect(
+      capaCheckText(capa({ ...done, effectiveness: { due: '2027-02-10', done_on: null, days_left: 91, state: 'running' } })),
+    ).toBe('Check by Wed 10 Feb · 91 days left');
+    expect(
+      capaCheckText(capa({ ...done, effectiveness: { due: '2026-11-09', done_on: null, days_left: -2, state: 'late' } })),
+    ).toBe('Check by Mon 9 Nov · late by 2 days');
+    expect(
+      capaCheckText(
+        capa({ status: 'effective', effectiveness: { due: '2027-02-10', done_on: '2026-11-17', days_left: 91, state: 'done' } }),
+      ),
+    ).toBe('Checked Tue 17 Nov');
+    expect(capaCheckText(capa({}))).toBeNull();
+    expect(capaCheckText(capa({ ...done }))).toBeNull();
+  });
+  it('ranks a done CAPA by its effectiveness check, and counts a late check as late', () => {
+    const list = [
+      capa({ id: 'effective', status: 'effective', effectiveness: { due: '2026-11-01', done_on: '2026-11-01', days_left: -9, state: 'done' } }),
+      capa({ id: 'open-running', due_on: '2026-11-20', due: { due: '2026-11-20', done_on: null, days_left: 9, state: 'running' } }),
+      capa({
+        id: 'check-late',
+        status: 'done',
+        due: { due: '2026-08-01', done_on: '2026-08-01', days_left: -100, state: 'done' },
+        effectiveness: { due: '2026-11-08', done_on: null, days_left: -3, state: 'late' },
+      }),
+      capa({
+        id: 'check-later',
+        status: 'done',
+        due: { due: '2026-11-01', done_on: '2026-11-01', days_left: -10, state: 'done' },
+        effectiveness: { due: '2027-02-01', done_on: null, days_left: 80, state: 'running' },
+      }),
+      capa({ id: 'done-before-0110', status: 'done', due: { due: '2026-11-01', done_on: '2026-11-01', days_left: -10, state: 'done' } }),
+    ];
+    expect(sortCapas(list).map((c) => c.id)).toEqual([
+      'check-late',
+      'open-running',
+      'check-later',
+      'effective',
+      'done-before-0110',
+    ]);
+    expect(capaLate(list[2])).toBe(true);
+    expect(filterCapas(list, 'late', 'all').map((c) => c.id)).toEqual(['check-late']);
+    expect(capaCounts(list)).toEqual({ open: 4, late: 1, effective: 1 });
   });
   it('finds the CAPAs of a deviation or of an observation', () => {
     const list = [capa({ id: 'x' }), capa({ id: 'y', source: 'audit', deviation_id: null, observation_id: 'o1' })];

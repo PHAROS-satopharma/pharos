@@ -877,9 +877,19 @@ def test_the_morning_reminder_reads_capa_due_and_audit_deadlines(store, tag):
             {"y": year, "s": serial + k, "d": dev["id"] if source == "dev" else None,
              "o": obs if source == "obs" else None, "own": owner if source == "dev" else None,
              "other": "Ahmed (Regulatory)" if source == "obs" else None, "due": due, "st": status, "p": owner})
+    # 0110: a done CAPA whose effectiveness check was due yesterday is listed as a check.
+    capas[4] = store.db.fetchone(
+        """insert into capa (year, serial, deviation_id, corrective_action, owner_id, due_on, status, evidence,
+                             done_on, effectiveness_due_on, created_by)
+           values (%(y)s, %(s)s, %(d)s, 'fix it', %(p)s, %(due)s, 'done', 'DOC-1', %(done)s, %(check)s, %(p)s)
+           returning id::text as id, ref""",
+        {"y": year, "s": serial + 4, "d": dev["id"], "p": owner, "due": date(2026, 8, 1),
+         "done": date(2026, 8, 1), "check": today - timedelta(days=1)})
     mine = {c["id"] for c in capas.values()}
     rows = [r for r in store.capa_reminders(today, within_days=2) if r["capa_id"] in mine]
-    assert [(r["ref"], r["days_left"]) for r in rows] == [(capas[1]["ref"], -3), (capas[0]["ref"], 2)]
+    assert [(r["ref"], r["days_left"], r["check"]) for r in rows] == [
+        (capas[1]["ref"], -3, False), (capas[4]["ref"], -1, True), (capas[0]["ref"], 2, False)]
+    rows = [r for r in rows if not r["check"]]
     assert (rows[0]["source"], rows[0]["audit_title"], rows[0]["observation_number"], rows[0]["owner"]) == (
         "audit", f"Today audit {tag}", 2, "Ahmed (Regulatory)")
     assert (rows[1]["source"], rows[1]["deviation_ref"], rows[1]["owner"]) == ("deviation", dev["ref"],

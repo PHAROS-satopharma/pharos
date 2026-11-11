@@ -459,7 +459,7 @@ select c.id::text as id, c.ref, c.year, c.serial,
        case when c.deviation_id is not null then 'deviation' else 'audit' end as source,
        d.ref as deviation_ref, a.title as audit_title, o.number as observation_number,
        coalesce(p.full_name, c.owner_other) as owner, c.due_on, c.done_on, c.status, c.evidence,
-       pv.full_name as verified_by, c.verified_at, c.created_at
+       pv.full_name as verified_by, c.verified_at, c.created_at, c.effectiveness_due_on
   from capa c
   left join deviation d on d.id = c.deviation_id
   left join audit_observation o on o.id = c.observation_id
@@ -915,13 +915,17 @@ def _quality(raw: dict, today: date | None) -> dict:
     capas = []
     for c in raw.get("capas") or []:
         due = as_day(c.get("due_on"))
-        late = c.get("status") not in qual.CAPA_FINISHED and due is not None and due < today
+        check = as_day(c.get("effectiveness_due_on"))
+        # Late: the due day passed while open, or the effectiveness check (0110) passed once done.
+        late = ((c.get("status") not in qual.CAPA_FINISHED and due is not None and due < today)
+                or (c.get("status") == "done" and check is not None and check < today))
         capas.append({
             "ref": c["ref"], "source": qual.capa_source_text(c), "owner": c.get("owner") or "No owner yet",
             "due": day_text(due), "done": day_text(c.get("done_on")),
             "status": qual.CAPA_STATUS_LABEL.get(c.get("status") or "", c.get("status") or ""),
             "effective": (f"Verified {day_text(cairo_day(c.get('verified_at')))} by {c.get('verified_by') or ''}"
                           if c.get("status") == "effective" else ""),
+            "check": day_text(check) if c.get("status") in qual.CAPA_FINISHED else "",
             "evidence": c.get("evidence") or "", "late": late, "is_closed": c.get("status") == "effective"})
     counts = {"open": sum(1 for c in capas if not c["is_closed"]), "late": sum(1 for c in capas if c["late"]),
               "closed": sum(1 for c in capas if c["is_closed"])}
@@ -1084,10 +1088,11 @@ def build_inspection_xlsx(data: dict) -> bytes:
                  a["closure"]] for a in qd["audits"]],
                [30, 14, 24, 20, 14, 30, 30, 30, 30, 30, 60, 30], empty="No audit report was received in these days.")
     xlsx_sheet(wb, "CAPA plan",
-               ["CAPA", "From", "Owner", "Due", "Done", "Status", "Late", "Effective", "Evidence"],
+               ["CAPA", "From", "Owner", "Due", "Done", "Status", "Late", "Effectiveness check by", "Effective",
+                "Evidence"],
                [[c["ref"], c["source"], c["owner"], c["due"], c["done"], c["status"], "yes" if c["late"] else "",
-                 c["effective"], c["evidence"]] for c in qd["capas"]],
-               [16, 44, 24, 14, 14, 18, 6, 36, 50], empty="No CAPA was opened in these days, and none is open.")
+                 c["check"], c["effective"], c["evidence"]] for c in qd["capas"]],
+               [16, 44, 24, 14, 14, 18, 6, 16, 36, 50], empty="No CAPA was opened in these days, and none is open.")
     xlsx_sheet(wb, "Deadlines reviewed",
                ["Missed deadline", "What PHAROS found", "Was due", "Found", "Dismissed", "By",
                 "Why it is not a deviation"],

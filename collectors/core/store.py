@@ -525,22 +525,27 @@ class Store:
 
     def capa_reminders(self, today: date, within_days: int = 2) -> list[dict]:
         """The CAPAs (0107) not done or effective whose due day is within ``within_days`` of ``today`` or past,
-        oldest first, with where each comes from and its owner. Read on the collectors' own connection (the
-        tables' owner): the service key holds no right on them."""
+        and the done ones whose effectiveness check (0110, ``check`` true, ``due_on`` the check day) is, oldest
+        first, with where each comes from and its owner. Read on the collectors' own connection (the tables'
+        owner): the service key holds no right on them."""
         rows = self.db.fetchall(
             """select c.id::text as capa_id, c.ref, c.year, c.serial, c.status,
                       case when c.deviation_id is not null then 'deviation' else 'audit' end as source,
                       d.ref as deviation_ref, a.title as audit_title, o.number as observation_number,
-                      coalesce(p.full_name, c.owner_other) as owner, c.due_on, (c.due_on - %(d)s) as days_left
+                      coalesce(p.full_name, c.owner_other) as owner, n.due_on, (n.due_on - %(d)s) as days_left,
+                      n.is_check
                  from capa c
+                 cross join lateral (
+                   select case when c.status = 'done' then c.effectiveness_due_on else c.due_on end as due_on,
+                          c.status = 'done' as is_check) n
                  left join deviation d on d.id = c.deviation_id
                  left join audit_observation o on o.id = c.observation_id
                  left join audit a on a.id = o.audit_id
                  left join person p on p.id = c.owner_id
-                where c.status not in ('done', 'effective')
-                  and c.due_on is not null and c.due_on <= %(d)s + %(w)s
-                order by c.due_on, c.year, c.serial""", {"d": today, "w": within_days})
-        return [{**r, "days_left": int(r["days_left"])} for r in rows]
+                where c.status <> 'effective'
+                  and n.due_on is not null and n.due_on <= %(d)s + %(w)s
+                order by n.due_on, c.year, c.serial""", {"d": today, "w": within_days})
+        return [{**r, "days_left": int(r["days_left"]), "check": bool(r.pop("is_check"))} for r in rows]
 
     def audit_deadline_reminders(self, today: date, within_days: int = 2) -> list[dict]:
         """For each audit (0107) with a report received and not closed, its next deadline (collectors/quality.py,

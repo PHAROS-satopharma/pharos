@@ -130,6 +130,10 @@ export interface Capa {
   created_by: string | null;
   created_at: string;
   due: Due | null;
+  /** The day to check that a done CAPA worked (0110): done day + 3 months, set by PHAROS; a reviewer may move it. */
+  effectiveness_due_on?: string | null;
+  /** Its due state, for a done or effective CAPA (done_on: the day it was verified); null otherwise. */
+  effectiveness?: Due | null;
   history: HistoryRow[];
 }
 
@@ -351,6 +355,30 @@ export function capaDueText(c: Pick<Capa, 'due' | 'due_on' | 'done_on' | 'status
   return `Due ${shortDay(c.due_on)} · ${leftWords(c.due.days_left)}`;
 }
 
+/**
+ * The effectiveness check of a done CAPA (0110): "Check by Thu 11 Feb · 92 days left", "Check by Mon 9 Nov · late
+ * by 2 days", "Checked Tue 17 Nov" once verified effective; null when the CAPA is not done yet.
+ */
+export function capaCheckText(c: Pick<Capa, 'status' | 'effectiveness'>): string | null {
+  const e = c.effectiveness;
+  if (!e || (c.status !== 'done' && c.status !== 'effective')) return null;
+  if (c.status === 'effective') return e.done_on ? `Checked ${shortDay(e.done_on)}` : null;
+  if (e.state === 'late') return `Check by ${shortDay(e.due)} · late by ${daysWord(-e.days_left)}`;
+  return `Check by ${shortDay(e.due)} · ${leftWords(e.days_left)}`;
+}
+
+/** What is due next on a CAPA: its due day while open, its effectiveness check once done; null when effective. */
+export function capaNextDue(c: Pick<Capa, 'status' | 'due' | 'effectiveness'>): Due | null {
+  if (c.status === 'effective') return null;
+  if (c.status === 'done') return c.effectiveness ?? null;
+  return c.due;
+}
+
+/** Late: the due day passed while open, or the effectiveness check passed once done. */
+export function capaLate(c: Pick<Capa, 'status' | 'due' | 'effectiveness'>): boolean {
+  return capaNextDue(c)?.state === 'late';
+}
+
 /** Where a CAPA comes from: "from D001/2026" or "from Audit Partner audit 2026, observation 2". */
 export function capaSourceText(c: Pick<Capa, 'source' | 'deviation_ref' | 'audit_title' | 'observation_number'>): string {
   if (c.source === 'deviation') return `from ${c.deviation_ref ?? 'a deviation'}`;
@@ -362,16 +390,24 @@ export function capaSourceText(c: Pick<Capa, 'source' | 'deviation_ref' | 'audit
 const RANK: Record<DueState | 'none', number> = { late: 0, soon: 1, running: 2, none: 3, done: 4 };
 
 function rankOf(c: Capa): number {
-  if (c.status === 'done' || c.status === 'effective') return RANK.done;
-  return RANK[c.due?.state ?? 'none'];
+  if (c.status === 'effective') return RANK.done;
+  if (c.status === 'done' && c.effectiveness === undefined) return RANK.done; // before 0110: done waits at the end
+  return RANK[capaNextDue(c)?.state ?? 'none'];
 }
 
-/** Late ones first, then due within two days, then running, then with no due day, then done; by due day. */
+function nextDay(c: Capa): string {
+  return (c.status === 'done' ? c.effectiveness?.due : c.due_on) ?? '9999';
+}
+
+/**
+ * Late ones first, then due within two days, then running, then with no due day, then effective; by the day due
+ * next (a done CAPA by its effectiveness check, 0110).
+ */
 export function sortCapas(list: readonly Capa[]): Capa[] {
   return [...list].sort(
     (a, b) =>
       rankOf(a) - rankOf(b) ||
-      (a.due_on ?? '9999').localeCompare(b.due_on ?? '9999') ||
+      nextDay(a).localeCompare(nextDay(b)) ||
       a.year - b.year ||
       a.serial - b.serial,
   );
@@ -386,7 +422,7 @@ export function filterCapas(list: readonly Capa[], status: CapaStatusFilter, sou
       if (source !== 'all' && c.source !== source) return false;
       if (status === 'all') return true;
       if (status === 'open') return c.status !== 'effective';
-      if (status === 'late') return c.status !== 'done' && c.status !== 'effective' && c.due?.state === 'late';
+      if (status === 'late') return capaLate(c);
       return c.status === status;
     }),
   );
@@ -584,6 +620,7 @@ const FIELD_WORDS: Record<string, string> = {
   owner_id: 'owner',
   owner_other: 'owner outside PHAROS',
   due_on: 'due day',
+  effectiveness_due_on: 'effectiveness check day',
   evidence: 'evidence',
   done_on: 'day done',
   qa_satisfactory: 'QA satisfactory',
@@ -615,7 +652,7 @@ export function capaCounts(list: readonly Capa[]): { open: number; late: number;
     if (c.status === 'effective') effective += 1;
     else {
       open += 1;
-      if (c.status !== 'done' && c.due?.state === 'late') late += 1;
+      if (capaLate(c)) late += 1;
     }
   }
   return { open, late, effective };
