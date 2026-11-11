@@ -598,6 +598,8 @@ def test_the_quality_records_are_read_in_chunks_of_at_most_366_days():
                                                 (date(2025, 11, 8), date(2026, 11, 6))]
     assert len([1 for s, _ in db.sql if "from quality_event" in s]) == 2
     assert len([1 for s, _ in db.sql if "from deviation_proposal p" in s]) == 2
+    assert [d["ref"] for d in data["quality"]["deviations"]] == ["D001/2026"]          # once, never twice
+    assert [c["ref"] for c in data["quality"]["capas"]] == ["CAPA-003/2025", "CAPA-001/2026", "CAPA-002/2026"]
 
 
 def test_the_inspection_pack_lists_the_missed_deadlines_dismissed_with_the_reason():
@@ -613,8 +615,6 @@ def test_the_inspection_pack_lists_the_missed_deadlines_dismissed_with_the_reaso
     wb = load_workbook(io.BytesIO(rp.build_inspection_xlsx(data)))
     rows = list(wb["Deadlines reviewed"].iter_rows(values_only=True))
     assert rows[1][0] == "Audit deadline missed" and rows[1][-1] == "Reviewed on time; the day was entered late."
-    assert [d["ref"] for d in data["quality"]["deviations"]] == ["D001/2026"]          # once, never twice
-    assert [c["ref"] for c in data["quality"]["capas"]] == ["CAPA-003/2025", "CAPA-001/2026", "CAPA-002/2026"]
 
 
 # ───────────────────────────── built, archived and told ─────────────────────────────
