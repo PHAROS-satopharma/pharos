@@ -2,8 +2,12 @@
 // The term proposal with every outside source faked: no network is used.
 import { assert, assertEquals } from "jsr:@std/assert@1.0.13";
 import { isFormula, namesTheSubstance, toIngredientCodes } from "./guard.ts";
+import { herbalStore } from "./sources.ts";
 import { terms } from "./terms.ts";
 import { usableSynonym } from "./text.ts";
+
+// No database in a test: the stored herbal list is read as empty.
+herbalStore.read = () => Promise.resolve([]);
 
 const CARVEDILOL = { wikidata_qid: "Q412534", atc_code: "C07AG02", inn_en: "carvedilol" };
 

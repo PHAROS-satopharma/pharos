@@ -81,7 +81,11 @@ export async function terms(body: { wikidata_qid?: string; atc_code?: string; in
     }
   }
   const emaRes = settled(ema, "EMA lists", warnings, { index: new Map<string, EmaSubstance>(), failed: [] });
-  if (emaRes.failed.length) warnings.push(`EMA list(s) not loaded: ${emaRes.failed.join(", ")}; EU-wide brand names may be missing.`);
+  const brandLists = emaRes.failed.filter((l) => l !== "ema-herbal");
+  if (brandLists.length) warnings.push(`EMA list(s) not loaded: ${brandLists.join(", ")}; EU-wide brand names may be missing.`);
+  if (emaRes.failed.includes("ema-herbal")) {
+    warnings.push("The herbal list did not load; a herbal substance's Latin and plant names may be missing.");
+  }
   const synonyms = settled(syn, "PubChem", warnings, []);
   const innEn = inn || item?.labels.en || "";
 

@@ -2931,7 +2931,7 @@ dx = ML + 3.4 * mm
 text(c, QP["draft_label"], dx, top - 4.6 * mm, "Sans-B", 7)
 bars(c, dx, top - 8 * mm, colw * 0.6)
 fy = top - 9.6 * mm
-for k, (lab, frac) in enumerate(zip(QP["draft_fields"], [0.7, 0.62, 0.74, 0.5], strict=True)):
+for lab, frac in zip(QP["draft_fields"], [0.7, 0.62, 0.74, 0.5], strict=True):
     micro(c, lab, dx, fy - 1.6 * mm, size=4.8, spacing=0.5, color=INK)
     c.setFillColor(INK)
     c.rect(dx, fy - 5.4 * mm, (colw - 7 * mm) * frac, 1.6 * mm, stroke=0, fill=1)
