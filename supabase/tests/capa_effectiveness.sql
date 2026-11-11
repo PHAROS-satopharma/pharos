@@ -67,7 +67,7 @@ select pg_temp.q_assert(
   'the moved day is kept, and the history keeps the move and its reason');
 
 -- The tab: the check day and its state; a done CAPA whose check is late comes before an open one due in 5 days.
-update capa set effectiveness_due_on = :'today'::date - 1 where id = :'c1';
+update capa set done_on = :'today'::date - 10, effectiveness_due_on = :'today'::date - 1 where id = :'c1';
 select pg_temp.q_as('00000000-0000-0000-0000-0000000000b2');
 set role authenticated;
 create temp table q_capas as
