@@ -865,6 +865,26 @@ Web: `features/quality/` (`QualityPage.tsx`, `Deviations.tsx`, `Audits.tsx`, `Ca
 helpers in `quality.ts` with `quality.test.ts`), `styles/quality.css`, route `/quality`, tab Quality after Cases
 (`nav.ts`). SQL test: `supabase/tests/quality.sql`.
 
+### Proposed deviations (0108)
+
+```sql
+deviation_proposal (id, source_kind eda_clock|signal_step|capa|audit_deadline, source_id, source_step,
+                    -- unique (source_kind, source_id, source_step): a missed deadline is proposed once, ever
+                    source_ref, ingredient_id, title, description, occurred_on (the due day), detected_on,
+                    patient_safety, regulatory_compliance, document_quality,
+                    status proposed|confirmed|dismissed, dismissed_reason, deviation_id, decided_by/at, created_at)
+app_setting 'deviation_proposals_since'  -- the Cairo day 0108 ran; nothing due before it is proposed
+```
+
+Audited, read by every member of the team, written by nobody directly. `deviation_proposals_find(day)` (granted to
+nobody; the collectors' owner connection, each morning in `collectors/reminders.py`) inserts a proposal for every
+deadline due before `day` and on or after the since day that is not met: `eda_clock()` running or late,
+`v_signal_table.next_due` of an open signal, a CAPA not done or effective past `due_on`, a late entry of
+`quality_audit_deadlines()` of an audit not closed. `deviation_proposals()` (every member) lists them, waiting
+first. `deviation_proposal_confirm(id, title, description, occurred_on, detected_on, flags…)` and
+`deviation_proposal_dismiss(id, reason)` (a reviewer or an administrator, else 42501; a decided proposal PH409):
+confirm opens the deviation through `deviation_open_as()` and links it; dismiss needs a reason (22023).
+
 ## Environment / secrets
 
 | Secret | Used by |

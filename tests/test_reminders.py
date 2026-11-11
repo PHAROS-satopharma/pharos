@@ -609,3 +609,49 @@ def test_a_quality_read_that_fails_never_stops_the_authority_reminder(monkeypatc
     assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
     assert "<b>4 findings to report to the authority</b>" in s.notification[0]["summary"]
     assert "CAPA" not in s.notification[0]["summary"]
+
+
+# ───────────────────────────── proposed deviations (0108) ─────────────────────────────
+
+def test_the_finder_runs_each_morning_even_when_nothing_else_is_due():
+    s = store_with_findings()
+    s.review_event.clear()
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(6, 59)) == 0
+    assert s.proposal_runs == [], "before 07:00 nothing runs"
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 0
+    assert s.proposal_runs == [TODAY] and s.notification == []
+
+
+def test_proposed_deviations_waiting_are_enough_to_send_and_end_the_message():
+    s = store_with_findings()
+    s.review_event.clear()
+    s.deviation_proposal = {"p1": {"id": "p1", "status": "proposed"}, "p2": {"id": "p2", "status": "proposed"},
+                            "p3": {"id": "p3", "status": "dismissed"}}
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    text = s.notification[0]["summary"]
+    assert text.startswith("<b>PHAROS</b> · Quality · 6 Nov 2026")
+    assert "<b>Proposed deviations</b>" in text
+    assert "2 missed deadlines wait: record as a deviation or dismiss with the reason" in text
+    assert text.rstrip().endswith(QUALITY)
+
+
+def test_one_proposal_is_worded_alone_and_follows_the_quality_blocks():
+    s = quality_only()
+    s.deviation_proposal = {"p1": {"id": "p1", "status": "proposed"}}
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    text = s.notification[0]["summary"]
+    assert "1 missed deadline waits:" in text
+    assert text.index("<b>Audit deadlines</b>") < text.index("<b>Proposed deviations</b>")
+
+
+def test_a_finder_that_fails_never_stops_the_authority_reminder(monkeypatch):
+    """Before migration 0108 is applied the finder does not exist: the findings still go."""
+    s = store_with_findings()
+
+    def broken(*a, **k):
+        raise RuntimeError("function deviation_proposals_find(date) does not exist")
+
+    monkeypatch.setattr(s, "find_deviation_proposals", broken, raising=False)
+    assert reminders.remind_if_due(s, notifier_for(s), now=at(8)) == 2
+    assert "<b>4 findings to report to the authority</b>" in s.notification[0]["summary"]
+    assert "Proposed deviations" not in s.notification[0]["summary"]

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 import { cairoToday, formatDateTime } from '../../lib/format';
 import { Button } from '../../ui/Button';
@@ -11,26 +12,33 @@ import { DAY, Fact, History, StepButtons, WriteError, useWrite } from './parts';
 import {
   type Capa,
   type Deviation,
+  type DeviationProposal,
   CAPA_STATUS_LABEL,
+  PROPOSAL_SOURCE_LABEL,
   DEVIATION_STATUS_LABEL,
   INVESTIGATION,
   LEVEL_LABEL,
   capasOf,
   dayText,
   deviationSteps,
+  proposalDueText,
+  waitingProposals,
 } from './quality';
 
-/** Record a deviation in full (form PV-FM-009). */
-function RecordForm({ onDone }: { onDone: (id: string | null) => void }) {
+/**
+ * Record a deviation in full (form PV-FM-009). From a proposal (0108) the form starts with what PHAROS found;
+ * she changes what she wants, and saving records the deviation and links the proposal to it.
+ */
+function RecordForm({ onDone, from }: { onDone: (id: string | null) => void; from?: DeviationProposal }) {
   const write = useWrite<string>();
   const today = cairoToday();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [occurred, setOccurred] = useState('');
-  const [detected, setDetected] = useState(today);
-  const [safety, setSafety] = useState(false);
-  const [compliance, setCompliance] = useState(false);
-  const [documents, setDocuments] = useState(false);
+  const [title, setTitle] = useState(from?.title ?? '');
+  const [description, setDescription] = useState(from?.description ?? '');
+  const [occurred, setOccurred] = useState(from?.occurred_on ?? '');
+  const [detected, setDetected] = useState(from?.detected_on ?? today);
+  const [safety, setSafety] = useState(from?.patient_safety ?? false);
+  const [compliance, setCompliance] = useState(from?.regulatory_compliance ?? false);
+  const [documents, setDocuments] = useState(from?.document_quality ?? false);
   const problem =
     title.trim() === ''
       ? 'Give it a title.'
@@ -49,8 +57,9 @@ function RecordForm({ onDone }: { onDone: (id: string | null) => void }) {
         if (problem) return;
         write.mutate(
           {
-            fn: 'deviation_open',
+            fn: from ? 'deviation_proposal_confirm' : 'deviation_open',
             args: {
+              ...(from ? { p_id: from.id } : {}),
               p_title: title.trim(),
               p_description: description.trim(),
               p_occurred_on: occurred || null,
@@ -64,7 +73,9 @@ function RecordForm({ onDone }: { onDone: (id: string | null) => void }) {
         );
       }}
     >
-      <p className="q-form-what">Record a deviation (form PV-FM-009)</p>
+      <p className="q-form-what">
+        {from ? 'Record this missed deadline as a deviation (form PV-FM-009)' : 'Record a deviation (form PV-FM-009)'}
+      </p>
       <p className="small muted q-wide">
         An unexpected, unplanned event that results in a potential risk to patient safety or product quality, or is a
         breach of the SOPs. Record it in full and notify QA at once; QA sets its level.
@@ -318,13 +329,142 @@ function DeviationDetail({ d, capas }: { d: Deviation; capas: Capa[] }) {
 }
 
 /** 01 — every deviation, newest first; open one to see it in full and take its next step. */
-export function Deviations({ deviations, capas }: { deviations: Deviation[]; capas: Capa[] }) {
+/** Dismiss a proposal: the reason is required, kept, and listed in the inspection pack. */
+function DismissForm({ p, onDone }: { p: DeviationProposal; onDone: () => void }) {
+  const write = useWrite<string>();
+  const [reason, setReason] = useState('');
+  return (
+    <form
+      className="q-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (reason.trim() === '') return;
+        write.mutate({ fn: 'deviation_proposal_dismiss', args: { p_id: p.id, p_reason: reason.trim() } }, { onSuccess: onDone });
+      }}
+    >
+      <Field
+        label="Why it is not a deviation (required)"
+        hint="Kept with the proposal and listed in the inspection pack."
+        className="q-wide"
+      >
+        <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+      </Field>
+      <WriteError error={write.error} />
+      <div className="button-row q-wide">
+        <Button type="submit" variant="primary" busy={write.isPending} disabled={reason.trim() === ''}>
+          Dismiss
+        </Button>
+        <Button variant="quiet" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * The missed deadlines PHAROS proposed as deviations (0108): each waits for a reviewer to record it (the form
+ * starts with what PHAROS found) or dismiss it with the reason. PHAROS never records one itself.
+ */
+export function ProposedDeviations({
+  proposals,
+  onRecorded,
+}: {
+  proposals: DeviationProposal[];
+  onRecorded: (id: string) => void;
+}) {
+  const { canReview } = useAuth();
+  const [acting, setActing] = useState<{ id: string; what: 'record' | 'dismiss' } | null>(null);
+  const waiting = waitingProposals(proposals);
+  const dismissed = proposals.filter((p) => p.status === 'dismissed').length;
+  if (waiting.length === 0 && dismissed === 0) return null;
+  return (
+    <div className="q-proposals">
+      <p className="q-proposals-head">
+        <strong>
+          {waiting.length === 0
+            ? 'No missed deadline waits.'
+            : `${waiting.length} missed ${waiting.length === 1 ? 'deadline' : 'deadlines'} proposed as ${waiting.length === 1 ? 'a deviation' : 'deviations'}`}
+        </strong>
+        <span className="small muted">
+          {' '}
+          PHAROS proposes each deadline it keeps that passed unmet. Record it as a deviation or dismiss it with the reason.
+          {dismissed ? ` ${dismissed} dismissed so far, listed in the inspection pack.` : ''}
+        </span>
+      </p>
+      {waiting.length ? (
+        <ul className="q-list">
+          {waiting.map((p) => {
+            const act = acting?.id === p.id ? acting.what : null;
+            return (
+              <li key={p.id} className="q-card is-late q-pad">
+                <div className="q-card-head">
+                  <span className="q-source">{PROPOSAL_SOURCE_LABEL[p.source_kind]}</span>
+                  <span className="q-title">{p.title}</span>
+                </div>
+                <p className="small">{p.description}</p>
+                <p className="small muted">
+                  {proposalDueText(p)}
+                  {p.ingredient_id ? (
+                    <>
+                      {' · '}
+                      <Link to={`/ingredients/${p.ingredient_id}`}>Open the ingredient</Link>
+                    </>
+                  ) : null}
+                </p>
+                {canReview ? (
+                  act === 'record' ? (
+                    <RecordForm
+                      from={p}
+                      onDone={(id) => {
+                        setActing(null);
+                        if (id) onRecorded(id);
+                      }}
+                    />
+                  ) : act === 'dismiss' ? (
+                    <DismissForm p={p} onDone={() => setActing(null)} />
+                  ) : (
+                    <div className="button-row">
+                      <Button variant="primary" onClick={() => setActing({ id: p.id, what: 'record' })}>
+                        Record as deviation
+                      </Button>
+                      <Button variant="quiet" onClick={() => setActing({ id: p.id, what: 'dismiss' })}>
+                        Dismiss
+                      </Button>
+                    </div>
+                  )
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+export function Deviations({
+  deviations,
+  capas,
+  proposals = [],
+}: {
+  deviations: Deviation[];
+  capas: Capa[];
+  proposals?: DeviationProposal[];
+}) {
   const { canReview } = useAuth();
   const [recording, setRecording] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [recorded, setRecorded] = useState(false);
   return (
     <>
+      <ProposedDeviations
+        proposals={proposals}
+        onRecorded={(id) => {
+          setOpenId(id);
+          setRecorded(true);
+        }}
+      />
       {canReview ? (
         recording ? (
           <RecordForm

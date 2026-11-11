@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type Capa,
   type Deadline,
+  type DeviationProposal,
   auditSteps,
   capaCounts,
   capaDueText,
@@ -16,8 +17,10 @@ import {
   historyWords,
   isStale,
   nextDeadline,
+  proposalDueText,
   shortDay,
   sortCapas,
+  waitingProposals,
 } from './quality';
 
 function capa(over: Partial<Capa>): Capa {
@@ -206,5 +209,45 @@ describe('the history and a stale write', () => {
     expect(isStale({ message: 'STALE_QUALITY: someone else changed this record' })).toBe(true);
     expect(isStale({ code: '22023', message: 'Nothing changed.' })).toBe(false);
     expect(isStale(null)).toBe(false);
+  });
+});
+
+describe('proposed deviations (0108)', () => {
+  function proposal(over: Partial<DeviationProposal>): DeviationProposal {
+    return {
+      id: 'p',
+      source_kind: 'capa',
+      source_ref: 'CAPA-001/2026',
+      ingredient_id: null,
+      title: 'CAPA not done by its due day',
+      description: 'CAPA-001/2026 (from deviation D001/2026) was due on Tue 3 Nov 2026.',
+      occurred_on: '2026-11-03',
+      detected_on: '2026-11-04',
+      patient_safety: false,
+      regulatory_compliance: true,
+      document_quality: false,
+      status: 'proposed',
+      dismissed_reason: null,
+      deviation_id: null,
+      deviation_ref: null,
+      decided_by: null,
+      decided_at: null,
+      ...over,
+    };
+  }
+
+  it('lists only the proposals still waiting, oldest miss first', () => {
+    const list = [
+      proposal({ id: 'b', occurred_on: '2026-11-05' }),
+      proposal({ id: 'done', status: 'dismissed', occurred_on: '2026-11-01' }),
+      proposal({ id: 'a', occurred_on: '2026-11-02' }),
+      proposal({ id: 'rec', status: 'confirmed', occurred_on: '2026-11-01' }),
+    ];
+    expect(waitingProposals(list).map((p) => p.id)).toEqual(['a', 'b']);
+  });
+
+  it('says when it was due, when it was found and how late', () => {
+    expect(proposalDueText(proposal({}))).toBe('Was due Tue 3 Nov 2026 · found Wed 4 Nov 2026 (1 day late)');
+    expect(proposalDueText(proposal({ detected_on: '2026-11-06' }))).toContain('(3 days late)');
   });
 });

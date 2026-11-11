@@ -400,6 +400,15 @@ class InspectionDb:
                 return [r for r in CAPA_ROWS if params["a"] <= r["created_at"] < params["b"]]
             assert "c.status <> 'effective'" in sql
             return [r for r in CAPA_ROWS if r["status"] != "effective" and r["created_at"] < params["b"]]
+        if "from deviation_proposal p" in sql:
+            assert (params["b"] - params["a"]) <= timedelta(days=367)
+            at = datetime(2026, 6, 4, 10, tzinfo=UTC)
+            return [{"title": "Audit deadline missed",
+                     "description": 'External audit "Partner Pharma 2026": the QPPV review of the report was due on '
+                                    "Tue 2 Jun 2026 (PV-SOP-022) and was not done by Wed 3 Jun 2026.",
+                     "occurred_on": date(2026, 6, 2), "detected_on": date(2026, 6, 3),
+                     "dismissed_reason": "Reviewed on time; the day was entered late.", "decided_at": at,
+                     "decided_by": "Sama Hassan"}] if params["a"] <= at < params["b"] else []
         if "from quality_event" in sql:
             assert (params["b"] - params["a"]) <= timedelta(days=367)
             if not params["a"] <= datetime(2026, 6, 1, tzinfo=UTC) < params["b"]:
@@ -568,7 +577,7 @@ def test_the_quality_section_and_sheets_of_the_inspection_pack():
         assert words in part, words
     assert "PH409" not in part and "uuid" not in part.lower()
     wb = load_workbook(io.BytesIO(rp.build_inspection_xlsx(data)))
-    assert wb.sheetnames[-3:] == ["Deviations", "Audits", "CAPA plan"]
+    assert wb.sheetnames[-4:] == ["Deviations", "Audits", "CAPA plan", "Deadlines reviewed"]
     devs = list(wb["Deviations"].iter_rows(values_only=True))
     assert devs[1][0] == "D001/2026" and devs[1][2] == "Level 2"
     audits = list(wb["Audits"].iter_rows(values_only=True))
@@ -588,6 +597,22 @@ def test_the_quality_records_are_read_in_chunks_of_at_most_366_days():
     assert [(p["f"], p["t"]) for p in devs] == [(date(2024, 11, 7), date(2025, 11, 7)),
                                                 (date(2025, 11, 8), date(2026, 11, 6))]
     assert len([1 for s, _ in db.sql if "from quality_event" in s]) == 2
+    assert len([1 for s, _ in db.sql if "from deviation_proposal p" in s]) == 2
+
+
+def test_the_inspection_pack_lists_the_missed_deadlines_dismissed_with_the_reason():
+    """0108: a missed deadline PHAROS proposed and a reviewer dismissed is listed with who and why."""
+    _, data = _inspection()
+    r = data["quality"]["reviewed"]
+    assert [(x["missed"], x["due"], x["dismissed"], x["by"]) for x in r] == [
+        ("Audit deadline missed", "2 Jun 2026", "4 Jun 2026", "Sama Hassan")]
+    assert ("Missed deadlines reviewed, not deviations", 1) in data["summary"]
+    html = rp.render_pack_html(data)
+    part = html[html.index("Missed deadlines reviewed, not deviations"):]
+    assert "Reviewed on time; the day was entered late." in part
+    wb = load_workbook(io.BytesIO(rp.build_inspection_xlsx(data)))
+    rows = list(wb["Deadlines reviewed"].iter_rows(values_only=True))
+    assert rows[1][0] == "Audit deadline missed" and rows[1][-1] == "Reviewed on time; the day was entered late."
     assert [d["ref"] for d in data["quality"]["deviations"]] == ["D001/2026"]          # once, never twice
     assert [c["ref"] for c in data["quality"]["capas"]] == ["CAPA-003/2025", "CAPA-001/2026", "CAPA-002/2026"]
 
