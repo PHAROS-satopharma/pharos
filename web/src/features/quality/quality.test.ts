@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type Capa,
   type Deadline,
+  type QualityDraft,
   type DeviationProposal,
   auditSteps,
   capaCounts,
@@ -13,6 +14,8 @@ import {
   daysBetween,
   deadlineText,
   deviationSteps,
+  draftOf,
+  draftWaiting,
   filterCapas,
   historyWords,
   isStale,
@@ -249,5 +252,38 @@ describe('proposed deviations (0108)', () => {
   it('says when it was due, when it was found and how late', () => {
     expect(proposalDueText(proposal({}))).toBe('Was due Tue 3 Nov 2026 · found Wed 4 Nov 2026 (1 day late)');
     expect(proposalDueText(proposal({ detected_on: '2026-11-06' }))).toContain('(3 days late)');
+  });
+});
+
+describe('drafted root cause and CAPA (0109)', () => {
+  function draft(over: Partial<QualityDraft>): QualityDraft {
+    return {
+      id: 'q',
+      record_kind: 'deviation',
+      record_id: 'd1',
+      status: 'ready',
+      root_cause: 'No deputy was named.',
+      corrective_action: 'Enter the case.',
+      preventive_action: 'Name a deputy.',
+      to_check: 'Who covered the leave.',
+      model: 'claude-opus-5-5',
+      error: null,
+      asked_by: 'Sama Hassan',
+      asked_at: '2026-11-11T05:00:00Z',
+      finished_at: '2026-11-11T05:01:00Z',
+      ...over,
+    };
+  }
+
+  it('finds the draft of one record by its kind and id', () => {
+    const list = [draft({ id: 'a' }), draft({ id: 'b', record_kind: 'observation', record_id: 'd1' })];
+    expect(draftOf(list, 'observation', 'd1')?.id).toBe('b');
+    expect(draftOf(list, 'deviation', 'd1')?.id).toBe('a');
+    expect(draftOf(list, 'deviation', 'other')).toBeNull();
+  });
+
+  it('is waiting only while asked for or being drafted', () => {
+    expect([draftWaiting({ status: 'queued' }), draftWaiting({ status: 'drafting' })]).toEqual([true, true]);
+    expect([draftWaiting({ status: 'ready' }), draftWaiting({ status: 'failed' })]).toEqual([false, false]);
   });
 });

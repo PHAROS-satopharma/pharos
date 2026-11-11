@@ -1,0 +1,55 @@
+# PHAROS — a drafted root cause and CAPA (migration 0109), on a reviewer's click. Fired by the quality-draft Edge
+# Function (repository_dispatch 'quality-draft') with only {draft_id}; everything else is read from the database
+# by collectors/quality_drafts.py, so nothing from the request is ever placed in a shell command. If this never
+# fires, the "Quality drafts" step of the next 4-hourly collection does the same work.
+name: PHAROS quality draft
+
+on:
+  repository_dispatch:
+    types: [quality-draft]
+  workflow_dispatch:
+    inputs:
+      draft_id:
+        description: The draft's id
+        required: true
+
+permissions:
+  contents: read
+  # Claude signs in with this job's own GitHub token (federation): no Claude key is stored (collectors/core/claude.py).
+  id-token: write
+
+concurrency:
+  group: quality-draft-${{ github.event.client_payload.draft_id || inputs.draft_id }}
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check the draft id
+        env:
+          DRAFT_ID: ${{ github.event.client_payload.draft_id || inputs.draft_id }}
+        run: |
+          [[ "$DRAFT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || { echo "not a draft id"; exit 1; }
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collectors/requirements.txt
+
+      - run: pip install -r collectors/requirements.txt
+
+      - name: Draft
+        env:
+          # Secrets go to this step only, never to the job: the setup actions above never see them.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Claude by federation: identifiers (repository variables), not secrets.
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          DRAFT_ID: ${{ github.event.client_payload.draft_id || inputs.draft_id }}
+        run: python -m collectors.quality_drafts --draft "$DRAFT_ID"

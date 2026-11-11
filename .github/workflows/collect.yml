@@ -273,6 +273,18 @@ jobs:
           NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
         run: python -m collectors.cases --mail --waiting || echo "::warning::Cases could not be read; the reason is on each case in Cases."
 
+      # Drafted root causes and CAPAs (collectors/quality_drafts.py, 0109) still waiting: the app starts
+      # quality-draft.yml at once; this is the safety net when GitHub could not be reached. Never fails the run.
+      - name: Quality drafts
+        if: ${{ !cancelled() && (steps.which.outputs.schedule == '4h' || steps.which.outputs.schedule == 'all') && !inputs.dry_run }}
+        timeout-minutes: 10
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+        run: python -m collectors.quality_drafts --waiting || echo "::warning::Quality drafts could not be made; the reason is on each draft."
+
       # Packs on request (collectors/report_pack.py, 0048): a PSUR pack or an inspection pack asked for on Reports
       # is made by the next run, one request per run, in at most 15 minutes (a pack not finished waits for the next
       # run; after three tries it is marked failed). Always the last step, after the collection whatever it did;

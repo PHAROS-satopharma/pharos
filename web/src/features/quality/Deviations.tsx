@@ -8,6 +8,7 @@ import { Select } from '../../ui/Select';
 import { Empty, Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { CapaCard, CapaForm } from './CapaPlan';
+import { DraftPanel, type DraftUse } from './Drafts';
 import { DAY, Fact, History, StepButtons, WriteError, useWrite } from './parts';
 import {
   type Capa,
@@ -167,11 +168,12 @@ const EDIT_FIELDS = ['title', 'description', ...INVESTIGATION.map((q) => q.field
 type EditField = (typeof EDIT_FIELDS)[number];
 
 /** The description, the six investigation answers and the root cause, while the deviation is not closed. */
-function InvestigationForm({ d, onDone }: { d: Deviation; onDone: () => void }) {
+function InvestigationForm({ d, onDone, seedRootCause }: { d: Deviation; onDone: () => void; seedRootCause?: string }) {
   const write = useWrite<string>();
-  const [v, setV] = useState<Record<EditField, string>>(
-    () => Object.fromEntries(EDIT_FIELDS.map((f) => [f, String(d[f] ?? '')])) as Record<EditField, string>,
-  );
+  const [v, setV] = useState<Record<EditField, string>>(() => ({
+    ...(Object.fromEntries(EDIT_FIELDS.map((f) => [f, String(d[f] ?? '')])) as Record<EditField, string>),
+    ...(seedRootCause ? { root_cause: seedRootCause } : {}),
+  }));
   const [comment, setComment] = useState('');
   const changed = EDIT_FIELDS.filter((f) => v[f].trim() !== String(d[f] ?? '').trim());
   const blocked = changed.length === 0 || v.title.trim() === '' || v.description.trim() === '';
@@ -234,6 +236,9 @@ function DeviationDetail({ d, capas }: { d: Deviation; capas: Capa[] }) {
   const step = useWrite<string>();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  // A draft (0109) opens the usual forms filled in; the key starts a form again with each use.
+  const [seedRoot, setSeedRoot] = useState<{ text: string; n: number } | null>(null);
+  const [seedCapa, setSeedCapa] = useState<{ use: DraftUse; n: number } | null>(null);
   const closed = d.status === 'closed';
   return (
     <div className="q-detail">
@@ -272,7 +277,15 @@ function DeviationDetail({ d, capas }: { d: Deviation; capas: Capa[] }) {
       </dl>
       {canReview && !closed ? (
         editing ? (
-          <InvestigationForm d={d} onDone={() => setEditing(false)} />
+          <InvestigationForm
+            key={seedRoot?.n ?? 0}
+            d={d}
+            seedRootCause={seedRoot?.text}
+            onDone={() => {
+              setEditing(false);
+              setSeedRoot(null);
+            }}
+          />
         ) : (
           <div className="button-row">
             <Button onClick={() => setEditing(true)}>Write the investigation</Button>
@@ -280,6 +293,21 @@ function DeviationDetail({ d, capas }: { d: Deviation; capas: Capa[] }) {
         )
       ) : null}
       {canReview && !closed ? <LevelForm d={d} /> : null}
+
+      <h4 className="q-sub">Draft</h4>
+      <DraftPanel
+        kind="deviation"
+        recordId={d.id}
+        canAsk={canReview && !closed}
+        onUseRootCause={(text) => {
+          setSeedRoot((s) => ({ text, n: (s?.n ?? 0) + 1 }));
+          setEditing(true);
+        }}
+        onUseCapa={(use) => {
+          setSeedCapa((s) => ({ use, n: (s?.n ?? 0) + 1 }));
+          setAdding(true);
+        }}
+      />
 
       <h4 className="q-sub">CAPA</h4>
       {capas.length ? (
@@ -293,7 +321,15 @@ function DeviationDetail({ d, capas }: { d: Deviation; capas: Capa[] }) {
       )}
       {canReview && !closed ? (
         adding ? (
-          <CapaForm deviationId={d.id} onDone={() => setAdding(false)} />
+          <CapaForm
+            key={seedCapa?.n ?? 0}
+            deviationId={d.id}
+            initial={seedCapa ? { corrective: seedCapa.use.corrective, preventive: seedCapa.use.preventive } : undefined}
+            onDone={() => {
+              setAdding(false);
+              setSeedCapa(null);
+            }}
+          />
         ) : (
           <div className="button-row">
             <Button onClick={() => setAdding(true)}>Add a CAPA</Button>

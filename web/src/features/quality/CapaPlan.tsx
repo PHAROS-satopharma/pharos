@@ -24,15 +24,18 @@ export function CapaForm({
   deviationId,
   observationId,
   onDone,
+  initial,
 }: {
   deviationId?: string;
   observationId?: string;
   onDone: () => void;
+  /** From a draft (0109): the actions to start from; she changes them before saving. */
+  initial?: { corrective?: string; preventive?: string };
 }) {
   const write = useWrite<string>();
   const today = cairoToday();
-  const [corrective, setCorrective] = useState('');
-  const [preventive, setPreventive] = useState('');
+  const [corrective, setCorrective] = useState(initial?.corrective ?? '');
+  const [preventive, setPreventive] = useState(initial?.preventive ?? '');
   const [owner, setOwner] = useState('');
   const [other, setOther] = useState('');
   const [due, setDue] = useState('');
