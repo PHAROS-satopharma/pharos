@@ -13,6 +13,7 @@ import { Loading, Notice } from '../../ui/States';
 import { cx } from '../../ui/cx';
 import { TermEditor, defaultMode, newUid, type TermDraft } from './TermEditor';
 import { TermsWarning } from './TermsWarning';
+import { alreadyWatched } from './alreadyWatched';
 
 function norm(s: string): string {
   return s
@@ -55,7 +56,15 @@ function withKept(drafts: TermDraft[], kept: TermDraft[]): TermDraft[] {
   return [...drafts, ...kept.filter((t) => !seen.has(`${t.lang}|${t.term.trim().toLowerCase()}`))];
 }
 
-export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string>; onDone: () => void }) {
+export function AddIngredient({
+  existingAtc,
+  existingNames,
+  onDone,
+}: {
+  existingAtc: Set<string>;
+  existingNames: Set<string>;
+  onDone: () => void;
+}) {
   const { person } = useAuth();
   const qc = useQueryClient();
   const countries = useCountryIndex();
@@ -224,7 +233,7 @@ export function AddIngredient({ existingAtc, onDone }: { existingAtc: Set<string
 
   // Step 1: find the ingredient and confirm which one is meant.
   const candidates = lookup.data ?? [];
-  const already = chosen?.atc_code ? existingAtc.has(chosen.atc_code) : false;
+  const already = chosen ? alreadyWatched(chosen, existingAtc, existingNames) : false;
   const differs = chosen ? norm(typed) !== norm(chosen.inn_en) : false;
 
   return (
