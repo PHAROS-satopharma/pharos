@@ -111,6 +111,8 @@ the first thing to cut is the 4h schedule, to every 6 h.
 
 One failed source never turns the GitHub collect run red. A run fails only when **more than half** of the sources it read failed (or its only source did): that is a systemic fault (the network, the database, a broken release). A single unreachable site (Jordan's timed out on 10 Nov 2026) shows here as `down` after 3 runs and sends its own Telegram alert; the run log names it in a line "1 of N source(s) failed and wait for the next run".
 
+Jordan has a second route for that reason: `jfda-news-en` and `jfda-news-ar` read JFDA's medicine news (withdrawals, recalls, leaflet changes, warnings) from Google News, which gathers Petra, Jordan News, Jordan Times, Roya and Al Mamlaka and answers GitHub. They are headlines, not the circulars: the circulars stay on `jfda-jo` and come back on their own when www.jfda.jo answers again.
+
 ## The daily report
 
 The owner's word (6 Nov 2026): the outcome of every day, as well as the week. `report.yml` makes it every

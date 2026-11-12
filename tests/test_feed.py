@@ -94,6 +94,31 @@ def test_hsa_categories_and_local_dates():
     assert sum(i.doc_type == "dhpc" for i in items) == 9
 
 
+def test_jfda_news_keeps_medicine_items_only():
+    # Google News, 13 Nov 2026: Jordan's regulator site is down, so its medicine news comes from here.
+    # The authority's own name holds "Drug", so the bare word must never be a keyword: olive mills,
+    # tobacco, nail polish and infant formula stories carry it too and have to be dropped.
+    en = feed("jfda-news-en", "jfda-news/en.xml")
+    assert len(en) == 11  # of 36 entries
+    titles = " | ".join(i.title for i in en)
+    for food in ("olive", "Tobacco", "Nail Polish", "Infant Formula", "Anti-Drug"):
+        assert food not in titles
+    zantac = next(i for i in en if "Zantac" in i.title)
+    assert zantac.doc_type == "recall" and zantac.published == date(2019, 10, 19)
+    assert next(i for i in en if "Diprofos" in i.title).doc_type == "recall"
+    assert next(i for i in en if "leaflet" in i.title).doc_type == "label_change"
+    assert all(i.lang == "en" and i.url.startswith("https://news.google.com/") for i in en)
+
+    ar = feed("jfda-news-ar", "jfda-news/ar.xml")
+    assert len(ar) == 7  # of 18 entries
+    titles = " | ".join(i.title for i in ar)
+    for food in ("حليب", "العسل", "غذائية"):  # baby milk, honey, food poisoning
+        assert food not in titles
+    assert any("الميزوثيرابي" in i.title for i in ar)  # injecting mesotherapy products banned
+    assert next(i for i in ar if "شوائب" in i.title).doc_type == "recall"
+    assert all(i.lang == "ar" for i in ar)
+
+
 def test_not_a_feed_raises():
     with pytest.raises(ParseError):
         parse_feed(b"<html><body>Access denied</body></html>", CFG["bfarm-rhb"], CFG["bfarm-rhb"].url)
