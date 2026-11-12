@@ -1113,6 +1113,62 @@ sources:
     enabled: false
     notes: needs live probe
 
+  # Second route for Jordan. www.jfda.jo (and Petra, the state news agency, on the same .gov.jo
+  # network) stopped answering on 10 Nov 2026 from GitHub, from Egypt and from 40 test servers in
+  # 25 countries. JFDA's medicine news (withdrawals, recalls, leaflet changes, warnings) is reported
+  # by Petra, Jordan News, Jordan Times, Ammon, Roya and Al Mamlaka, and Google News gathers them
+  # into one feed that GitHub can reach. News headlines, not the circulars themselves: the circulars
+  # stay on jfda-jo. The authority's own name contains "Drug" / "الدواء", so the keyword lists
+  # never use the bare word: food, cosmetics, tobacco and bakery items are dropped.
+  - id: jfda-news-en
+    regulator: JFDA
+    kind: safety
+    channel: rss
+    url: https://news.google.com/rss/search?q=JFDA+OR+%22Jordan+Food+and+Drug+Administration%22&hl=en&gl=JO&ceid=JO%3Aen
+    page: https://news.google.com/search?q=JFDA&hl=en&gl=JO&ceid=JO%3Aen
+    parser: feed
+    languages: [en]
+    schedule: 12h
+    expected_max_gap_days: 90
+    notes: >-
+      JFDA medicine news in English, gathered by Google News from Petra, Jordan News and Jordan Times.
+      Second route while www.jfda.jo is unreachable (since 10 Nov 2026); headlines only, the circulars
+      stay on the JFDA source.
+    options:
+      follow: false
+      doc_type: other
+      doc_type_rules:
+        - {keyword: recall, doc_type: recall}
+        - {keyword: withdraw, doc_type: recall}
+        - {keyword: leaflet, doc_type: label_change}
+      include_keywords: [medicine, medicinal, pharmac, recall, withdraw, leaflet, vaccine, counterfeit,
+                         falsified, adverse, injection, tablet, antibiotic, batch]
+      exclude_keywords: [olive, tobacco, nicotine, restaurant, bakery, bakeries, nail polish, cosmetic,
+                         infant formula, anti-drug, narcotic]
+
+  - id: jfda-news-ar
+    regulator: JFDA
+    kind: safety
+    channel: rss
+    url: https://news.google.com/rss/search?q=%22%D8%A7%D9%84%D8%BA%D8%B0%D8%A7%D8%A1+%D9%88%D8%A7%D9%84%D8%AF%D9%88%D8%A7%D8%A1%22+%D8%A7%D9%84%D8%A3%D8%B1%D8%AF%D9%86+%28%D8%B3%D8%AD%D8%A8+OR+%D8%AA%D8%AD%D8%B0%D8%B1+OR+%D8%A3%D8%AF%D9%88%D9%8A%D8%A9+OR+%D9%85%D8%B3%D8%AA%D8%AD%D8%B6%D8%B1+OR+%D8%AA%D8%B9%D9%85%D9%8A%D9%85%29+-%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9+-%D9%87%D9%8A%D8%A6%D8%A9&hl=ar&gl=JO&ceid=JO%3Aar
+    page: https://news.google.com/search?q=%22%D8%A7%D9%84%D8%BA%D8%B0%D8%A7%D8%A1+%D9%88%D8%A7%D9%84%D8%AF%D9%88%D8%A7%D8%A1%22+%D8%A7%D9%84%D8%A3%D8%B1%D8%AF%D9%86&hl=ar&gl=JO&ceid=JO%3Aar
+    parser: feed
+    languages: [ar]
+    schedule: 12h
+    expected_max_gap_days: 90
+    notes: >-
+      JFDA medicine news in Arabic ("الغذاء والدواء" + Jordan + withdraw / warns / medicines /
+      product / circular, Saudi SFDA left out), gathered by Google News from Petra, Roya, Al Mamlaka,
+      Al Ghad and Ammon. Second route while www.jfda.jo is unreachable (since 10 Nov 2026).
+    options:
+      follow: false
+      doc_type: other
+      doc_type_rules:
+        - {keyword: سحب, doc_type: recall}
+        - {keyword: نشرة, doc_type: label_change}
+      include_keywords: [أدوية, ادوية, دوائي, مستحضر, سحب, لقاح, نشرة, التيقظ, صيدل, تشغيلة, حقن, مضاد حيوي]
+      exclude_keywords: [زيت, المعاصر, تبغ, مطعم, مخبز, مخابز, تجميل, حليب, العسل, غذائي, العزاء, مخدرات]
+
   - id: uae-mohap
     regulator: UAE_MOHAP
     kind: safety
