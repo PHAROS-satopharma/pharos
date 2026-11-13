@@ -98,8 +98,10 @@ jobs:
           [ -n "$SPC_INGREDIENT" ] && s=weekly
           case "$s" in 4h|12h|daily|literature|weekly|monthly|all|classes) ;; *) echo "unknown schedule $s"; exit 1 ;; esac
           echo "schedule=$s" >> "$GITHUB_OUTPUT"
-          # Only browser-engine runs need Playwright (12h, all, and the weekly SPC watch for JS-only sites).
-          case "$s" in 12h|all|weekly) echo "browser=true" >> "$GITHUB_OUTPUT" ;; *) echo "browser=false" >> "$GITHUB_OUTPUT" ;; esac
+          # Only browser-engine runs need Playwright (12h, all, and the SPC watch for JS-only label sites: weekly for
+          # one ingredient, and daily, which gives a newly added ingredient its first label watch: on 12 Nov 2026 ivy
+          # leaf's first UK look-up failed there, "BrowserType.launch: Executable doesn't exist").
+          case "$s" in 12h|all|weekly|daily) echo "browser=true" >> "$GITHUB_OUTPUT" ;; *) echo "browser=false" >> "$GITHUB_OUTPUT" ;; esac
           echo "Running schedule $s"
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0

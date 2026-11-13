@@ -60,3 +60,12 @@ def test_the_back_up_timer_starts_the_label_watch():
     sql = (ROOT / "supabase" / "migrations" / "0112_label_watch_kick.sql").read_text(encoding="utf-8")
     assert "case when p_schedule = 'weekly' then 'label-watch' else 'collect' end" in sql
     assert "revoke all on function ops_kick_collect(text) from public, anon, authenticated" in sql
+
+
+def test_the_daily_run_has_the_browser_a_new_ingredients_label_watch_needs():
+    # 12 Nov 2026: ivy leaf, added the day before, got its first label watch in the daily run, and the MHRA's
+    # reader (Playwright) failed: "BrowserType.launch: Executable doesn't exist"
+    flow = yaml.safe_load((WORKFLOWS / "collect.yml").read_text(encoding="utf-8"))
+    which = next(s for s in flow["jobs"]["collect"]["steps"] if s.get("id") == "which")["run"]
+    browser = next(line for line in which.splitlines() if "browser=true" in line)
+    assert "daily" in browser.split(")")[0].split("in ", 1)[1].split("|")
