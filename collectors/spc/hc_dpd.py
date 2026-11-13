@@ -12,8 +12,10 @@ with ivabradine (LANCORA 5 and 7.5 mg, one monograph) and acetaminophen (1,354 p
   (LANCORA: 2025-06-26, the day its monograph PDF was published), so it is the listed version.
 * label: the product's page ``/dpd-bdpp/info?lang=eng&code=<drug_code>`` links its monograph
   ``https://pdf.hres.ca/dpd_pm/<n>.PDF`` under "Product Monograph/Veterinary Labelling", with its date (the date
-  of authorization). A product without one (most non-prescription products) has no label text. Strengths often
-  share one monograph.
+  of authorization). A product without one (most non-prescription products: 68 of the 96 read on 9 Nov 2026,
+  cough and cold remedies) says so on that page, "product monograph is not available": it has no label text,
+  published none. A page with neither the link nor that sentence is an error, never a quiet "no label" (a
+  changed page would otherwise pass for 96 products without a monograph). Strengths often share one monograph.
 
 The monograph is split by ``sections.split_ca_monograph`` into ``"ca:…"`` keys (the 2020 template's numbered
 headings, or the older unnumbered capitals); "Recent Major Label Changes" is a section of its own.
@@ -38,6 +40,7 @@ MARKETED = API + "/drugproduct/?lang=en&type=json&status=2"
 INFO = "https://health-products.canada.ca/dpd-bdpp/info?lang=eng&code={code}"
 
 _PM_LINK = re.compile(r'href="(https://pdf\.hres\.ca/dpd_pm/\d+\.PDF)"', re.I)
+_PM_NONE = re.compile(r"product\s+monograph\s+is\s+not\s+available", re.I)
 _PM_DATE = re.compile(r"Product Monograph/Veterinary Labelling:.*?Date:\s*</strong>\s*<span>\s*(\d{4}-\d{2}-\d{2})",
                       re.S | re.I)
 
@@ -115,7 +118,10 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
         raise SnapshotError(f"Health Canada {product['national_id']} product page: HTTP {page.status}")
     link = monograph_link(page.text)
     if not link:
-        return None
+        if _PM_NONE.search(page.text):
+            return None                    # Health Canada publishes no monograph for it
+        raise SnapshotError(f"Health Canada {product['national_id']} product page: neither a monograph link nor "
+                            f"'product monograph is not available'")
     url, doc_date = link
     f = fetch_label(ctx, url, accept="application/pdf")
     if f.status != 200 or not f.is_pdf:

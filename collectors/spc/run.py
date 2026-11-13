@@ -101,7 +101,8 @@ class SpcStats:
     snapshots: int = 0           # new snapshot rows (items_new)
     issues: int = 0              # label-change issues opened (items_matched)
     labels_read: int = 0
-    no_label: int = 0
+    no_label: int = 0            # a label read, but no text in it
+    none_published: int = 0      # the regulator publishes no label for the product (the module's None)
     discover_ok: int = 0
     errors: list[str] = field(default_factory=list)
     out_of_time: bool = False
@@ -125,6 +126,9 @@ class SpcStats:
             notes.append(f"{len(self.errors)} error(s); first: {self.errors[0]}")
         if self.no_label:
             notes.append(f"{self.no_label} product(s) without label text")
+        if self.none_published:
+            # the same opening as above, so source_run_failed() (0089) and the Sources page read it as a note
+            notes.append(f"{self.none_published} product(s) without label text: the regulator publishes none for them")
         if self.out_of_time:
             left = f"{self.labels_left} label(s)"
             if self.ingredients_left:
@@ -459,9 +463,12 @@ def watch_product(db, ctx, module, source_id: str, product: dict, ingredient: di
                   stats: SpcStats | None = None) -> str | None:
     stats = stats if stats is not None else SpcStats()
     snap = module.snapshot(ctx, product)
-    if snap is not None:
-        snap.sections = {k: v for k, v in (snap.sections or {}).items() if normalize(v)}
-    if snap is None or not snap.sections:
+    if snap is None:
+        # no label published (Health Canada's non-prescription products: "product monograph is not available")
+        stats.none_published += 1
+        return None
+    snap.sections = {k: v for k, v in (snap.sections or {}).items() if normalize(v)}
+    if not snap.sections:
         stats.no_label += 1
         return None
     stats.labels_read += 1

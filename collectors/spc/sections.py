@@ -183,10 +183,12 @@ _CA_NUM = re.compile(r"^\s*(\d{1,2})\.?\s+(\S.*?)\s*$")
 def _ca_lines(text: str) -> list[str]:
     out = []
     for line in text.splitlines():
-        if _CA_END.match(line):
-            break
+        # a contents line first: "PART III: PATIENT MEDICATION INFORMATION ......33" in the table of contents is not
+        # the end of Part I (JAMP-Carvedilol, 13 Nov 2026: the split stopped at line 39 and found no section)
         if _CA_TOC.search(line):
             continue
+        if _CA_END.match(line):
+            break
         out.append(_CA_PAGE.sub("", line))
     return out
 
