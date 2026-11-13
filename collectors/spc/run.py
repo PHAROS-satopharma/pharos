@@ -34,6 +34,11 @@ the source_run says how many were left; running out of time is never a failed ru
 a week with paracetamol's hundreds of products ran past GitHub's timeout and the run was killed before it
 reached Japan.
 
+The weekly watch runs one source per job (``label-watch.yml``, ``python -m collectors.run --spc-source``), so each
+source has the whole budget (330 minutes) to itself. Until 13 Nov 2026 the seventeen sources shared one job's
+78 minutes, about 4.6 minutes each: on 9 Nov DailyMed, CIMA and the MHRA spent all of it on their product lists
+and read no label, and 3,608 of 5,483 labels had never been read.
+
 Every SPC source gets a ``source_run`` row per run (products seen, new snapshots, issues, and the
 errors: a discovery or a label that failed, labels with no text), and its health: ``ok`` after a run
 that read labels, ``blocked`` on a bot check, ``degraded`` after ``DEGRADED_AFTER`` failed runs in a
@@ -650,8 +655,9 @@ def run_source(ctx, db, store, notifier, source_id: str, ingredients: list[dict]
 
 def run_spc(ctx, db, ingredient_ids: list[str] | None = None, *, store=None,
             notifier=None, deadline: float | None = None,
-            clock: Callable[[], float] = time.monotonic) -> list[str]:
-    """``deadline``: the runner's (a ``clock()`` value); each source gets an even share of what is left."""
+            clock: Callable[[], float] = time.monotonic, source_ids: list[str] | None = None) -> list[str]:
+    """``deadline``: the runner's (a ``clock()`` value); each source gets an even share of what is left.
+    ``source_ids``: only these sources (still only when switched on), as the weekly job of one source asks."""
     if store is None:
         from collectors.core.store import Store
 
@@ -659,6 +665,8 @@ def run_spc(ctx, db, ingredient_ids: list[str] | None = None, *, store=None,
     created: list[str] = []
     ingredients = _ingredients(db, ingredient_ids)
     sources = _sources(db)
+    if source_ids is not None:
+        sources = [s for s in sources if s in source_ids]
     for n, source_id in enumerate(sources):
         share = None
         if deadline is not None:

@@ -1,7 +1,7 @@
 """PHAROS collector run.
 
     python -m collectors.run --schedule 4h|12h|daily|literature|weekly|monthly|all [--source ID]
-                             [--backfill] [--probe-id UUID] [--spc-ingredient UUID]
+                             [--backfill] [--probe-id UUID] [--spc-ingredient UUID] [--spc-source ID]
                              [--dry-run] [--no-db]
 
 Per source: a source_run row (the screening log, written even when nothing matched) → list_items →
@@ -10,6 +10,10 @@ text via collectors.pdf) → matching against the active watchlist → document_
 matched documents → merge into issues → alerts. Source health follows: ParseError → degraded,
 SourceBlocked → blocked, network/HTTP errors → failure count (3 in a row → down), quiet longer than
 expected_max_gap_days → degraded.
+
+``--spc-source`` is one job of the weekly label watch (``label-watch.yml``): that source's labels for every watched
+ingredient, with the whole time budget, and nothing else — no other source, no catalogue sync, no label comparison,
+digest or reminder (seventeen such jobs run at once; the regular runs keep those).
 
 ``--no-db`` runs against an in-memory store (a quick look at a parser; nothing is written anywhere
 except the local ./.archive).
@@ -536,6 +540,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="read history: MONTHS back (default app_setting backfill_months)")
     p.add_argument("--probe-id", help="probe_result id to fill (no documents are written)")
     p.add_argument("--spc-ingredient", help="run the SPC watch for one confirmed ingredient")
+    p.add_argument("--spc-source", help="run the SPC watch of one label source for every ingredient (weekly job)")
     p.add_argument("--dry-run", action="store_true", help="never send a real Telegram message")
     p.add_argument("--no-db", action="store_true", help="in-memory store (local parser check)")
     return p.parse_args(argv)
@@ -576,7 +581,14 @@ def main(argv: list[str] | None = None) -> int:
         # the admin screen: the job stays green. Only a probe that could not be read or written fails it.
         return 0
 
-    sync_catalogue(store)
+    if args.spc_source:
+        from collectors.spc.run import MODULES
+
+        if args.spc_source not in MODULES:
+            raise SystemExit(f"unknown label source {args.spc_source}")
+    else:
+        sync_catalogue(store)
+    # a job of the weekly label watch serves the weekly slot: the database's back-up timer sees it started (0112)
     slot = None if (args.backfill or args.source or args.spc_ingredient) else args.schedule
     run_id = store.create_run(trigger,
                               os.environ.get("GIT_SHA") or os.environ.get("GITHUB_SHA"), slot)
@@ -595,7 +607,7 @@ def main(argv: list[str] | None = None) -> int:
             runner = Runner(store, ctx, notifier, settings, backfill=args.backfill,
                             deadline=t_start + budget_min * 60 if budget_min > 0 else None)
             ok = True
-            if not args.spc_ingredient:
+            if not args.spc_ingredient and not args.spc_source:
                 sources = select_sources(source_configs(store), args.schedule, args.source,
                                          args.backfill)
                 log.info("run %s: %d source(s)", run_id, len(sources))
@@ -611,9 +623,12 @@ def main(argv: list[str] | None = None) -> int:
                     except Exception:  # noqa: BLE001 - checked again on the next run
                         log.warning("case report name check failed: %s", traceback.format_exc())
             spc_ids: list[str] | None = None
+            spc_sources: list[str] | None = None
             run_spc_now = False
             if args.spc_ingredient:
                 spc_ids, run_spc_now = [args.spc_ingredient], True
+            elif args.spc_source:
+                spc_sources, run_spc_now = [args.spc_source], True     # every active ingredient
             elif not args.source and not args.backfill:
                 if args.schedule in ("weekly", "all"):
                     run_spc_now = True          # every active ingredient
@@ -626,7 +641,7 @@ def main(argv: list[str] | None = None) -> int:
                     from collectors.spc.run import run_spc
 
                     created = run_spc(ctx, db, spc_ids, store=store, notifier=notifier,
-                                      deadline=runner.deadline)
+                                      deadline=runner.deadline, source_ids=spc_sources)
                 except Exception:  # noqa: BLE001 - SPC trouble is logged, the run continues
                     ok, created = False, []
                     log.error("SPC watch failed: %s", traceback.format_exc())
@@ -635,7 +650,7 @@ def main(argv: list[str] | None = None) -> int:
                         notifier.issue_alert(issue_id)
                     except Exception:  # noqa: BLE001 - one alert failing never stops the others
                         log.warning("alert for %s failed: %s", issue_id, traceback.format_exc())
-            if db is not None and not args.backfill and not args.source and not args.probe_id:
+            if db is not None and not (args.backfill or args.source or args.probe_id or args.spc_source):
                 try:
                     # our label against the label changes of the last year (label_gap, 0043): a new version of
                     # our label uploaded on the screen is compared with them on this run
@@ -646,7 +661,7 @@ def main(argv: list[str] | None = None) -> int:
                     log.warning("label gap check failed: %s", traceback.format_exc())
             if args.backfill:
                 notifier.admin_message(runner.summary.text(runner.issues_created))
-            else:
+            elif not args.spc_source:
                 try:
                     # an immediate alert Telegram refused on an earlier run is tried again
                     notifier.retry_refused_alerts()

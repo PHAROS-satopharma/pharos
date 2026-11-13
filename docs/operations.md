@@ -11,7 +11,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | `collect.yml`, schedule **12h** | 05:47 and 17:47 | Browser-engine sources (famhp, CBG-MEB, Läkemedelsverket, TGA) and the slower lists (EMA news, Swissmedic updates, PMDA company letters and ministry announcements) |
 | `collect.yml`, schedule **daily** | 02:31 | Drug classes from the ATC code, large JSON files (EMA medicines, Health Canada recalls), Medsafe's Prescriber Update and NCBI literature (PubMed and PubMed Central), then EMA's EURD list (`collectors/eurd.py`), herbal substances (`collectors/herbal.py`, read by Add an ingredient) and literature monitoring list (`collectors/mlm.py`), up to 15 minutes of the check of the past, and the papers' free full texts from Unpaywall (`collectors/fulltext.py`) |
 | `collect.yml`, schedule **literature** | 10:41, 18:41 and 22:41 | The daily run's drug classes, NCBI literature (the enabled sources of kind literature) and up to 15 minutes of the check of the past again, so a new ingredient is ready within hours rather than after the night (owner, 6 Nov 2026); a few minutes when nothing is waiting |
-| `collect.yml`, schedule **weekly** | Monday 03:23 | SPC / label watch |
+| `label-watch.yml` | Monday 03:23 | SPC / label watch: one job per label source, all at once, each with 330 minutes (13 Nov 2026) |
 | `collect.yml`, schedule **monthly** | the 1st, 01:41 | Monthly sources |
 | `trials.yml` | Wednesday 04:11 | Clinical trials of the watched ingredients from ClinicalTrials.gov (`collectors/trials.py`); only new or updated studies are fetched |
 | `report.yml` | Sunday, 05:00 Cairo | Weekly report (XLSX + PDF) for the week that has just ended, Sunday to Saturday |
@@ -21,7 +21,7 @@ marked Cairo. Cairo is UTC+2 in winter and UTC+3 in summer.
 | pg_cron `pharos-watchdog` | every 30 min | Admin alert if no run has checked a source successfully in 6 h, or the database is over 420 MB |
 | `probe.yml` | on demand | "Test link" from the Sources screen |
 | `backfill.yml` | by hand | N months back from every source but the PV mailbox, flagged as backfill, no alerts |
-| pg_cron `pharos-kick-4h`, `-12h`, `-weekly`, `-monthly` | about 50 min after each slot | Asks GitHub for that slot's collection when no run of it started (0007) |
+| pg_cron `pharos-kick-4h`, `-12h`, `-weekly`, `-monthly` | about 50 min after each slot | Asks GitHub for that slot's collection when no run of it started (0007); for the weekly slot it starts `label-watch.yml` (0112) |
 | pg_cron `pharos-kick-readiness` | every hour at :29 | Asks GitHub again for the latest daily or literature slot (02:31, 10:41, 18:41, 22:41 UTC) until one of its runs starts (0084, 0090) |
 | `rematch.yml` | by hand | The check of the past for up to 45 minutes at once (after adding an ingredient) |
 
@@ -35,6 +35,7 @@ schedule: the database asks GitHub for the latest one every hour until one of it
 need asking for again. `backfill.yml` has its own group and runs beside a collection: it can no longer hold the
 queue for its 285 minutes. A notice is stored once whichever run finds it, a backfill leaves the literature
 searches and the mailbox alone and sends no alert, and two runs together ask one site at most once a second.
+`label-watch.yml` has its own group too (`label-watch`): its hours of label reading never hold the collections.
 `report.yml` has its own group, so a collection can never drop the weekly report. GitHub can start scheduled runs late at busy times (hours, on
 a new repository). The minutes are chosen off the hour to reduce this.
 
@@ -72,7 +73,7 @@ GitHub rounds each job up to a whole minute.
 | collect 4h | 6 a day × 30 = 180 | 2 | 360 |
 | collect 12h (Playwright) | 2 a day × 30 = 60 | 4 | 240 |
 | collect daily (with NCBI literature) | 30 | 7 | 210 |
-| collect weekly (SPC) | 4.35 | 10 | 44 |
+| label watch (one job per label source) | 4.35 × 17 | 5 to 330 | free: the repository is public; a few thousand in the first weeks, while every label is read for the first time |
 | collect monthly | 1 | 4 | 4 |
 | report (weekly: one real run, one run that skips) | 4.35 × 2 | 6 + 1 | 30 |
 | backup | 30 | 2 | 60 |
@@ -548,9 +549,15 @@ Ingredients screen puts those changes next to **our own label** (6 Nov 2026, the
   source reads the page at all. The daily report leaves this line out, because the label watch runs weekly.
 - **Days.** Section 03 and the report filter by the Cairo day the change was **detected**, not by the date printed
   on the label (a label dated 1 October found on 3 November appears in the week of 3 November).
+- **One job per country** (`label-watch.yml`, 13 Nov 2026). Each label source has its own job on Monday, all at
+  once (12 at a time), each with 330 minutes (`PHAROS_TIME_BUDGET_MIN`), far more than the slowest needs: DailyMed
+  reads about 25 labels a minute, its 1,911 in about 80. Until then the seventeen sources shared one 78-minute
+  run, about 4.6 minutes each: on 9 Nov DailyMed, CIMA and the MHRA spent all of it on their product lists and
+  read no label, and 3,608 of 5,483 labels had never been read. One source can be run by hand (*PHAROS label
+  watch → Run workflow*, with its id, e.g. `spc-dailymed`).
 - **Time, and labels read in turn** (0063, 6 Nov 2026). The watch keeps to the run's time budget
-  (`PHAROS_TIME_BUDGET_MIN`: 78 minutes on the weekly run, 108 on a run started by hand). Each country gets an even
-  share of the time left, and a country that finishes early leaves its time to the next. Within a country the
+  (`PHAROS_TIME_BUDGET_MIN`: 330 minutes in each weekly job, 108 for one ingredient started by hand, where each
+  country gets an even share of the time left and a country that finishes early leaves its time to the next). Within a country the
   labels are read in turn: **the reference product first**, then labels never read, then the one read longest
   ago (`spc_product.checked_at`). What the time does not reach is read first the next week; the source's run
   says *out of time: N label(s) left for the next run*, which is not a failure. An ingredient with hundreds of
