@@ -35,8 +35,19 @@ export interface Readiness {
     empty: string[];
     first_snapshot: boolean;
     japan_code: boolean;
-    /** Her database pages for this ingredient (0095); absent before 0095 is applied. */
-    pages?: { total: number; read: number; waiting: number; not_read: number; waiting_pages: string[] };
+    /** Her database pages for this ingredient (0095); absent before 0095 is applied. A page is read when its source
+     *  has read every one of the ingredient's labels at least once; `reading`, `labels_unread` and `reading_pages`
+     *  are 0113's and absent before it is applied. */
+    pages?: {
+      total: number;
+      read: number;
+      reading?: number;
+      labels_unread?: number;
+      waiting: number;
+      not_read: number;
+      reading_pages?: string[];
+      waiting_pages: string[];
+    };
   };
   eurd: {
     found: boolean;
@@ -130,10 +141,17 @@ export function readinessNotes(r: Readiness): string[] {
   return notes;
 }
 
-/** "Label databases: 19 of 27 pages read · 2 waiting for the weekly run · 6 not read (reasons on the Sources page)". */
+/** "Label databases: 7 of 27 pages read · 11 being read (2,257 labels not read yet) · 9 not read (reasons on the
+ *  Sources page)". A page is read only when its labels were (0113): until 13 Nov 2026 a page counted as read when
+ *  its source had run, so DailyMed showed read after a run that read none of its 1,911 labels. */
 export function labelPagesNote(pages: Readiness['label_watch']['pages']): string | null {
   if (!pages || pages.total === 0) return null;
   const parts = [`${pages.read} of ${pages.total} ${pages.total === 1 ? 'page' : 'pages'} read`];
+  if (pages.reading) {
+    const left = pages.labels_unread ?? 0;
+    const unread = left > 0 ? ` (${left.toLocaleString('en-GB')} ${left === 1 ? 'label' : 'labels'} not read yet)` : '';
+    parts.push(`${pages.reading} being read${unread}`);
+  }
   if (pages.waiting > 0) parts.push(`${pages.waiting} waiting for the weekly run`);
   if (pages.not_read > 0) parts.push(`${pages.not_read} not read (reasons on the Sources page)`);
   return `Label databases: ${parts.join(' · ')}`;

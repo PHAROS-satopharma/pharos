@@ -433,9 +433,12 @@ preparation has got, and the weekly report repeats it in section 1 (migrations 0
   03:23), *nobody receives its
   Telegram messages yet*.
 - Under the line: how many label products were found and where (or *No label found in any watched country*),
-  her database pages for it (0095: *Label databases: 19 of 27 pages read · 2 waiting for the weekly run · 6 not
-  read (reasons on the Sources page)*, a page counted read once a switched-on labels source reading it has run
-  since the ingredient was added; it never holds Ready back), the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
+  her database pages for it (0095, 0113: *Label databases: 7 of 27 pages read · 11 being read (2,257 labels not
+  read yet) · 9 not read (reasons on the Sources page)*. A page is read once a switched-on labels source reading it
+  has run since the ingredient was added AND has read every one of the ingredient's labels it found at least once;
+  *being read* when it has run with labels still unread; *waiting for the weekly run* when it has not run yet.
+  Until 13 Nov 2026 a page counted read when its source had run, so DailyMed showed read after a run that read none
+  of its 1,911 labels. It never holds Ready back), the EURD list's PSUR frequency, data lock point and submission date (the EURD list is read daily again,
   `collectors/eurd.py`), whether EMA's literature monitoring covers it, and who receives its Telegram messages.
 - **Japan:** PMDA's search is a form that answers a POST only, so PHAROS cannot look a package insert up by
   name. The term editor has a *Japan codes* field when an ingredient is added, and an administrator finds the
