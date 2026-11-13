@@ -149,6 +149,22 @@ describe('readiness on the ingredient row', () => {
     expect(readinessItems(r)).toEqual(readinessItems(ready));
   });
 
+  it('counts a page read only when its labels were read, not when its source ran (0113)', () => {
+    // 9 Nov 2026: DailyMed ran, read 0 of its 1,911 labels, and the line still said "18 of 27 pages read"
+    const pages = {
+      total: 27, read: 7, reading: 11, labels_unread: 2257, waiting: 0, not_read: 9,
+      reading_pages: ['United States: DailyMed'], waiting_pages: [],
+    };
+    expect(labelPagesNote(pages)).toBe(
+      'Label databases: 7 of 27 pages read · 11 being read (2,257 labels not read yet) · 9 not read (reasons on the Sources page)',
+    );
+    expect(labelPagesNote({ ...pages, reading: 1, labels_unread: 1 })).toBe(
+      'Label databases: 7 of 27 pages read · 1 being read (1 label not read yet) · 9 not read (reasons on the Sources page)',
+    );
+    const r: Readiness = { ...ready, label_watch: { ...ready.label_watch, pages } };
+    expect(readinessItems(r)).toEqual(readinessItems(ready));   // what holds Ready is unchanged
+  });
+
   it('names the languages it has no name in, which never clear by themselves', () => {
     const one: Readiness = { ...ready, names: { languages_with_a_name: 14, of: 15, missing: ['da'] } };
     expect(readinessNotes(one)[0]).toBe('No name in Danish; notices in Danish are matched by its other names only');

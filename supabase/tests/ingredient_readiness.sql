@@ -143,9 +143,9 @@ insert into run (id, trigger) values ('00000000-0000-0000-0000-00000045f001', 'c
 insert into source_run (run_id, source_id, started_at, error) values
   ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-a', now(), null),
   ('00000000-0000-0000-0000-00000045f001', 'ci-ir-spc-b', now(), '1 product(s) without label text');
-insert into spc_product (id, ingredient_id, source_id, country_code, national_id, product_name) values
+insert into spc_product (id, ingredient_id, source_id, country_code, national_id, product_name, checked_at) values
   ('00000000-0000-0000-0000-00000045b001', '00000000-0000-0000-0000-00000045a001', 'ci-ir-spc-a', 'XR', 'R-1',
-   'CI Readyamine 10 mg');
+   'CI Readyamine 10 mg', now());
 insert into spc_snapshot (spc_product_id, sha256, section_hashes) values
   ('00000000-0000-0000-0000-00000045b001', 'ab', '{}'::jsonb);
 -- EMA's lists
@@ -228,7 +228,37 @@ select pg_temp.ir_assert(
       = (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'read')::int + 1
     and (pg_temp.ir('ready') -> 'label_watch' -> 'pages' ->> 'not_read')::int
       = (pg_temp.ir('new') -> 'label_watch' -> 'pages' ->> 'not_read')::int,
-  'pages: once its source has run, the page is read');
+  'pages: once its source has run and read its labels, the page is read');
+
+-- 0113: a source that ran but has not read every label yet leaves its page "being read", not read (on 9 Nov 2026
+-- DailyMed ran, read 0 of its 1,911 labels and counted as read)
+insert into spc_product (id, ingredient_id, source_id, country_code, national_id, product_name) values
+  ('00000000-0000-0000-0000-00000045b002', '00000000-0000-0000-0000-00000045a001', 'ci-ir-spc-a', 'XR', 'R-2',
+   'CI Readyamine 20 mg');
+select pg_temp.ir_read('label_unread');
+select pg_temp.ir_assert(
+  (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'read')::int
+      = (pg_temp.ir('ready') -> 'label_watch' -> 'pages' ->> 'read')::int - 1
+    and (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'reading')::int = 1
+    and (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'labels_unread')::int = 1
+    and pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' -> 'reading_pages' ? 'CI Readyland: CI ready database'
+    and not pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' -> 'waiting_pages' ? 'CI Readyland: CI ready database'
+    and (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'read')::int
+      + (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'reading')::int
+      + (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'waiting')::int
+      + (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'not_read')::int
+      = (pg_temp.ir('label_unread') -> 'label_watch' -> 'pages' ->> 'total')::int
+    and (pg_temp.ir('label_unread') ->> 'ready')::boolean = (pg_temp.ir('ready') ->> 'ready')::boolean,
+  'pages: a source that ran with a label still unread leaves its page being read, with the count; Ready unchanged');
+update spc_product set checked_at = now() where id = '00000000-0000-0000-0000-00000045b002';
+select pg_temp.ir_read('label_read');
+select pg_temp.ir_assert(
+  (pg_temp.ir('label_read') -> 'label_watch' -> 'pages' ->> 'read')::int
+      = (pg_temp.ir('ready') -> 'label_watch' -> 'pages' ->> 'read')::int
+    and (pg_temp.ir('label_read') -> 'label_watch' -> 'pages' ->> 'reading')::int = 0
+    and (pg_temp.ir('label_read') -> 'label_watch' -> 'pages' ->> 'labels_unread')::int = 0,
+  'pages: once that label is read, the page is read again');
+delete from spc_product where id = '00000000-0000-0000-0000-00000045b002';
 select pg_temp.ir_assert(
   (pg_temp.ir('ready') -> 'eurd' ->> 'found')::boolean
     and pg_temp.ir('ready') -> 'eurd' ->> 'frequency' = '7 years'
