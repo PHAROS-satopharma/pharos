@@ -1,7 +1,7 @@
 # PHAROS — scheduled collection. ONE job per trigger; runs never overlap (shared "collectors" group with the
 # check of the past and the matching audit; a backfill has its own group and runs beside it). GitHub keeps only
 # ONE waiting run per group: a newer run queued behind a running one cancels the run already waiting. The
-# database's back-up timers ask again for a slot whose run never started (0007 for 4h, 12h, weekly, monthly;
+# database's back-up timers ask again for a slot whose run never started (0007 for 4h, 12h, monthly;
 # 0084 every hour for the readiness slots daily and literature). Times are UTC; Cairo is UTC+2 in winter and
 # UTC+3 in summer.
 #
@@ -15,7 +15,9 @@
 #   literature  10:41, 18:41 and 22:41  the daily run's drug classes, NCBI literature (the enabled sources of
 #                                        kind literature) and check of the past again, so a new ingredient is
 #                                        ready within hours, not the next night; short when nothing is waiting
-#   weekly   Monday 03:23                SPC / label watch, EMA's literature monitoring list
+#   (weekly)                             the label (SPC) watch moved to label-watch.yml on 13 Nov 2026: one job per
+#                                        source, so each has hours, not 4.6 minutes; "weekly" here is only the
+#                                        label watch of one ingredient (spc_ingredient)
 #   monthly  the 1st at 01:41            monthly sources (the report itself is report.yml)
 #
 # Telegram dry-run is NOT set here: the collectors read app_setting.telegram_dry_run (true until the owner
@@ -28,7 +30,6 @@ on:
     - cron: "47 5,17 * * *"
     - cron: "31 2 * * *"
     - cron: "41 10,18,22 * * *"
-    - cron: "23 3 * * 1"
     - cron: "41 1 1 * *"
   # The database's back-up timers (supabase/migrations/0007, 0084) for a slot whose run never started.
   repository_dispatch:
@@ -68,12 +69,12 @@ jobs:
     runs-on: ubuntu-24.04
     # daily and literature: 80, for the drug classes before the collection and the check of the past after it;
     # every run but the weekly one keeps 20 minutes for a pack asked for on Reports (the last step), so 60 by default
-    timeout-minutes: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.schedule == '41 10,18,22 * * *' || github.event.client_payload.schedule == 'daily' || github.event.client_payload.schedule == 'literature') && 80 || 60)) }}
+    timeout-minutes: ${{ (github.event.client_payload.schedule == 'weekly') && 90 || (github.event_name == 'workflow_dispatch' && 120 || ((github.event.schedule == '31 2 * * *' || github.event.schedule == '41 10,18,22 * * *' || github.event.client_payload.schedule == 'daily' || github.event.client_payload.schedule == 'literature') && 80 || 60)) }}
     env:
       # The collectors stop starting new notices and sources this many minutes in, so the run ends
       # cleanly (screening log, alerts, digest) instead of being killed by the timeout above.
       # Setup takes about 3 minutes; keep this about 10 below timeout-minutes.
-      PHAROS_TIME_BUDGET_MIN: ${{ (github.event.schedule == '23 3 * * 1' || github.event.client_payload.schedule == 'weekly') && 78 || (github.event_name == 'workflow_dispatch' && 108 || 28) }}
+      PHAROS_TIME_BUDGET_MIN: ${{ (github.event.client_payload.schedule == 'weekly') && 78 || (github.event_name == 'workflow_dispatch' && 108 || 28) }}
       GIT_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -90,7 +91,6 @@ jobs:
             "47 5,17 * * *") s=12h ;;
             "31 2 * * *")    s=daily ;;
             "41 10,18,22 * * *") s=literature ;;
-            "23 3 * * 1")    s=weekly ;;
             "41 1 1 * *")    s=monthly ;;
             *)               s="${INPUT_SCHEDULE:-4h}" ;;
           esac

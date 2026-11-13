@@ -889,6 +889,35 @@ def test_each_source_gets_its_share_of_the_time_left(spc_world, monkeypatch):
     assert read == [("ES", "A1"), ("JP", "J1")]                    # Spain stops at half; Japan is reached
 
 
+def test_a_job_of_one_source_reads_only_that_source_with_the_whole_time(spc_world, monkeypatch):
+    # 13 Nov 2026: the weekly watch runs one job per source (label-watch.yml, --spc-source). On 9 Nov the seventeen
+    # sources shared 78 minutes and DailyMed, CIMA and the MHRA read no label.
+    import sys
+    import types
+
+    from collectors.spc import run as spc_run
+
+    store, db, ctx, notifier, module = spc_world
+    clock, read = _Clock(), []
+    _three_products(module, clock)
+    inner = module.snapshot
+    module.snapshot = lambda c, p: (read.append(("ES", p["national_id"])), inner(c, p))[1]
+    japan = types.ModuleType("collectors.spc._fake_japan")
+    japan.discover = lambda c, ing: [Product(national_id="J1", product_name="J1", country_code="JP")]
+    japan.snapshot = lambda c, p: (read.append(("JP", p["national_id"])), Snapshot(sections={"4.4": "x"}, lang="ja"))[1]
+    monkeypatch.setitem(sys.modules, "collectors.spc._fake_japan", japan)
+    monkeypatch.setitem(spc_run.MODULES, "spc-pmda", "_fake_japan")
+    monkeypatch.setattr(spc_run, "_sources", lambda db: ["spc-cima", "spc-pmda"])
+    spc_run.run_spc(ctx, db, store=store, notifier=notifier, deadline=3, clock=clock, source_ids=["spc-cima"])
+    assert read == [("ES", "A1"), ("ES", "B2"), ("ES", "C3")]     # all of Spain: the time is not halved
+    assert _spc_runs(store, "spc-pmda") == []                       # Japan is its own job
+    # a source switched off on the Sources screen reads nothing, even when its job asks for it
+    monkeypatch.setattr(spc_run, "_sources", lambda db: ["spc-cima"])
+    read[:] = []
+    spc_run.run_spc(ctx, db, store=store, notifier=notifier, source_ids=["spc-pmda"])
+    assert read == [] and _spc_runs(store, "spc-pmda") == []
+
+
 # ───────────────────────────── a list that breaks off never switches products off ──────────────
 
 

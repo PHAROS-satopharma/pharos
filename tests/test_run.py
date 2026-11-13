@@ -326,6 +326,33 @@ def test_each_run_records_what_started_it(tmp_path, monkeypatch, argv, event, tr
     assert recorded.value.args[0] == trigger
 
 
+def test_a_label_watch_job_runs_only_its_source_and_serves_the_weekly_slot(tmp_path, monkeypatch):
+    # label-watch.yml: seventeen jobs at once, one per label source. Each records the weekly slot (the back-up
+    # timer, 0112, sees the week started) and runs no other source, catalogue sync, digest or reminder.
+    from collectors import run as run_mod
+
+    monkeypatch.chdir(tmp_path)
+    slots: list[str | None] = []
+    real_create_run = MemoryStore.create_run
+
+    def create_run(self, trigger, git_sha, schedule=None):
+        slots.append(schedule)
+        return real_create_run(self, trigger, git_sha, schedule)
+
+    def never(*_a, **_k):
+        raise AssertionError("not in a label watch job")
+
+    monkeypatch.setattr(MemoryStore, "create_run", create_run)
+    monkeypatch.setattr(run_mod.Runner, "run", never)
+    monkeypatch.setattr(run_mod, "sync_catalogue", never)
+    monkeypatch.setattr(Notifier, "digest_if_due", never)
+    monkeypatch.setattr(Notifier, "retry_refused_alerts", never)
+    assert run_mod.main(["--no-db", "--schedule", "weekly", "--spc-source", "spc-dailymed"]) == 0
+    assert slots == ["weekly"]
+    with pytest.raises(SystemExit, match="unknown label source spc-nowhere"):
+        run_mod.main(["--no-db", "--schedule", "weekly", "--spc-source", "spc-nowhere"])
+
+
 def test_nul_characters_never_reach_postgres():
     from collectors.core.db import _dumps, clean
 
