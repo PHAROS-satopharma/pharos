@@ -10,6 +10,7 @@ import pytest
 
 from collectors.core.context import FetchError
 from collectors.spc import hc_dpd, medsafe, nedrug, replay
+from collectors.spc.common import SnapshotError
 from collectors.spc.diff import diff_sections
 from collectors.spc.run import MODULES
 from collectors.spc.sections import kr_key, missing_core, split_ca_monograph, split_numbered, watched_changes
@@ -177,9 +178,19 @@ def test_canada_monograph_sections_and_date():
 
 
 def test_canada_a_product_without_a_monograph_has_no_label():
+    # Benylin's own page (DIN 01944762, read 13 Nov 2026): "Electronic product monograph is not available", as for
+    # all 68 of the 96 Canadian products that gave no text on 9 Nov (cough and cold remedies sold without one)
+    routes = _canada_routes()
+    routes[hc_dpd.INFO.format(code=12449)] = "spc-hc-dpd/info_12449.html"
+    assert hc_dpd.snapshot(FakeCtx(routes), {"national_id": "01944762", "extra": {"drug_code": 12449}}) is None
+
+
+def test_canada_a_page_with_neither_a_monograph_nor_its_absence_is_an_error():
+    # a changed page must never pass for a product without a monograph
     routes = _canada_routes()
     routes[hc_dpd.INFO.format(code=94728)] = b"<html><p>Product name: X</p></html>"
-    assert hc_dpd.snapshot(FakeCtx(routes), {"national_id": "02459973", "extra": {"drug_code": 94728}}) is None
+    with pytest.raises(SnapshotError, match="neither a monograph link"):
+        hc_dpd.snapshot(FakeCtx(routes), {"national_id": "02459973", "extra": {"drug_code": 94728}})
 
 
 def test_canada_older_monograph_capital_headings():
@@ -191,6 +202,20 @@ def test_canada_older_monograph_capital_headings():
     assert got["ca:contraindications"].startswith("Liver failure.")
     assert got["ca:warnings_and_precautions"] == "Hepatotoxicity."
     assert got["ca:adverse_reactions"] == "Rash."
+
+
+def test_canada_part_three_in_the_table_of_contents_is_not_the_end():
+    # JAMP-Carvedilol (DIN 02368897, 13 Nov 2026): the contents line "PART III: PATIENT MEDICATION INFORMATION ....33"
+    # ended the split at line 39, and four Canadian carvedilol monographs gave "no section heading found"
+    text = ("PRODUCT MONOGRAPH\nTable of Contents\nPART I: HEALTH PROFESSIONAL INFORMATION ........ 3\n"
+            "CONTRAINDICATIONS ........ 4\nPART III: PATIENT MEDICATION INFORMATION ..................33\n"
+            "PART I: HEALTH PROFESSIONAL INFORMATION\nINDICATIONS AND CLINICAL USE\nHeart failure.\n"
+            "CONTRAINDICATIONS\nAsthma.\nWARNINGS AND PRECAUTIONS\nBradycardia.\n"
+            "PART III: PATIENT MEDICATION INFORMATION\nCONTRAINDICATIONS\nAsk.\n")
+    got = split_ca_monograph(text)
+    assert got["ca:indications"] == "Heart failure."
+    assert got["ca:contraindications"] == "Asthma."
+    assert got["ca:warnings_and_precautions"] == "Bradycardia."   # the real Part III still ends Part I
 
 
 def test_canada_a_cross_reference_is_never_a_heading():

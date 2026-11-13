@@ -596,7 +596,8 @@ def test_spc_label_without_text_is_noted_and_a_good_run_is_ok(spc_world):
     run_spc(ctx, db, store=store, notifier=notifier)
     run = _spc_runs(store)[-1]
     assert run["items_seen"] == 2 and run["items_new"] == 1
-    assert "1 product(s) without label text" in run["error"]
+    # 13 Nov 2026: a product the regulator publishes no label for is said to be one, not a label we failed to read
+    assert "1 product(s) without label text: the regulator publishes none for them" in run["error"]
     assert store.source["spc-cima"]["health"] == "ok"
 
 
