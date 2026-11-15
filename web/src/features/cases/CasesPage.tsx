@@ -21,7 +21,6 @@ import {
   MISSING_LABEL,
   ORIGIN_LABEL,
   STATUS_LABEL,
-  addDays,
   clockLine,
   isOpen,
   toBase64,
@@ -126,7 +125,6 @@ function NewCase() {
           <Input
             type="date"
             value={dayZero}
-            min={addDays(today, -366)}
             max={today}
             onChange={(e) => setDayZero(e.target.value)}
             required
