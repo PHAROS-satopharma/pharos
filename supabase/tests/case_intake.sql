@@ -55,9 +55,13 @@ select pg_temp.refused(format($q$select create_upload_case('x.exe', 'application
 select pg_temp.refused(format($q$select create_upload_case('r.pdf', 'application/pdf', %L, 100, case_cairo_today() + 1)$q$, :sha)) as r_future \gset
 select pg_temp.refused($q$select create_upload_case('r.pdf', 'application/pdf', 'nothex', 100, case_cairo_today())$q$) as r_hash \gset
 select create_upload_case('  Report from Dr Adel.pdf ', 'application/pdf', :sha, 2048, case_cairo_today() - 2) as up \gset
+select create_upload_case('Historical report.pdf', 'application/pdf', :sha, 2048, '2015-03-01') as old_up \gset
 reset role;
 select pg_temp.ci_assert(:'r_mime' like '%PHAROS reads PDF%', 'only the document kinds PHAROS reads are taken');
 select pg_temp.ci_assert(:'r_future' like '%Day zero%', 'day zero cannot be in the future');
+select pg_temp.ci_assert((select day_zero = '2015-03-01' and status = 'queued' from safety_case where id = :'old_up')
+                         and (select due = '2015-03-16' and overdue from v_case_table where id = :'old_up'),
+  'a historical case can be uploaded with any past day zero (it shows as overdue)');
 select pg_temp.ci_assert(:'r_hash' like '%SHA-256%', 'the file''s hash must be a SHA-256');
 select pg_temp.ci_assert((select ref ~ '^CASE-\d{4}-\d{3}$' and status = 'queued' and file_name = 'Report from Dr Adel.pdf'
                                  and r2_key = 'sha256/aa/' || sha256

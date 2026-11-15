@@ -1036,7 +1036,7 @@ file the authority takes. A case opens three ways:
 
 - **Upload.** A reviewer or an administrator drops the report on *Cases → New case*: a PDF, a photo of a form, a
   Word file (.docx), a saved email (.eml) or a text file, at most 10 MB, with day zero (the day the company first
-  received it; today or within the last year). The `case-intake` function checks what the file really is from
+  received it; today or any past day, so historical cases can be uploaded). The `case-intake` function checks what the file really is from
   its bytes, stores it in the archive under its SHA-256 (never overwritten) and opens the case.
 - **A literature paper.** On an ingredient's page, a paper flagged *Possible case report* has **Open a case**.
   Day zero is the day PHAROS found the paper. PHAROS fetches the paper's PubMed record and, when PubMed Central
