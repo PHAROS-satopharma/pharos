@@ -1031,3 +1031,50 @@ def test_the_weekly_summary_says_how_many_label_databases_were_read():
     # the label watch runs weekly: the daily report does not count it
     daily = rw.assemble(rw.gather_week(FakeDb(NOV5), NOV5), NOV5)
     assert "Label databases read" not in dict(daily["summary"])
+
+
+# ───────────────────────────── a timed run never makes a period twice ─────────────────────────────
+
+class _MadeDb:
+    """Only the question --if-missing asks: is there a row for this week or day?"""
+    made: set = set()
+
+    def __init__(self, *a, **k):
+        self.asked = []
+
+    def fetchone(self, sql, params=None):
+        table = "weekly" if "weekly_report" in sql else "daily"
+        return {"?column?": 1} if (table, params["s"]) in self.made else None
+
+
+def test_a_timed_run_skips_a_week_or_day_that_already_has_its_report(monkeypatch, capsys):
+    """The database starts each report on its hour (0115) and GitHub's late timer may start it again: made again,
+    a signed week would take a new fingerprint under her signature (15 Nov 2026)."""
+    from collectors.core import db as core_db
+
+    made = []
+    monkeypatch.setattr(core_db, "Db", _MadeDb)
+    monkeypatch.setattr(rw, "make_weekly_report", lambda db, store, week, **k: made.append(week) or {"made": week.slug})
+    monkeypatch.setattr(_MadeDb, "made", {("weekly", date(2026, 11, 1))})
+
+    assert report.main(["--week", "2026-11-01", "--if-missing"]) == 0
+    assert made == [] and "already made" in capsys.readouterr().out
+    assert report.main(["--week", "2026-11-08", "--if-missing"]) == 0
+    assert made == [Week(date(2026, 11, 8))]
+    # by hand (no --if-missing) a week is made again
+    assert report.main(["--week", "2026-11-01"]) == 0
+    assert made[-1] == NOV1
+    # the daily report asks for its own day
+    monkeypatch.setattr(_MadeDb, "made", {("daily", date(2026, 11, 14))})
+    assert report.main(["--day", "2026-11-14", "--if-missing"]) == 0
+    assert len(made) == 2 and "already made" in capsys.readouterr().out
+
+
+def test_the_report_workflow_is_started_by_the_database_and_its_timed_runs_never_remake():
+    wf = (ROOT / ".github" / "workflows" / "report.yml").read_text(encoding="utf-8")
+    assert "repository_dispatch:\n    types: [report]" in wf
+    assert 'if [ "$EVENT" != "workflow_dispatch" ]; then timed=--if-missing' in wf
+    assert "python -m collectors.report --daily $timed" in wf and "python -m collectors.report $timed" in wf
+    sql = (ROOT / "supabase" / "migrations" / "0115_report_on_time.sql").read_text(encoding="utf-8")
+    assert "'event_type', 'report', 'client_payload', jsonb_build_object('kind', v_due.kind)" in sql
+    assert "cron.schedule('pharos-kick-report', '0 * * * *'" in sql

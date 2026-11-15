@@ -475,6 +475,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--preview", action="store_true",
                     help="a daily or weekly report written to REPORT_DIR only: not archived, recorded or sent")
+    ap.add_argument("--if-missing", action="store_true",
+                    help="the timed runs: make the day or week only when it has no report yet (a report made "
+                         "again takes a new fingerprint, and a signed week must keep its own)")
     args = ap.parse_args(argv)
     from collectors import report_weekly
 
@@ -499,6 +502,9 @@ def main(argv: list[str] | None = None) -> int:
     from collectors.core.store import Store
 
     db = Db()
+    if week is not None and args.if_missing and not args.preview and report_weekly.already_made(db, week):
+        print({"week" if week.kind == "weekly" else "day": week.slug, "skipped": "already made"})
+        return 0
     if week is not None:
         result = report_weekly.make_weekly_report(db, Store(db), week, dry_run=args.dry_run, preview=args.preview)
     else:
