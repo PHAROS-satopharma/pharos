@@ -3,9 +3,13 @@
 # to Saturday, Cairo), every Sunday at 05:00 Cairo (Dr Sama's review, 6 Nov 2026: some findings must reach the
 # EDA within 5 days, so the monthly report came too late). The weekly report is the one signed. By hand: a day, a
 # week (its Sunday), or a month in the format used until November 2026.
+# On time: the database starts each report on its hour (0115, pg_cron every hour on the hour in Cairo time), with
+# repository_dispatch "report" — GitHub's own timer started the 05:00 report of 15 Nov 2026 at 12:17 and the 07:00
+# daily reports around 13:00–14:00. GitHub's timer stays as the back-up below. A timed run (the database's or
+# GitHub's) makes a day or week only when it has no report yet (--if-missing): made again, a signed week would take
+# a new fingerprint under her signature. A run by hand still makes it again.
 # GitHub cron is UTC only, and Cairo is UTC+2 in winter and UTC+3 in summer, so each report has two triggers and
-# the job keeps the one that is on the hour in Cairo today (decided by the UTC offset, so a late start never
-# produces a second report).
+# the job keeps the one that is on the hour in Cairo today (decided by the UTC offset).
 name: PHAROS daily and weekly report
 
 on:
@@ -14,6 +18,8 @@ on:
     - cron: "0 3 * * 0"   # Sunday 05:00 Cairo in winter (UTC+2)
     - cron: "0 4 * * *"   # every day 07:00 Cairo in summer (UTC+3): the daily report of the day before
     - cron: "0 5 * * *"   # every day 07:00 Cairo in winter (UTC+2)
+  repository_dispatch:
+    types: [report]       # from the database on the hour (0115): client_payload.kind is "daily" or "weekly"
   workflow_dispatch:
     inputs:
       day:
@@ -57,10 +63,17 @@ jobs:
         env:
           CRON: ${{ github.event.schedule }}
           EVENT: ${{ github.event_name }}
+          KIND: ${{ github.event.client_payload.kind }}
         run: |
           go=false
           daily=false
           if [ "$EVENT" = "workflow_dispatch" ]; then go=true
+          elif [ "$EVENT" = "repository_dispatch" ]; then
+            case "$KIND" in
+              daily) go=true; daily=true ;;
+              weekly) go=true ;;
+              *) echo "unknown report kind '$KIND'" ;;
+            esac
           else
             offset="$(TZ=Africa/Cairo date +%z)"
             { [ "$offset" = "+0300" ] && [ "$CRON" = "0 2 * * 0" ]; } && go=true
@@ -70,7 +83,7 @@ jobs:
           fi
           echo "go=$go" >> "$GITHUB_OUTPUT"
           echo "daily=$daily" >> "$GITHUB_OUTPUT"
-          echo "Cairo offset $(TZ=Africa/Cairo date +%z), trigger '$CRON' → go=$go, daily=$daily"
+          echo "Cairo offset $(TZ=Africa/Cairo date +%z), $EVENT '$CRON$KIND' → go=$go, daily=$daily"
 
       - if: steps.gate.outputs.go == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -117,6 +130,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           DAILY: ${{ steps.gate.outputs.daily }}
+          EVENT: ${{ github.event_name }}
           DAY: ${{ inputs.day }}
           WEEK: ${{ inputs.week }}
           MONTH: ${{ inputs.month }}
@@ -139,8 +153,10 @@ jobs:
           given=0
           for v in "$DAY" "$WEEK" "$MONTH"; do [ -n "$v" ] && given=$((given + 1)); done
           if [ "$given" -gt 1 ]; then echo "give a day, a week or a month, only one"; exit 1; fi
+          # A timed run makes the day or week only when it has no report yet.
+          if [ "$EVENT" != "workflow_dispatch" ]; then timed=--if-missing; else timed=; fi
           if [ "$DAILY" = "true" ]; then
-            python -m collectors.report --daily
+            python -m collectors.report --daily $timed
           elif [ -n "$DAY" ]; then
             [[ "$DAY" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "day must be YYYY-MM-DD"; exit 1; }
             python -m collectors.report --day "$DAY"
@@ -151,7 +167,7 @@ jobs:
             [[ "$MONTH" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]] || { echo "month must be YYYY-MM"; exit 1; }
             python -m collectors.report --month "$MONTH"
           else
-            python -m collectors.report
+            python -m collectors.report $timed
           fi
 
       - name: The sealed preview

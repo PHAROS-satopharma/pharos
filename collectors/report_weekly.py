@@ -1221,6 +1221,20 @@ REPORT_ROW = {
 }
 
 
+# Whether the week or day already has its report (the row of REPORT_ROW).
+REPORT_MADE = {
+    "weekly": "select 1 from weekly_report where week_start = %(s)s",
+    "daily": "select 1 from daily_report where day = %(s)s",
+}
+
+
+def already_made(db: Any, week: Week | Day) -> bool:
+    """Whether the report of this week or day is already made. The timed runs ask it first: the database starts
+    each report on the hour (0115) and GitHub's own late timer may start it again hours later; made again, a
+    signed week would take a new fingerprint under her signature."""
+    return db.fetchone(REPORT_MADE[week.kind], {"s": week.start}) is not None
+
+
 def make_weekly_report(db: Any, store: Any, week: Week | Day, *, dry_run: bool = False,
                        preview: bool = False) -> dict:
     """Makes, archives, records and sends the report of a week, or of a day (the same report, one day long).
@@ -1259,4 +1273,4 @@ def make_weekly_report(db: Any, store: Any, week: Week | Day, *, dry_run: bool =
 
 
 __all__ = ["Week", "Day", "yesterday", "week_starting", "last_complete_week", "gather_week", "assemble",
-           "build_weekly_xlsx", "render_weekly_html", "make_weekly_report", "country_answers", "answer_text"]
+           "build_weekly_xlsx", "render_weekly_html", "make_weekly_report", "already_made", "country_answers", "answer_text"]

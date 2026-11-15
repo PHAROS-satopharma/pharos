@@ -37,7 +37,12 @@ queue for its 285 minutes. A notice is stored once whichever run finds it, a bac
 searches and the mailbox alone and sends no alert, and two runs together ask one site at most once a second.
 `label-watch.yml` has its own group too (`label-watch`): its hours of label reading never hold the collections.
 `report.yml` has its own group, so a collection can never drop the weekly report. GitHub can start scheduled runs late at busy times (hours, on
-a new repository). The minutes are chosen off the hour to reduce this.
+a new repository). The minutes are chosen off the hour to reduce this. The reports no longer wait for it
+(0115, 15 Nov 2026, after the 05:00 weekly report started at 12:17): the database's `pharos-kick-report` job runs every
+hour on the hour and asks GitHub for any report that is due and not yet made (the week from Sunday 05:00 Cairo, the
+day before from 07:00 Cairo), at most four times a period; the run starts within seconds. Every timed run makes a
+week or day only when it has no report yet, so GitHub's late run changes nothing and a signed week keeps its
+fingerprint. A run by hand still makes it again. Its attempts are in `ops_alert_log` (kind `report_kick`).
 
 Every run has a time budget (`PHAROS_TIME_BUDGET_MIN`, about 10 minutes under the job's timeout), and in a
 normal run one source gets at most 10 minutes (NCBI literature 15). When the budget runs out the run stops starting new notices
