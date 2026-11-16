@@ -219,6 +219,9 @@ Since 0098 (her feedback, 8 Nov 2026) an admin also writes her pages from the So
 **Remove** deletes the row. **Add an authority** (called "Add a local reference" until 0101) inserts a `regulator`
 (id from its short name, `languages` `{en}`) and its first page. `regulator` is audited from 0098 (`audit_regulator_write`, and `audit_regulator_change`
 only when a row really changes, so the collector's catalogue upsert logs nothing); `supabase/tests/sources_she_edits.sql`.
+`source` likewise from 0116: `audit_source_write` (insert, delete) and `audit_source_change` (update, only when a column
+other than `health`, `consecutive_failures`, `last_ok_at`, `last_item_at` changes; those are the collector's state
+after each read, already in `source_run`); `supabase/tests/audit_source.sql`.
 
 **Literature references, Global and Local** (0101, Dr Sama 8 Nov 2026; `web/src/features/sources/LiteratureRefs.tsx`,
 rules in `literatureRefs.ts`; `supabase/tests/literature_refs.sql`):
