@@ -14,6 +14,9 @@ Source ``spc-aifa``; country IT; Italian. Read from GitHub and locally on 6–7 
   (``split_numbered`` per SmPC; 4.1–4.9 watched, 10 recorded) once AIFA's page footer and margin stamp are taken out
   (``clean``). The API gives no RCP date; the footer's "Documento reso disponibile da AIFA il 20/05/2023" is
   the label's date, and the label's hash says whether it changed.
+* parallel imports (``tipoAutorizzazione`` "P", 31 watched medicines on 16 Nov 2026) have no RCP of their own: the
+  label read is the reference medicine's, named in the row (``parallel_of``). AIFA answers 404 with "Stampato RCP/FI
+  non disponibile" when it holds no RCP at all (Floxsine, Gena's Paracetamolo): the regulator publishes none.
 
 Italian names come from ``ingredient_term`` (lang ``it``); without one, the English INN is turned into its
 Italian form by the INN endings ("ivabradine" → "ivabradina", "paracetamol" → "paracetamolo").
@@ -35,6 +38,8 @@ LANG = "it"
 API = "https://api.aifa.gov.it/aifa-bdf-eif-be/1.0.0/"
 SEARCH = API + "formadosaggio/ricerca?query={term}&page={page}"
 RCP = API + "organizzazione/{sis}/farmaci/{aic6}/stampati?ts=RCP"
+# AIFA's answer (HTTP 404, JSON) when it holds no RCP or leaflet under that number.
+NOT_AVAILABLE = "Stampato RCP/FI non disponibile"
 MAX_PAGES = 60                               # paracetamolo: 21
 
 # English INN ending → Italian (the INN rules; the longest ending first).
@@ -67,6 +72,21 @@ def rcp_url(medicine: dict) -> str:
     return RCP.format(sis=medicine["codiceSis"], aic6=f"{int(medicine['aic6']):06d}")
 
 
+def parallel_of(row: dict) -> dict | None:
+    """The Italian medicine a parallel import was authorised against (``tipoAutorizzazione`` "P"), as
+    ``{"codiceSis", "aic6", ...}``, else None. AIFA keeps no RCP under a parallel import's own number: its
+    ``stampati?ts=RCP`` answers 404 (31 of the watched Italian medicines on 16 Nov 2026: GMM Farma's Efferalgan,
+    New Pharmashop's Oftaquix, Dilatrend …), and the label is the reference medicine's (UPSA's Efferalgan)."""
+    if row.get("tipoAutorizzazione") != "P":
+        return None
+    aic6, sis = row.get("aic6ImportazioneParallela"), row.get("sisImportazioneParallela")
+    try:
+        return {"aic6": int(aic6), "codiceSis": int(sis), "name": row.get("denImportazioneParallela"),
+                "holder": row.get("ragImportazioneParallela")}
+    except (TypeError, ValueError):
+        return None
+
+
 def products_from(rows: list[dict], term: str) -> dict[str, Product]:
     out: dict[str, Product] = {}
     for r in rows:
@@ -78,12 +98,16 @@ def products_from(rows: list[dict], term: str) -> dict[str, Product]:
         aic6 = f"{int(m['aic6']):06d}"
         p = out.get(aic6)
         if p is None:
-            url = rcp_url(m)
+            reference = parallel_of(r)
+            url = rcp_url(reference or m)
+            extra = {"rcp": url, "medicine": m.get("codiceMedicinale"), "atc": (r.get("codiceAtc") or [None])[0],
+                     "ingredients": r.get("principiAttiviIt") or [], "forms": []}
+            if reference:
+                extra["parallel_import_of"] = {"aic6": f"{reference['aic6']:06d}", "name": reference["name"],
+                                               "holder": reference["holder"]}
             p = out[aic6] = Product(
                 national_id=aic6, product_name=(m.get("denominazioneMedicinale") or aic6).strip(),
-                mah=m.get("aziendaTitolare") or None, url=url, country_code=COUNTRY,
-                extra={"rcp": url, "medicine": m.get("codiceMedicinale"), "atc": (r.get("codiceAtc") or [None])[0],
-                       "ingredients": r.get("principiAttiviIt") or [], "forms": []})
+                mah=m.get("aziendaTitolare") or None, url=url, country_code=COUNTRY, extra=extra)
         form = r.get("descrizioneFormaDosaggio")
         if form and form not in p.extra["forms"]:
             p.extra["forms"].append(form)
@@ -171,7 +195,11 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     url = (product.get("extra") or {}).get("rcp") or product.get("url")
     if not url:
         return None
-    f = fetch_label(ctx, url, accept="application/pdf,*/*;q=0.5")
+    f = fetch_label(ctx, url, accept="application/pdf,*/*;q=0.5", raise_for_status=False)
+    if f.status == 404 and NOT_AVAILABLE in f.content.decode("utf-8", "replace"):
+        # AIFA lists the medicine as authorised but holds no RCP or leaflet for it (Bruschettini's Floxsine;
+        # Gena's Paracetamolo, authorised March 2026 and never marketed): the regulator publishes none.
+        return None
     if f.status != 200 or not f.is_pdf:
         raise SnapshotError(f"AIFA {product['national_id']} RCP: HTTP {f.status}"
                             f"{'' if f.status != 200 else ', not a PDF'}")

@@ -111,6 +111,9 @@ _VALID_TOP = {str(i) for i in range(1, 11)}
 _VALID_SUB = ({f"4.{i}" for i in range(1, 10)} | {f"5.{i}" for i in range(1, 4)}
               | {f"6.{i}" for i in range(1, 7)} | {"2.1", "2.2"})
 _HEAD = re.compile(r"^\s*(\d{1,2}(?:\.\d{1,2}){0,2})\.?\s+(\S.{0,200})$")
+# Lenient splits also take a hyphen, dash or bracket after the number ("1-DENOMINAZIONE", "4.2- Posologia",
+# "4.1) Indicazioni": Italian RCPs at AIFA).
+_HEAD_LENIENT = re.compile(r"^\s*(\d{1,2}(?:\.\d{1,2}){0,2})(?:\.?\s*[)\-–]\s*|\.?\s+)(\S.{0,200})$")
 
 US_LOINC = {
     "34066-1": "us:boxed_warning",
@@ -286,7 +289,10 @@ def split_numbered(text: str) -> dict[str, str]:
     # Dutch SmPCs (CBG, mostly paracetamol suppositories) until 17 Nov 2026: top-level headings in sentence case
     # ("4 Klinische gegevens", never upper-case, so section 4 never began), and a dosing-table row with no word
     # in it ("6 – 9    22 - 30    500    2 – 3") taken for heading 6, so 4.3–4.9 came "after" it and were
-    # dropped. The lenient rules are tried only then, so a file that splits today splits exactly as before.
+    # dropped. Italian RCPs (AIFA) added two more on 17 Nov 2026: headings written "1-DENOMINAZIONE", "4.2- Posologia"
+    # or "4.1) Indicazioni", never read as headings, and a cross-reference "4.9 “Sovradosaggio”)." in 4.2 taken for
+    # heading 4.9. The lenient
+    # rules are tried only then, so a file that splits today splits exactly as before.
     lenient = _split_numbered(text, lenient=True)
     return lenient if len(missing_core(lenient)) < len(missing_core(strict)) else strict
 
@@ -301,16 +307,17 @@ def _sentence_case_heading(heading: str) -> bool:
 
 
 def _split_numbered(text: str, *, lenient: bool) -> dict[str, str]:
-    """``split_numbered``'s rules; ``lenient`` adds two (see its comment): in a file whose first heading is in
-    sentence case ("1 Naam van het geneesmiddel"), the next top-level number in sentence case is a heading; and
-    a top-level "heading" with no letter in it never is. A file whose headings are upper-case keeps "5 Patiënten
-    met …" inside 4.9."""
+    """``split_numbered``'s rules; ``lenient`` adds four (see its comment): in a file whose first heading is in
+    sentence case ("1 Naam van het geneesmiddel"), the next top-level number in sentence case is a heading; a
+    "heading" with no letter in it never is; a hyphen, dash or bracket may follow the number ("4.1-", "4.1)");
+    and a sub-heading never closes a bracket it did not open ("4.9 “Sovradosaggio”)."). A file whose headings are upper-case
+    keeps "5 Patiënten met …" inside 4.9."""
     out: dict[str, list[str]] = {}
     current: str | None = None
     last: tuple[int, ...] = ()
     sentence_case_file: bool | None = None      # decided by the file's first top-level heading
     for line in (text or "").splitlines():
-        m = _HEAD.match(line)
+        m = (_HEAD_LENIENT if lenient else _HEAD).match(line)
         if m:
             num, heading = m.group(1), m.group(2).strip()
             key = _num_key(num)
@@ -323,6 +330,11 @@ def _split_numbered(text: str, *, lenient: bool) -> dict[str, str]:
                     or (sentence_case_file is not False and expected and _sentence_case_heading(heading)))
             sub_ok = (len(key) == 2 and num in _VALID_SUB and bool(last)
                       and key[0] in (last[0], last[0] + 1) and not _starts_lower(heading))
+            if lenient and sub_ok:
+                # never the end of a cross-reference: "4.9 “Sovradosaggio”)." in 4.2's text (AIFA, Paracetamolo
+                # Coop) closes a bracket it never opened, and "4.4)." or "4.4), rottura …" holds no heading
+                sub_ok = (any(c.isalpha() for c in heading) and heading[0] not in ",.;:)"
+                          and heading.count(")") <= heading.count("("))
             if (top_ok or sub_ok) and key > last and not _DOSE.match(heading) and (
                     current is not None or key[0] <= 2):
                 if len(key) == 1 and sentence_case_file is None:
