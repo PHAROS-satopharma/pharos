@@ -154,6 +154,13 @@ def refresh(db, content: bytes, sha: str, put) -> int | None:
     return store(db, meta, matched, sha=sha, r2_key=key)
 
 
+def download(ctx) -> bytes:
+    """EMA's EURD list, through ``ctx`` (collectors/ema_fetch.py: paced, a 429 waited out and retried)."""
+    from collectors.ema_fetch import ANY
+
+    return ctx.get(URL, accept=ANY).content
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.eurd", description=__doc__.split("\n\n")[0])
     p.add_argument("--file", help="read this saved copy instead of downloading the list")
@@ -167,12 +174,10 @@ def main(argv: list[str] | None = None) -> int:
         with open(args.file, "rb") as fh:
             content = fh.read()
     else:
-        import httpx
+        from collectors.ema_fetch import ema_context
 
-        res = httpx.get(URL, follow_redirects=True, timeout=60,
-                        headers={"User-Agent": "PHAROS pharmacovigilance monitor (Sato Pharma)"})
-        res.raise_for_status()
-        content = res.content
+        with ema_context("eurd") as ctx:
+            content = download(ctx)
     sha = sha256_hex(content)
     db = Db()
     try:
