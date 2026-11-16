@@ -105,6 +105,19 @@ def refresh(db, content: bytes, sha: str, list_name: str, put) -> int | None:
     return store(db, matched, list_name=list_name, sha=sha, r2_key=key)
 
 
+def download(ctx) -> tuple[bytes, str]:
+    """(the Excel list, its file name): EMA's MLM page, then the list it links, through one ``ctx``
+    (collectors/ema_fetch.py), so the second request waits its turn behind the first and a 429 is waited out."""
+    from collectors.ema_fetch import ANY
+
+    page = ctx.get(PAGE)
+    link = _LINK.search(page.text)
+    if not link:
+        raise RuntimeError("the MLM page links no substance-group list")
+    res = ctx.get(HOST + link.group(1), accept=ANY)
+    return res.content, link.group(1).rsplit("/", 1)[-1]
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m collectors.mlm", description=__doc__.split("\n\n")[0])
     p.add_argument("--file", help="read this saved copy instead of downloading the list")
@@ -119,17 +132,10 @@ def main(argv: list[str] | None = None) -> int:
             content = fh.read()
         list_name = args.file.replace("\\", "/").rsplit("/", 1)[-1]
     else:
-        import httpx
+        from collectors.ema_fetch import ema_context
 
-        headers = {"User-Agent": "PHAROS pharmacovigilance monitor (Sato Pharma)"}
-        page = httpx.get(PAGE, follow_redirects=True, timeout=60, headers=headers)
-        page.raise_for_status()
-        link = _LINK.search(page.text)
-        if not link:
-            raise RuntimeError("the MLM page links no substance-group list")
-        res = httpx.get(HOST + link.group(1), follow_redirects=True, timeout=60, headers=headers)
-        res.raise_for_status()
-        content, list_name = res.content, link.group(1).rsplit("/", 1)[-1]
+        with ema_context("mlm") as ctx:
+            content, list_name = download(ctx)
     sha = sha256_hex(content)
     db = Db()
     try:
