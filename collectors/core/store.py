@@ -129,11 +129,17 @@ class Store:
 
     def set_source_state(self, source_id: str, *, health: str, consecutive_failures: int,
                          ok: bool = False, last_item_at: datetime | None = None) -> None:
+        # Written only when a value changes (0116): a read that changes nothing leaves no new row version.
+        # A complete read always writes, since last_ok_at moves to now() (the watchdog reads it).
         self.db.execute(
             """update source set health = %(h)s, consecutive_failures = %(f)s,
                  last_ok_at = case when %(ok)s then now() else last_ok_at end,
                  last_item_at = greatest(last_item_at, %(li)s)
-               where id = %(id)s""",
+               where id = %(id)s
+                 and (%(ok)s
+                      or health is distinct from %(h)s::source_health
+                      or consecutive_failures is distinct from %(f)s
+                      or last_item_at is distinct from greatest(last_item_at, %(li)s))""",
             {"h": health, "f": consecutive_failures, "ok": ok, "li": last_item_at, "id": source_id})
 
     # ───────────────────────────── documents ─────────────────────────────

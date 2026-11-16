@@ -59,7 +59,7 @@ GitHub.
 | Record | What it holds | Protection |
 |---|---|---|
 | `review_event` | Every status change: from, to, comment, person and time. "Not relevant" requires a comment | Append-only: a trigger rejects UPDATE and DELETE |
-| `audit_log` | Insert, update and delete, with the old and new row and the actor, on ingredients, terms, sources, people, subscriptions, settings, products and issue links | Written by trigger; no API write access |
+| `audit_log` | Insert, update and delete, with the old and new row and the actor, on ingredients, terms, sources, people, subscriptions, settings, products and issue links. A source's update is logged when it changes the source itself; the collector's own state after each read (health, failure count, last good read, newest item) is in `source_run` instead (0116) | Written by trigger; no API write access |
 | `run`, `source_run` | The screening log: every run, every source, HTTP status, counts, errors and the code version (`git_sha`) | Service role only |
 | `notification` | Who was told what and when, dry run or real, and the Telegram message id | Service role only |
 | `ops_alert_log` | Every watchdog alert, sent or not | Service role only; admins can read it |

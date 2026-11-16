@@ -154,6 +154,30 @@ def test_source_state_sets_last_ok_only_when_ok(store, tag):
     assert row["last_item_at"] == t1                   # greatest(): never moves backwards
 
 
+def test_source_state_unchanged_writes_nothing(store, tag):
+    """0116: a read that changes nothing leaves the row as it was: no new row version, no audit row."""
+    src = _source(store, tag)
+    t1 = datetime(2026, 10, 1, 8, 0, tzinfo=timezone.utc)
+    store.set_source_state(src.id, health="down", consecutive_failures=3, ok=False, last_item_at=t1)
+
+    def version() -> str:
+        return store.db.fetchone("select xmin::text as v from source where id = %(i)s", {"i": src.id})["v"]
+
+    def audits() -> int:
+        return store.db.fetchone("select count(*) as n from audit_log where table_name = 'source' "
+                                 "and row_pk = %(i)s and action = 'UPDATE'", {"i": src.id})["n"]
+
+    before, audited = version(), audits()
+    store.set_source_state(src.id, health="down", consecutive_failures=3, ok=False)
+    store.set_source_state(src.id, health="down", consecutive_failures=3, ok=False,
+                           last_item_at=t1 - timedelta(days=1))
+    assert version() == before                         # nothing changed: nothing written
+    assert audits() == audited
+
+    store.set_source_state(src.id, health="down", consecutive_failures=4, ok=False)
+    assert store.get_source(src.id)["consecutive_failures"] == 4 and version() != before
+
+
 # ───────────────────────────── documents ─────────────────────────────
 
 
