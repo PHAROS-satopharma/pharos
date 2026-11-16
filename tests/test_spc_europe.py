@@ -14,7 +14,7 @@ from collectors.core.context import FetchError, ParseError, redact
 from collectors.core.models import Fetched
 from collectors.core.registry import load_catalogue
 from collectors.spc import aifa, basg, cbg, famhp, hpra, infomed, lyfja, mpa, read_check, replay
-from collectors.spc.common import label_date, label_revision
+from collectors.spc.common import SnapshotError, label_date, label_revision
 from collectors.spc.diff import diff_sections
 from collectors.spc.run import MODULES
 from collectors.spc.sections import eu_label_sections, missing_core, strip_running_lines
@@ -185,6 +185,47 @@ def test_italy_rcp_without_aifa_footer_and_stamp_dated_by_its_publication():
     text = " ".join(s.sections.values())
     assert missing_core(s.sections) == [] and s.doc_date == date(2020, 5, 30)
     assert aifa._STAMP not in text and "Documento reso disponibile" not in text
+
+
+# Medifarm's Efferalgan, a parallel import, as AIFA's search answered it on 16 Nov 2026 (cut to the fields read).
+EFFERALGAN_IMPORT = {"principiAttiviIt": ["PARACETAMOLO"], "codiceAtc": ["N02BE01"], "revocato": 0,
+                     "descrizioneFormaDosaggio": "1000 mg COMPRESSA EFFERVESCENTE", "tipoAutorizzazione": "P",
+                     "aic6ImportazioneParallela": "26608", "sisImportazioneParallela": "4237",
+                     "denImportazioneParallela": "EFFERALGAN", "ragImportazioneParallela": "UPSA SAS",
+                     "medicinale": {"codiceMedicinale": "18178", "aic6": 38150, "codiceSis": 2806,
+                                    "denominazioneMedicinale": "EFFERALGAN", "aziendaTitolare": "MEDIFARM S.R.L.",
+                                    "statoAmministrativo": "A"}}
+
+
+def test_italy_a_parallel_import_reads_the_rcp_of_the_medicine_it_was_imported_against():
+    # AIFA keeps no RCP under a parallel import's own number (404 for 31 watched medicines on 16 Nov 2026)
+    p = aifa.products_from([EFFERALGAN_IMPORT], "paracetamolo")["038150"]
+    assert p.mah == "MEDIFARM S.R.L." and p.url == p.extra["rcp"] == aifa.RCP.format(sis=4237, aic6="026608")
+    assert p.extra["parallel_import_of"] == {"aic6": "026608", "name": "EFFERALGAN", "holder": "UPSA SAS"}
+    own = dict(EFFERALGAN_IMPORT, tipoAutorizzazione="N")
+    assert aifa.products_from([own], "paracetamolo")["038150"].url == aifa.RCP.format(sis=2806, aic6="038150")
+
+
+class _AnswerCtx(FakeCtx):
+    """Every GET answers ``status`` with ``body``."""
+
+    def __init__(self, status, body):
+        super().__init__()
+        self.answer = (status, body)
+
+    def get(self, url, **kwargs):
+        self.requests.append(("GET", url, kwargs))
+        return Fetched(self.answer[0], url, self.answer[1], "application/json")
+
+
+def test_italy_an_rcp_aifa_does_not_hold_is_none_published_and_any_other_404_fails():
+    product = {"national_id": "047373", "extra": {"rcp": "https://x.test/rcp"}}
+    none = b'{"status":404,"error":"Stampato RCP/FI non disponibile"}'
+    assert aifa.snapshot(_AnswerCtx(404, none), product) is None        # Gena's Paracetamolo, never marketed
+    with pytest.raises(SnapshotError, match="HTTP 404"):
+        aifa.snapshot(_AnswerCtx(404, b"<html>Not Found</html>"), product)
+    with pytest.raises(SnapshotError, match="HTTP 503"):
+        aifa.snapshot(_AnswerCtx(503, none), product)
 
 
 # ───────────────────────────── Sweden ─────────────────────────────
