@@ -152,6 +152,7 @@ _FOOTER = re.compile(r"(?:^[ \t]*\d{1,3}[ \t\r]*\n(?:[ \t\r]*\n)*)?"
                      r"[ \t]*Esula dalla competenza(?:[^\n]*\n){0,4}?[^\n]*\(o titolare AIC\)\.?[ \t\r]*$", re.M)
 _STAMP = "Agenzia Italiana del Farmaco"
 _TAIL = re.compile(r"[ \t]{5,}(\S[^\t]{0,19}?)[ \t]*$")
+_NUMBERED = re.compile(r"\d{1,2}\.\d{1,2}\.?\s+[A-Z]")
 
 
 def published(text: str):
@@ -178,7 +179,9 @@ def clean(text: str) -> str:
     for i, line in enumerate(lines):
         stripped = line.lstrip()
         for p in known:
-            if (stripped.startswith(p) and len(line) - len(stripped) >= 3 and len(stripped) > len(p)
+            # a piece glued to a section number ("Agenzia4.8 Effetti indesiderati": Tachiverde, Ebyndo) at any indent
+            if (stripped.startswith(p) and len(stripped) > len(p)
+                    and (len(line) - len(stripped) >= 3 or _NUMBERED.match(stripped, len(p)))
                     and (not stripped[len(p)].isspace() or stripped[len(p):len(p) + 2] == "  "
                          or p not in _STAMP.split())):
                 line = lines[i] = stripped[len(p):]
