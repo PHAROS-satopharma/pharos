@@ -279,21 +279,54 @@ def split_numbered(text: str) -> dict[str, str]:
     section's text excludes its heading line, and third-level headings (4.2.1) stay inside their
     parent. Upper-case-free scripts (none in the EU template) fall back to the numbering alone.
     """
+    strict = _split_numbered(text, lenient=False)
+    if not missing_core(strict):
+        return strict
+    # A split without contraindications, warnings or undesirable effects went wrong. Two layouts did that to 55
+    # Dutch SmPCs (CBG, mostly paracetamol suppositories) until 17 Nov 2026: top-level headings in sentence case
+    # ("4 Klinische gegevens", never upper-case, so section 4 never began), and a dosing-table row with no word
+    # in it ("6 – 9    22 - 30    500    2 – 3") taken for heading 6, so 4.3–4.9 came "after" it and were
+    # dropped. The lenient rules are tried only then, so a file that splits today splits exactly as before.
+    lenient = _split_numbered(text, lenient=True)
+    return lenient if len(missing_core(lenient)) < len(missing_core(strict)) else strict
+
+
+_SENTENCE_END = re.compile(r"[.;:,]\s*$")
+
+
+def _sentence_case_heading(heading: str) -> bool:
+    """A top-level heading in sentence case ("Klinische gegevens"): a capital first, a short line, and not the end
+    of a sentence ("5 zetpillen in een PVC/PE zetpilstrip.")."""
+    return not _starts_lower(heading) and len(heading.split()) <= 15 and not _SENTENCE_END.search(heading)
+
+
+def _split_numbered(text: str, *, lenient: bool) -> dict[str, str]:
+    """``split_numbered``'s rules; ``lenient`` adds two (see its comment): in a file whose first heading is in
+    sentence case ("1 Naam van het geneesmiddel"), the next top-level number in sentence case is a heading; and
+    a top-level "heading" with no letter in it never is. A file whose headings are upper-case keeps "5 Patiënten
+    met …" inside 4.9."""
     out: dict[str, list[str]] = {}
     current: str | None = None
     last: tuple[int, ...] = ()
+    sentence_case_file: bool | None = None      # decided by the file's first top-level heading
     for line in (text or "").splitlines():
         m = _HEAD.match(line)
         if m:
             num, heading = m.group(1), m.group(2).strip()
             key = _num_key(num)
-            top_ok = len(key) == 1 and num in _VALID_TOP and (
-                _mostly_upper(heading) or not any(c.isalpha() and c.isupper() != c.islower()
-                                                  for c in heading))
+            caseless = not any(c.isalpha() and c.isupper() != c.islower() for c in heading)
+            top_ok = len(key) == 1 and num in _VALID_TOP and (_mostly_upper(heading) or caseless)
+            if lenient and len(key) == 1:
+                expected = key[0] == (last[0] + 1 if last else 1)
+                top_ok = num in _VALID_TOP and any(c.isalpha() for c in heading) and (
+                    _mostly_upper(heading) or caseless
+                    or (sentence_case_file is not False and expected and _sentence_case_heading(heading)))
             sub_ok = (len(key) == 2 and num in _VALID_SUB and bool(last)
                       and key[0] in (last[0], last[0] + 1) and not _starts_lower(heading))
             if (top_ok or sub_ok) and key > last and not _DOSE.match(heading) and (
                     current is not None or key[0] <= 2):
+                if len(key) == 1 and sentence_case_file is None:
+                    sentence_case_file = not _mostly_upper(heading)
                 current, last = num, key
                 out.setdefault(current, [])
                 continue
