@@ -104,3 +104,68 @@ def test_discover_logs_the_hits_it_saw(caplog):
     with caplog.at_level(logging.INFO, logger="collectors.spc.mhra"):
         assert mhra.discover(_Ctx(), {"inn_en": "lornoxicam", "terms": {"en": ["lornoxicam"]}}) == []
     assert "4 search hit(s), 0 with it as an active substance" in caplog.text
+
+
+# ── the whole list (17 Nov 2026): paracetamol's search had 1,717 SPC hits; its products ran to page 61 ──
+
+def _results_page(page: int, *, ours: bool, total: int | None = 1717) -> str:
+    rows = []
+    for i in range(10):
+        n = page * 10 + i
+        substance = "PARACETAMOL" if ours else "IBUPROFEN"
+        rows.append(f'<div class="search-result"><dd class="right"><a href="https://mhraproducts4853.blob.core.'
+                    f'windows.net/docs/{n:040x}"><p class="title">PRODUCT {n}</p><p class="subtitle">'
+                    f'spc-doc_PL {10000 + n:05d}-0001.pdf</p></a><p class="metadata">Active substances: {substance}'
+                    f'</p></dd></div>')
+    count = f'<p class="no-of-results">{page * 10 - 9} to {page * 10} of {total:,}</p>' if total else ""
+    return f"<html><body><main>{count}<dl>{''.join(rows)}</dl></main></body></html>"
+
+
+class _PagedCtx:
+    """Answers search page N from ``pages(N)``: HTML, or None for a page whose results never appear."""
+
+    def __init__(self, pages):
+        self.pages, self.asked = pages, []
+
+    def browser_get(self, url, **kw):
+        from collectors.core.context import Fetched
+        from collectors.parsers.base import ParseError
+        page = int(url.split("&page=")[1].split("&")[0])
+        self.asked.append(page)
+        body = self.pages(page, self.asked.count(page))
+        if body is None:
+            raise ParseError("selector never appeared")
+        return Fetched(200, url, body.encode(), "text/html; charset=utf-8")
+
+
+PARACETAMOL = {"inn_en": "paracetamol", "terms": {"en": ["paracetamol"]}}
+
+
+def test_the_search_count_is_read():
+    assert mhra.total_hits(_results_page(1, ours=True)) == 1717
+    assert mhra.total_hits(_results_page(1, ours=True, total=None)) is None
+
+
+def test_the_list_is_read_past_40_pages_until_the_ingredients_products_end():
+    ctx = _PagedCtx(lambda page, _n: _results_page(page, ours=page <= 61))
+    got = mhra.discover(ctx, PARACETAMOL)
+    assert len(got) == 610 and got.complete
+    assert ctx.asked == list(range(1, 67))      # 61 pages of its products, then 5 without one
+
+
+def test_a_name_without_products_stops_after_five_pages_and_the_last_page_is_the_count():
+    ctx = _PagedCtx(lambda page, _n: _results_page(page, ours=False))
+    assert mhra.discover(ctx, PARACETAMOL) == [] and ctx.asked == [1, 2, 3, 4, 5]
+    ctx = _PagedCtx(lambda page, _n: _results_page(page, ours=True, total=33))
+    got = mhra.discover(ctx, PARACETAMOL)
+    assert ctx.asked == [1, 2, 3, 4] and got.complete      # 33 results: page 4 is the last, page 5 never asked
+
+
+def test_a_slow_page_is_read_again_and_one_that_never_shows_is_a_gap_not_the_end():
+    slow = _PagedCtx(lambda page, n: None if page == 6 and n == 1 else _results_page(page, ours=page <= 20))
+    got = mhra.discover(slow, PARACETAMOL)
+    assert len(got) == 200 and got.complete and slow.asked.count(6) == 2
+    dead = _PagedCtx(lambda page, _n: None if page == 6 else _results_page(page, ours=page <= 20))
+    got = mhra.discover(dead, PARACETAMOL)
+    assert len(got) == 190 and not got.complete and got.gaps == ["name 1 page 6 of 172: no results shown"]
+    assert 20 in dead.asked                     # the pages after it were read
