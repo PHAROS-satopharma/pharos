@@ -198,6 +198,19 @@ def _poppler() -> bool:
     return b"poppler" in (proc.stdout + proc.stderr).lower()
 
 
+def test_a_core_number_printed_apart_from_its_title_is_rejoined():
+    # poppler's layout of Paracetamolo Mylan Italia (17 Nov 2026): "4.4" alone, two contraindications, then the title
+    text = ("1. DENOMINAZIONE DEL MEDICINALE\nX.\n4. INFORMAZIONI CLINICHE\n4.3        Controindicazioni\n"
+            "  Ipersensibilità.\n4.4\n           Grave insufficienza renale.\n"
+            "                 Avvertenze speciali e precauzioni d’impiego\nEpatotossicità.\n"
+            "4.8 Effetti indesiderati\nNausea.\n4.9 Sovradosaggio\nZ.\n")
+    s = eu_label_sections(text)
+    assert s["4.4"] == "Epatotossicità."
+    assert s["4.3"].endswith("Grave insufficienza renale.")
+    far = text.replace("4.4\n", "4.4\n" + "riga\n" * 9)        # the title more than eight lines away: not joined
+    assert "4.4" not in eu_label_sections(far)
+
+
 @pytest.mark.parametrize("aic", ["040040", "042889", "050875"])
 def test_italy_rcps_the_label_watch_found_no_4_4_in(aic):
     # Epifloxin, Paracetamolo Mylan Italia, Distem: "section 4.4 not found" on GitHub, 17 Nov 2026 06:15
