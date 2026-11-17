@@ -4,7 +4,8 @@ line of each section, in the layout pdftotext gave for the CBG's own files (h242
 
 from __future__ import annotations
 
-from collectors.spc.sections import eu_label_sections, missing_core, split_numbered
+from collectors.spc import sections as sections_module
+from collectors.spc.sections import _split_numbered, eu_label_sections, missing_core, split_numbered
 
 WATCHED = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9"]
 
@@ -109,11 +110,87 @@ def test_a_dosing_table_row_with_no_word_is_not_heading_6():
     assert sections["10"] == "Laatste herziening: februari 2025"
 
 
+def _add_after(text: str, anchor: str, extra: str) -> str:
+    assert text.count(anchor) == 1
+    return text.replace(anchor, anchor + extra)
+
+
+OVERDOSE = "Voor paracetamol is er een risico op vergiftiging.\n"
+
+
 def test_a_label_that_split_before_splits_exactly_as_before():
-    # The lenient rules run only when the strict split lacks 4.3, 4.4 or 4.8: an upper-case SmPC whose body has
-    # a sentence-case line starting with the next top-level number keeps it inside 4.9.
-    text = DOSING_TABLE.replace("1 – 2  ", "").replace("6 – 9  ", "").replace("9 – 12 ", "").replace("12 – 15", "")
-    text = text.replace("Voor paracetamol is er een risico op vergiftiging.\n",
-                        "Voor paracetamol is er een risico op vergiftiging.\n5 Patienten met leverziekte\n")
+    # An upper-case SmPC the strict rules split completely never reaches the lenient ones, and keeps a
+    # sentence-case line starting with the next top-level number inside 4.9.
+    text = _add_after(DOSING_TABLE, OVERDOSE, "5 Patienten met leverziekte\n")
+    strict, _ = _split_numbered(text.splitlines(), lenient=False)
+    assert missing_core(strict) == []
+    assert split_numbered(text) == strict
+    assert strict["4.9"].endswith("5 Patienten met leverziekte")
+
+
+def test_a_wordless_row_after_the_core_sections_is_not_a_heading():
+    # strict split: "5    10    20" in 4.8 once swallowed 4.9 and section 5
+    text = _add_after(DOSING_TABLE, "Zeer zelden overgevoeligheidsreacties.\n", "5    10    20\n")
     sections = split_numbered(text)
+    assert sections["4.8"].endswith("5    10    20")
+    assert sections["4.9"] == "Voor paracetamol is er een risico op vergiftiging."
+    assert sections["5"] == ""
+
+
+def test_cover_text_above_heading_1_keeps_an_upper_case_file_strict():
+    # "4.3- Contra-indicaties" sends the split to the lenient rules; the cover line must not make the file
+    # sentence case there.
+    text = "1 Zetpil bevat 500 mg paracetamol\n" + _add_after(DOSING_TABLE, OVERDOSE, "5 Patienten met leverziekte\n")
+    text = text.replace("4.3   Contra-indicaties", "4.3- Contra-indicaties")
+    # and with no later heading 5 to give way to, only the file's case keeps "5 Patienten …" out of the headings
+    text = text.replace("5.    FARMACOLOGISCHE EIGENSCHAPPEN\n", "")
+    strict, _ = _split_numbered(text.splitlines(), lenient=False)
+    assert "4.3" not in strict
+    sections = split_numbered(text)
+    assert sections["1"] == "Paracetamol Sanias 500 mg, zetpillen"
+    assert sections["4.3"] == "Overgevoeligheid voor de werkzame stof."
     assert sections["4.9"].endswith("5 Patienten met leverziekte")
+
+
+def test_a_sentence_case_body_line_with_the_next_number_stays_in_its_section():
+    text = _add_after(SENTENCE_CASE, OVERDOSE, "5 Patienten met leverziekte\nBehandel direct.\n")
+    text = _add_after(text, "De dosering is afhankelijk van het lichaamsgewicht.\n", "5 Jaar en ouder\n")
+    sections = split_numbered(text)
+    assert missing_core(sections) == []
+    assert sections["4.2"].endswith("5 Jaar en ouder")
+    assert sections["4.9"].endswith("5 Patienten met leverziekte\nBehandel direct.")
+    assert "Farmacologische eigenschappen" not in sections["5"]
+
+
+def test_a_sentence_case_file_without_heading_1_or_3_still_splits():
+    no_one = SENTENCE_CASE.replace("1     Naam van het geneesmiddel\nParacetamol HTP zetpil 500 mg, zetpillen\n", "")
+    assert missing_core(split_numbered(no_one)) == []
+    no_three = SENTENCE_CASE.replace("3     Farmaceutische vorm\nZetpil.\n", "")
+    sections = split_numbered(no_three)
+    assert missing_core(sections) == []
+    assert sections["4.3"] == "Overgevoeligheid voor de werkzame stof."
+
+
+def test_a_sentence_case_file_with_two_smpcs_is_cut_in_two():
+    second = SENTENCE_CASE.replace("500 mg", "1000 mg").replace("RVG 24204", "RVG 24205")
+    sections = eu_label_sections(SENTENCE_CASE + second)
+    assert missing_core(sections) == [] and missing_core(sections, prefix="smpc2:") == []
+    assert sections["10"] == "Laatste gedeeltelijke wijziging betreft rubriek 4.4: 3 april 2024"
+    assert sections["smpc2:4.3"] == "Overgevoeligheid voor de werkzame stof."
+
+
+def test_no_second_pass_when_no_lenient_rule_reads_any_line_differently(monkeypatch):
+    calls = []
+    real = sections_module._split_numbered
+
+    def counting(lines, *, lenient):
+        calls.append(lenient)
+        return real(lines, lenient=lenient)
+
+    monkeypatch.setattr(sections_module, "_split_numbered", counting)
+    fragment = "4.    KLINISCHE GEGEVENS\n4.1   Therapeutische indicaties\nPijn.\n"
+    assert missing_core(split_numbered(fragment)) == ["4.3", "4.4", "4.8"]
+    assert calls == [False]
+    calls.clear()
+    split_numbered(SENTENCE_CASE)
+    assert calls == [False, True]
