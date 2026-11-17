@@ -18,7 +18,9 @@ with ivabradine (LANCORA 5 and 7.5 mg, one monograph) and acetaminophen (1,354 p
   changed page would otherwise pass for 96 products without a monograph). Strengths often share one monograph.
 
 The monograph is split by ``sections.split_ca_monograph`` into ``"ca:…"`` keys (the 2020 template's numbered
-headings, or the older unnumbered capitals); "Recent Major Label Changes" is a section of its own.
+headings, or the older unnumbered capitals); "Recent Major Label Changes" is a section of its own. When neither
+gives a watched section, older headings in title case and the English column of a bilingual leaflet are read
+(Soframycin, Minims Phenylephrine: 17 Nov 2026).
 """
 
 from __future__ import annotations

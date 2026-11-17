@@ -204,6 +204,42 @@ def test_canada_older_monograph_capital_headings():
     assert got["ca:adverse_reactions"] == "Rash."
 
 
+def test_canada_older_monograph_title_case_headings():
+    # Soframycin (DIN 02224860, 2023): old headings in title case, the text indented under them
+    text = ("PRESCRIBING INFORMATION\nIndications and Clinical Use\n         Nasal Spray: for rhinitis.\n"
+            "Contraindications\n         Known hypersensitivity.\n\fWarnings\n         Do not exceed the dose.\n"
+            "Precautions\n         Cross sensitization.\nAdverse Reactions\n         Rarely, allergic reaction.\n"
+            "         Contraindications\nOverdosage\n         Call poison control.\n"
+            "                    Patient Medication Information\nWarnings\nAsk.\n")
+    got = split_ca_monograph(text)
+    assert got["ca:contraindications"] == "Known hypersensitivity."
+    assert got["ca:warnings"] == "Do not exceed the dose."
+    assert got["ca:adverse_reactions"].startswith("Rarely") and got["ca:adverse_reactions"].endswith("Contraindications")
+    assert got["ca:overdose"] == "Call poison control."      # the patient part still ends it
+
+
+def test_canada_bilingual_leaflet_reads_its_english_column():
+    # Minims Phenylephrine (DIN 02148447 and 02148455, 2020): English and French side by side
+    pad = " " * 40
+    text = (f"English{pad}French\nPRESCRIBING INFORMATION{pad}RENSEIGNEMENTS POSOLOGIQUES\n"
+            f"USES{pad}USAGES\nA mydriatic.{pad}Un mydriatique.\n"
+            f"CONTRANDICATIONS{pad}CONTRE-INDICATIONS\n   I. Cardiac disease.{pad}I. Cardiopathie.\n"
+            f"{pad}{pad}hypertension.\n"
+            f"OTHER UNDESIRABLE EFFECTS\n   I. Local stinging.{pad}AUTRES EFFETS SECONDAIRES\n"
+            f"OVERDOSE{pad}SURDOSAGE\nPhentolamine.{pad}Phentolamine.\nINCOMPATIBILITIES{pad}INCOMPATIBILITÉ\nNone.\n")
+    got = split_ca_monograph(text)
+    assert got["ca:indications"] == "A mydriatic."
+    assert got["ca:contraindications"] == "I. Cardiac disease."
+    assert got["ca:adverse_reactions"] == "I. Local stinging."
+    assert got["ca:overdose"] == "Phentolamine."             # never running on into incompatibilities
+
+
+def test_canada_leaflet_headings_never_change_a_monograph_that_reads():
+    text = "CONTRAINDICATIONS\nAsthma.\nOVERDOSE\nStill 4.3's text in a capital-heading monograph.\n"
+    assert split_ca_monograph(text) == {
+        "ca:contraindications": "Asthma.\nOVERDOSE\nStill 4.3's text in a capital-heading monograph."}
+
+
 def test_canada_part_three_in_the_table_of_contents_is_not_the_end():
     # JAMP-Carvedilol (DIN 02368897, 13 Nov 2026): the contents line "PART III: PATIENT MEDICATION INFORMATION ....33"
     # ended the split at line 39, and four Canadian carvedilol monographs gave "no section heading found"
