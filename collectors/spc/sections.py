@@ -208,9 +208,54 @@ def _ca_new_head(line: str, last: int) -> tuple[int, str] | None:
     return None
 
 
+# Headings of the older "prescribing information" leaflets, read only by the lenient split (Minims Phenylephrine,
+# 2020: "USES", "CONTRANDICATIONS" as printed, "OTHER UNDESIRABLE EFFECTS"); the ones not watched end the section
+# before them, so a watched section never runs on into storage or packaging.
+CA_LEAFLET = {
+    "USES": "ca:indications", "CONTRANDICATIONS": "ca:contraindications", "INTERACTIONS": "ca:drug_interactions",
+    "UNDESIRABLE EFFECTS": "ca:adverse_reactions", "OTHER UNDESIRABLE EFFECTS": "ca:adverse_reactions",
+    "OTHER SPECIAL WARNINGS AND PRECAUTIONS": "ca:warnings_and_precautions", "OVERDOSE": "ca:overdose",
+    "PRESENTATION": "ca:presentation", "USE IN PREGNANCY AND LACTATION": "ca:pregnancy",
+    "EFFECTS ON THE ABILITY TO DRIVE AND USE": "ca:driving",
+    "EFFECTS ON THE ABILITY TO DRIVE AND USE MACHINES": "ca:driving", "INCOMPATIBILITIES": "ca:incompatibilities",
+    "PHARMACEUTICAL PRECAUTIONS": "ca:storage", "PACKAGE QUANTITIES": "ca:package", "PHARMACOLOGY": "ca:pharmacology",
+    "SUPPLIED": "ca:supplied", "STORAGE RECOMMENDATIONS": "ca:storage",
+}
+_CA_BILINGUAL = re.compile(r"^\s*English\s{5,}French\s*$")
+
+
+def _english_column(text: str) -> str:
+    """The English column of a two-column English/French leaflet (a page head "English … French", the French text
+    beside the English on each line): each line up to its first run of three spaces; a line indented past the middle
+    holds French only. Any other text is returned as it is."""
+    lines = text.splitlines()
+    if not any(_CA_BILINGUAL.match(line) for line in lines):
+        return text
+    out = []
+    for line in lines:
+        if _CA_BILINGUAL.match(line):
+            continue
+        body = line.lstrip(" ")
+        indent = len(line) - len(body)
+        out.append("" if indent >= 40 else " " * indent + re.split(r"\s{3,}", body, maxsplit=1)[0])
+    return "\n".join(out)
+
+
 def split_ca_monograph(text: str) -> dict[str, str]:
-    """A Health Canada product monograph's text as ``{"ca:contraindications": text, …}`` (see the module notes)."""
-    lines = _ca_lines(text)
+    """A Health Canada product monograph's text as ``{"ca:contraindications": text, …}`` (see the module notes).
+
+    When it finds no watched section, a lenient split is tried (17 Nov 2026, three DPD products never read): old
+    headings in any case when they stand alone at the line's start ("Contraindications", "Adverse Reactions":
+    Soframycin, 2023), the leaflet headings above, and only the English column of a bilingual leaflet (Minims
+    Phenylephrine). A monograph that splits today splits exactly as before."""
+    strict = _split_ca(_ca_lines(text), lenient=False)
+    if any(k in WATCHED_CA for k in strict):
+        return strict
+    lenient = _split_ca(_ca_lines(_english_column(text)), lenient=True)
+    return lenient if any(k in WATCHED_CA for k in lenient) else strict
+
+
+def _split_ca(lines: list[str], *, lenient: bool) -> dict[str, str]:
     new = any(_ca_new_head(line, 0) for line in lines)
     out: dict[str, list[str]] = {}
     key, last = None, 0
@@ -231,6 +276,11 @@ def split_ca_monograph(text: str) -> dict[str, str]:
             up = re.sub(r"\s+", " ", bare).rstrip(":")
             if up in CA_OLD and up == up.upper() and CA_OLD[up] not in out:
                 head = CA_OLD[up]
+            elif lenient:
+                big = up.upper()
+                found = CA_OLD.get(big) or CA_LEAFLET.get(big)
+                if found and found not in out and (up == big or not line.lstrip("\f")[:1].isspace()):
+                    head = found
         if head:
             key = head
             out.setdefault(key, [])
