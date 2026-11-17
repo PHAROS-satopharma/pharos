@@ -187,6 +187,16 @@ def test_italy_rcp_without_aifa_footer_and_stamp_dated_by_its_publication():
     assert aifa._STAMP not in text and "Documento reso disponibile" not in text
 
 
+def test_italy_a_stamp_piece_glued_to_a_section_number_is_taken_out():
+    # Tachiverde, Ebyndo (16 Nov 2026): the margin stamp's "Agenzia" glued to an unindented "4.8", so 4.8 was lost
+    text = ("4.7 Effetti sulla capacità di guidare veicoli\nNessuno.          Agenzia\n"
+            "Agenzia4.8 Effetti indesiderati\nNausea.          Agenzia\n"
+            "Agenziaregionale senza numero.\n4.9 Sovradosaggio\nZ.\n")
+    lines = aifa.clean(text).splitlines()
+    assert "4.8 Effetti indesiderati" in lines
+    assert "Agenziaregionale senza numero." in lines        # unindented and no section number: the text's own
+
+
 def _poppler() -> bool:
     import shutil
     import subprocess
