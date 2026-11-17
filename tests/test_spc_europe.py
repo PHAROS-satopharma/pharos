@@ -187,6 +187,35 @@ def test_italy_rcp_without_aifa_footer_and_stamp_dated_by_its_publication():
     assert aifa._STAMP not in text and "Documento reso disponibile" not in text
 
 
+def _poppler() -> bool:
+    import shutil
+    import subprocess
+
+    exe = shutil.which("pdftotext")
+    if not exe:
+        return False
+    proc = subprocess.run([exe, "-v"], capture_output=True, check=False)
+    return b"poppler" in (proc.stdout + proc.stderr).lower()
+
+
+@pytest.mark.parametrize("aic", ["040040", "042889", "050875"])
+def test_italy_rcps_the_label_watch_found_no_4_4_in(aic):
+    # Epifloxin, Paracetamolo Mylan Italia, Distem: "section 4.4 not found" on GitHub, 17 Nov 2026 06:15
+    if not _poppler():
+        pytest.skip("the label watch reads with poppler's pdftotext")
+    from collectors.pdf import extract_text
+
+    try:
+        s = aifa.snapshot(FakeCtx({"https://x.test/rcp": f"spc-aifa/rcp_{aic}.pdf"}),
+                          {"national_id": aic, "extra": {"rcp": "https://x.test/rcp"}})
+    except SnapshotError as e:
+        lines = extract_text(fixture(f"spc-aifa/rcp_{aic}.pdf"), "it")[0].splitlines()
+        around = [f"{i}: {x!r}" for i, x in enumerate(lines)
+                  if any("4.4" in y or "4.3" in y for y in lines[max(0, i - 2):i + 3])]
+        pytest.fail(f"{e}\n" + "\n".join(around[:80]))
+    assert missing_core(s.sections) == []
+
+
 # Medifarm's Efferalgan, a parallel import, as AIFA's search answered it on 16 Nov 2026 (cut to the fields read).
 EFFERALGAN_IMPORT = {"principiAttiviIt": ["PARACETAMOLO"], "codiceAtc": ["N02BE01"], "revocato": 0,
                      "descrizioneFormaDosaggio": "1000 mg COMPRESSA EFFERVESCENTE", "tipoAutorizzazione": "P",
