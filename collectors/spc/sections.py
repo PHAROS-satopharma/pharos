@@ -294,7 +294,30 @@ def split_numbered(text: str) -> dict[str, str]:
     # heading 4.9. The lenient
     # rules are tried only then, so a file that splits today splits exactly as before.
     lenient = _split_numbered(text, lenient=True)
-    return lenient if len(missing_core(lenient)) < len(missing_core(strict)) else strict
+    return _unnumbered_48(lenient if len(missing_core(lenient)) < len(missing_core(strict)) else strict)
+
+
+# QRD template's title of section 4.8, per language (a line holding exactly this, and nothing else)
+_TITLE_48 = {"undesirable effects", "efeitos indesejáveis", "effets indésirables", "nebenwirkungen",
+             "effetti indesiderati", "reacciones adversas", "bijwerkingen", "biverkningar", "bivirkninger",
+             "haittavaikutukset", "aukaverkanir"}
+
+
+def _unnumbered_48(sections: dict[str, str]) -> dict[str, str]:
+    """Section 4.8 whose heading lost its number in the PDF's text layer: Ivabradina Teva 5 and 7.5 mg (Infomed,
+    17 Nov 2026) print "4.8" as a list number that never reached the text, so "Efeitos indesejáveis" stands alone
+    and the whole section ran on inside 4.7. Only when 4.7 and 4.9 were both found and 4.8 was not, the last line
+    of 4.7 that is exactly the template's 4.8 title (in any EU language above) starts 4.8."""
+    if "4.8" in sections or "4.7" not in sections or "4.9" not in sections:
+        return sections
+    lines = sections["4.7"].splitlines()
+    at = next((i for i in range(len(lines) - 1, -1, -1)
+               if " ".join(lines[i].split()).rstrip(".").casefold() in _TITLE_48), None)
+    if at is None:
+        return sections
+    out = dict(sections)
+    out["4.7"], out["4.8"] = "\n".join(lines[:at]).strip(), "\n".join(lines[at + 1:]).strip()
+    return dict(sorted(out.items(), key=lambda kv: _num_key(kv[0])))
 
 
 _SENTENCE_END = re.compile(r"[.;:,]\s*$")

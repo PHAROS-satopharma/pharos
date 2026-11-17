@@ -17,8 +17,9 @@ Each row: the medicine id (hidden), name, DCI ("Ibuprofeno + Paracetamol"), form
 ``download-ficheiro.xhtml?med_id=<id>&tipo_doc=rcm`` (a PDF, no session needed), split by QRD section number
 (``split_numbered`` per SmPC; 4.1–4.9 watched, 10 recorded) once INFARMED's page stamp ("APROVADO EM 29-06-2022
 INFARMED") is taken out; dated by section 10 ("Data da revisão do texto"), else by the stamp, else not (some
-RCMs leave section 10 empty). A PDF whose text layer lost a heading number (Ivabradina Teva: "Efeitos
-indesejáveis" without its "4.8") is reported unread with the missing section, never guessed.
+RCMs leave section 10 empty). A PDF whose text layer lost the 4.8 heading's number (Ivabradina Teva 5 and 7.5 mg:
+"Efeitos indesejáveis" alone) is read by that exact template title between 4.7 and 4.9 (``sections``, 17 Nov
+2026); any other lost heading is reported unread with the missing section, never guessed.
 
 Portuguese names come from ``ingredient_term`` (lang ``pt``); without one, the English INN is turned into its
 Portuguese form by the INN endings ("ivabradine" → "ivabradina", "guaifenesin" → "guaifenesina").

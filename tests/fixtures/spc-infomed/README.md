@@ -9,3 +9,5 @@ INFARMED Infomed, saved 7 November 2026, 00:30–00:50 Cairo.
   included. The page's `javax.faces.ViewState` (a session token) is replaced with "(removed)".
 * `rcm_604022.pdf`: `download-ficheiro.xhtml?med_id=604022&tipo_doc=rcm`, one file holding two SmPCs, with
   INFARMED's "APROVADO EM … INFARMED" stamp.
+* `rcm_633062.pdf`: `download-ficheiro.xhtml?med_id=633062&tipo_doc=rcm` (Ivabradina Teva 5 mg; 7.5 mg, 633063,
+  is the same file), saved 17 November 2026: its 4.8 heading "Efeitos indesejáveis" has no "4.8" in the text layer.
