@@ -332,18 +332,21 @@ def split_numbered(text: str) -> dict[str, str]:
     section's text excludes its heading line, and third-level headings (4.2.1) stay inside their
     parent. Upper-case-free scripts (none in the EU template) fall back to the numbering alone.
     """
-    strict = _split_numbered(text, lenient=False)
+    lines = (text or "").splitlines()
+    strict, lenient_may_help = _split_numbered(lines, lenient=False)
     if not missing_core(strict):
         return strict
+    if not lenient_may_help:        # no line a lenient-only rule reads differently: a second pass gives the same
+        return _unnumbered_48(strict)
     # A split without contraindications, warnings or undesirable effects went wrong. Two layouts did that to 55
     # Dutch SmPCs (CBG, mostly paracetamol suppositories) until 17 Nov 2026: top-level headings in sentence case
     # ("4 Klinische gegevens", never upper-case, so section 4 never began), and a dosing-table row with no word
     # in it ("6 – 9    22 - 30    500    2 – 3") taken for heading 6, so 4.3–4.9 came "after" it and were
     # dropped. Italian RCPs (AIFA) added two more on 17 Nov 2026: headings written "1-DENOMINAZIONE", "4.2- Posologia"
     # or "4.1) Indicazioni", never read as headings, and a cross-reference "4.9 “Sovradosaggio”)." in 4.2 taken for
-    # heading 4.9. The lenient
-    # rules are tried only then, so a file that splits today splits exactly as before.
-    lenient = _split_numbered(text, lenient=True)
+    # heading 4.9. The lenient rules are tried only then, and only when some line reads differently under them.
+    # Since 17 Nov 2026 a top-level "heading" with no letter in it is refused by the strict rules too.
+    lenient, _ = _split_numbered(lines, lenient=True)
     return _unnumbered_48(lenient if len(missing_core(lenient)) < len(missing_core(strict)) else strict)
 
 
@@ -379,45 +382,94 @@ def _sentence_case_heading(heading: str) -> bool:
     return not _starts_lower(heading) and len(heading.split()) <= 15 and not _SENTENCE_END.search(heading)
 
 
-def _split_numbered(text: str, *, lenient: bool) -> dict[str, str]:
-    """``split_numbered``'s rules; ``lenient`` adds four (see its comment): in a file whose first heading is in
-    sentence case ("1 Naam van het geneesmiddel"), the next top-level number in sentence case is a heading; a
-    "heading" with no letter in it never is; a hyphen, dash or bracket may follow the number ("4.1-", "4.1)");
-    and a sub-heading never closes a bracket it did not open ("4.9 “Sovradosaggio”)."). A file whose headings are upper-case
-    keeps "5 Patiënten met …" inside 4.9."""
+def _sentence_top(num: str, heading: str, last_top: int) -> bool:
+    """A sentence-case top-level heading where one is due: the next number, or the one after it when a heading
+    was lost (cover page, line wrap), so a file can also begin at 2. Shared by ``split_smpcs`` and the split."""
+    gap = int(num) - last_top
+    return (num in _VALID_TOP and 0 < gap <= 2 and any(c.isalpha() for c in heading)
+            and _sentence_case_heading(heading) and not _DOSE.match(heading))
+
+
+def _superseded_tops(lines: list[str]) -> set[int]:
+    """Lines that look like a sentence-case top-level heading but give way to a later line with the same number
+    before that section shows any sign of starting (an "N.x" sub-heading): "5 Patiënten met leverziekte" in 4.9,
+    or a dosing row "5 Jaar en ouder" in 4.2, gives way to "5 Farmacologische eigenschappen"."""
+    dropped: set[int] = set()
+    open_at: dict[int, int] = {}
+    for i, line in enumerate(lines):
+        m = _HEAD_LENIENT.match(line)
+        if not m:
+            continue
+        num, heading = m.group(1), m.group(2).strip()
+        key = _num_key(num)
+        if len(key) == 1 and num in _VALID_TOP and any(c.isalpha() for c in heading) and _sentence_case_heading(
+                heading):
+            if key[0] in open_at:
+                dropped.add(open_at[key[0]])
+            open_at[key[0]] = i
+        elif len(key) == 2 and num in _VALID_SUB and not _starts_lower(heading):
+            open_at.pop(key[0], None)
+    return dropped
+
+
+def _upper_case_file(lines: list[str]) -> bool:
+    """At least two top-level QRD headings written in upper case ("1. NAAM …", "4. KLINISCHE GEGEVENS")."""
+    nums = set()
+    for line in lines:
+        m = _HEAD_LENIENT.match(line)
+        if m and m.group(1) in _VALID_TOP and _mostly_upper(m.group(2)):
+            nums.add(m.group(1))
+    return len(nums) >= 2
+
+
+def _split_numbered(lines: list[str], *, lenient: bool) -> tuple[dict[str, str], bool]:
+    """``split_numbered``'s rules, and whether any line would read differently under the lenient ones. ``lenient``
+    adds three (see its comment): in a sentence-case file (fewer than two upper-case top-level headings), a
+    sentence-case top-level heading is accepted where one is due (``_sentence_top``) unless a later line with the
+    same number replaces it (``_superseded_tops``); a hyphen, dash or bracket may follow the number ("4.1-",
+    "4.1)"); and a sub-heading never closes a bracket it did not open ("4.9 “Sovradosaggio”)."). A file whose
+    headings are upper-case keeps "5 Patiënten met …" inside 4.9."""
     out: dict[str, list[str]] = {}
     current: str | None = None
     last: tuple[int, ...] = ()
-    sentence_case_file: bool | None = None      # decided by the file's first top-level heading
-    for line in (text or "").splitlines():
+    may_help = False
+    # decided by the whole file, never by its first numbered line: cover text above heading 1 ("1 Zetpil bevat …")
+    # must not turn an upper-case file into a sentence-case one
+    sentence_case_file = lenient and not _upper_case_file(lines)
+    dropped = _superseded_tops(lines) if sentence_case_file else set()
+    for i, line in enumerate(lines):
         m = (_HEAD_LENIENT if lenient else _HEAD).match(line)
+        if not m and not lenient and not may_help and _HEAD_LENIENT.match(line):
+            may_help = True             # "4.2- Posologia": only the lenient pattern reads it
         if m:
             num, heading = m.group(1), m.group(2).strip()
             key = _num_key(num)
             caseless = not any(c.isalpha() and c.isupper() != c.islower() for c in heading)
-            top_ok = len(key) == 1 and num in _VALID_TOP and (_mostly_upper(heading) or caseless)
-            if lenient and len(key) == 1:
-                expected = key[0] == (last[0] + 1 if last else 1)
-                top_ok = num in _VALID_TOP and any(c.isalpha() for c in heading) and (
-                    _mostly_upper(heading) or caseless
-                    or (sentence_case_file is not False and expected and _sentence_case_heading(heading)))
+            # one top-level rule for both splits; a "heading" with no letter in it ("5    10    20", a table row)
+            # is never one
+            top_ok = len(key) == 1 and num in _VALID_TOP and any(c.isalpha() for c in heading) and (
+                _mostly_upper(heading) or caseless
+                or (sentence_case_file and i not in dropped and _sentence_top(num, heading, last[0] if last else 0)))
             sub_ok = (len(key) == 2 and num in _VALID_SUB and bool(last)
                       and key[0] in (last[0], last[0] + 1) and not _starts_lower(heading))
-            if lenient and sub_ok:
-                # never the end of a cross-reference: "4.9 “Sovradosaggio”)." in 4.2's text (AIFA, Paracetamolo
-                # Coop) closes a bracket it never opened, and "4.4)." or "4.4), rottura …" holds no heading
-                sub_ok = (any(c.isalpha() for c in heading) and heading[0] not in ",.;:)"
-                          and heading.count(")") <= heading.count("("))
+            # never the end of a cross-reference: "4.9 “Sovradosaggio”)." in 4.2's text (AIFA, Paracetamolo
+            # Coop) closes a bracket it never opened, and "4.4)." or "4.4), rottura …" holds no heading
+            sub_lenient = sub_ok and (any(c.isalpha() for c in heading) and heading[0] not in ",.;:)"
+                                      and heading.count(")") <= heading.count("("))
+            if not lenient and not may_help and (sub_ok != sub_lenient or (
+                    len(key) == 1 and not top_ok and num in _VALID_TOP and any(c.isalpha() for c in heading)
+                    and _sentence_case_heading(heading))):
+                may_help = True
+            if lenient:
+                sub_ok = sub_lenient
             if (top_ok or sub_ok) and key > last and not _DOSE.match(heading) and (
                     current is not None or key[0] <= 2):
-                if len(key) == 1 and sentence_case_file is None:
-                    sentence_case_file = not _mostly_upper(heading)
                 current, last = num, key
                 out.setdefault(current, [])
                 continue
         if current is not None:
             out[current].append(line)
-    return {k: "\n".join(v).strip() for k, v in out.items()}
+    return {k: "\n".join(v).strip() for k, v in out.items()}, may_help
 
 
 def _starts_lower(heading: str) -> bool:
@@ -469,17 +521,30 @@ _SMPC_PREFIX = re.compile(r"^smpc\d+:")
 def split_smpcs(text: str) -> list[str]:
     """The SmPCs of one product-information text, in order: a new one starts at each "1. NAME OF THE MEDICINAL
     PRODUCT" heading (number 1, mostly upper-case, in any language) once the SmPC before it reached section 6.
-    Before 7 Nov 2026 every SmPC after the first ran on inside the first one's section 10."""
+    Before 7 Nov 2026 every SmPC after the first ran on inside the first one's section 10. A file in sentence case
+    (fewer than two upper-case top-level headings, CBG's "1 Naam van het geneesmiddel") moves on by the shared
+    ``_sentence_top`` rule, and a new SmPC starts only at a line repeating the first one's heading 1."""
+    lines = (text or "").splitlines()
+    upper = _upper_case_file(lines)
     blocks: list[list[str]] = [[]]
     top = 0
-    for line in (text or "").splitlines():
+    first: str | None = None        # a sentence-case file's heading 1, as the first SmPC writes it
+    for line in lines:
         m = _HEAD.match(line)
         if m and "." not in m.group(1):
-            num = int(m.group(1))
-            if num == 1 and top >= 6 and _mostly_upper(m.group(2)):
+            num, heading = int(m.group(1)), m.group(2).strip()
+            if upper:
+                if num == 1 and top >= 6 and _mostly_upper(heading):
+                    blocks.append([])
+                    top = 0
+                elif _mostly_upper(heading) and num > top:
+                    top = num
+            elif num == 1 and top >= 6 and first is not None and " ".join(heading.split()).casefold() == first:
                 blocks.append([])
-                top = 0
-            elif _mostly_upper(m.group(2)) and num > top:
+                top = 1
+            elif _sentence_top(m.group(1), heading, top):
+                if num == 1 and first is None:
+                    first = " ".join(heading.split()).casefold()
                 top = num
         blocks[-1].append(line)
     return ["\n".join(b) for b in blocks if any(x.strip() for x in b)]
