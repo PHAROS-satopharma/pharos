@@ -277,6 +277,25 @@ def test_portugal_stamp_lines():
     assert infomed._APPROVED.sub("", text) == "4.3 Contra-indicações\nChoque.\n\n4.4 Advertências\n"
 
 
+
+def test_portugal_4_8_heading_without_its_number():
+    # Ivabradina Teva: "Efeitos indesejáveis" stands alone, its "4.8" never reached the text layer
+    s = infomed.snapshot(FakeCtx({"https://x.test/rcm": "spc-infomed/rcm_633062.pdf"}),
+                         {"national_id": "633062", "extra": {"rcm": "https://x.test/rcm"}})
+    assert missing_core(s.sections) == []
+    assert s.sections["4.8"].startswith("Resumo do perfil de segurança")
+    assert "Efeitos indesejáveis" not in s.sections["4.7"] and "fosfenos" in s.sections["4.7"]
+    assert s.sections["4.9"].strip()
+
+
+def test_a_bare_4_8_title_is_taken_only_between_4_7_and_4_9():
+    head = "1. NOME DO MEDICAMENTO\nA.\n4. INFORMAÇÕES CLÍNICAS\n4.3 Contraindicações\nX.\n4.4 Advertências\nY.\n4.7 Condução\nNulos.\nEfeitos indesejáveis\nTonturas.\n"
+    assert eu_label_sections(head + "4.9 Sobredosagem\nZ.\n")["4.8"] == "Tonturas."
+    assert "4.8" not in eu_label_sections(head)                  # no 4.9 after it: never guessed
+    numbered = eu_label_sections(head + "4.8 Efeitos indesejáveis\nNáuseas.\n4.9 Sobredosagem\nZ.\n")
+    assert numbered["4.8"] == "Náuseas." and "Efeitos indesejáveis" in numbered["4.7"]
+
+
 # ───────────────────────────── Ireland ─────────────────────────────
 
 FAKE_KEY = "made-up-key-for-tests=="
