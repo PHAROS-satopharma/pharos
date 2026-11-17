@@ -9,3 +9,7 @@ BASG Medikamente Info Austria, saved 7 November 2026.
 
 The front end's script is not saved: it carries the site's token. The tests use a one-line script with a made-up
 token instead.
+* `143502__DOTC_FACH_INFO.pdf`: `https://medikamente.basg.gv.at/documents/143502__DOTC_FACH_INFO.pdf`, saved 17
+  November 2026: Paracetamol Actavis 500 mg, authorised in a European procedure (DE/H/8144/001) and not marketed in
+  Austria. BASG serves this one-page notice ("keine deutschsprachigen Übersetzungen der Fach- und
+  Gebrauchsinformation") in place of the Fachinformation; eight watched products had it.

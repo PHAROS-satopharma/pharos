@@ -354,6 +354,24 @@ def test_austria_fachinformation_dated_by_stand_der_information():
     assert missing_core(s.sections) == [] and s.doc_date == date(2021, 12, 1)       # "12.2021"
 
 
+
+def test_austria_a_product_not_marketed_there_has_no_fachinformation_to_read():
+    s = basg.snapshot(FakeCtx({"https://x.test/fi": "spc-basg/143502__DOTC_FACH_INFO.pdf"}),
+                      {"national_id": "143502", "extra": {"fi": "https://x.test/fi"}})
+    assert s is None                                    # the regulator publishes none, no "section not found"
+
+
+def test_austria_veterinary_products_are_not_watched():
+    assert basg.veterinary("8-00827") and basg.veterinary("841924") and basg.veterinary(" 8-00855")
+    assert not any(basg.veterinary(z) for z in ("1-25395", "143502", "137618", "1-24504", "EU/1/05/317/001"))
+    data = json.loads(fixture("spc-basg/search_ivabradin.json"))
+    pig = dict(data["items"][-1], authNumber="8-00827", name="Pracetam 200 mg/g Pulver für Schweine")
+    data["items"].append(pig)
+    data["totalItems"] += 1
+    ctx = _basg_ctx(json.dumps(data).encode())
+    got = basg.discover(ctx, IVABRADINE)
+    assert len(got) == 14 and "8-00827" not in {p.national_id for p in got}
+
 # ───────────────────────────── Iceland ─────────────────────────────
 
 def _items(rel: str) -> list[dict]:

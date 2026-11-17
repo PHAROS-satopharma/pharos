@@ -17,6 +17,13 @@ else is tried (his decision, 6 Nov 2026).
 * label: ``https://medikamente.basg.gv.at/documents/<Zulassungsnummer>__DOTC_FACH_INFO.pdf`` (open, no token),
   split by QRD section number (``split_numbered`` per SmPC; 4.1–4.9 watched, 10 recorded: "Stand der Information").
 
+* veterinary products (Zulassungsnummer starting with 8: "8-00827", "841924"; human ones start with 1) are not
+  watched: their Fachinformation is the veterinary template (3.3 Gegenanzeigen, 3.6 Nebenwirkungen), and a
+  paracetamol powder for pigs is no human medicine. Three were listed and never read until 17 Nov 2026.
+* a product authorised in a European procedure but not marketed in Austria has a one-page notice in place of
+  its Fachinformation ("… liegen zur Zeit keine deutschsprachigen Übersetzungen der Fach- und
+  Gebrauchsinformation vor", eight watched products on 17 Nov 2026): the regulator publishes none.
+
 German names come from ``ingredient_term`` (lang ``de``); without one, the English INN without its final "e"
 ("ivabradine" → "ivabradin").
 """
@@ -43,6 +50,14 @@ _MAIN = re.compile(r'<script[^>]+src="(main-[A-Za-z0-9]+\.js)"')
 _BASE = re.compile(r'<base href="([^"]*)"')
 _API = re.compile(r'apiUrl:"(https://medikamente\.basg\.gv\.at/[^"]*)"')
 _TOKEN = re.compile(r'apiToken:"([^"]+)"')
+_VETERINARY = re.compile(r"8(?:-\d|\d{5}$)")
+# BASG's notice in place of the Fachinformation of a product not marketed in Austria
+_NO_TRANSLATION = re.compile(r"keine\s+deutschsprachigen\s+.bersetzungen\s+der\s+Fach-\s+und\s+Gebrauchsinformation")
+
+
+def veterinary(znr: str) -> bool:
+    """A veterinary product's Zulassungsnummer starts with 8 ("8-00827", "841924")."""
+    return bool(_VETERINARY.match(znr.strip()))
 
 
 def front_end(index: str, script: str) -> tuple[str, str] | None:
@@ -133,7 +148,7 @@ def discover(ctx, ingredient: dict) -> Listing:
             seen += len(items)
             for it in items:
                 znr = (it.get("authNumber") or "").strip()
-                if (znr and not znr.upper().startswith("EU/") and it.get("fachInformation")
+                if (znr and not znr.upper().startswith("EU/") and not veterinary(znr) and it.get("fachInformation")
                         and holds(it.get("substances") or [], term)):
                     found.setdefault(znr, product_from(it))
             if seen >= total or not items:
@@ -160,6 +175,8 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     from collectors.pdf import extract_text
 
     text, _method, _words = extract_text(f.content, LANG)
+    if _NO_TRANSLATION.search(text):
+        return None         # not marketed in Austria: BASG holds no German Fachinformation
     sections = eu_label_sections(text)
     missing = missing_core(sections)
     if missing:
