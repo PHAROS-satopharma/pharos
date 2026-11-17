@@ -727,6 +727,37 @@ def test_dailymed_snapshot_of_a_real_label():
     assert snap.method == dailymed.SECTIONS_2
 
 
+def _zip_of(files: dict[str, bytes]) -> bytes:
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        for name, data in files.items():
+            z.writestr(name, data)
+    return buf.getvalue()
+
+
+def test_dailymed_a_label_the_service_answers_none_is_read_from_the_zip():
+    # Tramadol and Acetaminophen, Preferred Pharmaceuticals (17 Nov 2026): the service gave b"None" for the label
+    setid = "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
+    zip_url = dailymed.ZIP.format(setid=setid)
+    pack = _zip_of({"36418db0.xml": fixture("spc-dailymed/spl_445d7cbf.xml"), "tablet-1.jpg": b"\xff\xd8 picture"})
+    snap = dailymed.snapshot(FakeCtx({f"{dailymed.API}/spls/{setid}.xml": b"None", zip_url: pack}),
+                             {"national_id": setid})
+    assert snap.doc_date == date(2026, 11, 2) and snap.source_url == zip_url
+    assert snap.sections["us:boxed_warning"].startswith("Cardiovascular Thrombotic Events")
+
+
+def test_dailymed_a_zip_without_one_label_is_still_an_error():
+    setid = "445d7cbf-bd3e-a54f-e063-6294a90a67a5"
+    routes = {f"{dailymed.API}/spls/{setid}.xml": b"None",
+              dailymed.ZIP.format(setid=setid): _zip_of({"a.xml": b"<x/>", "b.xml": b"<y/>"})}
+    with pytest.raises(SnapshotError, match="zip download holds none"):
+        dailymed.snapshot(FakeCtx(routes), {"national_id": setid})
+    assert dailymed.spl_from_zip(b"not a zip") is None
+
+
 def test_dailymed_snapshot_asks_as_dailymed_answers():
     # DailyMed refuses "Accept: application/xml" alone with HTTP 406 (6 Nov 2026), as this fake does
     setid = "445d7cbf-bd3e-a54f-e063-6294a90a67a5"

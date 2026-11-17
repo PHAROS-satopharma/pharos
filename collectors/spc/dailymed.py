@@ -20,7 +20,9 @@ Source ``spc-dailymed``; country US; English.
 * Snapshot: ``https://dailymed.nlm.nih.gov/dailymed/services/v2/spls/<setid>.xml`` (HL7 SPL,
   namespace ``urn:hl7-org:v3``). Sections are found by LOINC code
   (``section/code/@code``, mapped in ``sections.US_LOINC``) and their text is every ``text``
-  node below them. ``effectiveTime/@value`` (YYYYMMDD) is the label date.
+  node below them. ``effectiveTime/@value`` (YYYYMMDD) is the label date. When that answer is no XML (the
+  service gave "None" for one label on 17 Nov 2026), the same SPL is read from the site's zip download
+  (``getFile.cfm?setid=<setid>&type=zip``: one .xml beside the label's pictures).
 """
 
 from __future__ import annotations
@@ -136,6 +138,32 @@ def parse_spl(xml: bytes) -> tuple[dict[str, str], date | None]:
     return sections, when
 
 
+ZIP = "https://dailymed.nlm.nih.gov/dailymed/getFile.cfm?setid={setid}&type=zip"
+_ZIP_MAX = 40_000_000       # bytes of SPL XML unpacked; the largest label seen is about 2 MB
+
+
+def spl_from_zip(data: bytes) -> bytes | None:
+    """The SPL XML inside DailyMed's zip download (one .xml beside the label's pictures), or None."""
+    import io
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            xml = [i for i in z.infolist() if i.filename.lower().endswith(".xml") and "/" not in i.filename]
+            if len(xml) != 1 or xml[0].file_size > _ZIP_MAX:
+                return None
+            return z.read(xml[0])
+    except zipfile.BadZipFile:
+        return None
+
+
+def _zipped_spl(ctx, setid: str) -> tuple[bytes, str | None] | None:
+    """(SPL XML, the zip's sha256) from the site's zip download, or None."""
+    z = fetch_label(ctx, ZIP.format(setid=quote(setid)), accept="application/zip, */*;q=0.8")
+    xml = spl_from_zip(z.content) if z.status == 200 and z.content else None
+    return (xml, z.sha256) if xml else None
+
+
 def snapshot(ctx, product: dict) -> Snapshot | None:
     url = f"{API}/spls/{product['national_id']}.xml"
     # DailyMed answers HTTP 406 to "Accept: application/xml" alone (6 Nov 2026: every US label of the day's
@@ -143,11 +171,23 @@ def snapshot(ctx, product: dict) -> Snapshot | None:
     f = fetch_label(ctx, url, accept="application/xml, */*;q=0.8")
     if f.status != 200 or not f.content:
         raise SnapshotError(f"DailyMed {product['national_id']}: HTTP {f.status}, empty label")
+    sha = f.sha256
     try:
         sections, when = parse_spl(f.content)
     except ET.ParseError as exc:
-        raise SnapshotError(f"DailyMed {product['national_id']}: the label XML does not parse ({exc})") from None
+        # DailyMed's service answers "None" (4 bytes) for some labels its own site still serves (Tramadol and
+        # Acetaminophen, Preferred Pharmaceuticals, 17 Nov 2026): the same SPL is read from the site's zip download
+        zipped = _zipped_spl(ctx, product["national_id"])
+        if zipped is None:
+            raise SnapshotError(f"DailyMed {product['national_id']}: the label XML does not parse ({exc}), "
+                                f"and the zip download holds none") from None
+        (content, sha), url = zipped, ZIP.format(setid=quote(product["national_id"]))
+        try:
+            sections, when = parse_spl(content)
+        except ET.ParseError as exc2:
+            raise SnapshotError(f"DailyMed {product['national_id']}: the zipped label XML does not parse "
+                                f"({exc2})") from None
     if not sections:
         return None
     return Snapshot(sections=sections, doc_date=when, lang=LANG, source_url=url,
-                    original_sha256=f.sha256, method=SECTIONS_2)
+                    original_sha256=sha, method=SECTIONS_2)
