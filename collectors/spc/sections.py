@@ -336,7 +336,8 @@ def split_numbered(text: str) -> dict[str, str]:
     strict, lenient_may_help = _split_numbered(lines, lenient=False)
     if not missing_core(strict):
         return strict
-    if not lenient_may_help:        # no line a lenient-only rule reads differently: a second pass gives the same
+    rejoined = _rejoin_core_headings(lines)        # a core number printed apart from its title (poppler)
+    if not lenient_may_help and rejoined == lines:  # no line a lenient-only rule reads differently
         return _unnumbered_48(strict)
     # A split without contraindications, warnings or undesirable effects went wrong. Two layouts did that to 55
     # Dutch SmPCs (CBG, mostly paracetamol suppositories) until 17 Nov 2026: top-level headings in sentence case
@@ -346,7 +347,7 @@ def split_numbered(text: str) -> dict[str, str]:
     # or "4.1) Indicazioni", never read as headings, and a cross-reference "4.9 “Sovradosaggio”)." in 4.2 taken for
     # heading 4.9. The lenient rules are tried only then, and only when some line reads differently under them.
     # Since 17 Nov 2026 a top-level "heading" with no letter in it is refused by the strict rules too.
-    lenient, _ = _split_numbered(lines, lenient=True)
+    lenient, _ = _split_numbered(rejoined, lenient=True)
     return _unnumbered_48(lenient if len(missing_core(lenient)) < len(missing_core(strict)) else strict)
 
 
@@ -354,6 +355,42 @@ def split_numbered(text: str) -> dict[str, str]:
 _TITLE_48 = {"undesirable effects", "efeitos indesejáveis", "effets indésirables", "nebenwirkungen",
              "effetti indesiderati", "reacciones adversas", "bijwerkingen", "biverkningar", "bivirkninger",
              "haittavaikutukset", "aukaverkanir"}
+# How the template's titles of the core sections begin, per language (a line starting with one of these)
+_CORE_TITLE_START = {
+    "4.3": ("contraindications", "controindicazioni", "contre-indications", "gegenanzeigen", "contraindicaciones",
+            "contraindicações", "contra-indicações", "contra-indicaties", "kontraindikationer", "kontraindikasjoner",
+            "vasta-aiheet", "frábendingar"),
+    "4.4": ("special warnings and precautions", "avvertenze speciali", "mises en garde spéciales",
+            "besondere warnhinweise", "advertencias y precauciones especiales", "advertências e precauções especiais",
+            "bijzondere waarschuwingen", "varningar och försiktighet", "særlige advarsler", "advarsler og forsiktighet",
+            "varoitukset ja käyttöön liittyvät varotoimet", "sérstök varnaðarorð"),
+    "4.8": tuple(_TITLE_48),
+}
+_BARE_CORE = re.compile(r"^\s*(4\.[348])\.?\s*$")
+_NEAR = 8                   # lines either side of a bare number searched for its title
+
+
+def _rejoin_core_headings(lines: list[str]) -> list[str]:
+    """A core heading whose number and title the PDF's text came out apart: poppler's pdftotext (the label watch on
+    GitHub) prints Epifloxin's, Paracetamolo Mylan Italia's and Distem's "4.4" alone on a line, and "Avvertenze
+    speciali e precauzioni d'impiego" two to five lines above or below it (17 Nov 2026; xpdf keeps them together).
+    A line holding only 4.3, 4.4 or 4.8, with that section's template title starting a line within ``_NEAR`` lines:
+    the title's line becomes "4.4 <title>" and the bare number's line is emptied. Only the lenient split reads it."""
+    lines = list(lines)
+    for i, line in enumerate(lines):
+        m = _BARE_CORE.match(line)
+        if not m:
+            continue
+        starts = _CORE_TITLE_START[m.group(1)]
+        near = sorted(range(max(0, i - _NEAR), min(len(lines), i + _NEAR + 1)), key=lambda j: abs(j - i))
+        for j in near:
+            words = " ".join(lines[j].split())
+            if j != i and words.casefold().startswith(starts) and len(words) <= 120:
+                # the heading goes where the title is: Paracetamolo Mylan's last contraindications print between
+                # the bare "4.4" and its title, and stay in 4.3
+                lines[i], lines[j] = "", f"{m.group(1)} {words}"
+                break
+    return lines
 
 
 def _unnumbered_48(sections: dict[str, str]) -> dict[str, str]:
