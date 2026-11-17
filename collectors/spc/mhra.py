@@ -40,8 +40,13 @@ _DOC = re.compile(r"blob\.core\.windows\.net/docs/([A-Za-z0-9]+)")
 _SUBSTANCES = re.compile(r"Active substances?\s*:\s*(.+)", re.I)
 AGREE = "#agree-checkbox"
 RESULT_LINK = "a[href*='blob.core.windows.net']"
-MAX_PAGES = 40          # per search: 6 Nov 2026 the old 5 pages of 2 names cut paracetamol's list
+MAX_PAGES = 250         # per search: paracetamol's search had 1,717 SPC hits (172 pages) on 17 Nov 2026
 MAX_TERMS = 4
+# The site ranks the SPCs whose active substances name the search first, then every SPC that merely mentions
+# it (Monday 16 Nov 2026: carvedilol 10 10 10 6 then 16 pages of none; ivabradine 6 pages then 34 of none).
+# After this many pages in a row without one, the rest of the search holds none.
+TAIL_PAGES = 5
+_TOTAL = re.compile(r"\b[\d,]+\s+to\s+[\d,]+\s+of\s+([\d,]+)\b")
 
 log = logging.getLogger(__name__)
 
@@ -109,40 +114,70 @@ def parse_results(html, base_url: str, terms: list[str] | None = None) -> list[P
     return out
 
 
-def discover(ctx, ingredient: dict) -> Listing:
-    """Every page of every English name's search, up to ``MAX_PAGES`` each.
+def total_hits(html) -> int | None:
+    """The search's own count ("1 to 10 of 1717" above the results), else None."""
+    node = soup(html).select_one(".no-of-results")
+    m = _TOTAL.search(node_text(node) if node is not None else "")
+    return int(m.group(1).replace(",", "")) if m else None
 
-    The site draws its results by script, so a page past the last one and a page that did not load in
-    time look the same (the result links never appear). A page with fewer hits than the first is the
-    last one; after a full page, a page that does not show results is taken as the end, but the list
-    is then not known to be complete (``Listing.gaps``), and no product is switched off by it."""
+
+def _page(ctx, term: str, page: int):
+    """A results page, read twice before it counts as not shown (a slow page draws no results in time)."""
+    for attempt in (1, 2):
+        try:
+            return ctx.browser_get(SEARCH.format(q=quote(term), page=page),
+                                   wait_selector=RESULT_LINK, before_wait=accept_disclaimer)
+        except ParseError:
+            if attempt == 2:
+                return None
+    return None
+
+
+def discover(ctx, ingredient: dict) -> Listing:
+    """Every English name's search, page by page, until the products naming it as an active substance end.
+
+    The first page says how many results the search has ("1 to 10 of 1717"), so the last page is known.
+    The site ranks the SPCs of the ingredient's products first (``TAIL_PAGES``); reading stops at the last
+    page, or after ``TAIL_PAGES`` pages in a row without one of them. A page that shows no results before
+    the last page is read again; if it still shows none, it is a gap (``Listing.gaps``: the list is not
+    known to be complete and no product is switched off by it) and the next page is read. Until 17 Nov
+    2026 one slow page ended the list, and 40 pages cut paracetamol's at 400 of its 1,717 results."""
     found: dict[str, Product] = {}
     gaps: list[str] = []
     terms = terms_for(ingredient, "en")
     for n, term in enumerate(terms[:MAX_TERMS], start=1):
-        size = 0
-        for page in range(1, MAX_PAGES + 1):
-            try:
-                f = ctx.browser_get(SEARCH.format(q=quote(term), page=page),
-                                    wait_selector=RESULT_LINK, before_wait=accept_disclaimer)
-            except ParseError:      # no results drawn: past the last page, or the page did not load
-                if page > 1:
-                    gaps.append(f"name {n} page {page}: no results shown after a full page")
+        last = None             # the last page, from the search's own count
+        without = 0             # pages in a row with none of the ingredient's products
+        page = 0
+        while True:
+            page += 1
+            if last is not None and page > last or without >= TAIL_PAGES:
                 break
-            hits = parse_results(f, f.final_url)
+            if page > MAX_PAGES:
+                gaps.append(f"name {n}: more than {MAX_PAGES} pages")
+                break
+            f = _page(ctx, term, page)
+            hits = parse_results(f, f.final_url) if f is not None else []
             if not hits:
-                break               # a page without results: the end of the list
+                if page == 1:
+                    break       # no results for this name at all
+                if last is None:
+                    gaps.append(f"name {n} page {page}: no results shown and no count of results")
+                    break
+                gaps.append(f"name {n} page {page} of {last}: no results shown")
+                continue
+            if last is None:
+                total = total_hits(f)
+                size = len(set(_DOC.findall(f.text)))     # results on the page, before any dedupe
+                last = -(-total // size) if total and size else None
             mine = parse_results(f, f.final_url, terms)
-            log.info("SPC %s %r page %d: %d search hit(s), %d with it as an active substance",
-                     SOURCE_ID, term, page, len(hits), len(mine))
+            log.info("SPC %s %r page %d of %s: %d search hit(s), %d with it as an active substance",
+                     SOURCE_ID, term, page, last or "?", len(hits), len(mine))
             for p in mine:
                 found.setdefault(p.national_id, p)
-            links = len(set(_DOC.findall(f.text)))    # results on the page, before any dedupe
-            size = size or links
-            if links < size:
-                break               # a short page: the last one
-        else:
-            gaps.append(f"name {n}: more than {MAX_PAGES} pages")
+            without = 0 if mine else without + 1
+            if last is None and len(set(_DOC.findall(f.text))) < 10:
+                break           # no count shown: a short page is the last one
     return Listing(found.values(), gaps=gaps)
 
 
